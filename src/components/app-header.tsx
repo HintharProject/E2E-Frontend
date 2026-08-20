@@ -72,7 +72,7 @@ export function AppHeader() {
   });
 
   return (
-    <header className="sticky top-0 z-40 border-b border-line/80 bg-[#F5F8FB]/90 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-line/80 bg-background/90 backdrop-blur-md">
       {writeLocked ? (
         <div className="bg-warning px-4 py-2 text-center text-sm font-semibold text-white">
           Read-only mode — your account is restricted ({user.banState}). You can

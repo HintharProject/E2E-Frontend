@@ -1,17 +1,17 @@
 export const clerkAppearance = {
   variables: {
-    colorPrimary: "#63A121",
-    colorBackground: "#ffffff",
-    colorText: "#1a2421",
-    colorTextSecondary: "#5a6b64",
-    borderRadius: "0.75rem",
+    colorPrimary: "oklch(0.508 0.118 165.612)",
+    colorBackground: "oklch(1 0 0)",
+    colorText: "oklch(0.148 0.004 228.8)",
+    colorTextSecondary: "oklch(0.56 0.021 213.5)",
+    borderRadius: "0.625rem",
   },
   elements: {
-    card: "shadow-[0_24px_60px_-40px_rgba(99,161,33,0.5)] border border-[#d5dde6]",
+    card: "shadow-sm border border-border",
     formButtonPrimary:
-      "bg-[#63A121] hover:bg-[#4f821a] text-white font-semibold",
-    footerActionLink: "text-[#4f821a] hover:text-[#63A121]",
+      "bg-primary hover:bg-sidebar-primary text-primary-foreground font-semibold",
+    footerActionLink: "text-sidebar-primary hover:text-primary",
     headerTitle: "font-serif",
-    headerSubtitle: "text-[#5a6b64]",
+    headerSubtitle: "text-muted-foreground",
   },
 } as const;

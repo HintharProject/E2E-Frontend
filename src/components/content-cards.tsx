@@ -19,7 +19,7 @@ export function PostCard({ post }: { post: Post }) {
   const expiresIn = daysUntil(post.expiresAt);
 
   return (
-    <article className="group rounded-2xl border border-line bg-white/90 p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_rgba(99,161,33,0.45)]">
+    <article className="group rounded-2xl border border-line bg-white/90 p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {author ? (
@@ -86,7 +86,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const tagNames = getTagNames(lesson.tagIds);
 
   return (
-    <article className="rounded-2xl border border-line bg-white/90 p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_rgba(99,161,33,0.45)]">
+    <article className="rounded-2xl border border-line bg-white/90 p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]">
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           {lesson.followedAuthor ? (

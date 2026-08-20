@@ -5,7 +5,7 @@ import { SignUp } from "@clerk/nextjs";
 
 function MockSignUp() {
   return (
-    <div className="w-full max-w-md rounded-3xl border border-line bg-white p-8 shadow-[0_24px_60px_-40px_rgba(99,161,33,0.5)]">
+    <div className="w-full max-w-md rounded-3xl border border-line bg-card p-8 shadow-sm">
       <h1 className="font-display text-2xl text-ink">Create account</h1>
       <p className="mt-2 text-sm text-ink-muted">
         Mock mode — accounts are not persisted. Continue to explore sample data.
