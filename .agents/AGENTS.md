@@ -15,10 +15,12 @@ This document outlines strict architectural, technical, and workflow rules for A
 ## 1. Strict Folder Structure
 Agents must respect the following architecture when creating or modifying files:
 * `src/app/`: Strictly for routing (`page.tsx`, `layout.tsx`). No heavy business logic here.
-* `src/components/ui/`: Reusable, generic UI components (Buttons, Inputs).
+* `src/components/ui/`: Reusable, generic UI components (Buttons, Inputs) generated primarily via Shadcn.
 * `src/components/layout/`: Structural components (Navbars, Footers).
 * `src/components/features/`: Domain-specific components.
+* `src/components/providers/`: Global React providers (e.g., QueryClientProvider).
 * `src/lib/`: Utility functions.
+* `src/lib/store/`: Zustand state stores.
 * `src/hooks/`: Custom React hooks.
 * `src/services/`: All backend API calls must be defined here. Do not inline `fetch` or `axios` calls inside components.
 * `src/types/`: TypeScript interfaces and models.
@@ -31,6 +33,10 @@ Agents must respect the following architecture when creating or modifying files:
 ## 3. Technology Stack Integration
 * **Auth**: Clerk (Identity Provider). Session JWT must be attached to every API request header as `Authorization: Bearer <token>`. Do not handle auth manually.
 * **Backend API**: REST API. Endpoints are paginated.
+* **Network/Server State**: TanStack Query MUST be used for all API fetching, caching, and mutation (optimistic updates). Do not use bare `useEffect` for data fetching.
+* **Client UI State**: Zustand MUST be used for global UI state (e.g. read-only modes, limits).
+* **Rich Text Editing**: Tiptap is used for all rich text inputs.
+* **DOM Optimization**: `react-virtuoso` MUST be used for long lists and threaded comments.
 * **Cold Starts**: The backend is on a free tier. You must always implement robust loading states, skeletons, and appropriate timeouts (~60s) for initial API calls to handle server wake-ups gracefully.
 
 ## 4. Strict UI/UX Rules
