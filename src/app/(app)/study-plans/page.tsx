@@ -6,10 +6,11 @@ import {
   PageHeader,
   SubNav,
 } from "@/components/ui";
-import { getCurrentUser, studyPlans } from "@/lib/mock-data";
+import { requireUser } from "@/lib/auth";
+import { studyPlans } from "@/lib/mock-data";
 
-export default function StudyPlansPage() {
-  const user = getCurrentUser();
+export default async function StudyPlansPage() {
+  const user = await requireUser();
   const mine = studyPlans.filter((p) => p.ownerId === user.id);
   const hasEmpty = mine.some((p) => p.lessonIds.length === 0);
   const atCap = mine.length >= 3;

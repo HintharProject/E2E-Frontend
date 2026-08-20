@@ -1,10 +1,12 @@
 "use client";
 
+import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
-import { getCurrentUser } from "@/lib/mock-data";
 import { Avatar, Badge } from "@/components/ui";
+import { useAppUser, useAuthSource } from "@/components/user-provider";
+import { isWriteLocked } from "@/lib/types/user";
 
 type NavItem = {
   href: string;
@@ -53,11 +55,10 @@ function isActive(
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
-  const user = getCurrentUser();
+  const user = useAppUser();
+  const authSource = useAuthSource();
   const [q, setQ] = useState("");
-  const writeLocked = ["BANNED_24H", "BANNED_7D", "PERMANENT_BAN"].includes(
-    user.banState,
-  );
+  const writeLocked = isWriteLocked(user.banState);
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
@@ -98,16 +99,28 @@ export function AppHeader() {
               className="w-full rounded-full border border-line bg-white px-4 py-2 text-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
             />
           </form>
-          <Link
-            href={`/users/${user.id}`}
-            className="ml-auto flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 hover:border-brand/40"
-          >
-            <Avatar src={user.imageUrl} name={user.displayName} size="sm" />
-            <span className="hidden text-sm font-semibold sm:inline">
-              {user.displayName}
-            </span>
-            <Badge tone="brand">{user.role}</Badge>
-          </Link>
+          <div className="ml-auto flex items-center gap-2">
+            <Link
+              href={`/users/${user.id}`}
+              className="flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 hover:border-brand/40"
+            >
+              <Avatar src={user.imageUrl} name={user.displayName} size="sm" />
+              <span className="hidden text-sm font-semibold sm:inline">
+                {user.displayName}
+              </span>
+              <Badge tone="brand">{user.role}</Badge>
+            </Link>
+            {authSource !== "mock" ? (
+              <ClerkUserMenu />
+            ) : (
+              <Link
+                href="/sign-in"
+                className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/40"
+              >
+                Sign out
+              </Link>
+            )}
+          </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto pb-1">
           {visibleNav.map((item) => {
@@ -147,5 +160,17 @@ export function AppHeader() {
         </form>
       </div>
     </header>
+  );
+}
+
+function ClerkUserMenu() {
+  return (
+    <UserButton
+      appearance={{
+        elements: {
+          avatarBox: "h-9 w-9",
+        },
+      }}
+    />
   );
 }

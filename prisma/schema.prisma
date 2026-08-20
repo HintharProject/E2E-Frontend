@@ -1,0 +1,241 @@
+// Prisma schema for E2E domain models.
+// Not connected yet: leave DATABASE_URL empty and USE_MOCK_DATA=true.
+// Do not run migrate/seed until the real database URL is provided.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  CREATOR
+  ADMIN
+}
+
+enum BanState {
+  ACTIVE
+  WARNING
+  BANNED_24H
+  BANNED_7D
+  PERMANENT_BAN
+}
+
+enum PostType {
+  QUESTION
+  SHARING
+  ANNOUNCEMENT
+}
+
+enum LessonState {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum ReportStatus {
+  PENDING
+  RESOLVED
+  DISMISSED
+}
+
+enum ReportTargetType {
+  POST
+  LESSON
+  USER
+}
+
+model User {
+  id            String   @id @default(cuid())
+  clerkId       String?  @unique
+  displayName   String
+  imageUrl      String
+  role          Role     @default(STUDENT)
+  banState      BanState @default(ACTIVE)
+  bio           String?
+  followerCount Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  posts           Post[]
+  comments        Comment[]
+  lessons         Lesson[]
+  studyPlans      StudyPlan[]
+  savedSessions   SavedSession[]
+  reportsFiled  Report[]       @relation("Reporter")
+  auditLogs     AuditLog[]
+  following     Follow[]       @relation("Follower")
+  followers     Follow[]       @relation("Following")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower  User @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following User @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+}
+
+model Subject {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  posts   Post[]
+  lessons Lesson[]
+}
+
+model Level {
+  id      String   @id @default(cuid())
+  name    String   @unique
+  posts   Post[]
+  lessons Lesson[]
+}
+
+model Tag {
+  id      String      @id @default(cuid())
+  name    String      @unique
+  posts   PostTag[]
+  lessons LessonTag[]
+}
+
+model Post {
+  id             String   @id @default(cuid())
+  title          String
+  body           String
+  postType       PostType
+  authorId       String
+  subjectId      String?
+  levelId        String?
+  voteScore      Int      @default(0)
+  commentCount   Int      @default(0)
+  attachmentName String?
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+
+  author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subject  Subject? @relation(fields: [subjectId], references: [id])
+  level    Level?   @relation(fields: [levelId], references: [id])
+  tags     PostTag[]
+  comments Comment[]
+
+  @@index([postType, createdAt])
+  @@index([authorId])
+}
+
+model PostTag {
+  postId String
+  tagId  String
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  postId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+model Lesson {
+  id                String      @id @default(cuid())
+  title             String
+  body              String
+  authorId          String
+  subjectId         String
+  levelId           String
+  state             LessonState @default(DRAFT)
+  voteScore         Int         @default(0)
+  embeddedVideoUrl  String?
+  attachments       String[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  author  User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id])
+  level   Level   @relation(fields: [levelId], references: [id])
+  tags    LessonTag[]
+
+  @@index([state, createdAt])
+  @@index([authorId])
+}
+
+model LessonTag {
+  lessonId String
+  tagId    String
+  lesson   Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  tag      Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([lessonId, tagId])
+}
+
+model StudyPlan {
+  id        String   @id @default(cuid())
+  title     String
+  ownerId   String
+  isPublic  Boolean  @default(false)
+  lessonIds String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+}
+
+model SavedSession {
+  id        String   @id @default(cuid())
+  title     String
+  ownerId   String
+  isPublic  Boolean  @default(false)
+  postIds   String[]
+  lessonIds String[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId])
+}
+
+model Report {
+  id         String           @id @default(cuid())
+  targetType ReportTargetType
+  targetId   String
+  reporterId String
+  reason     String
+  status     ReportStatus     @default(PENDING)
+  createdAt  DateTime         @default(now())
+
+  reporter User @relation("Reporter", fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, status])
+  @@index([reporterId])
+  @@index([targetId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}

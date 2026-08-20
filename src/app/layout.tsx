@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
+import { clerkAppearance } from "@/lib/clerk-appearance";
+import { useMockData } from "@/lib/data-source";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -23,9 +26,27 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html lang="en" className={`${outfit.variable} ${fraunces.variable} h-full`}>
+  const body = (
+    <html
+      lang="en"
+      className={`${outfit.variable} ${fraunces.variable} h-full`}
+    >
       <body className="min-h-full flex flex-col antialiased">{children}</body>
     </html>
+  );
+
+  if (useMockData()) {
+    return body;
+  }
+
+  return (
+    <ClerkProvider
+      appearance={clerkAppearance}
+      signInUrl="/sign-in"
+      signUpUrl="/sign-up"
+      afterSignOutUrl="/sign-in"
+    >
+      {body}
+    </ClerkProvider>
   );
 }

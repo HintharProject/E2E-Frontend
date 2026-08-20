@@ -5,8 +5,8 @@ import {
   PageHeader,
   inputClass,
 } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
 import {
-  getCurrentUser,
   getPost,
   levels,
   subjects,
@@ -21,7 +21,7 @@ export default async function EditPostPage({
   const { id } = await params;
   const post = getPost(id);
   if (!post) notFound();
-  const user = getCurrentUser();
+  const user = await requireUser();
   const canAnnounce = user.role === "CREATOR" || user.role === "ADMIN";
 
   return (

@@ -4,12 +4,15 @@ import {
   PageHeader,
   inputClass,
 } from "@/components/ui";
-import { getCurrentUser, levels, subjects, tags } from "@/lib/mock-data";
+import { requireUser } from "@/lib/auth";
+import { isWriteLocked } from "@/lib/types/user";
+import { levels, subjects, tags } from "@/lib/mock-data";
 
-export default function NewPostPage() {
-  const user = getCurrentUser();
+export default async function NewPostPage() {
+  const user = await requireUser();
   const canAnnounce = user.role === "CREATOR" || user.role === "ADMIN";
   const subjectRequired = user.role === "STUDENT";
+  const writeLocked = isWriteLocked(user.banState);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -83,7 +86,9 @@ export default function NewPostPage() {
           <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="text-sm" />
         </Field>
         <div className="flex gap-2 pt-2">
-          <Button type="submit">Publish (mock)</Button>
+          <Button type="submit" disabled={writeLocked}>
+            Publish (mock)
+          </Button>
           <Button href="/forum" variant="secondary">
             Cancel
           </Button>

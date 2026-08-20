@@ -100,7 +100,7 @@ export type AuditLog = {
 };
 
 /** Switch this to preview Student / Creator / Admin chrome. */
-export const CURRENT_USER_ID = "u-admin";
+export const CURRENT_USER_ID = "u-student1";
 
 export const subjects: Subject[] = [
   { id: "sub-math", name: "Mathematics" },

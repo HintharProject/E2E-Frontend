@@ -31,6 +31,7 @@ export function Button({
   type = "button",
   className = "",
   disabled,
+  onClick,
 }: {
   children: ReactNode;
   href?: string;
@@ -38,6 +39,7 @@ export function Button({
   type?: "button" | "submit";
   className?: string;
   disabled?: boolean;
+  onClick?: () => void;
 }) {
   const variants = {
     primary:
@@ -56,7 +58,7 @@ export function Button({
     );
   }
   return (
-    <button type={type} className={cls} disabled={disabled}>
+    <button type={type} className={cls} disabled={disabled} onClick={onClick}>
       {children}
     </button>
   );
@@ -153,22 +155,42 @@ export function SubNav({
   );
 }
 
+function initials(name?: string | null): string {
+  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+}
+
 export function Avatar({
   src,
   name,
   size = "md",
 }: {
-  src: string;
-  name: string;
+  src?: string | null;
+  name?: string | null;
   size?: "sm" | "md" | "lg";
 }) {
   const sizes = { sm: "h-8 w-8", md: "h-10 w-10", lg: "h-16 w-16" };
+  const textSizes = { sm: "text-xs", md: "text-sm", lg: "text-lg" };
+  const cls = `${sizes[size]} rounded-full border border-line bg-brand-soft object-cover`;
+  const safeSrc = src?.trim();
+  const safeName = name?.trim() || "User";
+
+  if (!safeSrc) {
+    return (
+      <div
+        className={`${cls} flex shrink-0 items-center justify-center font-semibold text-brand-dark ${textSizes[size]}`}
+        aria-label={safeName}
+        title={safeName}
+      >
+        {initials(safeName)}
+      </div>
+    );
+  }
+
   return (
     // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={src}
-      alt={name}
-      className={`${sizes[size]} rounded-full border border-line bg-brand-soft object-cover`}
-    />
+    <img src={safeSrc} alt={safeName} className={cls} />
   );
 }

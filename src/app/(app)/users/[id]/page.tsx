@@ -8,12 +8,8 @@ import {
   PageHeader,
   inputClass,
 } from "@/components/ui";
-import {
-  getCurrentUser,
-  getUser,
-  savedSessions,
-  studyPlans,
-} from "@/lib/mock-data";
+import { requireUser } from "@/lib/auth";
+import { getUser, savedSessions, studyPlans } from "@/lib/mock-data";
 
 export default async function UserProfilePage({
   params,
@@ -21,47 +17,63 @@ export default async function UserProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const me = await requireUser();
   const profile = getUser(id);
   if (!profile) notFound();
-  const me = getCurrentUser();
-  const isSelf = me.id === profile.id;
+
+  const appProfile = {
+    id: profile.id,
+    displayName: profile.displayName,
+    imageUrl: profile.imageUrl,
+    role: profile.role,
+    banState: profile.banState,
+    bio: profile.bio,
+    followerCount: profile.followerCount,
+  };
+
+  const isSelf = me.id === appProfile.id;
   const isAdmin = me.role === "ADMIN";
   const publicPlans = studyPlans.filter(
-    (p) => p.ownerId === profile.id && p.isPublic,
+    (p) => p.ownerId === appProfile.id && p.isPublic,
   );
   const publicSessions = savedSessions.filter(
-    (s) => s.ownerId === profile.id && s.isPublic,
+    (s) => s.ownerId === appProfile.id && s.isPublic,
   );
 
   return (
     <div className="mx-auto max-w-3xl">
       <div className="rounded-3xl border border-line bg-white p-6 sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <Avatar src={profile.imageUrl} name={profile.displayName} size="lg" />
+          <Avatar
+            src={appProfile.imageUrl}
+            name={appProfile.displayName}
+            size="lg"
+          />
           <div className="flex-1">
             <PageHeader
-              title={profile.displayName}
-              description={profile.bio}
+              title={appProfile.displayName}
+              description={appProfile.bio}
             />
             <div className="mt-[-1.5rem] flex flex-wrap gap-2">
-              <Badge tone="brand">{profile.role}</Badge>
+              <Badge tone="brand">{appProfile.role}</Badge>
               <Badge
                 tone={
-                  profile.banState === "ACTIVE"
+                  appProfile.banState === "ACTIVE"
                     ? "muted"
-                    : profile.banState === "WARNING"
+                    : appProfile.banState === "WARNING"
                       ? "warn"
                       : "danger"
                 }
               >
-                {profile.banState}
+                {appProfile.banState}
               </Badge>
-              {profile.role === "CREATOR" && profile.followerCount != null ? (
-                <Badge tone="muted">{profile.followerCount} followers</Badge>
+              {appProfile.role === "CREATOR" &&
+              appProfile.followerCount != null ? (
+                <Badge tone="muted">{appProfile.followerCount} followers</Badge>
               ) : null}
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
-              {!isSelf && profile.role === "CREATOR" ? (
+              {!isSelf && appProfile.role === "CREATOR" ? (
                 <Button>Follow</Button>
               ) : null}
               {!isSelf ? <Button variant="ghost">Report profile</Button> : null}
@@ -72,14 +84,14 @@ export default async function UserProfilePage({
         {isAdmin && !isSelf ? (
           <div className="mt-8 grid gap-4 rounded-2xl border border-line bg-surface p-4 sm:grid-cols-2">
             <Field label="Update role">
-              <select className={inputClass} defaultValue={profile.role}>
+              <select className={inputClass} defaultValue={appProfile.role}>
                 <option value="STUDENT">Student</option>
                 <option value="CREATOR">Creator</option>
                 <option value="ADMIN">Admin</option>
               </select>
             </Field>
             <Field label="Ban status">
-              <select className={inputClass} defaultValue={profile.banState}>
+              <select className={inputClass} defaultValue={appProfile.banState}>
                 <option value="ACTIVE">Active</option>
                 <option value="WARNING">Warning</option>
                 <option value="BANNED_24H">24 Hours</option>

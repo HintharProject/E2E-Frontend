@@ -1,19 +1,66 @@
+import { Suspense } from "react";
 import { LessonCard } from "@/components/content-cards";
+import { FilterSidebar } from "@/components/filter-sidebar";
 import {
   Button,
-  Field,
-  FilterBar,
+  EmptyState,
   PageHeader,
-  inputClass,
 } from "@/components/ui";
-import { getCurrentUser, lessons, levels, subjects, tags } from "@/lib/mock-data";
+import { parseFilterList } from "@/lib/filter-params";
+import { requireUser } from "@/lib/auth";
+import { canAccessCreatorStudio } from "@/lib/types/user";
+import { lessons, type Lesson } from "@/lib/mock-data";
 
-export default function LessonsBoardPage() {
-  const user = getCurrentUser();
-  const canCreate = user.role === "CREATOR" || user.role === "ADMIN";
-  const published = lessons.filter((l) => l.state === "PUBLISHED");
-  const followed = published.filter((l) => l.followedAuthor);
-  const other = published.filter((l) => !l.followedAuthor);
+function filterLessons(
+  all: Lesson[],
+  filters: {
+    subjects: string[];
+    levels: string[];
+    tagIds: string[];
+  },
+): Lesson[] {
+  return all.filter((l) => {
+    if (l.state !== "PUBLISHED") return false;
+    if (
+      filters.subjects.length > 0 &&
+      !filters.subjects.includes(l.subjectId)
+    ) {
+      return false;
+    }
+    if (filters.levels.length > 0 && !filters.levels.includes(l.levelId)) {
+      return false;
+    }
+    if (
+      filters.tagIds.length > 0 &&
+      !filters.tagIds.some((id) => l.tagIds.includes(id))
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
+export default async function LessonsBoardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    subject?: string | string[];
+    level?: string | string[];
+    tags?: string | string[];
+  }>;
+}) {
+  const user = await requireUser();
+  const canCreate = canAccessCreatorStudio(user.role);
+  const params = await searchParams;
+  const subjects = parseFilterList(params.subject);
+  const levels = parseFilterList(params.level);
+  const tagIds = parseFilterList(params.tags);
+
+  const filtered = filterLessons(lessons, { subjects, levels, tagIds });
+  const followed = filtered.filter((l) => l.followedAuthor);
+  const other = filtered.filter((l) => !l.followedAuthor);
+  const hasActiveFilters =
+    subjects.length > 0 || levels.length > 0 || tagIds.length > 0;
 
   return (
     <div>
@@ -24,51 +71,54 @@ export default function LessonsBoardPage() {
           canCreate ? <Button href="/lessons/new">New lesson</Button> : null
         }
       />
-      <FilterBar>
-        <Field label="Subject">
-          <select className={inputClass} defaultValue="">
-            <option value="">All</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Level">
-          <select className={inputClass} defaultValue="">
-            <option value="">All</option>
-            {levels.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Tag">
-          <select className={inputClass} defaultValue="">
-            <option value="">All</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-      </FilterBar>
+      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+        <Suspense fallback={null}>
+          <FilterSidebar />
+        </Suspense>
+        <div className="min-w-0 flex-1">
+          {filtered.length === 0 ? (
+            <EmptyState
+              title={
+                hasActiveFilters ? "No matching lessons" : "No published lessons"
+              }
+              description={
+                hasActiveFilters
+                  ? "Try clearing filters or picking different Subject, Level, or Tag."
+                  : "Creators have not published lessons yet."
+              }
+            />
+          ) : (
+            <>
+              <h2 className="mb-3 font-display text-xl text-ink">
+                From creators you follow
+              </h2>
+              {followed.length === 0 ? (
+                <p className="mb-10 text-sm text-ink-muted">
+                  No followed-creator lessons match these filters.
+                </p>
+              ) : (
+                <div className="mb-10 grid gap-4 md:grid-cols-2">
+                  {followed.map((lesson) => (
+                    <LessonCard key={lesson.id} lesson={lesson} />
+                  ))}
+                </div>
+              )}
 
-      <h2 className="mb-3 font-display text-xl text-ink">From creators you follow</h2>
-      <div className="mb-10 grid gap-4 md:grid-cols-2">
-        {followed.map((lesson) => (
-          <LessonCard key={lesson.id} lesson={lesson} />
-        ))}
-      </div>
-
-      <h2 className="mb-3 font-display text-xl text-ink">More lessons</h2>
-      <div className="grid gap-4 md:grid-cols-2">
-        {other.map((lesson) => (
-          <LessonCard key={lesson.id} lesson={lesson} />
-        ))}
+              <h2 className="mb-3 font-display text-xl text-ink">More lessons</h2>
+              {other.length === 0 ? (
+                <p className="text-sm text-ink-muted">
+                  No other lessons match these filters.
+                </p>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {other.map((lesson) => (
+                    <LessonCard key={lesson.id} lesson={lesson} />
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

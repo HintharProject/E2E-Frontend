@@ -6,10 +6,11 @@ import {
   PageHeader,
   SubNav,
 } from "@/components/ui";
-import { getCurrentUser, savedSessions } from "@/lib/mock-data";
+import { requireUser } from "@/lib/auth";
+import { savedSessions } from "@/lib/mock-data";
 
-export default function SavedSessionsPage() {
-  const user = getCurrentUser();
+export default async function SavedSessionsPage() {
+  const user = await requireUser();
   const mine = savedSessions.filter((s) => s.ownerId === user.id);
   const hasEmpty = mine.some(
     (s) => s.postIds.length === 0 && s.lessonIds.length === 0,

@@ -65,13 +65,22 @@ npm install
 
 ### 3. Environment
 
-Copy the example env file and fill in Clerk keys:
+Copy the example env file:
 
 ```bash
-cp .env.example .env.local
+cp .env.example .env
 ```
 
-By default the app talks to the **hosted API** on Render:
+| Setting | Notes |
+| ------- | ----- |
+| `USE_MOCK_DATA` | Keep `true` for now — UI uses in-memory mock data |
+| `DATABASE_URL` | Leave blank until you provide the PostgreSQL URL |
+| `NEXT_PUBLIC_API_BASE_URL` | Django API (when wiring live auth/API later) |
+| Clerk keys | Fill when enabling real authentication |
+
+**Database prep (not connected yet):** Prisma schema lives in `prisma/schema.prisma`. Client helpers are in `src/lib/db.ts`. Do not set `USE_MOCK_DATA=false` or run migrations until `DATABASE_URL` is filled in.
+
+By default the documented API host is:
 
 | Setting | Value |
 | ------- | ----- |
@@ -81,7 +90,7 @@ By default the app talks to the **hosted API** on Render:
 **Important Integration Caveat:**
 - The backend is hosted on Render's free tier. If the backend is inactive for 15+ minutes, the first API request will take **up to 30-50 seconds** to wake up. Implement robust loading states for this.
 
-Restart `npm run dev` after changing `.env.local`.
+Restart `npm run dev` after changing `.env`.
 
 ### 4. Run the Development Server
 
