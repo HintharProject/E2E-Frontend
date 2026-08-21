@@ -20,10 +20,16 @@ Agents must respect the following architecture when creating or modifying files:
 * `src/components/features/`: Domain-specific components.
 * `src/components/providers/`: Global React providers (e.g., QueryClientProvider).
 * `src/lib/`: Utility functions.
+* `src/lib/middleware/`: Application-level middleware, HOCs, and wrappers (RBAC, validation).
 * `src/lib/store/`: Zustand state stores.
 * `src/hooks/`: Custom React hooks.
 * `src/services/`: All backend API calls must be defined here. Do not inline `fetch` or `axios` calls inside components.
 * `src/types/`: TypeScript interfaces and models.
+* `src/proxy.ts`: Next.js 16 Network Boundary proxy. Do not rename to `middleware.ts`.
+
+## 6. Architecture Constraints
+* **Proxy Layer (`src/proxy.ts`)**: Pure network boundary executed at the edge. Only use for `clerkMiddleware()` checks, basic edge redirects, and global headers.
+* **Application Middleware (`src/lib/middleware/`)**: Node.js/React environment logic. Use for RBAC (Admin, Creator, Student checks), TanStack Query prefetching, data validation, and deeper business logic.
 
 ## 2. API Endpoint Verification
 **CRITICAL RULE:** Every time you add a new feature or fix an existing feature on the frontend, you MUST verify that the API endpoints in the frontend code and documentations are consistent with the API endpoints defined by the backend. 
