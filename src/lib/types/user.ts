@@ -7,6 +7,18 @@ export type BanState =
   | "BANNED_7D"
   | "PERMANENT_BAN";
 
+export type BanDetails = {
+  bannedAt: string;
+  duration: string;
+  durationDays: number;
+  cooldownExpiresAt: string;
+  reason: string;
+  ruleViolated: string;
+  issuedBy: string;
+  cooldownRemaining?: string;
+  readOnlyRestriction?: string;
+};
+
 /** Raw user payload from GET /users/me/ (Django REST). */
 export type ApiUser = {
   id: string;
@@ -16,6 +28,7 @@ export type ApiUser = {
   ban_state: BanState;
   bio?: string | null;
   follower_count?: number;
+  ban_details?: BanDetails;
 };
 
 export type AppUser = {
@@ -26,6 +39,7 @@ export type AppUser = {
   banState: BanState;
   bio?: string;
   followerCount?: number;
+  banDetails?: BanDetails;
 };
 
 export function mapApiUser(raw: ApiUser): AppUser {
@@ -37,6 +51,7 @@ export function mapApiUser(raw: ApiUser): AppUser {
     banState: raw.ban_state,
     bio: raw.bio ?? undefined,
     followerCount: raw.follower_count,
+    banDetails: raw.ban_details,
   };
 }
 

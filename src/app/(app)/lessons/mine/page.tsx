@@ -5,6 +5,7 @@ import {
   PageHeader,
   SubNav,
 } from "@/components/ui";
+import { requireRole } from "@/lib/auth";
 import { lessons } from "@/lib/mock-data";
 
 export default async function MyLessonsPage({
@@ -12,16 +13,20 @@ export default async function MyLessonsPage({
 }: {
   searchParams: Promise<{ state?: string }>;
 }) {
+  const user = await requireRole(["CREATOR"]);
   const { state } = await searchParams;
   const active =
     (state?.toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED") || "PUBLISHED";
-  const filtered = lessons.filter((l) => l.state === active);
+
+  const filtered = lessons.filter(
+    (l) => l.state === active && l.authorId === user.id,
+  );
 
   return (
     <div>
       <PageHeader
         title="My lessons"
-        description="Manage Draft, Published, and Archived lessons."
+        description="Manage your Draft, Published, and Archived lessons."
         actions={<Button href="/lessons/new">New lesson</Button>}
       />
       <SubNav

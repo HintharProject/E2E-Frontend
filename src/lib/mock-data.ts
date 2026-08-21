@@ -10,6 +10,18 @@ export type LessonState = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 export type ReportStatus = "PENDING" | "RESOLVED" | "DISMISSED";
 export type ReportTarget = "POST" | "LESSON" | "USER";
 
+export type BanDetails = {
+  bannedAt: string;
+  duration: string;
+  durationDays: number;
+  cooldownExpiresAt: string;
+  reason: string;
+  ruleViolated: string;
+  issuedBy: string;
+  cooldownRemaining?: string;
+  readOnlyRestriction?: string;
+};
+
 export type User = {
   id: string;
   displayName: string;
@@ -18,6 +30,7 @@ export type User = {
   banState: BanState;
   bio?: string;
   followerCount?: number;
+  banDetails?: BanDetails;
 };
 
 export type Subject = { id: string; name: string };
@@ -165,6 +178,36 @@ export const users: User[] = [
     role: "STUDENT",
     banState: "WARNING",
     bio: "Sharing notes; warned once for spam links.",
+    banDetails: {
+      bannedAt: "2026-08-10T17:00:00Z",
+      duration: "Account Warning (Formal Notice)",
+      durationDays: 0,
+      cooldownExpiresAt: "2026-09-10T17:00:00Z",
+      reason: "Off-topic promotional links in lesson comment sections.",
+      ruleViolated: "Community Guidelines — Section 3.1: Off-topic Promotion",
+      issuedBy: "Alex Admin (Staff Moderator)",
+      cooldownRemaining: "Warning active on record for 30 days",
+      readOnlyRestriction: "Full write access maintained. Further infractions will incur a temporary or permanent write lock.",
+    },
+  },
+  {
+    id: "u-student3",
+    displayName: "Jordan Justice",
+    imageUrl: "https://api.dicebear.com/9.x/thumbs/svg?seed=Jordan",
+    role: "STUDENT",
+    banState: "BANNED_7D",
+    bio: "Undergraduate student studying computer science & discrete math.",
+    banDetails: {
+      bannedAt: "2026-08-18T10:30:00Z",
+      duration: "7 Days (Temporary Suspension)",
+      durationDays: 7,
+      cooldownExpiresAt: "2026-08-25T10:30:00Z",
+      reason: "Repeatedly posting promotional referral links and unauthorized commercial spam across calculus forum threads.",
+      ruleViolated: "Community Guidelines — Section 3.2: Commercial Spam & Unsolicited Links",
+      issuedBy: "Alex Admin (Staff Moderator)",
+      cooldownRemaining: "4 days remaining",
+      readOnlyRestriction: "Read-only restriction active. Creating posts, writing comments, voting, and editing are locked until the cooldown concludes.",
+    },
   },
 ];
 
@@ -382,6 +425,27 @@ export const studyPlans: StudyPlan[] = [
     isPublic: false,
     lessonIds: ["l2"],
   },
+  {
+    id: "sp3",
+    title: "Undergrad Math & CS Foundations",
+    ownerId: "u-student1",
+    isPublic: true,
+    lessonIds: ["l1", "l2"],
+  },
+  {
+    id: "sp4",
+    title: "Ecology Field Preparation",
+    ownerId: "u-student1",
+    isPublic: false,
+    lessonIds: ["l3"],
+  },
+  {
+    id: "sp5",
+    title: "Curriculum Showcase",
+    ownerId: "u-creator1",
+    isPublic: true,
+    lessonIds: ["l1", "l2"],
+  },
 ];
 
 export const savedSessions: SavedSession[] = [
@@ -400,6 +464,30 @@ export const savedSessions: SavedSession[] = [
     isPublic: false,
     postIds: ["p5"],
     lessonIds: ["l3"],
+  },
+  {
+    id: "ss3",
+    title: "Weekly Problem Solving Set",
+    ownerId: "u-student1",
+    isPublic: true,
+    postIds: ["p1", "p4"],
+    lessonIds: ["l1"],
+  },
+  {
+    id: "ss4",
+    title: "Personal Study Reference",
+    ownerId: "u-student1",
+    isPublic: false,
+    postIds: ["p2"],
+    lessonIds: ["l2"],
+  },
+  {
+    id: "ss5",
+    title: "Casey's Teaching Archive",
+    ownerId: "u-creator1",
+    isPublic: true,
+    postIds: ["p4"],
+    lessonIds: ["l1", "l2"],
   },
 ];
 
@@ -440,6 +528,15 @@ export const reports: Report[] = [
     status: "DISMISSED",
     createdAt: "2026-08-09T08:00:00Z",
   },
+  {
+    id: "r5",
+    targetType: "USER",
+    targetId: "u-student3",
+    reporterId: "u-creator1",
+    reason: "Mass posting external discord affiliate links in comments",
+    status: "RESOLVED",
+    createdAt: "2026-08-18T09:15:00Z",
+  },
 ];
 
 export const auditLogs: AuditLog[] = [
@@ -463,6 +560,13 @@ export const auditLogs: AuditLog[] = [
     action: "ARCHIVE_LESSON",
     target: "lesson:l5",
     createdAt: "2026-07-15T10:00:00Z",
+  },
+  {
+    id: "a4",
+    adminId: "u-admin",
+    action: "BAN_7D",
+    target: "user:u-student3",
+    createdAt: "2026-08-18T10:30:00Z",
   },
 ];
 

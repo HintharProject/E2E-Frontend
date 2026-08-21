@@ -3,10 +3,11 @@
 import { UserButton } from "@clerk/nextjs";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useState, useTransition } from "react";
 import { Avatar, Badge } from "@/components/ui";
 import { useAppUser, useAuthSource } from "@/components/user-provider";
 import { isWriteLocked } from "@/lib/types/user";
+import { setMockUserCookieOnly } from "@/lib/auth/actions";
 
 type NavItem = {
   href: string;
@@ -27,7 +28,7 @@ const primaryNav: NavItem[] = [
   {
     href: "/lessons/mine",
     label: "My Lessons",
-    roles: ["CREATOR", "ADMIN"],
+    roles: ["CREATOR"],
     match: "/lessons/mine",
   },
   {
@@ -58,12 +59,20 @@ export function AppHeader() {
   const user = useAppUser();
   const authSource = useAuthSource();
   const [q, setQ] = useState("");
+  const [isPending, startTransition] = useTransition();
   const writeLocked = isWriteLocked(user.banState);
 
   function onSearch(e: FormEvent) {
     e.preventDefault();
     const query = q.trim();
     router.push(query ? `/search?q=${encodeURIComponent(query)}` : "/search");
+  }
+
+  function handleRoleSwitch(targetUserId: string) {
+    startTransition(async () => {
+      await setMockUserCookieOnly(targetUserId);
+      router.refresh();
+    });
   }
 
   const visibleNav = primaryNav.filter((item) => {
@@ -100,6 +109,28 @@ export function AppHeader() {
             />
           </form>
           <div className="ml-auto flex items-center gap-2">
+            {authSource === "mock" && (
+              <div className="hidden items-center gap-1.5 lg:flex">
+                <span className="text-[11px] font-semibold uppercase tracking-wider text-ink-muted">
+                  Role:
+                </span>
+                <select
+                  aria-label="Switch Mock Role"
+                  value={user.id}
+                  disabled={isPending}
+                  onChange={(e) => handleRoleSwitch(e.target.value)}
+                  className="rounded-full border border-brand/40 bg-brand-soft/70 px-2.5 py-1 text-xs font-semibold text-brand-dark outline-none cursor-pointer hover:border-brand transition"
+                >
+                  <option value="u-student1">🎓 Student (Sam)</option>
+                  <option value="u-creator1">🎨 Creator (Casey)</option>
+                  <option value="u-admin">🛡️ Admin (Alex)</option>
+                  <option value="u-creator2">🧪 Creator (Morgan)</option>
+                  <option value="u-student2">⚠️ Student (Riley - Warned)</option>
+                  <option value="u-student3">🚫 Student (Jordan - Banned 7D)</option>
+                </select>
+              </div>
+            )}
+
             <Link
               href={`/users/${user.id}`}
               className="flex items-center gap-2 rounded-full border border-line bg-white py-1 pl-1 pr-3 hover:border-brand/40"
@@ -108,14 +139,16 @@ export function AppHeader() {
               <span className="hidden text-sm font-semibold sm:inline">
                 {user.displayName}
               </span>
-              <Badge tone="brand">{user.role}</Badge>
+              <Badge tone={user.role === "ADMIN" ? "neutral" : "brand"}>
+                {user.role}
+              </Badge>
             </Link>
             {authSource !== "mock" ? (
               <ClerkUserMenu />
             ) : (
               <Link
                 href="/sign-in"
-                className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/40"
+                className="rounded-lg border border-line bg-white px-3 py-1.5 text-xs font-semibold text-ink-muted hover:border-brand/40 hover:text-brand-dark transition"
               >
                 Sign out
               </Link>

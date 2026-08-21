@@ -6,7 +6,7 @@ import {
   clerkFallbackUser,
 } from "@/lib/auth/clerk-fallback";
 import { getMockSessionUser } from "@/lib/auth/mock";
-import { useMockData } from "@/lib/data-source";
+import { isMockMode } from "@/lib/data-source";
 import {
   canAccessCreatorStudio,
   isAdmin,
@@ -22,8 +22,9 @@ export type AuthenticatedSession = {
 };
 
 export async function requireSession(): Promise<AuthenticatedSession> {
-  if (useMockData()) {
-    return { user: getMockSessionUser(), source: "mock" };
+  if (isMockMode()) {
+    const user = await getMockSessionUser();
+    return { user, source: "mock" };
   }
 
   const { userId, getToken } = await auth();

@@ -1,10 +1,11 @@
-import { requireCreatorOrAdmin } from "@/lib/auth";
+import { requireRole } from "@/lib/auth";
 
 export default async function MyLessonsLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireCreatorOrAdmin();
+  await requireRole(["CREATOR"]);
   return children;
 }
+

@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-function useMockData(): boolean {
+function checkMockMode(): boolean {
   const flag = process.env.USE_MOCK_DATA?.trim().toLowerCase();
   if (flag === "false" || flag === "0") return false;
   return true;
@@ -9,7 +9,7 @@ function useMockData(): boolean {
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
 
-export default useMockData()
+export default checkMockMode()
   ? function middleware() {
       return NextResponse.next();
     }

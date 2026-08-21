@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Outfit } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { clerkAppearance } from "@/lib/clerk-appearance";
-import { useMockData } from "@/lib/data-source";
+import { isMockMode } from "@/lib/data-source";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -35,7 +35,7 @@ export default function RootLayout({
     </html>
   );
 
-  if (useMockData()) {
+  if (isMockMode()) {
     return body;
   }
 
