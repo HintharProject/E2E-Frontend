@@ -1,12 +1,7 @@
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import Link from "next/link";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, Subject, Level, Tag } from "@/types";
-
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
+import { CreateLessonForm } from "@/components/features/lessons/create-lesson-form";
 
 export default async function NewLessonPage() {
   const [subjectsRes, levelsRes, tagsRes] = await Promise.all([
@@ -17,11 +12,7 @@ export default async function NewLessonPage() {
     { data: [] as Subject[] },
     { data: [] as Level[] },
     { data: [] as Tag[] }
-  ]);
-
-  const subjects = subjectsRes.data;
-  const levels = levelsRes.data;
-  const tags = tagsRes.data;
+  ] as const);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -29,73 +20,11 @@ export default async function NewLessonPage() {
         title="New lesson"
         description="Subject and Level are required. Videos must be YouTube/playlist URLs — no direct video upload."
       />
-      <form className="space-y-4 rounded-2xl border border-line bg-card p-6">
-        <Field label="Title (max 100)">
-          <input className={inputClass} maxLength={100} required />
-        </Field>
-        <Field label="Body (max 5000)">
-          <textarea className={`${inputClass} min-h-44`} maxLength={5000} required />
-        </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Subject *">
-            <select className={inputClass} required defaultValue="">
-              <option value="">Select…</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Level *">
-            <select className={inputClass} required defaultValue="">
-              <option value="">Select…</option>
-              {levels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </div>
-        <Field label="Tags">
-          <select className={inputClass} defaultValue="">
-            <option value="">Optional…</option>
-            {tags.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Embedded video URL (YouTube / playlist)">
-          <input
-            className={inputClass}
-            placeholder="https://www.youtube.com/…"
-            type="url"
-          />
-        </Field>
-        <Field label="Resources (max 5 · 20MB · pdf/docx/pptx/zip)">
-          <input
-            type="file"
-            multiple
-            accept=".pdf,.docx,.pptx,.zip"
-            className="text-sm"
-          />
-        </Field>
-        <Field label="Initial state">
-          <select className={inputClass} defaultValue="DRAFT">
-            <option value="DRAFT">Draft</option>
-            <option value="PUBLISHED">Published</option>
-          </select>
-        </Field>
-        <div className="flex gap-2 pt-2">
-          <Button type="submit">Save (mock)</Button>
-          <Button variant="secondary" nativeButton={false} render={<Link href="/lessons/mine" />}>
-            Cancel
-          </Button>
-        </div>
-      </form>
+      <CreateLessonForm 
+        subjects={subjectsRes.data} 
+        levels={levelsRes.data} 
+        tags={tagsRes.data} 
+      />
     </div>
   );
 }

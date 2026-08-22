@@ -68,6 +68,7 @@ export interface Comment {
   created_at: string;
   updated_at: string;
   parent?: string | null;
+  reply_count?: number;
 }
 
 export interface Lesson {

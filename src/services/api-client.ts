@@ -35,13 +35,15 @@ export async function apiFetch<T>(
 
   try {
     const url = `${API_BASE_URL}${path}`;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    };
+    const headers = new Headers(options?.headers);
+
+    // If body is FormData, fetch will automatically set Content-Type with the correct boundary.
+    if (!(options?.body instanceof FormData) && !headers.has("Content-Type")) {
+      headers.set("Content-Type", "application/json");
+    }
 
     if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
+      headers.set("Authorization", `Bearer ${token}`);
     }
 
     const response = await fetch(url, {

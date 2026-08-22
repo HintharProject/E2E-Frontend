@@ -3,6 +3,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Post, Lesson } from "@/types";
+import { PostCardVote } from "./posts/post-card-vote";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -82,9 +83,10 @@ export function PostCard({ post }: { post: Post }) {
           <Badge key={t.id} variant="outline">#{t.name}</Badge>
         ))}
         {post.post_type !== "ANNOUNCEMENT" ? (
-          <span className="ml-auto text-xs font-semibold text-ink-muted">
-            ▲ {post.vote_count ?? 0} · {post.comment_count ?? 0} comments
-          </span>
+          <div className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-muted">
+            <PostCardVote postId={post.id} voteCount={post.vote_count ?? 0} />
+            <span>· {post.comment_count ?? 0} comments</span>
+          </div>
         ) : (
           <span className="ml-auto text-xs font-semibold text-ink-muted">
             {post.comment_count ?? 0} comments
