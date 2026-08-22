@@ -34,7 +34,11 @@ E2E is a minimal, robust platform focused on creator-led learning and community-
 
 ## 6. Test Accounts (Password: `123teste2e123`)
 - **Admin**: `dev.admin.e2e@gmail.com`
-- **Creator**: `dev.admin.e2e+creator1@gmail.com`
-- **Student**: `dev.admin.e2e+student1@gmail.com`
+- **Creator**: `dev.admin.e2e+creator1@gmail.com`, `dev.admin.e2e+creator2@gmail.com`
+- **Student**: `dev.admin.e2e+student1@gmail.com`, `dev.admin.e2e+student2@gmail.com`
+
+## 7. State Management Discipline (SMD)
+- **TanStack Query (React Query)**: MUST be used exclusively for **Server State**. All data fetching, caching, pagination (`useInfiniteQuery`), and optimistic UI updates (e.g., voting, following) should be managed via React Query. Do not duplicate server data in local state stores.
+- **Zustand**: MUST be used exclusively for **Client State**. Use Zustand only for transient UI states that need to be globally accessible (e.g., modal visibility, mobile sidebar toggle, theme preferences, or multi-step form state before submission). 
 
 > **Note on Endpoints**: For full API and product details, reference the `.md` documents in `docs/frontend_handoff/`.

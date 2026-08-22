@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 
 function checkMockMode(): boolean {
   const flag = process.env.USE_MOCK_DATA?.trim().toLowerCase();
-  if (flag === "false" || flag === "0") return false;
-  return true;
+  if (flag === "true" || flag === "1") return true;
+  return false;
 }
 
 const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
