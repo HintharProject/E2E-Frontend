@@ -26,8 +26,11 @@ export default async function LessonDetailPage(props: {
   let lesson: Lesson;
   try {
     lesson = await apiFetch<Lesson>(`/lessons/${id}/`, token);
-  } catch (error) {
-    notFound();
+  } catch (error: any) {
+    if (error?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
   const author = lesson.author_details;
@@ -97,8 +100,8 @@ export default async function LessonDetailPage(props: {
                 key={file.id}
                 className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-brand-dark"
               >
-                <a href={file.file} target="_blank" rel="noopener noreferrer">
-                  {file.filename} ({Math.round(file.file_size / 1024)} KB)
+                <a href={file.file_url} target="_blank" rel="noopener noreferrer">
+                  {file.file_name}
                 </a>
               </li>
             ))}

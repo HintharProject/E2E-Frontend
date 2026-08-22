@@ -28,11 +28,14 @@ export default async function UserProfilePage(props: {
   let profile: UserPublic;
   try {
     profile = await apiFetch<UserPublic>(`/users/${id}/`, token);
-  } catch (error) {
-    notFound();
+  } catch (error: any) {
+    if (error?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
-  const isSelf = clerkUser?.id === profile.id;
+  const isSelf = clerkUser?.id === profile.clerk_id;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">

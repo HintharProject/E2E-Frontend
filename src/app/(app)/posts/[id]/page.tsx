@@ -32,8 +32,11 @@ export default async function PostDetailPage(props: {
   
   try {
     post = await apiFetch<Post>(`/posts/${id}/`, token);
-  } catch (error) {
-    notFound();
+  } catch (error: any) {
+    if (error?.status === 404) {
+      notFound();
+    }
+    throw error;
   }
 
   const author = post.author_details;

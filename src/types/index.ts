@@ -5,6 +5,7 @@ export type StateEnum = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
 export interface UserPublic {
   id: string;
+  clerk_id: string;
   display_name: string;
   profile_image_url: string | null;
   role: RoleEnum;
@@ -30,10 +31,9 @@ export interface Tag {
 
 export interface LessonAttachment {
   id: string;
-  lesson: string;
-  file: string;
-  filename: string;
-  file_size: number;
+  lesson?: string; // Sometimes omitted or just string ID
+  file_url: string;
+  file_name: string;
 }
 
 export interface Post {
@@ -98,4 +98,39 @@ export interface PaginatedMeta {
 export interface PaginatedResponse<T> {
   data: T[];
   meta: PaginatedMeta;
+}
+
+export interface StudyPlanItem {
+  id: string;
+  study_plan: string;
+  lesson: string;
+  added_at: string;
+}
+
+export interface StudyPlan {
+  id: string;
+  user: string;
+  title: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  items: StudyPlanItem[];
+}
+
+export interface SavedSessionItem {
+  id: string;
+  saved_session: string;
+  post: string | null;
+  lesson: string | null;
+  added_at: string;
+}
+
+export interface SavedSession {
+  id: string;
+  user: string;
+  title: string;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+  items: SavedSessionItem[];
 }
