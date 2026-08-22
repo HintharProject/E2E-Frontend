@@ -5,7 +5,7 @@ import {
   parseFilterList,
   serializeFilterList,
 } from "@/lib/filter-params";
-import { levels, subjects, tags } from "@/lib/mock-data";
+import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
 
 type FilterSidebarProps = {
   showPostType?: boolean;
@@ -61,6 +61,10 @@ export function FilterSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const { data: subjects = [] } = useSubjects();
+  const { data: levels = [] } = useLevels();
+  const { data: tags = [] } = useTags();
 
   const selectedSubjects = parseFilterList(searchParams.get("subject"));
   const selectedLevels = parseFilterList(searchParams.get("level"));

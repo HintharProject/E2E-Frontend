@@ -3,6 +3,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { Geist, Geist_Mono, Montserrat, Manrope } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { Providers } from "./providers";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
@@ -15,7 +16,7 @@ export const metadata: Metadata = {
     "Forum, lessons, and study plans for creator-led learning and community Q&A.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <ClerkProvider
       signInUrl="/sign-in"
@@ -34,7 +35,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           manropeHeading.variable
         )}
       >
-        <body className="min-h-full flex flex-col">{children}</body>
+        <body className="min-h-full flex flex-col">
+          <Providers>{children}</Providers>
+        </body>
       </html>
     </ClerkProvider>
   );

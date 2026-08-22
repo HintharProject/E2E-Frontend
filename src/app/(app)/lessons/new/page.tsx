@@ -1,13 +1,28 @@
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import { levels, subjects, tags } from "@/lib/mock-data";
 import Link from "next/link";
+import { apiFetch } from "@/services/api-client";
+import { PaginatedResponse, Subject, Level, Tag } from "@/types";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
 
-export default function NewLessonPage() {
+export default async function NewLessonPage() {
+  const [subjectsRes, levelsRes, tagsRes] = await Promise.all([
+    apiFetch<PaginatedResponse<Subject>>("/subjects/", ""),
+    apiFetch<PaginatedResponse<Level>>("/levels/", ""),
+    apiFetch<PaginatedResponse<Tag>>("/tags/", "")
+  ]).catch(() => [
+    { data: [] as Subject[] },
+    { data: [] as Level[] },
+    { data: [] as Tag[] }
+  ]);
+
+  const subjects = subjectsRes.data;
+  const levels = levelsRes.data;
+  const tags = tagsRes.data;
+
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <PageHeader

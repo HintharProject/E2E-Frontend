@@ -2,13 +2,9 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import { currentUser } from "@clerk/nextjs/server";
-import {
-  getPost,
-  levels,
-  subjects,
-  tags,
-} from "@/lib/mock-data";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { apiFetch } from "@/services/api-client";
+import { Post, PaginatedResponse, Subject, Level, Tag } from "@/types";
 import Link from "next/link";
 
 const inputClass =
@@ -18,19 +14,42 @@ export default async function EditPostPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const post = getPost(id);
-  if (!post) notFound();
+  const { getToken } = await auth();
+  const token = await getToken();
+  
+  if (!token) notFound();
+
+  let post: Post;
+  try {
+    post = await apiFetch<Post>(`/posts/${id}/`, token);
+  } catch (error) {
+    notFound();
+  }
   
   const clerkUser = await currentUser();
   const user = clerkUser ? { role: "STUDENT" } : { role: "ADMIN" };
   const canAnnounce = user.role === "CREATOR" || user.role === "ADMIN";
+
+  const [subjectsRes, levelsRes, tagsRes] = await Promise.all([
+    apiFetch<PaginatedResponse<Subject>>("/subjects/", ""),
+    apiFetch<PaginatedResponse<Level>>("/levels/", ""),
+    apiFetch<PaginatedResponse<Tag>>("/tags/", "")
+  ]).catch(() => [
+    { data: [] as Subject[] },
+    { data: [] as Level[] },
+    { data: [] as Tag[] }
+  ]);
+
+  const subjects = subjectsRes.data;
+  const levels = levelsRes.data;
+  const tags = tagsRes.data;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <PageHeader title="Edit post" description="Owner-only mock edit form." />
       <form className="space-y-4 rounded-2xl border border-line bg-card p-6">
         <Field label="Post type">
-          <select className={inputClass} defaultValue={post.postType}>
+          <select className={inputClass} defaultValue={post.post_type}>
             <option value="QUESTION">Question</option>
             <option value="SHARING">Sharing</option>
             {canAnnounce ? (
@@ -56,7 +75,7 @@ export default async function EditPostPage(props: {
           <Field label="Subject">
             <select
               className={inputClass}
-              defaultValue={post.subjectId ?? ""}
+              defaultValue={post.subject ?? ""}
             >
               <option value="">None</option>
               {subjects.map((s) => (
@@ -67,7 +86,7 @@ export default async function EditPostPage(props: {
             </select>
           </Field>
           <Field label="Level">
-            <select className={inputClass} defaultValue={post.levelId ?? ""}>
+            <select className={inputClass} defaultValue={post.level ?? ""}>
               <option value="">None</option>
               {levels.map((l) => (
                 <option key={l.id} value={l.id}>
@@ -78,7 +97,7 @@ export default async function EditPostPage(props: {
           </Field>
         </div>
         <Field label="Tags">
-          <select className={inputClass} defaultValue={post.tagIds[0] ?? ""}>
+          <select className={inputClass} defaultValue={post.tags_data?.[0]?.id ?? ""}>
             <option value="">None</option>
             {tags.map((t) => (
               <option key={t.id} value={t.id}>

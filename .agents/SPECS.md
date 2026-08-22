@@ -11,7 +11,7 @@ E2E is a minimal, robust platform focused on creator-led learning and community-
 - **Storage Latency**: File attachments are served via Backblaze B2. Use optimistic UI updates and skeleton loaders to mask 200-300ms latencies.
 
 ## 3. Data Flow & Endpoints
-- **Response Format**: Paginated list endpoints return `{ count, next, previous, results: [...] }`. TanStack Query MUST be used to manage this pagination and handle `useInfiniteQuery` where appropriate.
+- **Response Format**: Paginated list endpoints return `{ data: [...], meta: { total_count, next, previous } }`. TanStack Query MUST be used to manage this pagination and handle `useInfiniteQuery` where appropriate.
 - **Error Format**: `{ "error": { "code": "...", "message": "...", "details": {...} } }`.
 - **Idempotency**: Voting, following, and reporting are idempotent `POST` endpoints. Do not POST twice to toggle. Send a `DELETE` request to undo an action. Optimistic updates should be implemented via TanStack Query.
 - **Search**: Do not use a unified search endpoint. Use `?search=keyword` on `/posts/` or `/lessons/` endpoints depending on the active UI view.

@@ -5,17 +5,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { currentUser } from "@clerk/nextjs/server";
-import { studyPlans } from "@/lib/mock-data";
 
 export default async function StudyPlansPage() {
-  // Use Clerk currentUser for basic auth check or fallback to mock user
   const clerkUser = await currentUser();
-  const mockUserId = "u1"; // fallback for testing UI
-  const userId = clerkUser?.id || mockUserId;
+  const userId = clerkUser?.id;
 
-  const mine = studyPlans.filter((p) => p.ownerId === userId);
-  const hasEmpty = mine.some((p) => p.lessonIds.length === 0);
-  const atCap = mine.length >= 3;
+  // TODO: Fetch study plans from API in Phase 6
+  const mine: any[] = [];
+  const hasEmpty = false;
+  const atCap = false;
   const canCreate = !atCap && !hasEmpty;
 
   return (

@@ -35,14 +35,19 @@ export async function apiFetch<T>(
 
   try {
     const url = `${API_BASE_URL}${path}`;
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    };
+
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        ...options?.headers,
-      },
+      headers,
     });
 
     if (!response.ok) {
@@ -84,4 +89,18 @@ export async function apiFetch<T>(
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+/**
+ * Utility to build query strings from an object, filtering out null/undefined.
+ */
+export function buildQueryString(params: Record<string, string | number | boolean | null | undefined>): string {
+  const searchParams = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.append(key, String(value));
+    }
+  }
+  const query = searchParams.toString();
+  return query ? `?${query}` : "";
 }

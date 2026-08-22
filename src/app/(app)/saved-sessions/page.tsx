@@ -5,18 +5,15 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { currentUser } from "@clerk/nextjs/server";
-import { savedSessions } from "@/lib/mock-data";
 
 export default async function SavedSessionsPage() {
   const clerkUser = await currentUser();
-  const mockUserId = "u1"; // fallback for testing UI
-  const userId = clerkUser?.id || mockUserId;
+  const userId = clerkUser?.id;
 
-  const mine = savedSessions.filter((s) => s.ownerId === userId);
-  const hasEmpty = mine.some(
-    (s) => s.postIds.length === 0 && s.lessonIds.length === 0
-  );
-  const atCap = mine.length >= 3;
+  // TODO: Fetch saved sessions from API in Phase 6
+  const mine: any[] = [];
+  const hasEmpty = false;
+  const atCap = false;
   const canCreate = !atCap && !hasEmpty;
 
   return (

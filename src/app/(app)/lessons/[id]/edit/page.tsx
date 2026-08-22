@@ -2,7 +2,9 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
-import { getLesson, levels, subjects, tags } from "@/lib/mock-data";
+import { auth } from "@clerk/nextjs/server";
+import { apiFetch } from "@/services/api-client";
+import { Lesson, PaginatedResponse, Subject, Level, Tag } from "@/types";
 import Link from "next/link";
 
 const inputClass =
@@ -12,8 +14,31 @@ export default async function EditLessonPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const lesson = getLesson(id);
-  if (!lesson) notFound();
+  const { getToken } = await auth();
+  const token = await getToken();
+
+  if (!token) notFound();
+
+  let lesson: Lesson;
+  try {
+    lesson = await apiFetch<Lesson>(`/lessons/${id}/`, token);
+  } catch (error) {
+    notFound();
+  }
+
+  const [subjectsRes, levelsRes, tagsRes] = await Promise.all([
+    apiFetch<PaginatedResponse<Subject>>("/subjects/", ""),
+    apiFetch<PaginatedResponse<Level>>("/levels/", ""),
+    apiFetch<PaginatedResponse<Tag>>("/tags/", "")
+  ]).catch(() => [
+    { data: [] as Subject[] },
+    { data: [] as Level[] },
+    { data: [] as Tag[] }
+  ]);
+
+  const subjects = subjectsRes.data;
+  const levels = levelsRes.data;
+  const tags = tagsRes.data;
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
@@ -38,7 +63,7 @@ export default async function EditLessonPage(props: {
         </Field>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Subject *">
-            <select className={inputClass} defaultValue={lesson.subjectId}>
+            <select className={inputClass} defaultValue={lesson.subject ?? ""}>
               {subjects.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -47,7 +72,7 @@ export default async function EditLessonPage(props: {
             </select>
           </Field>
           <Field label="Level *">
-            <select className={inputClass} defaultValue={lesson.levelId}>
+            <select className={inputClass} defaultValue={lesson.level ?? ""}>
               {levels.map((l) => (
                 <option key={l.id} value={l.id}>
                   {l.name}
@@ -57,7 +82,7 @@ export default async function EditLessonPage(props: {
           </Field>
         </div>
         <Field label="Tags">
-          <select className={inputClass} defaultValue={lesson.tagIds[0] ?? ""}>
+          <select className={inputClass} defaultValue={lesson.tags?.[0] ?? ""}>
             <option value="">None</option>
             {tags.map((t) => (
               <option key={t.id} value={t.id}>
@@ -69,7 +94,7 @@ export default async function EditLessonPage(props: {
         <Field label="Embedded video URL">
           <input
             className={inputClass}
-            defaultValue={lesson.embeddedVideoUrl ?? ""}
+            defaultValue={lesson.embedded_video_url ?? ""}
             type="url"
           />
         </Field>

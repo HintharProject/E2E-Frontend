@@ -1,9 +1,12 @@
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubNav } from "@/components/ui/sub-nav";
-import { auditLogs, formatDate, getUser } from "@/lib/mock-data";
 
 export default function AdminAuditLogsPage() {
+  
+  // TODO: Fetch from API in Phase 6/7
+  const auditLogs: any[] = [];
+  
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
@@ -29,25 +32,11 @@ export default function AdminAuditLogsPage() {
             </tr>
           </thead>
           <tbody>
+            {/*
             {auditLogs.map((log) => {
-              const admin = getUser(log.adminId);
-              return (
-                <tr key={log.id} className="border-b border-line/70 last:border-0">
-                  <td className="px-4 py-3 text-ink-muted">
-                    {formatDate(log.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 font-semibold text-ink">
-                    {admin?.displayName}
-                  </td>
-                  <td className="px-4 py-3">
-                    <Badge variant="default">{log.action}</Badge>
-                  </td>
-                  <td className="px-4 py-3 font-mono text-xs text-ink-muted">
-                    {log.target}
-                  </td>
-                </tr>
-              );
+              return null;
             })}
+            */}
           </tbody>
         </table>
       </div>
