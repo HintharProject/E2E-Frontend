@@ -34,9 +34,11 @@ import { MobileNav } from "./mobile-nav";
 /**
  * Returns the user's initials for the avatar fallback.
  */
-function getInitials(name: string): string {
+function getInitials(name?: string | null): string {
+  if (!name) return "?";
   return name
-    .split(" ")
+    .trim()
+    .split(/\s+/)
     .map((part) => part[0])
     .join("")
     .toUpperCase()
