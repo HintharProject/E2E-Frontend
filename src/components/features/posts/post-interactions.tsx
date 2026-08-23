@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useVotePost, useReport } from "@/hooks/use-interactions";
 import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
@@ -13,6 +13,13 @@ export function PostInteractions({ post }: { post: Post }) {
   // Local state for optimistic UI updates in Server Components
   const [voteCount, setVoteCount] = useState(post.vote_count ?? 0);
   const [userVote, setUserVote] = useState(post.user_vote ?? 0);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
 
   const handleVote = (value: 1 | -1 | 0) => {
     // Optimistically update
@@ -22,7 +29,10 @@ export function PostInteractions({ post }: { post: Post }) {
     setUserVote(value);
     setVoteCount((prev) => prev + diff);
 
-    voteMutation.mutate({ postId: post.id, value });
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      voteMutation.mutate({ postId: post.id, value });
+    }, 1000);
   };
 
   const handleReport = async () => {
@@ -46,14 +56,12 @@ export function PostInteractions({ post }: { post: Post }) {
           <Button 
             variant={userVote === 1 ? "default" : "secondary"} 
             onClick={() => handleVote(userVote === 1 ? 0 : 1)} 
-            disabled={voteMutation.isPending}
           >
             ▲ Upvote ({voteCount})
           </Button>
           <Button 
             variant={userVote === -1 ? "default" : "ghost"} 
             onClick={() => handleVote(userVote === -1 ? 0 : -1)} 
-            disabled={voteMutation.isPending}
           >
             ▼ Downvote
           </Button>

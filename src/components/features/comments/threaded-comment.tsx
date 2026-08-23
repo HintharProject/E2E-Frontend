@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
@@ -33,6 +33,7 @@ export function ThreadedComment({
   const isAuthor = currentUser?.id === comment.author_details?.id;
 
   const [showReplyForm, setShowReplyForm] = useState(false);
+  const hasReplies = Boolean(comment.reply_count && comment.reply_count > 0);
   const [showReplies, setShowReplies] = useState(false);
   const [replyBody, setReplyBody] = useState("");
   
@@ -45,7 +46,7 @@ export function ThreadedComment({
 
   const author = comment.author_details;
   
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(comment.id, showReplies);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(comment.id, hasReplies);
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();
@@ -91,12 +92,24 @@ export function ThreadedComment({
     });
   };
 
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, []);
+
   const handleVote = (value: 1 | -1 | 0) => {
     if (localUserVote === value) return;
     const diff = value - localUserVote;
     setLocalUserVote(value);
     setLocalVoteCount((prev) => prev + diff);
-    voteMutation.mutate({ commentId: comment.id, value });
+
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      voteMutation.mutate({ commentId: comment.id, value });
+    }, 1000);
   };
 
   const replies = data?.pages.flatMap((p) => p.data) ?? [];
@@ -140,7 +153,6 @@ export function ThreadedComment({
               <div className="flex items-center gap-1 mr-2">
                 <button
                   onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
-                  disabled={voteMutation.isPending}
                   className={`text-xs font-semibold transition-colors disabled:opacity-50 ${localUserVote === 1 ? "text-brand" : "text-ink-muted hover:text-brand"}`}
                 >
                   ▲
@@ -148,7 +160,6 @@ export function ThreadedComment({
                 <span className="text-xs font-semibold text-ink-muted">{localVoteCount}</span>
                 <button
                   onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
-                  disabled={voteMutation.isPending}
                   className={`text-xs font-semibold transition-colors disabled:opacity-50 ${localUserVote === -1 ? "text-destructive" : "text-ink-muted hover:text-destructive"}`}
                 >
                   ▼
