@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:local": "cross-env NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000/api/v1 next dev",
+    "dev:remote": "cross-env NEXT_PUBLIC_API_BASE_URL=https://e2e-backend-4t9p.onrender.com/api/v1 next dev",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
@@ -36,6 +38,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.0",
     "tailwindcss": "^4",

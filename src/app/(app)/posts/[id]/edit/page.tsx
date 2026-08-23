@@ -32,24 +32,24 @@ export default async function EditPostPage(props: {
 
   const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");
 
-  const [subjectsRes, levelsRes, tagsRes] = await (Promise.all([
-    apiFetch<PaginatedResponse<Subject>>("/subjects/", ""),
-    apiFetch<PaginatedResponse<Level>>("/levels/", ""),
-    apiFetch<PaginatedResponse<Tag>>("/tags/", "")
-  ]) as Promise<[PaginatedResponse<Subject>, PaginatedResponse<Level>, PaginatedResponse<Tag>]>).catch(() => [
-    { data: [] as Subject[] },
-    { data: [] as Level[] },
-    { data: [] as Tag[] }
-  ] as [PaginatedResponse<Subject>, PaginatedResponse<Level>, PaginatedResponse<Tag>]);
+  const [subjects, levels, tags] = await Promise.all([
+    apiFetch<Subject[]>("/subjects/", ""),
+    apiFetch<Level[]>("/levels/", ""),
+    apiFetch<Tag[]>("/tags/", token)
+  ]).catch(() => [
+    [] as Subject[],
+    [] as Level[],
+    [] as Tag[]
+  ] as [Subject[], Level[], Tag[]]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
       <PageHeader title="Edit post" description="Update your post details." />
       <UpdatePostForm
         post={post}
-        subjects={subjectsRes.data}
-        levels={levelsRes.data}
-        tags={tagsRes.data}
+        subjects={subjects}
+        levels={levels}
+        tags={tags}
         userRole={user.role}
         writeLocked={writeLocked}
       />
