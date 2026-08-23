@@ -65,6 +65,7 @@ export function CreatePostForm({
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -89,9 +90,9 @@ export function CreatePostForm({
         post_type: data.post_type,
         title: data.title,
         body: data.body,
-        ...(data.subject_id && { subject_id: data.subject_id }),
-        ...(data.level_id && { level_id: data.level_id }),
-        ...(data.tag_id && { tags: data.tag_id }),
+        ...(data.subject_id && { subject: data.subject_id }),
+        ...(data.level_id && { level: data.level_id }),
+        ...(data.tag_id && { tags: [data.tag_id] }),
       };
 
       const res = await apiFetch<Post>("/posts/", token, {
@@ -101,7 +102,7 @@ export function CreatePostForm({
 
       if (data.attachment && data.attachment.length > 0) {
         const formData = new FormData();
-        formData.append("attachment", data.attachment[0]);
+        formData.append("file", data.attachment[0]); // Backend expects 'file'
         await apiFetch(`/posts/${res.id}/attachment/`, token, {
           method: "POST",
           body: formData,
@@ -111,6 +112,27 @@ export function CreatePostForm({
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       router.push(`/posts/${res.id}`);
     } catch (err: any) {
+      if (err.name === "ApiError" && err.details) {
+        let hasFieldErrors = false;
+        Object.keys(err.details).forEach((key) => {
+          // Map backend field names to frontend schema names
+          let fieldKey = key;
+          if (key === "tags") fieldKey = "tag_id";
+          if (key === "subject") fieldKey = "subject_id";
+          if (key === "level") fieldKey = "level_id";
+          if (key === "file") fieldKey = "attachment";
+          
+          setError(fieldKey as any, { 
+            type: "server", 
+            message: Array.isArray(err.details[key]) ? err.details[key].join(" ") : err.details[key]
+          });
+          hasFieldErrors = true;
+        });
+        if (hasFieldErrors) {
+          setServerError(`Please fix the invalid fields below: ${JSON.stringify(err.details)}`);
+          return;
+        }
+      }
       setServerError(err.message || "Something went wrong.");
     } finally {
       setIsSubmitting(false);
@@ -119,7 +141,7 @@ export function CreatePostForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      {serverError && <div className="text-danger text-sm">{serverError}</div>}
+      {serverError && <div className="text-danger text-sm font-medium">{serverError}</div>}
       
       <Field label="Post type">
         <select {...register("post_type")} className={`${inputClass} ${errors.post_type ? errorClass : ""}`}>
@@ -171,12 +193,13 @@ export function CreatePostForm({
       </div>
 
       <Field label="Custom tag (optional)">
-        <select {...register("tag_id")} className={inputClass}>
+        <select {...register("tag_id")} className={`${inputClass} ${errors.tag_id ? errorClass : ""}`}>
           <option value="">Select tag...</option>
           {tags.map((t) => (
             <option key={t.id} value={t.id}>{t.name}</option>
           ))}
         </select>
+        {errors.tag_id && <p className="mt-1 text-xs text-danger">{errors.tag_id.message}</p>}
       </Field>
 
       <Field label="Attachment (optional · max 1 · 5MB · jpg/png/pdf)">
