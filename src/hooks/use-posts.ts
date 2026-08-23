@@ -10,6 +10,7 @@ interface PostQueryParams {
   level?: string;
   search?: string;
   type?: string;
+  tags?: string;
 }
 
 export function useInfinitePosts(params: PostQueryParams = {}) {

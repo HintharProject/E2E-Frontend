@@ -21,7 +21,7 @@ export function ForumFeed({
       subject: subjects.join(","),
       level: levels.join(","),
       type: postTypes.join(","),
-      // tagIds mapping if backend supports it
+      tags: tagIds.join(","),
     });
 
   const hasActiveFilters =

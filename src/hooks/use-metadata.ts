@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { Subject, Level, Tag } from "@/types";
 
@@ -29,10 +30,14 @@ export function useLevels() {
 }
 
 export function useTags() {
+  const { getToken } = useAuth();
+  
   return useQuery({
     queryKey: ["tags"],
     queryFn: async () => {
-      const res = await apiFetch<Tag[]>("/tags/", "");
+      const token = await getToken();
+      if (!token) return []; // Return empty if not authenticated
+      const res = await apiFetch<Tag[]>("/tags/", token);
       return res;
     },
     staleTime: 1000 * 60 * 60, // 1 hour
