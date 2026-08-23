@@ -42,6 +42,7 @@ export default async function ForumMainPage(props: {
             levels={levels} 
             postTypes={postTypes} 
             tagIds={tagIds} 
+            feed="main"
           />
         </div>
       </div>

@@ -25,6 +25,7 @@ export default function CreatorsFeedPage() {
           levels={[]} 
           tagIds={[]} 
           postTypes={[]} 
+          feed="creator"
         />
       </div>
     </div>

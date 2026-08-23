@@ -10,11 +10,13 @@ export function ForumFeed({
   levels,
   postTypes,
   tagIds,
+  feed,
 }: {
   subjects: string[];
   levels: string[];
   postTypes: string[];
   tagIds: string[];
+  feed?: 'main' | 'announcement' | 'creator';
 }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfinitePosts({
@@ -22,6 +24,7 @@ export function ForumFeed({
       level: levels.join(","),
       type: postTypes.join(","),
       tags: tagIds.join(","),
+      feed,
     });
 
   const hasActiveFilters =

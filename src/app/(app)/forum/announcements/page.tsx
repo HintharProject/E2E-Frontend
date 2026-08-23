@@ -25,6 +25,7 @@ export default function AnnouncementsFeedPage() {
           levels={[]} 
           tagIds={[]} 
           postTypes={["ANNOUNCEMENT"]} 
+          feed="announcement"
         />
       </div>
     </div>

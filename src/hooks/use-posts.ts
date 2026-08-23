@@ -11,6 +11,7 @@ interface PostQueryParams {
   search?: string;
   type?: string;
   tags?: string;
+  feed?: 'main' | 'announcement' | 'creator';
 }
 
 export function useInfinitePosts(params: PostQueryParams = {}) {
@@ -22,7 +23,17 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
 
-      const queryStr = buildQueryString({ ...params, page: pageParam });
+      const backendParams = {
+        search: params.search,
+        subject_id: params.subject,
+        level_id: params.level,
+        post_type: params.type,
+        tags: params.tags,
+        feed: params.feed,
+        page: pageParam,
+      };
+
+      const queryStr = buildQueryString(backendParams);
       return apiFetch<PaginatedResponse<Post>>(`/posts/${queryStr}`, token);
     },
     getNextPageParam: (lastPage, allPages) => {
