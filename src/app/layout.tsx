@@ -4,6 +4,7 @@ import { Geist, Geist_Mono, Montserrat, Manrope } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
+import { Toaster } from "@/components/ui/sonner";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       >
         <body className="min-h-full flex flex-col">
           <Providers>{children}</Providers>
+          <Toaster />
         </body>
       </html>
     </ClerkProvider>

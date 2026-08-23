@@ -4,6 +4,7 @@ import { useVotePost, useReport } from "@/hooks/use-interactions";
 import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
 import { SaveToSessionDialog } from "@/components/features/collections/save-to-session-dialog";
+import { toast } from "sonner";
 
 export function PostInteractions({ post }: { post: Post }) {
   const voteMutation = useVotePost();
@@ -27,15 +28,15 @@ export function PostInteractions({ post }: { post: Post }) {
   const handleReport = async () => {
     try {
       await reportMutation.mutateAsync({ targetId: post.id, targetType: "POST" });
-      alert("Post reported to moderation queue.");
+      toast.success("Post reported to moderation queue.");
     } catch (err: any) {
-      alert("Failed to report. You may have already reported this post.");
+      toast.error("Failed to report. You may have already reported this post.");
     }
   };
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert("Link copied to clipboard!");
+    toast.success("Link copied to clipboard!");
   };
 
   return (

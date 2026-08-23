@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +12,8 @@ import {
 } from "@/components/ui/dialog";
 import { useSavedSessions, useAddSavedSessionItem } from "@/hooks/use-collections";
 
+import { toast } from "sonner";
+
 export function SaveToSessionDialog({ postId, lessonId }: { postId?: string; lessonId?: string }) {
   const [open, setOpen] = useState(false);
   const { data: sessionsResponse, isLoading } = useSavedSessions();
@@ -19,10 +22,10 @@ export function SaveToSessionDialog({ postId, lessonId }: { postId?: string; les
   const handleSave = async (sessionId: string) => {
     try {
       await addMutation.mutateAsync({ sessionId, postId, lessonId });
-      alert("Successfully added to session!");
+      toast.success("Successfully added to session!");
       setOpen(false);
     } catch (err: any) {
-      alert("Failed to save to session. It may already be in the session, or you've reached a limit.");
+      toast.error("Failed to save to session. It may already be in the session, or you've reached a limit.");
     }
   };
 
@@ -40,7 +43,12 @@ export function SaveToSessionDialog({ postId, lessonId }: { postId?: string; les
         <div className="flex flex-col gap-3 py-4">
           {isLoading && <p className="text-sm text-ink-muted">Loading your sessions...</p>}
           {!isLoading && sessions.length === 0 && (
-            <p className="text-sm text-ink-muted">You do not have any saved sessions.</p>
+            <div className="flex flex-col items-center justify-center py-6 text-center">
+              <p className="mb-4 text-sm text-ink-muted">You do not have any saved sessions.</p>
+              <Button nativeButton={false} render={<Link href="/saved-sessions/new" />}>
+                Create a Session
+              </Button>
+            </div>
           )}
           {sessions.map((session: any) => (
             <div key={session.id} className="flex items-center justify-between rounded-lg border border-line p-3">

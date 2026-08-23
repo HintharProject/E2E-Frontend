@@ -26,7 +26,7 @@ export default async function EditPostPage(props: {
   const user = clerkUser ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" };
   
   // Verify permissions: only author or admin can edit
-  if (user.role !== "ADMIN" && post.author !== clerkUser?.id) {
+  if (user.role !== "ADMIN" && post.author_details?.clerk_id !== clerkUser?.id) {
     notFound(); // Alternatively, show a permission denied page
   }
 
