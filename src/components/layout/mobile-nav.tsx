@@ -77,7 +77,7 @@ export function MobileNav({ user }: MobileNavProps) {
               href={`/users/${user.id}`}
               onClick={closeMobileNav}
               className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                pathname.startsWith("/users/")
+                pathname === `/users/${user.id}`
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
