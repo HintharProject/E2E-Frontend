@@ -21,7 +21,7 @@ export function useTopLevelComments(postId: string) {
   });
 }
 
-export function useReplies(parentId: string) {
+export function useReplies(parentId: string, enabled: boolean = false) {
   const { getToken } = useAuth();
   return useInfiniteQuery({
     queryKey: ["replies", parentId],
@@ -36,6 +36,7 @@ export function useReplies(parentId: string) {
       if (lastPage.meta?.next) return allPages.length + 1;
       return undefined;
     },
+    enabled,
   });
 }
 

@@ -1,92 +1,18 @@
-import Link from "next/link";
-import { notFound } from "next/navigation";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { PageHeader } from "@/components/ui/page-header";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { apiFetch } from "@/services/api-client";
-import { UserPublic } from "@/types";
-import { ForumFeed } from "@/components/features/forum-feed";
-import { LessonsFeed } from "@/components/features/lessons-feed";
+import { UserProfileView } from "@/components/features/users/user-profile-view";
 
-function getInitials(name?: string | null): string {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
+/**
+ * User profile page — thin server shell.
+ *
+ * Delegates to UserProfileView (client component) which:
+ *  1. Shows an instant skeleton while fetching
+ *  2. Uses React Query cache (staleTime: 5min) for repeat visits
+ *
+ * This replaces the previous async server component that blocked for ~2-3s
+ * while awaiting currentUser() + auth() + apiFetch() sequentially.
+ */
 export default async function UserProfilePage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const clerkUser = await currentUser();
-  const { getToken } = await auth();
-  const token = await getToken();
-  
-  if (!token) notFound();
-
-  let profile: UserPublic;
-  try {
-    profile = await apiFetch<UserPublic>(`/users/${id}/`, token);
-  } catch (error: any) {
-    if (error?.status === 404) {
-      notFound();
-    }
-    throw error;
-  }
-
-  const isSelf = clerkUser?.id === profile.clerk_id;
-
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="rounded-3xl border border-line bg-card p-6 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <Avatar size="lg">
-             {profile.profile_image_url && <AvatarImage src={profile.profile_image_url} />}
-             <AvatarFallback>{getInitials(profile.display_name)}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1">
-            <PageHeader
-              title={profile.display_name}
-            />
-            <div className="mt-[-1.5rem] flex flex-wrap gap-2">
-              <Badge variant="default">{profile.role}</Badge>
-            </div>
-            <div className="mt-4 flex flex-wrap gap-2">
-              {!isSelf && profile.role === "CREATOR" ? (
-                <Button>Follow</Button>
-              ) : null}
-              {!isSelf ? <Button variant="ghost">Report profile</Button> : null}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {profile.role === "CREATOR" ? (
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
-          <section>
-            <h2 className="font-display text-2xl text-ink">Published Lessons</h2>
-            <div className="mt-6">
-              <LessonsFeed authorId={id} />
-            </div>
-          </section>
-          <section>
-            <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
-            <div className="mt-6">
-              <ForumFeed authorId={id} />
-            </div>
-          </section>
-        </div>
-      ) : (
-        <section className="mt-10">
-          <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
-          <div className="mt-6">
-            <ForumFeed authorId={id} />
-          </div>
-        </section>
-      )}
-    </div>
-  );
+  return <UserProfileView userId={id} />;
 }

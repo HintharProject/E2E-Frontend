@@ -45,7 +45,7 @@ export function ThreadedComment({
 
   const author = comment.author_details;
   
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(comment.id);
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(comment.id, showReplies);
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();

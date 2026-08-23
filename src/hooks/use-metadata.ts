@@ -9,12 +9,12 @@ export function useSubjects() {
   return useQuery({
     queryKey: ["subjects"],
     queryFn: async () => {
-      // These endpoints are public, so we don't strictly need a token for GET, but we'll send an empty string
-      // so it sends a 'Bearer ' header which backend should ignore for public endpoints.
+      // /subjects/ is AllowAny on the backend — no token needed
       const res = await apiFetch<Subject[]>("/subjects/", "");
       return res;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60, // 1 hour — almost never changes
+    gcTime: 1000 * 60 * 60 * 2,
   });
 }
 
@@ -22,10 +22,12 @@ export function useLevels() {
   return useQuery({
     queryKey: ["levels"],
     queryFn: async () => {
+      // /levels/ is AllowAny on the backend — no token needed
       const res = await apiFetch<Level[]>("/levels/", "");
       return res;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60, // 1 hour — almost never changes
+    gcTime: 1000 * 60 * 60 * 2,
   });
 }
 
@@ -40,6 +42,7 @@ export function useTags() {
       const res = await apiFetch<Tag[]>("/tags/", token);
       return res;
     },
-    staleTime: 1000 * 60 * 60, // 1 hour
+    staleTime: 1000 * 60 * 60, // 1 hour — almost never changes
+    gcTime: 1000 * 60 * 60 * 2,
   });
 }

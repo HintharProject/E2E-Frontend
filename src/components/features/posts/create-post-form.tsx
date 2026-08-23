@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import Link from "next/link";
-import { Subject, Level, Tag, Post } from "@/types";
+import { Post } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -21,15 +22,9 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
 export function CreatePostForm({
-  subjects,
-  levels,
-  tags,
   userRole,
   writeLocked,
 }: {
-  subjects: Subject[];
-  levels: Level[];
-  tags: Tag[];
   userRole: string;
   writeLocked: boolean;
 }) {
@@ -38,6 +33,10 @@ export function CreatePostForm({
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+
+  const { data: subjects = [] } = useSubjects();
+  const { data: levels = [] } = useLevels();
+  const { data: tags = [] } = useTags();
 
   const canAnnounce = userRole === "CREATOR" || userRole === "ADMIN";
   const subjectRequired = userRole === "STUDENT";

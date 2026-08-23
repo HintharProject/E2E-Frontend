@@ -1,6 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +11,7 @@ import type { Post, Lesson } from "@/types";
 import { PostCardVote } from "./posts/post-card-vote";
 import { PostAuthorActions } from "./posts/post-author-actions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { apiFetch } from "@/services/api-client";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -31,6 +35,10 @@ function formatDateStr(dateStr: string): string {
 
 export function PostCard({ post }: { post: Post }) {
   const { user } = useCurrentUser();
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  const prefetchedRef = useRef(false);
+
   const author = post.author_details;
   const isAuthor = user?.id === author?.id;
   const subject = post.subject_details;
@@ -38,8 +46,26 @@ export function PostCard({ post }: { post: Post }) {
   const tags = post.tags_data || [];
   const expiresIn = daysUntilExpiration(post.created_at);
 
+  // Prefetch post detail on hover so clicking feels instant
+  const handleMouseEnter = () => {
+    if (prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    queryClient.prefetchQuery({
+      queryKey: ["post", post.id],
+      queryFn: async () => {
+        const token = await getToken();
+        if (!token) return post; // fallback to card data if no token
+        return apiFetch<Post>(`/posts/${post.id}/`, token);
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
   return (
-    <article className="group rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)] relative">
+    <article
+      className="group rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)] relative"
+      onMouseEnter={handleMouseEnter}
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {author ? (

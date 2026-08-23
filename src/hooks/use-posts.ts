@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { PaginatedResponse, Post } from "@/types";
@@ -50,6 +50,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
 
 export function usePost(id: string) {
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ["post", id],
@@ -59,5 +60,20 @@ export function usePost(id: string) {
       return apiFetch<Post>(`/posts/${id}/`, token);
     },
     enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    // Seed with data already in the forum feed cache so navigation is instant
+    initialData: () => {
+      const allPostsQueries = queryClient.getQueriesData<{ pages: { data: Post[] }[] }>({
+        queryKey: ["posts"],
+      });
+      for (const [, data] of allPostsQueries) {
+        if (!data?.pages) continue;
+        for (const page of data.pages) {
+          const found = page.data?.find((p) => p.id === id);
+          if (found) return found;
+        }
+      }
+      return undefined;
+    },
   });
 }
