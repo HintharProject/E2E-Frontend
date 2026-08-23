@@ -67,3 +67,41 @@ export function useCreateComment() {
     },
   });
 }
+
+export function useUpdateComment() {
+  const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ commentId, body }: { commentId: string; body: string }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      return apiFetch<Comment>(`/comments/${commentId}/`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ body }),
+      });
+    },
+    onSettled: () => {
+      // Invalidate both comments and replies since we don't know the exact parent structure here easily
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+    },
+  });
+}
+
+export function useDeleteComment() {
+  const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+
+  return useMutation({
+    mutationFn: async (commentId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      await apiFetch(`/comments/${commentId}/`, token, { method: "DELETE" });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+    },
+  });
+}

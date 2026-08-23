@@ -1,9 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { Post, Lesson } from "@/types";
 import { PostCardVote } from "./posts/post-card-vote";
+import { PostAuthorActions } from "./posts/post-author-actions";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -26,14 +30,16 @@ function formatDateStr(dateStr: string): string {
 }
 
 export function PostCard({ post }: { post: Post }) {
+  const { user } = useCurrentUser();
   const author = post.author_details;
+  const isAuthor = user?.id === author?.id;
   const subject = post.subject_details;
   const level = post.level_details;
   const tags = post.tags_data || [];
   const expiresIn = daysUntilExpiration(post.created_at);
 
   return (
-    <article className="group rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]">
+    <article className="group rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)] relative">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           {author ? (
@@ -56,17 +62,20 @@ export function PostCard({ post }: { post: Post }) {
             </p>
           </div>
         </div>
-        <Badge
-          variant={
-            post.post_type === "ANNOUNCEMENT"
-              ? "default"
-              : post.post_type === "QUESTION"
-                ? "outline"
-                : "secondary"
-          }
-        >
-          {post.post_type}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {isAuthor && <PostAuthorActions postId={post.id} />}
+          <Badge
+            variant={
+              post.post_type === "ANNOUNCEMENT"
+                ? "default"
+                : post.post_type === "QUESTION"
+                  ? "outline"
+                  : "secondary"
+            }
+          >
+            {post.post_type}
+          </Badge>
+        </div>
       </div>
       <Link href={`/posts/${post.id}`} className="mt-3 block">
         <h2 className="font-display text-xl text-ink group-hover:text-brand-dark">
@@ -84,7 +93,7 @@ export function PostCard({ post }: { post: Post }) {
         ))}
         {post.post_type !== "ANNOUNCEMENT" ? (
           <div className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-muted">
-            <PostCardVote postId={post.id} voteCount={post.vote_count ?? 0} />
+            <PostCardVote postId={post.id} initialVoteCount={post.vote_count ?? 0} initialUserVote={post.user_vote} />
             <span>· {post.comment_count ?? 0} comments</span>
           </div>
         ) : (

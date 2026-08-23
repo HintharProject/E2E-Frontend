@@ -175,3 +175,27 @@ export function useDeletePost() {
     },
   });
 }
+
+export function useVoteComment() {
+  const queryClient = useQueryClient();
+  const { getToken } = useAuth();
+
+  return useMutation({
+    mutationFn: async ({ commentId, value }: { commentId: string; value: 1 | -1 | 0 }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      if (value === 0) {
+        await apiFetch(`/comments/${commentId}/vote/`, token, { method: "DELETE" });
+      } else {
+        await apiFetch(`/comments/${commentId}/vote/`, token, {
+          method: "POST",
+          body: JSON.stringify({ value }),
+        });
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["comments"] });
+      queryClient.invalidateQueries({ queryKey: ["replies"] });
+    },
+  });
+}
