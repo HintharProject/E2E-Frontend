@@ -1,15 +1,14 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist, Geist_Mono, Montserrat, Manrope } from "next/font/google";
+import { Geist_Mono, Montserrat, Manrope } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 
-const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading" });
+const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", preload: false });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
 
 export const metadata: Metadata = {
   title: "E2E — Creator-led learning",
@@ -30,7 +29,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         className={cn(
           "h-full",
           "antialiased",
-          geistSans.variable,
           geistMono.variable,
           "font-sans",
           montserrat.variable,

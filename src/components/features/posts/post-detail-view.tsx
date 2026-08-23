@@ -10,6 +10,7 @@ import { PostInteractions } from "@/components/features/posts/post-interactions"
 import { PostComments } from "@/components/features/comments/post-comments";
 import { PostAuthorActions } from "@/components/features/posts/post-author-actions";
 import { useUser } from "@clerk/nextjs";
+import { PostAttachment } from "@/components/features/posts/post-attachment";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -89,9 +90,7 @@ export function PostDetailView({ postId }: { postId: string }) {
           {post.body}
         </p>
         {post.attachment_url ? (
-          <p className="mt-4 text-sm font-semibold text-brand-dark">
-            <a href={post.attachment_url} target="_blank" rel="noopener noreferrer">View Attachment</a>
-          </p>
+          <PostAttachment url={post.attachment_url} />
         ) : null}
 
         <PostInteractions post={post} />
