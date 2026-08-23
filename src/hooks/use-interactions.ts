@@ -148,14 +148,30 @@ export function useReport() {
       if (!token) throw new Error("Unauthorized");
       
       const payload: Record<string, string> = {};
-      if (targetType === "POST") payload.reported_post_id = targetId;
-      else if (targetType === "LESSON") payload.reported_lesson_id = targetId;
-      else if (targetType === "USER") payload.reported_user_id = targetId;
+      if (targetType === "POST") payload.reported_post = targetId;
+      else if (targetType === "LESSON") payload.reported_lesson = targetId;
+      else if (targetType === "USER") payload.reported_user = targetId;
 
       await apiFetch(`/reports/`, token, {
         method: "POST",
         body: JSON.stringify(payload),
       });
+    },
+  });
+}
+
+export function useDeletePost() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (postId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      await apiFetch(`/posts/${postId}/`, token, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
     },
   });
 }

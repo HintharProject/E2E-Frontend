@@ -1,29 +1,59 @@
 "use client";
+import { useState } from "react";
 import { useVotePost, useReport } from "@/hooks/use-interactions";
 import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
+import { SaveToSessionDialog } from "@/components/features/collections/save-to-session-dialog";
 
 export function PostInteractions({ post }: { post: Post }) {
   const voteMutation = useVotePost();
   const reportMutation = useReport();
+  
+  // Local state for optimistic UI updates in Server Components
+  const [voteCount, setVoteCount] = useState(post.vote_count ?? 0);
+  const [userVote, setUserVote] = useState(post.user_vote ?? 0);
 
   const handleVote = (value: 1 | -1 | 0) => {
+    // Optimistically update
+    if (userVote === value) return; // already voted this way
+
+    const diff = value - userVote;
+    setUserVote(value);
+    setVoteCount((prev) => prev + diff);
+
     voteMutation.mutate({ postId: post.id, value });
   };
 
-  const handleReport = () => {
-    reportMutation.mutate({ targetId: post.id, targetType: "POST" });
-    alert("Post reported to moderation queue.");
+  const handleReport = async () => {
+    try {
+      await reportMutation.mutateAsync({ targetId: post.id, targetType: "POST" });
+      alert("Post reported to moderation queue.");
+    } catch (err: any) {
+      alert("Failed to report. You may have already reported this post.");
+    }
+  };
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    alert("Link copied to clipboard!");
   };
 
   return (
     <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
       {post.post_type !== "ANNOUNCEMENT" ? (
         <>
-          <Button variant="secondary" onClick={() => handleVote(1)} disabled={voteMutation.isPending}>
-            ▲ Upvote ({post.vote_count ?? 0})
+          <Button 
+            variant={userVote === 1 ? "default" : "secondary"} 
+            onClick={() => handleVote(userVote === 1 ? 0 : 1)} 
+            disabled={voteMutation.isPending}
+          >
+            ▲ Upvote ({voteCount})
           </Button>
-          <Button variant="ghost" onClick={() => handleVote(-1)} disabled={voteMutation.isPending}>
+          <Button 
+            variant={userVote === -1 ? "default" : "ghost"} 
+            onClick={() => handleVote(userVote === -1 ? 0 : -1)} 
+            disabled={voteMutation.isPending}
+          >
             ▼ Downvote
           </Button>
         </>
@@ -32,8 +62,8 @@ export function PostInteractions({ post }: { post: Post }) {
           Voting disabled on announcements
         </span>
       )}
-      <Button variant="secondary">Save to session</Button>
-      <Button variant="ghost">Share</Button>
+      <SaveToSessionDialog postId={post.id} />
+      <Button variant="ghost" onClick={handleShare}>Share</Button>
       <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
         {reportMutation.isPending ? "Reporting..." : "Report"}
       </Button>
