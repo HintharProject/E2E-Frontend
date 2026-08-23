@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
-import { auth, currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
 import { Lesson, PaginatedResponse, Subject, Level, Tag } from "@/types";
 import { isWriteLocked } from "@/types/user";
@@ -10,7 +10,7 @@ export default async function EditLessonPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const { getToken } = await auth();
+  const { getToken, userId } = await auth();
   const token = await getToken();
 
   if (!token) notFound();
@@ -22,11 +22,10 @@ export default async function EditLessonPage(props: {
     notFound();
   }
   
-  const clerkUser = await currentUser();
-  const user = clerkUser ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" };
+  const user = userId ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" };
   
   // Verify permissions: only author or admin can edit
-  if (user.role !== "ADMIN" && lesson.author !== clerkUser?.id) {
+  if (user.role !== "ADMIN" && lesson.author !== userId) {
     notFound(); // Alternatively, show a permission denied page
   }
 

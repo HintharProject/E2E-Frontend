@@ -1,13 +1,13 @@
 import { PageHeader } from "@/components/ui/page-header";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@clerk/nextjs/server";
 import { isWriteLocked } from "@/types/user";
 import { CreatePostForm } from "@/components/features/posts/create-post-form";
 
 export default async function NewPostPage() {
-  const clerkUser = await currentUser();
+  const { userId } = await auth();
 
   // fallback for UI testing without auth
-  const user = clerkUser ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" }; 
+  const user = userId ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" }; 
 
   const subjectRequired = user.role === "STUDENT";
   const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");

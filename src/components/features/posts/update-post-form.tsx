@@ -91,9 +91,9 @@ export function UpdatePostForm({
         post_type: data.post_type,
         title: data.title,
         body: data.body,
-        ...(data.subject_id && { subject_id: data.subject_id }),
-        ...(data.level_id && { level_id: data.level_id }),
-        ...(data.tag_id && { tags: data.tag_id }),
+        ...(data.subject_id && { subject: data.subject_id }),
+        ...(data.level_id && { level: data.level_id }),
+        ...(data.tag_id && { tags: [data.tag_id] }),
       };
 
       await apiFetch(`/posts/${post.id}/`, token, {
