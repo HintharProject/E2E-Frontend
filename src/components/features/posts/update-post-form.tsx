@@ -12,6 +12,7 @@ import { Subject, Level, Tag, Post } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -81,9 +82,10 @@ export function UpdatePostForm({
   });
 
   const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
-    setServerError("");
-    try {
+    // Navigate away immediately
+    router.push("/forum");
+
+    const promise = (async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
 
@@ -96,7 +98,7 @@ export function UpdatePostForm({
         ...(data.tag_id && { tags: [data.tag_id] }),
       };
 
-      await apiFetch(`/posts/${post.id}/`, token, {
+      const res = await apiFetch(`/posts/${post.id}/`, token, {
         method: "PATCH",
         body: JSON.stringify(payload),
       });
@@ -112,13 +114,32 @@ export function UpdatePostForm({
 
       queryClient.invalidateQueries({ queryKey: ["posts"] });
       queryClient.invalidateQueries({ queryKey: ["post", post.id] });
-      router.push(`/posts/${post.id}`);
-      router.refresh();
-    } catch (err: any) {
-      setServerError(err.message || "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      return res;
+    })();
+
+    const toastId = toast.loading("Saving changes...");
+
+    promise
+      .then(() => {
+        router.refresh();
+        toast.success("Changes saved successfully!", {
+          id: toastId,
+          action: {
+            label: "View",
+            onClick: () => router.push(`/posts/${post.id}`),
+          },
+        });
+      })
+      .catch((err: any) => {
+        const msg = err.details ? "Validation failed" : (err.message || "Something went wrong");
+        toast.error(`Failed to save: ${msg}`, {
+          id: toastId,
+          action: {
+            label: "Retry",
+            onClick: () => router.push(`/posts/${post.id}/edit`),
+          },
+        });
+      });
   };
 
   return (

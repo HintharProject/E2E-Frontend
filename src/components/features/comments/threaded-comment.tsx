@@ -55,14 +55,22 @@ export function ThreadedComment({
   const handleReplySubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyBody.trim()) return;
-    createComment.mutate(
-      { body: replyBody, parentId: comment.id, postId },
+    
+    const currentBody = replyBody;
+    setReplyBody("");
+    setShowReplyForm(false);
+    setShowReplies(true);
+
+    toast.promise(
+      createComment.mutateAsync({ body: currentBody, parentId: comment.id, postId }),
       {
-        onSuccess: () => {
-          setReplyBody("");
-          setShowReplyForm(false);
-          setShowReplies(true);
-        },
+        loading: "Posting reply...",
+        success: "Reply posted.",
+        error: () => {
+          setReplyBody(currentBody);
+          setShowReplyForm(true);
+          return "Failed to post reply.";
+        }
       }
     );
   };
@@ -70,25 +78,30 @@ export function ThreadedComment({
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editBody.trim()) return;
-    updateComment.mutate(
-      { commentId: comment.id, body: editBody },
+    
+    const currentBody = editBody;
+    setIsEditing(false);
+
+    toast.promise(
+      updateComment.mutateAsync({ commentId: comment.id, body: currentBody }),
       {
-        onSuccess: () => {
-          setIsEditing(false);
-          toast.success("Comment updated successfully.");
-        },
-        onError: () => toast.error("Failed to update comment."),
+        loading: "Updating comment...",
+        success: "Comment updated.",
+        error: () => {
+          setEditBody(currentBody);
+          setIsEditing(true);
+          return "Failed to update comment.";
+        }
       }
     );
   };
 
   const handleDelete = () => {
-    deleteComment.mutate(comment.id, {
-      onSuccess: () => {
-        setShowDeleteDialog(false);
-        toast.success("Comment deleted.");
-      },
-      onError: () => toast.error("Failed to delete comment."),
+    setShowDeleteDialog(false);
+    toast.promise(deleteComment.mutateAsync(comment.id), {
+      loading: "Deleting comment...",
+      success: "Comment deleted.",
+      error: "Failed to delete comment.",
     });
   };
 
@@ -133,14 +146,13 @@ export function ThreadedComment({
                 className="w-full rounded-md border border-line bg-card px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand min-h-16"
                 value={editBody}
                 onChange={(e) => setEditBody(e.target.value)}
-                disabled={updateComment.isPending}
               />
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditBody(comment.body); }} disabled={updateComment.isPending}>
+                <Button variant="ghost" size="xs" onClick={() => { setIsEditing(false); setEditBody(comment.body); }}>
                   Cancel
                 </Button>
-                <Button type="submit" size="xs" disabled={updateComment.isPending || !editBody.trim()}>
-                  {updateComment.isPending ? "Saving..." : "Save"}
+                <Button type="submit" size="xs" disabled={!editBody.trim()}>
+                  Save
                 </Button>
               </div>
             </form>
@@ -187,11 +199,11 @@ export function ThreadedComment({
                         </DialogDescription>
                       </DialogHeader>
                       <DialogFooter>
-                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)} disabled={deleteComment.isPending}>
+                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
                           Cancel
                         </Button>
-                        <Button variant="destructive" onClick={handleDelete} disabled={deleteComment.isPending}>
-                          {deleteComment.isPending ? "Deleting..." : "Delete"}
+                        <Button variant="destructive" onClick={handleDelete}>
+                          Delete
                         </Button>
                       </DialogFooter>
                     </DialogContent>
@@ -216,13 +228,12 @@ export function ThreadedComment({
             placeholder="Write a reply..."
             value={replyBody}
             onChange={(e) => setReplyBody(e.target.value)}
-            disabled={createComment.isPending}
           />
           <div className="flex justify-end gap-2">
              <Button variant="ghost" size="xs" onClick={() => setShowReplyForm(false)}>
                Cancel
              </Button>
-             <Button type="submit" size="xs" disabled={createComment.isPending || !replyBody.trim()}>
+             <Button type="submit" size="xs" disabled={!replyBody.trim()}>
                Post
              </Button>
           </div>

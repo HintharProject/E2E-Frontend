@@ -4,6 +4,7 @@ import { Virtuoso } from "react-virtuoso";
 import { useTopLevelComments, useCreateComment } from "@/hooks/use-comments";
 import { ThreadedComment } from "./threaded-comment";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -16,12 +17,18 @@ export function PostComments({ postId, initialCount }: { postId: string; initial
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!body.trim()) return;
-    createComment.mutate(
-      { postId, body },
-      {
-        onSuccess: () => setBody(""),
+    
+    const currentBody = body;
+    setBody("");
+
+    toast.promise(createComment.mutateAsync({ postId, body: currentBody }), {
+      loading: "Posting comment...",
+      success: "Comment posted successfully",
+      error: (err: any) => {
+        setBody(currentBody);
+        return "Failed to post comment";
       }
-    );
+    });
   };
 
   const comments = data?.pages.flatMap((p) => p.data) ?? [];
@@ -40,9 +47,8 @@ export function PostComments({ postId, initialCount }: { postId: string; initial
           placeholder="Write a comment..."
           value={body}
           onChange={(e) => setBody(e.target.value)}
-          disabled={createComment.isPending}
         />
-        <Button type="submit" disabled={createComment.isPending || !body.trim()}>
+        <Button type="submit" disabled={!body.trim()}>
           Post comment
         </Button>
       </form>

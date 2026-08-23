@@ -19,6 +19,7 @@ import { useUIStore } from "@/lib/store/ui-store";
 import { isWriteLocked } from "@/types/user";
 import { AppHeaderSkeleton } from "./app-header-skeleton";
 import { MobileNav } from "./mobile-nav";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // ---------------------------------------------------------------------------
 // AppHeader — Main sticky navigation
@@ -151,6 +152,7 @@ export function AppHeader() {
                   </Badge>
                 </Link>
               )}
+              <ThemeToggle />
               <UserButton
                 appearance={{
                   elements: {

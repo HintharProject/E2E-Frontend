@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -13,6 +13,7 @@ import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
+import { toast } from "sonner";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -78,10 +79,31 @@ export function CreatePostForm({
     },
   });
 
+  // Recover draft if available on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("recover") === "1") {
+      const draft = localStorage.getItem("post_draft");
+      if (draft) {
+        try {
+          const parsed = JSON.parse(draft);
+          Object.keys(parsed).forEach((key) => {
+            if (key !== "attachment") {
+              setValue(key as keyof FormValues, parsed[key]);
+            }
+          });
+        } catch (e) {
+          console.error("Failed to parse draft", e);
+        }
+      }
+    }
+  }, [setValue]);
+
   const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
-    setServerError("");
-    try {
+    // We immediately navigate away to minimize the process
+    router.push("/forum");
+
+    const promise = (async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
 
@@ -101,7 +123,7 @@ export function CreatePostForm({
 
       if (data.attachment && data.attachment.length > 0) {
         const formData = new FormData();
-        formData.append("file", data.attachment[0]); // Backend expects 'file'
+        formData.append("file", data.attachment[0]);
         await apiFetch(`/posts/${res.id}/attachment/`, token, {
           method: "POST",
           body: formData,
@@ -109,33 +131,36 @@ export function CreatePostForm({
       }
 
       queryClient.invalidateQueries({ queryKey: ["posts"] });
-      router.push(`/posts/${res.id}`);
-    } catch (err: any) {
-      if (err.name === "ApiError" && err.details) {
-        let hasFieldErrors = false;
-        Object.keys(err.details).forEach((key) => {
-          // Map backend field names to frontend schema names
-          let fieldKey = key;
-          if (key === "tags") fieldKey = "tag_id";
-          if (key === "subject") fieldKey = "subject_id";
-          if (key === "level") fieldKey = "level_id";
-          if (key === "file") fieldKey = "attachment";
-          
-          setError(fieldKey as any, { 
-            type: "server", 
-            message: Array.isArray(err.details[key]) ? err.details[key].join(" ") : err.details[key]
-          });
-          hasFieldErrors = true;
+      // Clear draft on success
+      localStorage.removeItem("post_draft");
+      return res;
+    })();
+
+    const toastId = toast.loading("Publishing post...");
+
+    promise
+      .then((res) => {
+        toast.success("Post published successfully!", {
+          id: toastId,
+          action: {
+            label: "View",
+            onClick: () => router.push(`/posts/${res.id}`),
+          },
         });
-        if (hasFieldErrors) {
-          setServerError(`Please fix the invalid fields below: ${JSON.stringify(err.details)}`);
-          return;
-        }
-      }
-      setServerError(err.message || "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
-    }
+      })
+      .catch((err: any) => {
+        // Save draft so user can recover
+        localStorage.setItem("post_draft", JSON.stringify(data));
+        const msg = err.details ? "Validation failed" : (err.message || "Something went wrong");
+        
+        toast.error(`Failed to publish: ${msg}`, {
+          id: toastId,
+          action: {
+            label: "Retry",
+            onClick: () => router.push("/posts/create?recover=1"),
+          },
+        });
+      });
   };
 
   return (

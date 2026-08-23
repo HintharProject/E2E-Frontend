@@ -26,6 +26,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     >
       <html
         lang="en"
+        suppressHydrationWarning
         className={cn(
           "h-full",
           "antialiased",

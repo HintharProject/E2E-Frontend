@@ -22,18 +22,18 @@ export function PostAuthorActions({ postId }: { postId: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
 
-  const handleDelete = async () => {
-    setIsDeleting(true);
-    try {
-      await deleteMutation.mutateAsync(postId);
-      toast.success("Post deleted successfully");
-      setOpen(false);
-      router.push("/forum");
-      router.refresh();
-    } catch (error) {
-      toast.error("Failed to delete post. Please try again.");
-      setIsDeleting(false);
-    }
+  const handleDelete = () => {
+    setOpen(false);
+    router.push("/forum");
+
+    toast.promise(deleteMutation.mutateAsync(postId), {
+      loading: "Deleting post...",
+      success: () => {
+        router.refresh();
+        return "Post deleted successfully";
+      },
+      error: "Failed to delete post. Please try again.",
+    });
   };
 
   return (
