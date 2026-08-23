@@ -6,17 +6,19 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 
 export function ForumFeed({
-  subjects,
-  levels,
-  postTypes,
-  tagIds,
+  subjects = [],
+  levels = [],
+  postTypes = [],
+  tagIds = [],
   feed,
+  authorId,
 }: {
-  subjects: string[];
-  levels: string[];
-  postTypes: string[];
-  tagIds: string[];
+  subjects?: string[];
+  levels?: string[];
+  postTypes?: string[];
+  tagIds?: string[];
   feed?: 'main' | 'announcement' | 'creator';
+  authorId?: string;
 }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfinitePosts({
@@ -25,6 +27,7 @@ export function ForumFeed({
       type: postTypes.join(","),
       tags: tagIds.join(","),
       feed,
+      authorId,
     });
 
   const hasActiveFilters =

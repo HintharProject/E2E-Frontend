@@ -12,6 +12,7 @@ interface PostQueryParams {
   type?: string;
   tags?: string;
   feed?: 'main' | 'announcement' | 'creator';
+  authorId?: string;
 }
 
 export function useInfinitePosts(params: PostQueryParams = {}) {
@@ -30,6 +31,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
         post_type: params.type,
         tags: params.tags,
         feed: params.feed,
+        author_id: params.authorId,
         page: pageParam,
       };
 

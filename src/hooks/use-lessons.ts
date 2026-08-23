@@ -9,6 +9,7 @@ interface LessonQueryParams {
   subject?: string;
   level?: string;
   search?: string;
+  authorId?: string;
 }
 
 export function useInfiniteLessons(params: LessonQueryParams = {}) {
@@ -20,7 +21,11 @@ export function useInfiniteLessons(params: LessonQueryParams = {}) {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
 
-      const queryStr = buildQueryString({ ...params, page: pageParam });
+      const queryStr = buildQueryString({ 
+        ...params, 
+        author_id: params.authorId,
+        page: pageParam 
+      });
       return apiFetch<PaginatedResponse<Lesson>>(`/lessons/${queryStr}`, token);
     },
     getNextPageParam: (lastPage, allPages) => {

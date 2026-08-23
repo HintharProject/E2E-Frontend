@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { apiFetch } from "@/services/api-client";
 import { UserPublic } from "@/types";
+import { ForumFeed } from "@/components/features/forum-feed";
+import { LessonsFeed } from "@/components/features/lessons-feed";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -38,7 +40,7 @@ export default async function UserProfilePage(props: {
   const isSelf = clerkUser?.id === profile.clerk_id;
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
       <div className="rounded-3xl border border-line bg-card p-6 sm:p-8">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <Avatar size="lg">
@@ -62,19 +64,29 @@ export default async function UserProfilePage(props: {
         </div>
       </div>
 
-      <section className="mt-10">
-        <h2 className="font-display text-2xl text-ink">Public study plans</h2>
-        <ul className="mt-3 space-y-2">
-          <li className="text-sm text-ink-muted">Coming soon...</li>
-        </ul>
-      </section>
-
-      <section className="mt-8">
-        <h2 className="font-display text-2xl text-ink">Public saved sessions</h2>
-        <ul className="mt-3 space-y-2">
-          <li className="text-sm text-ink-muted">Coming soon...</li>
-        </ul>
-      </section>
+      {profile.role === "CREATOR" ? (
+        <div className="mt-10 grid gap-8 md:grid-cols-2">
+          <section>
+            <h2 className="font-display text-2xl text-ink">Published Lessons</h2>
+            <div className="mt-6">
+              <LessonsFeed authorId={id} />
+            </div>
+          </section>
+          <section>
+            <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
+            <div className="mt-6">
+              <ForumFeed authorId={id} />
+            </div>
+          </section>
+        </div>
+      ) : (
+        <section className="mt-10">
+          <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
+          <div className="mt-6">
+            <ForumFeed authorId={id} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

@@ -6,19 +6,22 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 
 export function LessonsFeed({
-  subjects,
-  levels,
-  tagIds,
+  subjects = [],
+  levels = [],
+  tagIds = [],
+  authorId,
 }: {
-  subjects: string[];
-  levels: string[];
-  tagIds: string[];
+  subjects?: string[];
+  levels?: string[];
+  tagIds?: string[];
+  authorId?: string;
 }) {
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteLessons({
       subject: subjects.join(","),
       level: levels.join(","),
       // tagIds if backend supports
+      authorId,
     });
 
   const hasActiveFilters =
