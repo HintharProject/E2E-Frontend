@@ -75,7 +75,16 @@ export async function apiFetch<T>(
       return undefined as T;
     }
 
-    return (await response.json()) as T;
+    const json = await response.json();
+    
+    // The backend CustomJSONRenderer wraps single objects in `{ "data": ... }`
+    // but paginated lists have `{ "data": [...], "meta": {...} }`.
+    // We unwrap it globally here for single objects so hooks don't have to deal with it.
+    if (json && typeof json === 'object' && 'data' in json && !('meta' in json)) {
+      return json.data as T;
+    }
+    
+    return json as T;
   } catch (error) {
     if (error instanceof ApiError) throw error;
 

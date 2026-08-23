@@ -1,5 +1,5 @@
 export type RoleEnum = "STUDENT" | "CREATOR" | "ADMIN";
-export type BanStatusEnum = "NONE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
+export type BanStatusEnum = "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
 export type PostTypeEnum = "QUESTION" | "SHARING" | "ANNOUNCEMENT";
 export type StateEnum = "DRAFT" | "PUBLISHED" | "ARCHIVED";
 
