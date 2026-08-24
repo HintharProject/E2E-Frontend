@@ -245,7 +245,13 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         {/* Create Solution Form */}
         {!writeLocked && user?.clerk_id !== problem.author_details?.clerk_id && (
           <div className="mt-8 pt-8 border-t border-line">
-            <CreateSolutionForm problemId={problem.id} isSolved={problem.status === "SOLVED"} />
+            {(problem.solution_count ?? 0) >= 5 ? (
+              <div className="rounded-xl border border-line bg-card p-6 text-center text-sm font-medium text-ink-muted shadow-sm">
+                This problem has reached the maximum limit of 5 solutions.
+              </div>
+            ) : (
+              <CreateSolutionForm problemId={problem.id} isSolved={problem.status === "SOLVED"} />
+            )}
           </div>
         )}
       </div>

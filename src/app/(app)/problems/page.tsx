@@ -1,28 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Virtuoso } from "react-virtuoso";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { useProblems } from "@/hooks/use-problems";
-import { FilterBar } from "@/components/ui/filter-bar";
-import { Field } from "@/components/ui/field";
-import { useSubjects, useLevels } from "@/hooks/use-metadata";
+import { FilterSidebar } from "@/components/layout/filter-sidebar";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isWriteLocked } from "@/types/user";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
+import { parseFilterList } from "@/lib/filter-params";
 
-export default function ProblemsPage() {
-  const { user } = useCurrentUser();
-  const [subjectFilter, setSubjectFilter] = useState("");
-  const [levelFilter, setLevelFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-
-  const { data: subjects = [] } = useSubjects();
-  const { data: levels = [] } = useLevels();
+function ProblemsFeed() {
+  const searchParams = useSearchParams();
+  const subjects = parseFilterList(searchParams.get("subject"));
+  const levels = parseFilterList(searchParams.get("level"));
+  const status = searchParams.get("status") || "";
 
   const {
     data,
@@ -34,118 +31,90 @@ export default function ProblemsPage() {
     refetch,
     isRefetching,
   } = useProblems({
-    subject: subjectFilter,
-    level: levelFilter,
-    status: statusFilter,
+    subject: subjects.length > 0 ? subjects[0] : "", // useProblems hook might need updating if it supports multiple, assuming single for now
+    level: levels.length > 0 ? levels[0] : "",
+    status: status,
   });
 
   const problems = data?.pages.flatMap((p) => p.data) ?? [];
 
-  const subjectOptions = subjects.map(s => ({ value: s.id, label: s.name }));
-  const levelOptions = levels.map(l => ({ value: l.id, label: l.name }));
-  const statusOptions = [
-    { value: "OPEN", label: "Open" },
-    { value: "SOLVED", label: "Solved" },
-    { value: "CLOSED", label: "Closed" },
-  ];
+  return (
+    <TopmostScrollRefresh
+      onRefresh={() => refetch()}
+      isRefreshing={isRefetching}
+      label="problems"
+    >
+      {isLoading ? (
+        <div className="space-y-4">
+          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+        </div>
+      ) : isError ? (
+        <EmptyState
+          title="Failed to load problems"
+          description="We ran into an issue retrieving the data. Please try again."
+        />
+      ) : problems.length === 0 ? (
+        <EmptyState
+          title="No problems found"
+          description="Try adjusting your filters or be the first to post a problem."
+        />
+      ) : (
+        <Virtuoso
+          useWindowScroll
+          data={problems}
+          endReached={() => {
+            if (hasNextPage) fetchNextPage();
+          }}
+          components={{
+            Footer: () => (
+              isFetchingNextPage ? (
+                <div className="py-4 text-center text-sm text-ink-muted">Loading more...</div>
+              ) : null
+            )
+          }}
+          itemContent={(index, problem) => (
+            <div className="pb-4">
+              <ProblemCard problem={problem} />
+            </div>
+          )}
+        />
+      )}
+    </TopmostScrollRefresh>
+  );
+}
 
+export default function ProblemsPage() {
+  const { user } = useCurrentUser();
+  
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
+  const isCreator = user?.role === "CREATOR";
+  const canPost = !writeLocked && !isCreator;
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Problems & Solutions"
         description="Ask difficult questions and get step-by-step solutions from the community."
         actions={
-          <Button disabled={writeLocked} nativeButton={false} render={<Link href="/problems/new" />}>
-            Post a Problem
-          </Button>
+          canPost ? (
+            <Button nativeButton={false} render={<Link href="/problems/new" />}>
+              Post a Problem
+            </Button>
+          ) : undefined
         }
       />
 
-      <FilterBar>
-        <Field label="Subject">
-          <select 
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-            value={subjectFilter} 
-            onChange={(e) => setSubjectFilter(e.target.value)}
-          >
-            <option value="">All</option>
-            {subjectOptions.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Level">
-          <select 
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-            value={levelFilter} 
-            onChange={(e) => setLevelFilter(e.target.value)}
-          >
-            <option value="">All</option>
-            {levelOptions.map((l) => (
-              <option key={l.value} value={l.value}>{l.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Status">
-          <select 
-            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-            value={statusFilter} 
-            onChange={(e) => setStatusFilter(e.target.value)}
-          >
-            <option value="">All</option>
-            {statusOptions.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </Field>
-      </FilterBar>
-
-      <div className="mt-8">
-        <TopmostScrollRefresh
-          onRefresh={() => refetch()}
-          isRefreshing={isRefetching}
-          label="problems"
-        >
-          {isLoading ? (
-            <div className="space-y-4">
-              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-            </div>
-          ) : isError ? (
-            <EmptyState
-              title="Failed to load problems"
-              description="We ran into an issue retrieving the data. Please try again."
-            />
-          ) : problems.length === 0 ? (
-            <EmptyState
-              title="No problems found"
-              description="Try adjusting your filters or be the first to post a problem."
-            />
-          ) : (
-            <Virtuoso
-              useWindowScroll
-              data={problems}
-              endReached={() => {
-                if (hasNextPage) fetchNextPage();
-              }}
-              components={{
-                Footer: () => (
-                  isFetchingNextPage ? (
-                    <div className="py-4 text-center text-sm text-ink-muted">Loading more...</div>
-                  ) : null
-                )
-              }}
-              itemContent={(index, problem) => (
-                <div className="pb-4">
-                  <ProblemCard problem={problem} />
-                </div>
-              )}
-            />
-          )}
-        </TopmostScrollRefresh>
+      <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-start">
+        <Suspense fallback={null}>
+          <FilterSidebar hideTags showProblemStatus />
+        </Suspense>
+        <div className="min-w-0 flex-1">
+          <Suspense fallback={<div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>}>
+            <ProblemsFeed />
+          </Suspense>
+        </div>
       </div>
     </div>
   );

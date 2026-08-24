@@ -143,6 +143,16 @@ export function CreateProblemForm() {
           body: formData,
         });
 
+        queryClient.setQueryData(["problems"], (old: any) => {
+          if (!old || !old.pages || old.pages.length === 0) return old;
+          const newPages = [...old.pages];
+          newPages[0] = {
+            ...newPages[0],
+            data: [res, ...newPages[0].data],
+          };
+          return { ...old, pages: newPages };
+        });
+
         queryClient.invalidateQueries({ queryKey: ["problems"] });
         return res;
       },

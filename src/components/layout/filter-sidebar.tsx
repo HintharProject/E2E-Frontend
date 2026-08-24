@@ -10,6 +10,8 @@ import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
 type FilterSidebarProps = {
   showPostType?: boolean;
   showStateFilter?: boolean;
+  hideTags?: boolean;
+  showProblemStatus?: boolean;
   postTypeOptions?: { value: string; label: string }[];
 };
 
@@ -55,6 +57,8 @@ function CheckboxGroup({
 export function FilterSidebar({
   showPostType = false,
   showStateFilter = false,
+  hideTags = false,
+  showProblemStatus = false,
   postTypeOptions = [
     { value: "QUESTION", label: "Question" },
     { value: "SHARING", label: "Sharing" },
@@ -79,7 +83,8 @@ export function FilterSidebar({
     selectedSubjects.length > 0 ||
     selectedLevels.length > 0 ||
     selectedTypes.length > 0 ||
-    selectedTags.length > 0;
+    selectedTags.length > 0 ||
+    searchParams.get("status");
 
   function setListParam(key: string, values: string[]) {
     const next = new URLSearchParams(searchParams.toString());
@@ -152,7 +157,7 @@ export function FilterSidebar({
                 >
                   <input
                     type="radio"
-                    name="Status"
+                    name="State"
                     className="h-4 w-4 shrink-0 border-line accent-brand"
                     checked={searchParams.get("state") === opt.value || (!searchParams.get("state") && opt.value === "PUBLISHED")}
                     onChange={() => {
@@ -167,12 +172,51 @@ export function FilterSidebar({
             </div>
           </fieldset>
         ) : null}
-        <CheckboxGroup
-          legend="Tag"
-          options={tags.map((t) => ({ value: t.id, label: t.name }))}
-          selected={selectedTags}
-          onToggle={(value) => toggle("tags", selectedTags, value)}
-        />
+        {showProblemStatus ? (
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Status
+            </legend>
+            <div className="flex flex-col gap-2">
+              {[
+                { value: "", label: "All" },
+                { value: "OPEN", label: "Open" },
+                { value: "SOLVED", label: "Solved" },
+                { value: "CLOSED", label: "Closed" },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+                >
+                  <input
+                    type="radio"
+                    name="Status"
+                    className="h-4 w-4 shrink-0 border-line accent-brand"
+                    checked={searchParams.get("status") === opt.value || (!searchParams.get("status") && opt.value === "")}
+                    onChange={() => {
+                      const next = new URLSearchParams(searchParams.toString());
+                      if (opt.value) {
+                        next.set("status", opt.value);
+                      } else {
+                        next.delete("status");
+                      }
+                      router.push(`${pathname}?${next.toString()}`);
+                    }}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        ) : null}
+        {!hideTags && (
+          <CheckboxGroup
+            legend="Tag"
+            options={tags.map((t) => ({ value: t.id, label: t.name }))}
+            selected={selectedTags}
+            onToggle={(value) => toggle("tags", selectedTags, value)}
+          />
+        )}
       </div>
     </aside>
   );

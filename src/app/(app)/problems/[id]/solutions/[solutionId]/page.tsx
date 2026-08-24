@@ -16,6 +16,16 @@ import { formatDate } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 
 export default function SolutionDetailPage({ params }: { params: Promise<{ id: string; solutionId: string }> }) {
   const { id: problemId, solutionId } = use(params);
@@ -168,6 +178,11 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
               ▼ Downvote
             </Button>
             <Button variant="ghost" onClick={handleShare}>Share</Button>
+            {user?.clerk_id === author?.clerk_id && solution.status !== "WORKED" && (
+              <Button variant="ghost" nativeButton={false} render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}>
+                Edit
+              </Button>
+            )}
             {user?.clerk_id !== author?.clerk_id && (
               <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}
@@ -188,21 +203,35 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
                 >
                   Mark as Correct
                 </Button>
-                <Button
-                  variant="outline"
-                  className="border-red-500/50 text-red-600 hover:bg-red-500/10"
-                  disabled={markStatusMutation.isPending}
-                  onClick={() => {
-                    if (confirm("Are you sure? This will mark it as incorrect and auto-delete it.")) {
-                      markStatusMutation.mutate(
-                        { solutionId: solution.id, status: "INCORRECT" },
-                        { onSuccess: () => { toast.success("Marked as incorrect."); router.push(`/problems/${problemId}`); } }
-                      );
-                    }
-                  }}
-                >
-                  Mark as Incorrect
-                </Button>
+                <Dialog>
+                  <DialogTrigger render={<Button variant="outline" className="border-red-500/50 text-red-600 hover:bg-red-500/10" disabled={markStatusMutation.isPending} />}>
+                    Mark as Incorrect
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Mark as Incorrect</DialogTitle>
+                      <DialogDescription>
+                        Are you sure? This will mark it as incorrect and auto-delete it.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
+                      <DialogClose render={
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            markStatusMutation.mutate(
+                              { solutionId: solution.id, status: "INCORRECT" },
+                              { onSuccess: () => { toast.success("Marked as incorrect."); router.push(`/problems/${problemId}`); } }
+                            );
+                          }}
+                        />
+                      }>
+                        Confirm
+                      </DialogClose>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </>
             )}
           </>

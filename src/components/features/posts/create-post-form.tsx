@@ -154,6 +154,16 @@ export function CreatePostForm({
           });
         }
 
+        queryClient.setQueryData(["posts"], (old: any) => {
+          if (!old || !old.pages || old.pages.length === 0) return old;
+          const newPages = [...old.pages];
+          newPages[0] = {
+            ...newPages[0],
+            data: [res, ...newPages[0].data],
+          };
+          return { ...old, pages: newPages };
+        });
+
         queryClient.invalidateQueries({ queryKey: ["posts"] });
         return res;
       },
