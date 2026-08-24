@@ -6,6 +6,7 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
+import { DevTools } from "@/components/dev/dev-tools";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", preload: false });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
@@ -37,8 +38,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         )}
       >
         <body className="min-h-full flex flex-col">
-          <Script id="clerk-error-suppress" strategy="beforeInteractive">
-            {`
+          <Script id="clerk-error-suppress" strategy="beforeInteractive" dangerouslySetInnerHTML={{
+            __html: `
               window.addEventListener('error', function(e) {
                 if (e.message && (e.message.includes('ClerkJS: Network error') || e.message.includes('NetworkError'))) {
                   e.stopImmediatePropagation();
@@ -49,9 +50,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                   e.stopImmediatePropagation();
                 }
               }, true);
-            `}
-          </Script>
-          <Providers>{children}</Providers>
+            `
+          }} />
+          <Providers>
+            {children}
+            <DevTools />
+          </Providers>
           <Toaster />
         </body>
       </html>

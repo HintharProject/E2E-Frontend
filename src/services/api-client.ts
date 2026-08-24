@@ -42,8 +42,18 @@ export async function apiFetch<T>(
       headers.set("Content-Type", "application/json");
     }
 
-    if (token) {
-      headers.set("Authorization", `Bearer ${token}`);
+    let finalToken = token;
+    
+    // Dev-only token bypass
+    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true") {
+      const devToken = localStorage.getItem("dev_token");
+      if (devToken) {
+        finalToken = devToken;
+      }
+    }
+
+    if (finalToken) {
+      headers.set("Authorization", `Bearer ${finalToken}`);
     }
 
     const response = await fetch(url, {
