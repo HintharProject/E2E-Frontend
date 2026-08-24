@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Solution } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
-import { useVoteSolution } from "@/hooks/use-problems";
+import { useVoteSolution, useMarkSolutionStatus } from "@/hooks/use-problems";
 import { useReport } from "@/hooks/use-interactions";
 import { toast } from "sonner";
 import { ChevronUp, ChevronDown, ChevronRight, CornerLeftUp, Share2, Flag } from "lucide-react";
@@ -24,7 +24,7 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>?/gm, '');
 }
 
-export function SolutionItem({ solution }: { solution: Solution }) {
+export function SolutionItem({ solution, isProblemAuthor = false }: { solution: Solution; isProblemAuthor?: boolean }) {
   const author = solution.author_details;
   const [isExpanded, setIsExpanded] = useState(false);
   const [localVoteCount, setLocalVoteCount] = useState(solution.vote_count ?? 0);
@@ -32,6 +32,7 @@ export function SolutionItem({ solution }: { solution: Solution }) {
   
   const voteMutation = useVoteSolution();
   const reportMutation = useReport();
+  const markStatusMutation = useMarkSolutionStatus();
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -158,6 +159,41 @@ export function SolutionItem({ solution }: { solution: Solution }) {
               </Badge>
             )}
           </div>
+
+          {isProblemAuthor && solution.status === "PENDING" && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-green-500/50 text-green-600 hover:bg-green-500/10"
+                disabled={markStatusMutation.isPending}
+                onClick={() => {
+                  markStatusMutation.mutate(
+                    { solutionId: solution.id, status: "WORKED" },
+                    { onSuccess: () => toast.success("Marked as correct solution.") }
+                  );
+                }}
+              >
+                Mark as Correct
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-500/50 text-red-600 hover:bg-red-500/10"
+                disabled={markStatusMutation.isPending}
+                onClick={() => {
+                  if (confirm("Are you sure? This will mark it as incorrect and auto-delete it.")) {
+                    markStatusMutation.mutate(
+                      { solutionId: solution.id, status: "INCORRECT" },
+                      { onSuccess: () => toast.success("Marked as incorrect and deleted.") }
+                    );
+                  }
+                }}
+              >
+                Mark as Incorrect
+              </Button>
+            </div>
+          )}
           
           <div className="whitespace-pre-wrap text-sm sm:text-base text-ink leading-relaxed">
             {solution.body}
@@ -168,7 +204,7 @@ export function SolutionItem({ solution }: { solution: Solution }) {
               <h4 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Attachments</h4>
               <div className="flex flex-col gap-2">
                 {solution.attachments.map(att => (
-                  <PostAttachment key={att.id} url={att.file_url} filename={att.file_name} />
+                  <PostAttachment key={att.id} url={att.attachment_url || att.file_url} filename={att.file_name} />
                 ))}
               </div>
             </div>

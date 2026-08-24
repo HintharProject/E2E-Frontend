@@ -124,3 +124,24 @@ export function useVoteProblem() {
     }
   });
 }
+
+export function useMarkSolutionStatus() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ solutionId, status }: { solutionId: string; status: "WORKED" | "INCORRECT" }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      return apiFetch(`/solutions/${solutionId}/mark_status/`, token, {
+        method: "POST",
+        body: JSON.stringify({ status }),
+      });
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["solutions"] });
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["problem"] });
+    },
+  });
+}

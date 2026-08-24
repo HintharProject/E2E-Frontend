@@ -168,7 +168,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Attachments</h3>
             <div className="flex flex-col gap-2">
               {problem.attachments.map(att => (
-                <PostAttachment key={att.id} url={att.file_url} filename={att.file_name} />
+                <PostAttachment key={att.id} url={att.attachment_url || att.file_url} filename={att.file_name} />
               ))}
             </div>
           </div>
@@ -207,7 +207,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         ) : solutions.length > 0 ? (
           <div className="flex flex-col gap-4 mb-8">
             {solutions.map((solution) => (
-              <SolutionItem key={solution.id} solution={solution} />
+              <SolutionItem key={solution.id} solution={solution} isProblemAuthor={user?.clerk_id === problem.author_details?.clerk_id} />
             ))}
             {hasNextPage && (
               <Button 
@@ -227,7 +227,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         )}
 
         {/* Create Solution Form */}
-        {!writeLocked && (
+        {!writeLocked && user?.clerk_id !== problem.author_details?.clerk_id && (
           <div className="mt-8 pt-8 border-t border-line">
             <CreateSolutionForm problemId={problem.id} isSolved={problem.status === "SOLVED"} />
           </div>
