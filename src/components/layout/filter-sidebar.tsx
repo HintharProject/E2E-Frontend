@@ -9,6 +9,7 @@ import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
 
 type FilterSidebarProps = {
   showPostType?: boolean;
+  showStateFilter?: boolean;
   postTypeOptions?: { value: string; label: string }[];
 };
 
@@ -53,6 +54,7 @@ function CheckboxGroup({
 
 export function FilterSidebar({
   showPostType = false,
+  showStateFilter = false,
   postTypeOptions = [
     { value: "QUESTION", label: "Question" },
     { value: "SHARING", label: "Sharing" },
@@ -129,6 +131,38 @@ export function FilterSidebar({
             selected={selectedTypes}
             onToggle={(value) => toggle("post_type", selectedTypes, value)}
           />
+        ) : null}
+        {showStateFilter ? (
+          <fieldset>
+            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+              Status
+            </legend>
+            <div className="flex flex-col gap-2">
+              {[
+                { value: "PUBLISHED", label: "Published" },
+                { value: "DRAFT", label: "Draft" },
+                { value: "ARCHIVED", label: "Archived" },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+                >
+                  <input
+                    type="radio"
+                    name="Status"
+                    className="h-4 w-4 shrink-0 border-line accent-brand"
+                    checked={searchParams.get("state") === opt.value || (!searchParams.get("state") && opt.value === "PUBLISHED")}
+                    onChange={() => {
+                      const next = new URLSearchParams(searchParams.toString());
+                      next.set("state", opt.value);
+                      router.push(`${pathname}?${next.toString()}`);
+                    }}
+                  />
+                  <span>{opt.label}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
         ) : null}
         <CheckboxGroup
           legend="Tag"

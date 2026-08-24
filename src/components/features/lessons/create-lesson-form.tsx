@@ -225,7 +225,7 @@ export function CreateLessonForm({
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting ? "Saving..." : "Save"}
         </Button>
-        <Button variant="secondary" nativeButton={false} render={<Link href="/lessons/mine" />}>
+        <Button variant="secondary" nativeButton={false} render={<Link href="/lessons/manage" />}>
           Cancel
         </Button>
       </div>

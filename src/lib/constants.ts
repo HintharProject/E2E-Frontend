@@ -39,13 +39,7 @@ export const PRIMARY_NAV: NavItem[] = [
     href: "/lessons",
     label: "Lessons",
     match: "/lessons",
-    exclude: ["/lessons/mine", "/lessons/new"],
-  },
-  {
-    href: "/lessons/mine",
-    label: "My Lessons",
-    roles: ["CREATOR", "ADMIN"],
-    match: "/lessons/mine",
+    exclude: ["/lessons/new"],
   },
   {
     href: "/study-plans",

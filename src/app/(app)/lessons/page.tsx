@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
 import { PageHeader } from "@/components/ui/page-header";
-import { Button } from "@/components/ui/button";
 import { parseFilterList } from "@/lib/filter-params";
 import { LessonsFeed } from "@/components/features/lessons-feed";
+import { LessonsTabs } from "@/components/features/lessons/lessons-tabs";
 import Link from "next/link";
 
 export default async function LessonsBoardPage(props: {
@@ -20,6 +20,7 @@ export default async function LessonsBoardPage(props: {
         title="Lessons"
         description="Explore published lessons. Filter by subject, level, and tags."
       />
+      <LessonsTabs />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <Suspense fallback={null}>
           <FilterSidebar />
