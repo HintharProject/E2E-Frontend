@@ -20,8 +20,13 @@ function getInitials(name?: string | null): string {
   return name.trim().split(/\s+/).map((p) => p[0]).join("").toUpperCase().slice(0, 2);
 }
 
+import { useState, useEffect } from "react";
+import { toast } from "sonner";
+import { useVoteLesson } from "@/hooks/use-interactions";
+
 export function LessonDetailClient({ id }: { id: string }) {
   const { getToken } = useAuth();
+  const voteMutation = useVoteLesson();
 
   const { data: lesson, isLoading, isError } = useQuery<Lesson>({
     queryKey: ["lesson", id],
@@ -32,6 +37,31 @@ export function LessonDetailClient({ id }: { id: string }) {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const [localVoteCount, setLocalVoteCount] = useState(0);
+  const [localUserVote, setLocalUserVote] = useState(0);
+
+  useEffect(() => {
+    if (lesson) {
+      setLocalVoteCount(lesson.vote_count ?? 0);
+      setLocalUserVote(lesson.user_vote ?? 0);
+    }
+  }, [lesson]);
+
+  const handleVote = (value: 1 | -1 | 0) => {
+    if (localUserVote === value || !lesson) return;
+    const diff = value - localUserVote;
+    setLocalUserVote(value);
+    setLocalVoteCount((prev) => prev + diff);
+
+    voteMutation.mutate({ lessonId: lesson.id, value }, {
+      onError: () => {
+        setLocalUserVote(localUserVote);
+        setLocalVoteCount((prev) => prev - diff);
+        toast.error("Failed to register vote.");
+      }
+    });
+  };
 
   if (isLoading) return <LessonDetailLoading />;
 
@@ -101,8 +131,18 @@ export function LessonDetailClient({ id }: { id: string }) {
           </div>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
-          <Button variant="secondary">▲ Upvote</Button>
-          <Button variant="ghost">▼ Downvote</Button>
+          <Button 
+            variant={localUserVote === 1 ? "default" : "secondary"} 
+            onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
+          >
+            ▲ Upvote ({localVoteCount})
+          </Button>
+          <Button 
+            variant={localUserVote === -1 ? "default" : "ghost"} 
+            onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
+          >
+            ▼ Downvote
+          </Button>
           <Button variant="secondary">Add to Study Plan</Button>
           <Button variant="secondary">Save to session</Button>
           <Button variant="ghost">Report</Button>

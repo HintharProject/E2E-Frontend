@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Problem } from "@/types";
 import { apiFetch } from "@/services/api-client";
 import { formatDate } from "@/lib/utils";
+import { ProblemCardVote } from "./problem-card-vote";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -99,7 +100,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
         {level ? <Badge variant="outline">{level.name}</Badge> : null}
         
         <div className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-muted">
-          <span>{problem.vote_count ?? 0} votes</span>
+          <ProblemCardVote problemId={problem.id} initialVoteCount={problem.vote_count ?? 0} initialUserVote={problem.user_vote} />
           <span>·</span>
           <span>{problem.solution_count ?? 0} solutions</span>
         </div>

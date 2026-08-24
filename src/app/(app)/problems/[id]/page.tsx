@@ -19,6 +19,7 @@ import { useVoteProblem } from "@/hooks/use-problems";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
+import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -27,7 +28,7 @@ function getInitials(name?: string | null): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function ProblemActions({ problemId }: { problemId: string }) {
+function ProblemActions({ problemId, isAuthor }: { problemId: string; isAuthor: boolean }) {
   const { useReport } = require("@/hooks/use-interactions");
   const reportMutation = useReport();
   
@@ -47,10 +48,13 @@ function ProblemActions({ problemId }: { problemId: string }) {
 
   return (
     <div className="flex gap-2">
+      {isAuthor && <ProblemAuthorActions problemId={problemId} />}
       <Button variant="secondary" onClick={handleShare}>Share</Button>
-      <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
-        {reportMutation.isPending ? "Reporting..." : "Report"}
-      </Button>
+      {!isAuthor && (
+        <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
+          {reportMutation.isPending ? "Reporting..." : "Report"}
+        </Button>
+      )}
     </div>
   );
 }
@@ -128,7 +132,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
       <PageHeader
         title={problem.title}
         description={`Asked ${formatDate(problem.created_at)}`}
-        actions={<ProblemActions problemId={problem.id} />}
+        actions={<ProblemActions problemId={problem.id} isAuthor={user?.clerk_id === problem.author_details?.clerk_id} />}
       />
 
       {/* Problem Section */}

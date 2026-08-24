@@ -97,31 +97,55 @@ export function useCreateSolution() {
 
 export function useVoteSolution() {
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ solutionId, value }: { solutionId: string; value: 1 | -1 | 0 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      return apiFetch(`/solutions/${solutionId}/vote/`, token, {
-        method: "POST",
-        body: JSON.stringify({ value }),
-      });
-    }
+      
+      if (value === 0) {
+        return apiFetch(`/solutions/${solutionId}/vote/`, token, {
+          method: "DELETE",
+        });
+      } else {
+        return apiFetch(`/solutions/${solutionId}/vote/`, token, {
+          method: "POST",
+          body: JSON.stringify({ value }),
+        });
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["solutions"] });
+      queryClient.invalidateQueries({ queryKey: ["problem"] });
+    },
   });
 }
 
 export function useVoteProblem() {
   const { getToken } = useAuth();
+  const queryClient = useQueryClient();
   
   return useMutation({
     mutationFn: async ({ problemId, value }: { problemId: string; value: 1 | -1 | 0 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      return apiFetch(`/problems/${problemId}/vote/`, token, {
-        method: "POST",
-        body: JSON.stringify({ value }),
-      });
-    }
+      
+      if (value === 0) {
+        return apiFetch(`/problems/${problemId}/vote/`, token, {
+          method: "DELETE",
+        });
+      } else {
+        return apiFetch(`/problems/${problemId}/vote/`, token, {
+          method: "POST",
+          body: JSON.stringify({ value }),
+        });
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["problem"] });
+    },
   });
 }
 
@@ -142,6 +166,24 @@ export function useMarkSolutionStatus() {
       queryClient.invalidateQueries({ queryKey: ["solutions"] });
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       queryClient.invalidateQueries({ queryKey: ["problem"] });
+    },
+  });
+}
+
+export function useDeleteProblem() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (problemId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      return apiFetch(`/problems/${problemId}/`, token, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
     },
   });
 }

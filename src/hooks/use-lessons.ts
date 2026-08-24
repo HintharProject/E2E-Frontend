@@ -1,6 +1,6 @@
 "use client";
 
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { PaginatedResponse, Lesson } from "@/types";
@@ -59,3 +59,4 @@ export function useLesson(id: string) {
     enabled: !!id,
   });
 }
+

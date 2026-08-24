@@ -13,6 +13,7 @@ import { PostAuthorActions } from "./posts/post-author-actions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { apiFetch } from "@/services/api-client";
 import { LessonDetailActions } from "./lessons/lesson-detail-actions";
+import { LessonCardVote } from "./lessons/lesson-card-vote";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -186,9 +187,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             {lesson.state}
           </Badge>
         </div>
-        <span className="text-xs font-semibold text-ink-muted">
-          ▲ {/* Assuming vote_count is something we might add or not present in Lesson schema. If absent, can remove */}0
-        </span>
+        <LessonCardVote lessonId={lesson.id} initialVoteCount={lesson.vote_count ?? 0} initialUserVote={lesson.user_vote} />
       </div>
       <Link href={`/lessons/${lesson.id}`} className="mt-3 block">
         <h2 className="font-display text-xl text-ink hover:text-brand-dark">

@@ -40,17 +40,18 @@ export function useVotePost() {
 
       // Optimistically update individual post if cached
       if (previousPost) {
-        queryClient.setQueryData(["posts", postId], (old: any) => ({ ...old, user_vote: value }));
+        queryClient.setQueryData(["post", postId], (old: any) => ({ ...old, user_vote: value }));
       }
 
       return { previousPosts, previousPost };
     },
     onError: (err, newVote, context) => {
       if (context?.previousPosts) queryClient.setQueryData(["posts"], context.previousPosts);
-      if (context?.previousPost) queryClient.setQueryData(["posts", newVote.postId], context.previousPost);
+      if (context?.previousPost) queryClient.setQueryData(["post", newVote.postId], context.previousPost);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["post"] });
     },
   });
 }
@@ -91,17 +92,18 @@ export function useVoteLesson() {
       });
 
       if (previousLesson) {
-        queryClient.setQueryData(["lessons", lessonId], (old: any) => ({ ...old, user_vote: value }));
+        queryClient.setQueryData(["lesson", lessonId], (old: any) => ({ ...old, user_vote: value }));
       }
 
       return { previousLessons, previousLesson };
     },
     onError: (err, newVote, context) => {
       if (context?.previousLessons) queryClient.setQueryData(["lessons"], context.previousLessons);
-      if (context?.previousLesson) queryClient.setQueryData(["lessons", newVote.lessonId], context.previousLesson);
+      if (context?.previousLesson) queryClient.setQueryData(["lesson", newVote.lessonId], context.previousLesson);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["lesson"] });
     },
   });
 }
