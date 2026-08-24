@@ -90,6 +90,8 @@ export interface Lesson {
   tags?: string[];
   created_at: string;
   updated_at: string;
+  vote_count?: number;
+  user_vote?: 1 | -1 | null;
 }
 
 export interface PaginatedMeta {

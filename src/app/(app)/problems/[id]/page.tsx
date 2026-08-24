@@ -29,32 +29,9 @@ function getInitials(name?: string | null): string {
 }
 
 function ProblemActions({ problemId, isAuthor }: { problemId: string; isAuthor: boolean }) {
-  const { useReport } = require("@/hooks/use-interactions");
-  const reportMutation = useReport();
-  
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard!");
-  };
-
-  const handleReport = async () => {
-    try {
-      await reportMutation.mutateAsync({ targetId: problemId, targetType: "PROBLEM" });
-      toast.success("Problem reported to moderation queue.");
-    } catch (err: any) {
-      toast.error("Failed to report. You may have already reported this problem.");
-    }
-  };
-
   return (
     <div className="flex gap-2">
       {isAuthor && <ProblemAuthorActions problemId={problemId} />}
-      <Button variant="secondary" onClick={handleShare}>Share</Button>
-      {!isAuthor && (
-        <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
-          {reportMutation.isPending ? "Reporting..." : "Report"}
-        </Button>
-      )}
     </div>
   );
 }
@@ -76,6 +53,22 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   const [localVoteCount, setLocalVoteCount] = useState(0);
   const [localUserVote, setLocalUserVote] = useState<number>(0);
   const voteMutation = useVoteProblem();
+  const { useReport } = require("@/hooks/use-interactions");
+  const reportMutation = useReport();
+
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
+  };
+
+  const handleReport = async () => {
+    try {
+      await reportMutation.mutateAsync({ targetId: id, targetType: "PROBLEM" });
+      toast.success("Problem reported to moderation queue.");
+    } catch (err: any) {
+      toast.error("Failed to report. You may have already reported this problem.");
+    }
+  };
 
   useEffect(() => {
     if (problem) {
@@ -192,6 +185,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           >
             ▼ Downvote
           </Button>
+          <Button variant="ghost" onClick={handleShare}>Share</Button>
+          {user?.clerk_id !== problem.author_details?.clerk_id && (
+            <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
+              {reportMutation.isPending ? "Reporting..." : "Report"}
+            </Button>
+          )}
         </div>
       </article>
 

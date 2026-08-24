@@ -14,6 +14,8 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { apiFetch } from "@/services/api-client";
 import { LessonDetailActions } from "./lessons/lesson-detail-actions";
 import { LessonCardVote } from "./lessons/lesson-card-vote";
+import { toast } from "sonner";
+import { Share2 } from "lucide-react";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -167,6 +169,13 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     });
   };
 
+  const handleShare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigator.clipboard.writeText(`${window.location.origin}/lessons/${lesson.id}`);
+    toast.success("Link copied to clipboard!");
+  };
+
   return (
     <article 
       className="rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]"
@@ -207,7 +216,10 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         {/* Lesson tags might not have names resolved in the basic schema, just IDs. For now, we omit them if they are just strings, or we map them. 
             The schema says Lesson.tags is an array of UUIDs (writeOnly mostly) or tags_data maybe missing. We'll leave them out if not mapped. */}
       </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2 items-center">
+          <Button variant="ghost" size="sm" onClick={handleShare} className="text-ink-muted hover:text-ink">
+            <Share2 className="mr-2 h-4 w-4" /> Share
+          </Button>
           <LessonDetailActions lesson={lesson} />
         </div>
     </article>

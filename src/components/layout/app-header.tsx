@@ -77,6 +77,13 @@ export function AppHeader() {
         queryFn: ({ pageParam = 1 }) => apiFetch(`/lessons/?page=${pageParam}`, token),
       });
 
+      // 3. Prefetch default Problems Feed
+      queryClient.prefetchInfiniteQuery({
+        queryKey: ["problems", { status: "OPEN", subject: "", level: "" }],
+        initialPageParam: 1,
+        queryFn: ({ pageParam = 1 }) => apiFetch(`/problems/?status=OPEN&page=${pageParam}`, token),
+      });
+
       // 3. Prefetch My Lessons (if applicable)
       if (user.role === "CREATOR" || user.role === "ADMIN") {
         queryClient.prefetchInfiniteQuery({

@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { useProblems } from "@/hooks/use-problems";
 import { FilterBar } from "@/components/ui/filter-bar";
+import { Field } from "@/components/ui/field";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isWriteLocked } from "@/types/user";
@@ -59,31 +60,44 @@ export default function ProblemsPage() {
         }
       />
 
-      <FilterBar
-        filters={[
-          {
-            key: "subject",
-            label: "Subject",
-            options: subjectOptions,
-            value: subjectFilter,
-            onChange: setSubjectFilter,
-          },
-          {
-            key: "level",
-            label: "Level",
-            options: levelOptions,
-            value: levelFilter,
-            onChange: setLevelFilter,
-          },
-          {
-            key: "status",
-            label: "Status",
-            options: statusOptions,
-            value: statusFilter,
-            onChange: setStatusFilter,
-          },
-        ]}
-      />
+      <FilterBar>
+        <Field label="Subject">
+          <select 
+            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            value={subjectFilter} 
+            onChange={(e) => setSubjectFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {subjectOptions.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Level">
+          <select 
+            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            value={levelFilter} 
+            onChange={(e) => setLevelFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {levelOptions.map((l) => (
+              <option key={l.value} value={l.value}>{l.label}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Status">
+          <select 
+            className="w-full rounded-lg border border-line bg-card px-3 py-2 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            value={statusFilter} 
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="">All</option>
+            {statusOptions.map((s) => (
+              <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+        </Field>
+      </FilterBar>
 
       <div className="mt-8">
         {isLoading ? (

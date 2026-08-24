@@ -41,6 +41,11 @@ export function LessonDetailClient({ id }: { id: string }) {
   const [localVoteCount, setLocalVoteCount] = useState(0);
   const [localUserVote, setLocalUserVote] = useState(0);
 
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href);
+    toast.success("Link copied to clipboard!");
+  };
+
   useEffect(() => {
     if (lesson) {
       setLocalVoteCount(lesson.vote_count ?? 0);
@@ -145,6 +150,7 @@ export function LessonDetailClient({ id }: { id: string }) {
           </Button>
           <Button variant="secondary">Add to Study Plan</Button>
           <Button variant="secondary">Save to session</Button>
+          <Button variant="ghost" onClick={handleShare}>Share</Button>
           <Button variant="ghost">Report</Button>
         </div>
       </article>
