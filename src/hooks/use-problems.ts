@@ -199,3 +199,22 @@ export function useDeleteProblem() {
     },
   });
 }
+
+export function useDeleteSolution() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (solutionId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      return apiFetch(`/solutions/${solutionId}/`, token, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["solutions"] });
+    },
+  });
+}
+

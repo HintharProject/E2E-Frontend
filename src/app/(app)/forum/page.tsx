@@ -1,11 +1,9 @@
 import { Suspense } from "react";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
 import { PageHeader } from "@/components/ui/page-header";
-import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
-import { Button } from "@/components/ui/button";
+import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
 import { parseFilterList } from "@/lib/filter-params";
 import { ForumFeed } from "@/components/features/forum-feed";
-import Link from "next/link";
 
 export default async function ForumMainPage(props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -18,19 +16,10 @@ export default async function ForumMainPage(props: {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <PageHeader
-        title="Forum"
-        description="Main feed — student questions and sharing. Posts expire after 30 days."
-        actions={
-          <Button nativeButton={false} render={<Link href="/posts/new" />}>New post</Button>
-        }
-      />
-      <SubNav
-        items={[
-          { href: "/forum", label: "Main", active: true },
-          { href: "/forum/announcements", label: "Announcements" },
-          { href: "/forum/creators", label: "Creators" },
-        ]}
+      <PageHeader title="Forum" />
+      <ForumSubNav
+        activeHref="/forum"
+        filterProps={{ showPostType: true }}
       />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <Suspense fallback={null}>

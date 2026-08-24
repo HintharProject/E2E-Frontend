@@ -2,14 +2,18 @@
 
 import Link from "next/link";
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Problem } from "@/types";
 import { apiFetch } from "@/services/api-client";
 import { formatDate } from "@/lib/utils";
 import { ProblemCardVote } from "./problem-card-vote";
+import { CardMoreMenu } from "@/components/ui/card-more-menu";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { useDeleteProblem } from "@/hooks/use-problems";
+import { toast } from "sonner";
 
 import { BaseFeedCard } from "@/components/ui/base-card";
 
@@ -19,13 +23,23 @@ function stripHtml(html: string): string {
 }
 
 export function ProblemCard({ problem }: { problem: Problem }) {
+  const { user } = useCurrentUser();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const router = useRouter();
   const prefetchedRef = useRef(false);
+  const deleteMutation = useDeleteProblem();
 
   const author = problem.author_details;
   const subject = problem.subject_details;
   const level = problem.level_details;
+  const isAuthor = user?.id === author?.id;
+  const isAdmin = user?.role === "ADMIN";
+  const canModify = isAuthor || isAdmin;
+
+  const shareUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/problems/${problem.id}`
+    : `/problems/${problem.id}`;
 
   const handleMouseEnter = () => {
     if (prefetchedRef.current) return;
@@ -38,6 +52,17 @@ export function ProblemCard({ problem }: { problem: Problem }) {
         return apiFetch<Problem>(`/problems/${problem.id}/`, token);
       },
       staleTime: 5 * 60 * 1000,
+    });
+  };
+
+  const handleDelete = async () => {
+    toast.promise(deleteMutation.mutateAsync(problem.id), {
+      loading: "Deleting problem...",
+      success: () => {
+        router.push("/problems");
+        return "Problem deleted successfully";
+      },
+      error: "Failed to delete problem. Please try again.",
     });
   };
 
@@ -78,6 +103,16 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           <ProblemCardVote problemId={problem.id} initialVoteCount={problem.vote_count ?? 0} initialUserVote={problem.user_vote} />
           <span>· {problem.solution_count ?? 0} solutions</span>
         </>
+      }
+      moreMenu={
+        <CardMoreMenu
+          shareUrl={shareUrl}
+          contentType="PROBLEM"
+          contentId={problem.id}
+          editHref={canModify ? `/problems/${problem.id}/edit` : undefined}
+          onDelete={canModify ? handleDelete : undefined}
+          deleteLabel="this problem"
+        />
       }
     />
   );

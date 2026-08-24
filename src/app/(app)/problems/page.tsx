@@ -1,17 +1,14 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Virtuoso } from "react-virtuoso";
-import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { useProblems } from "@/hooks/use-problems";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { isWriteLocked } from "@/types/user";
+import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { parseFilterList } from "@/lib/filter-params";
 
@@ -86,27 +83,20 @@ function ProblemsFeed() {
 }
 
 export default function ProblemsPage() {
-  const { user } = useCurrentUser();
-  
-  const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-  const isCreator = user?.role === "CREATOR";
-  const canPost = !writeLocked && !isCreator;
-
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <PageHeader
-        title="Problems & Solutions"
-        description="Ask difficult questions and get step-by-step solutions from the community."
-        actions={
-          canPost ? (
-            <Button nativeButton={false} render={<Link href="/problems/new" />}>
-              Post a Problem
-            </Button>
-          ) : undefined
-        }
-      />
+      <PageHeader title="Problems & Solutions" />
 
-      <div className="mt-8 flex flex-col gap-6 lg:flex-row lg:items-start">
+      {/* Mobile-only sticky filter bar */}
+      <div className="relative">
+        <div className="sticky top-[57px] z-30 -mx-4 mb-6 flex items-center justify-end gap-2 border-b border-line bg-background/90 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:hidden">
+          <Suspense fallback={null}>
+            <MobileFilterToggle hideTags showProblemStatus />
+          </Suspense>
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-start">
         <Suspense fallback={null}>
           <FilterSidebar hideTags showProblemStatus />
         </Suspense>

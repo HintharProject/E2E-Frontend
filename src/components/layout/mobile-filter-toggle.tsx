@@ -1,0 +1,48 @@
+"use client";
+
+import { useState } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
+import { Suspense } from "react";
+import { FilterContent, type FilterSidebarProps } from "@/components/layout/filter-sidebar";
+
+/**
+ * Mobile-only filter toggle button + collapsible panel.
+ * Renders only on screens smaller than lg (hidden on lg+).
+ * Placed in the sub-nav mobileExtra slot.
+ */
+export function MobileFilterToggle(props: FilterSidebarProps) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <>
+      {/* Trigger button — shown in sub-nav bar */}
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors lg:hidden ${
+          open
+            ? "border-brand bg-brand/10 text-brand-dark"
+            : "border-line bg-card text-ink-muted hover:border-brand/40 hover:text-ink"
+        }`}
+        aria-expanded={open}
+        aria-label="Toggle filters"
+      >
+        {open ? (
+          <X className="h-3.5 w-3.5" />
+        ) : (
+          <SlidersHorizontal className="h-3.5 w-3.5" />
+        )}
+        Filters
+      </button>
+
+      {/* Collapsible panel — slides down under the sub-nav bar */}
+      {open && (
+        <div className="absolute left-0 right-0 top-full z-20 border-b border-line bg-background/95 px-4 py-4 shadow-md backdrop-blur-md lg:hidden sm:px-6">
+          <Suspense fallback={null}>
+            <FilterContent {...props} />
+          </Suspense>
+        </div>
+      )}
+    </>
+  );
+}

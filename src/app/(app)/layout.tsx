@@ -3,8 +3,8 @@ import { AppProviders } from "@/components/providers/app-providers";
 import { AppHeader } from "@/components/layout/app-header";
 import { AppFooter } from "@/components/layout/app-footer";
 import { PageSkeleton } from "@/components/layout/page-skeleton";
-
 import { AppInitializer } from "@/components/providers/app-initializer";
+import { GlobalFAB } from "@/components/ui/fab";
 
 /**
  * Layout for all authenticated app routes under the (app) route group.
@@ -14,6 +14,7 @@ import { AppInitializer } from "@/components/providers/app-initializer";
  *     → AppInitializer (blocks until essential data is fetched)
  *     → AppHeader (sticky nav with role-filtered links)
  *     → <main> with Suspense boundary and PageSkeleton fallback
+ *     → GlobalFAB (fixed bottom-right action button)
  *     → AppFooter
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -26,6 +27,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             {children}
           </Suspense>
         </main>
+        <GlobalFAB />
         <AppFooter />
       </AppInitializer>
     </AppProviders>

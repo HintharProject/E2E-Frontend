@@ -28,6 +28,7 @@ export interface BaseFeedCardProps {
   bottomLeft?: React.ReactNode;
   bottomRight?: React.ReactNode;
   className?: string;
+  moreMenu?: React.ReactNode;
 }
 
 export function BaseFeedCard({
@@ -41,6 +42,7 @@ export function BaseFeedCard({
   bottomLeft,
   bottomRight,
   className = "",
+  moreMenu,
 }: BaseFeedCardProps) {
   return (
     <article
@@ -87,6 +89,12 @@ export function BaseFeedCard({
           {bottomRight}
         </div>
       </div>
+      {/* Three-dot more menu — absolutely positioned top-right corner */}
+      {moreMenu && (
+        <div className="absolute right-3 top-3">
+          {moreMenu}
+        </div>
+      )}
     </article>
   );
 }

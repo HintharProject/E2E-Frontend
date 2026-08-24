@@ -7,7 +7,7 @@ import {
 } from "@/lib/filter-params";
 import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
 
-type FilterSidebarProps = {
+export type FilterSidebarProps = {
   showPostType?: boolean;
   showStateFilter?: boolean;
   hideTags?: boolean;
@@ -54,7 +54,8 @@ function CheckboxGroup({
   );
 }
 
-export function FilterSidebar({
+/** The raw filter controls — usable inside both the desktop sidebar and the mobile collapsible. */
+export function FilterContent({
   showPostType = false,
   showStateFilter = false,
   hideTags = false,
@@ -106,118 +107,128 @@ export function FilterSidebar({
   }
 
   return (
-    <aside className="w-full shrink-0 lg:w-56">
-      <div className="sticky top-24 space-y-5 rounded-2xl border border-line bg-card p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="font-display text-lg text-ink">Filters</h2>
-          {hasFilters ? (
-            <button
-              type="button"
-              onClick={clearFilters}
-              className="text-xs font-semibold text-brand-dark hover:underline"
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-display text-lg text-ink">Filters</h2>
+        {hasFilters ? (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-xs font-semibold text-brand-dark hover:underline"
+          >
+            Clear
+          </button>
+        ) : null}
+      </div>
+      <CheckboxGroup
+        legend="Subject"
+        options={subjects.map((s) => ({ value: s.id, label: s.name }))}
+        selected={selectedSubjects}
+        onToggle={(value) => toggle("subject", selectedSubjects, value)}
+      />
+      <CheckboxGroup
+        legend="Level"
+        options={levels.map((l) => ({ value: l.id, label: l.name }))}
+        selected={selectedLevels}
+        onToggle={(value) => toggle("level", selectedLevels, value)}
+      />
+      {showPostType ? (
         <CheckboxGroup
-          legend="Subject"
-          options={subjects.map((s) => ({ value: s.id, label: s.name }))}
-          selected={selectedSubjects}
-          onToggle={(value) => toggle("subject", selectedSubjects, value)}
+          legend="Type"
+          options={postTypeOptions}
+          selected={selectedTypes}
+          onToggle={(value) => toggle("post_type", selectedTypes, value)}
         />
+      ) : null}
+      {effectiveShowStateFilter ? (
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Status
+          </legend>
+          <div className="flex flex-col gap-2">
+            {[
+              { value: "PUBLISHED", label: "Published" },
+              { value: "DRAFT", label: "Draft" },
+              { value: "ARCHIVED", label: "Archived" },
+            ].map((opt) => (
+              <label
+                key={opt.value}
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+              >
+                <input
+                  type="radio"
+                  name="State"
+                  className="h-4 w-4 shrink-0 border-line accent-brand"
+                  checked={searchParams.get("state") === opt.value || (!searchParams.get("state") && opt.value === "PUBLISHED")}
+                  onChange={() => {
+                    const next = new URLSearchParams(searchParams.toString());
+                    next.set("state", opt.value);
+                    router.push(`${pathname}?${next.toString()}`);
+                  }}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      {showProblemStatus ? (
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+            Status
+          </legend>
+          <div className="flex flex-col gap-2">
+            {[
+              { value: "", label: "All" },
+              { value: "OPEN", label: "Open" },
+              { value: "SOLVED", label: "Solved" },
+              { value: "CLOSED", label: "Closed" },
+            ].map((opt) => (
+              <label
+                key={opt.value}
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+              >
+                <input
+                  type="radio"
+                  name="Status"
+                  className="h-4 w-4 shrink-0 border-line accent-brand"
+                  checked={searchParams.get("status") === opt.value || (!searchParams.get("status") && opt.value === "")}
+                  onChange={() => {
+                    const next = new URLSearchParams(searchParams.toString());
+                    if (opt.value) {
+                      next.set("status", opt.value);
+                    } else {
+                      next.delete("status");
+                    }
+                    router.push(`${pathname}?${next.toString()}`);
+                  }}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      ) : null}
+      {!hideTags && (
         <CheckboxGroup
-          legend="Level"
-          options={levels.map((l) => ({ value: l.id, label: l.name }))}
-          selected={selectedLevels}
-          onToggle={(value) => toggle("level", selectedLevels, value)}
+          legend="Tag"
+          options={tags.map((t) => ({ value: t.id, label: t.name }))}
+          selected={selectedTags}
+          onToggle={(value) => toggle("tags", selectedTags, value)}
         />
-        {showPostType ? (
-          <CheckboxGroup
-            legend="Type"
-            options={postTypeOptions}
-            selected={selectedTypes}
-            onToggle={(value) => toggle("post_type", selectedTypes, value)}
-          />
-        ) : null}
-        {effectiveShowStateFilter ? (
-          <fieldset>
-            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Status
-            </legend>
-            <div className="flex flex-col gap-2">
-              {[
-                { value: "PUBLISHED", label: "Published" },
-                { value: "DRAFT", label: "Draft" },
-                { value: "ARCHIVED", label: "Archived" },
-              ].map((opt) => (
-                <label
-                  key={opt.value}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
-                >
-                  <input
-                    type="radio"
-                    name="State"
-                    className="h-4 w-4 shrink-0 border-line accent-brand"
-                    checked={searchParams.get("state") === opt.value || (!searchParams.get("state") && opt.value === "PUBLISHED")}
-                    onChange={() => {
-                      const next = new URLSearchParams(searchParams.toString());
-                      next.set("state", opt.value);
-                      router.push(`${pathname}?${next.toString()}`);
-                    }}
-                  />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ) : null}
-        {showProblemStatus ? (
-          <fieldset>
-            <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-              Status
-            </legend>
-            <div className="flex flex-col gap-2">
-              {[
-                { value: "", label: "All" },
-                { value: "OPEN", label: "Open" },
-                { value: "SOLVED", label: "Solved" },
-                { value: "CLOSED", label: "Closed" },
-              ].map((opt) => (
-                <label
-                  key={opt.value}
-                  className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
-                >
-                  <input
-                    type="radio"
-                    name="Status"
-                    className="h-4 w-4 shrink-0 border-line accent-brand"
-                    checked={searchParams.get("status") === opt.value || (!searchParams.get("status") && opt.value === "")}
-                    onChange={() => {
-                      const next = new URLSearchParams(searchParams.toString());
-                      if (opt.value) {
-                        next.set("status", opt.value);
-                      } else {
-                        next.delete("status");
-                      }
-                      router.push(`${pathname}?${next.toString()}`);
-                    }}
-                  />
-                  <span>{opt.label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-        ) : null}
-        {!hideTags && (
-          <CheckboxGroup
-            legend="Tag"
-            options={tags.map((t) => ({ value: t.id, label: t.name }))}
-            selected={selectedTags}
-            onToggle={(value) => toggle("tags", selectedTags, value)}
-          />
-        )}
+      )}
+    </div>
+  );
+}
+
+/** Desktop sidebar — hidden on mobile (use MobileFilterToggle instead) */
+export function FilterSidebar(props: FilterSidebarProps) {
+  return (
+    <aside className="hidden w-full shrink-0 lg:block lg:w-56">
+      <div className="sticky top-28 rounded-2xl border border-line bg-card p-4">
+        <FilterContent {...props} />
       </div>
     </aside>
   );
 }
+
