@@ -34,6 +34,10 @@ function formatDateStr(dateStr: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>?/gm, '');
+}
+
 export function PostCard({ post }: { post: Post }) {
   const { user } = useCurrentUser();
   const { getToken } = useAuth();
@@ -109,7 +113,7 @@ export function PostCard({ post }: { post: Post }) {
           {post.title}
         </h2>
         <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-muted">
-          {post.body}
+          {stripHtml(post.body)}
         </p>
       </Link>
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -190,7 +194,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         <h2 className="font-display text-xl text-ink hover:text-brand-dark">
           {lesson.title}
         </h2>
-        <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{lesson.body}</p>
+        <p className="mt-2 line-clamp-2 text-sm text-ink-muted">{stripHtml(lesson.body)}</p>
       </Link>
       <div className="mt-4 flex flex-wrap items-center gap-2">
         <Link

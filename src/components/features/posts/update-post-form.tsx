@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -68,6 +68,7 @@ export function UpdatePostForm({
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -167,8 +168,7 @@ export function UpdatePostForm({
       <Field label="Body (max 3000)">
         <textarea
           {...register("body")}
-          className={`${inputClass} min-h-40 ${errors.body ? errorClass : ""}`}
-          placeholder="Details, context, what you’ve already tried…"
+          className={`${inputClass} min-h-32 ${errors.body ? errorClass : ""}`}
         />
         {errors.body && <p className="mt-1 text-xs text-danger">{errors.body.message}</p>}
       </Field>

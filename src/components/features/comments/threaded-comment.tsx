@@ -156,7 +156,7 @@ export function ThreadedComment({
                 </Button>
               </div>
             </form>
-          ) : (
+            ) : (
             <p className="mt-1 text-sm text-ink-muted leading-relaxed break-words">{comment.body}</p>
           )}
 

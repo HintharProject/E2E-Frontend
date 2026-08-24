@@ -137,3 +137,55 @@ export interface SavedSession {
   updated_at: string;
   items: SavedSessionItem[];
 }
+
+export type ProblemStatusEnum = "OPEN" | "SOLVED" | "CLOSED";
+export type SolutionStatusEnum = "PENDING" | "WORKED" | "INCORRECT";
+
+export interface ProblemAttachment {
+  id: string;
+  file_url: string;
+  file_name: string;
+  attachment_url: string | null;
+  created_at: string;
+}
+
+export interface Problem {
+  id: string;
+  author: string;
+  author_details: UserPublic;
+  title: string;
+  body: string;
+  subject: string;
+  subject_details: Subject;
+  level: string;
+  level_details: Level;
+  status: ProblemStatusEnum;
+  attachments: ProblemAttachment[];
+  vote_count?: number;
+  solution_count?: number;
+  user_vote?: 1 | -1 | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SolutionAttachment {
+  id: string;
+  file_url: string;
+  file_name: string;
+  attachment_url: string | null;
+  created_at: string;
+}
+
+export interface Solution {
+  id: string;
+  problem: string;
+  author: string;
+  author_details: UserPublic;
+  body: string;
+  status: SolutionStatusEnum;
+  attachments: SolutionAttachment[];
+  vote_count?: number;
+  user_vote?: 1 | -1 | null;
+  created_at: string;
+  updated_at: string;
+}

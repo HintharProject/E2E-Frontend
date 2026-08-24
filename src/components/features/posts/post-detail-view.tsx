@@ -86,9 +86,9 @@ export function PostDetailView({ postId }: { postId: string }) {
             <Badge key={t} variant="outline">#{t}</Badge>
           ))}
         </div>
-        <p className="mt-6 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
+        <div className="mt-6 whitespace-pre-wrap text-ink leading-relaxed">
           {post.body}
-        </p>
+        </div>
         {post.attachment_url ? (
           <PostAttachment url={post.attachment_url} />
         ) : null}

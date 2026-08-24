@@ -86,9 +86,9 @@ export function LessonDetailClient({ id }: { id: string }) {
         
         <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={lesson.embedded_video_url} />
 
-        <p className="mt-6 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
+        <div className="mt-6 whitespace-pre-wrap text-ink leading-relaxed">
           {lesson.body}
-        </p>
+        </div>
 
         {otherAttachments.length > 0 ? (
           <div className="mt-6 space-y-3">

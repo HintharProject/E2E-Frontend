@@ -27,7 +27,7 @@ export class ApiError extends Error {
  */
 export async function apiFetch<T>(
   path: string,
-  token: string,
+  token?: string | null,
   options?: RequestInit
 ): Promise<T> {
   const controller = new AbortController();

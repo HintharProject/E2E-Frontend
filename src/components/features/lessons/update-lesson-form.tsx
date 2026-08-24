@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
@@ -99,6 +99,7 @@ export function UpdateLessonForm({
     register,
     handleSubmit,
     setValue,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -173,8 +174,7 @@ export function UpdateLessonForm({
       <Field label="Body">
         <textarea
           {...register("body")}
-          className={`${inputClass} min-h-44 ${errors.body ? errorClass : ""}`}
-          placeholder="Lesson content..."
+          className={`${inputClass} min-h-32 ${errors.body ? errorClass : ""}`}
         />
         {errors.body && <p className="mt-1 text-xs text-danger">{errors.body.message}</p>}
       </Field>
