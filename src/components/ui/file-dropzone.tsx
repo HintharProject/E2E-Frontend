@@ -93,6 +93,13 @@ export function FileDropzone({
     setLocalError("");
   };
 
+  const getFilePreview = (file: File) => {
+    if (file.type.startsWith("image/")) {
+      return URL.createObjectURL(file);
+    }
+    return null;
+  };
+
   return (
     <div className="w-full">
       <div
@@ -130,14 +137,26 @@ export function FileDropzone({
 
       {files.length > 0 && (
         <ul className="mt-4 flex flex-col gap-2">
-          {files.map((file, i) => (
-            <li key={i} className="flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
-              <span className="truncate">{file.name}</span>
-              <Button type="button" variant="ghost" size="xs" onClick={() => removeFile(i)}>
-                <X className="w-4 h-4" />
-              </Button>
-            </li>
-          ))}
+          {files.map((file, i) => {
+            const previewUrl = getFilePreview(file);
+            return (
+              <li key={i} className="flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
+                <div className="flex items-center gap-3 overflow-hidden">
+                  {previewUrl ? (
+                    <img src={previewUrl} alt={file.name} className="h-10 w-10 object-cover rounded border border-line shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 bg-muted rounded border border-line flex items-center justify-center shrink-0">
+                      <span className="text-[10px] uppercase font-bold text-ink-muted">{file.name.split('.').pop()}</span>
+                    </div>
+                  )}
+                  <span className="truncate flex-1 min-w-0 font-medium">{file.name}</span>
+                </div>
+                <Button type="button" variant="ghost" size="xs" onClick={() => removeFile(i)} className="shrink-0 text-ink-muted hover:text-danger">
+                  <X className="w-4 h-4" />
+                </Button>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

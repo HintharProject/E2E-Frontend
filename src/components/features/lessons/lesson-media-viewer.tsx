@@ -29,7 +29,7 @@ function parseYouTubeUrl(url: string) {
 }
 
 interface LessonMediaViewerProps {
-  imageAttachments: LessonAttachment[];
+  imageAttachments: (LessonAttachment | any)[];
   youtubeUrl: string | null | undefined;
 }
 
@@ -39,14 +39,15 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
+  const [imageErrors, setImageErrors] = useState<Record<number, boolean>>({});
   const [videoLoaded, setVideoLoaded] = useState(false);
 
   if (imageAttachments.length === 0 && !youtubeUrl) return null;
 
   const showTabs = imageAttachments.length > 0 && !!youtubeUrl;
 
-  const currentImage = imageAttachments[currentImageIndex];
-  const isCurrentImageLoaded = imageLoaded[currentImageIndex];
+  const getImageUrl = (att: any) => att?.attachment_url || att?.file_url || "";
+  const getDownloadUrl = (att: any) => att?.download_url || att?.attachment_url || att?.file_url || "";
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % imageAttachments.length);
@@ -54,10 +55,6 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + imageAttachments.length) % imageAttachments.length);
-  };
-
-  const handleImageLoad = () => {
-    setImageLoaded((prev) => ({ ...prev, [currentImageIndex]: true }));
   };
 
   return (
@@ -89,63 +86,97 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
 
       {/* Content */}
       <div className="w-full bg-surface border border-line rounded-xl overflow-hidden relative">
-        {activeTab === "images" && currentImage && (
-          <div className="relative aspect-video flex items-center justify-center bg-black/5">
-            {!isCurrentImageLoaded && (
-              <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
-            )}
-            <Dialog>
-              <DialogTrigger className="w-full h-full flex items-center justify-center p-2 group outline-none z-10">
-                <img 
-                  src={currentImage.file_url} 
-                  alt={currentImage.file_name} 
-                  className={cn("max-w-full max-h-full object-contain mx-auto shadow-sm rounded-lg transition-opacity duration-300", !isCurrentImageLoaded ? "opacity-0" : "opacity-100")}
-                  loading={currentImageIndex === 0 ? "eager" : "lazy"}
-                  fetchPriority={currentImageIndex === 0 ? "high" : "auto"}
-                  onLoad={handleImageLoad}
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
-                  <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white shadow-lg">
-                    <Expand className="w-6 h-6" />
-                  </div>
+        {activeTab === "images" && imageAttachments.length > 0 && (
+          <div className="relative aspect-video flex items-center justify-center bg-black/5 overflow-hidden">
+            {/* Render all images stacked for instant switching & parallel download */}
+            {imageAttachments.map((img, idx) => {
+              const url = getImageUrl(img);
+              const isCurrent = idx === currentImageIndex;
+              const isLoaded = imageLoaded[idx];
+              const hasError = imageErrors[idx];
+
+              return (
+                <div
+                  key={img.id || idx}
+                  className={cn(
+                    "absolute inset-0 flex items-center justify-center p-2 transition-opacity duration-300",
+                    isCurrent ? "opacity-100 z-10" : "opacity-0 pointer-events-none z-0"
+                  )}
+                >
+                  {!isLoaded && !hasError && isCurrent && (
+                    <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
+                  )}
+
+                  {hasError ? (
+                    <div className="flex flex-col items-center justify-center gap-2 text-ink-muted">
+                      <ImageIcon className="w-8 h-8 opacity-40" />
+                      <span className="text-xs">Failed to load image</span>
+                    </div>
+                  ) : (
+                    <Dialog>
+                      <DialogTrigger className="w-full h-full flex items-center justify-center group outline-none">
+                        <img
+                          src={url}
+                          alt={img.file_name || "Attachment"}
+                          className={cn(
+                            "max-w-full max-h-full object-contain mx-auto shadow-sm rounded-lg transition-opacity duration-200",
+                            !isLoaded ? "opacity-0" : "opacity-100"
+                          )}
+                          loading={idx === 0 ? "eager" : "lazy"}
+                          fetchPriority={idx === 0 ? "high" : "auto"}
+                          onLoad={() => setImageLoaded((prev) => ({ ...prev, [idx]: true }))}
+                          onError={() => setImageErrors((prev) => ({ ...prev, [idx]: true }))}
+                        />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white shadow-lg">
+                            <Expand className="w-6 h-6" />
+                          </div>
+                        </div>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-6xl w-full h-[90vh] bg-transparent border-none shadow-none flex items-center justify-center p-0">
+                        <DialogTitle className="sr-only">Image View</DialogTitle>
+                        <div className="relative w-full h-full flex items-center justify-center group">
+                          <img
+                            src={url}
+                            alt="Attachment full size"
+                            className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl mx-auto"
+                            loading="lazy"
+                          />
+                          <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
+                            <a
+                              href={getDownloadUrl(img)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className={cn(buttonVariants({ size: "icon", variant: "secondary" }), "rounded-full shadow-lg h-10 w-10")}
+                            >
+                              <Download className="w-5 h-5" />
+                            </a>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
-              </DialogTrigger>
-              <DialogContent className="max-w-6xl w-full h-[90vh] bg-transparent border-none shadow-none flex items-center justify-center p-0">
-                <DialogTitle className="sr-only">Image View</DialogTitle>
-                <div className="relative w-full h-full flex items-center justify-center group">
-                  <img 
-                    src={currentImage.file_url} 
-                    alt="Attachment full size" 
-                    className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl mx-auto"
-                    loading="lazy"
-                  />
-                  <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                    <a 
-                      href={currentImage.download_url || currentImage.file_url} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      download 
-                      className={cn(buttonVariants({ size: "icon", variant: "secondary" }), "rounded-full shadow-lg h-10 w-10")}
-                    >
-                      <Download className="w-5 h-5" />
-                    </a>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
+              );
+            })}
 
             {/* Navigation Arrows */}
             {imageAttachments.length > 1 && (
               <>
-                <button 
+                <button
+                  type="button"
                   onClick={handlePrevImage}
                   className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-surface/80 hover:bg-surface text-ink rounded-full shadow-sm backdrop-blur-sm transition-all border border-line z-20"
+                  aria-label="Previous image"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                <button 
+                <button
+                  type="button"
                   onClick={handleNextImage}
                   className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-surface/80 hover:bg-surface text-ink rounded-full shadow-sm backdrop-blur-sm transition-all border border-line z-20"
+                  aria-label="Next image"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>

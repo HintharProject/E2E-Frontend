@@ -49,6 +49,7 @@ export interface Post {
   level: string | null;
   level_details: Level | null;
   attachment_url: string | null;
+  attachment_name?: string | null;
   tags_data: Tag[];
   created_at: string;
   updated_at: string;

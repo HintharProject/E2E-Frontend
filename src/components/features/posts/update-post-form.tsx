@@ -41,6 +41,25 @@ export function UpdatePostForm({
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [existingAttachment, setExistingAttachment] = useState<{ url: string; name: string } | null>(
+    post.attachment_url ? { url: post.attachment_url, name: post.attachment_name || "Attachment" } : null
+  );
+
+  const handleRemoveExistingAttachment = async () => {
+    const toastId = toast.loading("Removing attachment...");
+    try {
+      const token = await getToken();
+      await apiFetch(`/posts/${post.id}/attachment/remove/`, token, {
+        method: "DELETE",
+      });
+      setExistingAttachment(null);
+      toast.success("Attachment removed", { id: toastId });
+      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+      queryClient.invalidateQueries({ queryKey: ["posts"] });
+    } catch (err: any) {
+      toast.error("Failed to remove attachment", { id: toastId });
+    }
+  };
 
   const canAnnounce = userRole === "CREATOR" || userRole === "ADMIN";
   const subjectRequired = userRole === "STUDENT";
@@ -205,6 +224,16 @@ export function UpdatePostForm({
       </Field>
 
       <Field label="New attachment (optional · max 1 · 5MB · jpg/png/pdf)">
+        {existingAttachment && (
+          <div className="mb-4 flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <span className="truncate flex-1 min-w-0 font-medium">{existingAttachment.name}</span>
+            </div>
+            <Button type="button" variant="ghost" size="xs" onClick={handleRemoveExistingAttachment} className="shrink-0 text-ink-muted hover:text-danger">
+              Remove
+            </Button>
+          </div>
+        )}
         <FileDropzone 
           onFilesSelected={(files) => {
             setValue("attachment", files, { shouldValidate: true });
@@ -214,11 +243,6 @@ export function UpdatePostForm({
           acceptedTypes={ACCEPTED_FILE_TYPES}
           error={errors.attachment?.message as string}
         />
-        {post.attachment_url && (
-          <p className="mt-2 text-xs text-ink-muted">
-            Current attachment: <a href={post.attachment_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">View</a>. Uploading a new one will replace it.
-          </p>
-        )}
       </Field>
 
       <div className="flex gap-2 pt-2">

@@ -20,6 +20,8 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
+import { BaseDetailedCard } from "@/components/ui/base-card";
+import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -114,6 +116,19 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const author = problem.author_details;
+  
+  const imageAttachments = problem.attachments?.filter(att => {
+    const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+    const ext = name.split('?')[0].split('.').pop()?.toLowerCase() || '';
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+  }) || [];
+  
+  const otherAttachments = problem.attachments?.filter(att => {
+    const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+    const ext = name.split('?')[0].split('.').pop()?.toLowerCase() || '';
+    return !['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+  }) || [];
+
   const solutions = solutionsData?.pages.flatMap(p => p.data) ?? [];
 
   return (
@@ -129,70 +144,68 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
       />
 
       {/* Problem Section */}
-      <article className="rounded-2xl border border-line bg-card p-6 shadow-sm">
-        <div className="flex flex-wrap items-center gap-3">
-          {author ? (
-            <Link href={`/users/${author.id}`} className="flex items-center gap-2">
-              <Avatar size="sm">
-                {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-              </Avatar>
-              <span className="font-semibold text-ink">{author.display_name}</span>
-            </Link>
-          ) : null}
-          <Badge
-            variant={
-              problem.status === "SOLVED"
-                ? "default"
-                : problem.status === "CLOSED"
-                  ? "secondary"
-                  : "outline"
-            }
-            className={problem.status === "OPEN" ? "border-brand/50 text-brand bg-brand/10" : ""}
-          >
-            {problem.status}
-          </Badge>
-          {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
-          {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
-        </div>
-
-        <div className="mt-6 whitespace-pre-wrap text-ink leading-relaxed">
-          {problem.body}
-        </div>
-
-        {problem.attachments && problem.attachments.length > 0 && (
-          <div className="mt-8 flex flex-col gap-3">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">Attachments</h3>
-            <div className="flex flex-col gap-2">
-              {problem.attachments.map(att => (
+      <BaseDetailedCard
+        author={author ? {
+          id: author.id || "",
+          display_name: author.display_name || "Unknown",
+          profile_image_url: author.profile_image_url,
+        } : undefined}
+        badges={
+          <>
+            <Badge
+              variant={
+                problem.status === "SOLVED"
+                  ? "default"
+                  : problem.status === "CLOSED"
+                    ? "secondary"
+                    : "outline"
+              }
+              className={problem.status === "OPEN" ? "border-brand/50 text-brand bg-brand/10" : ""}
+            >
+              {problem.status}
+            </Badge>
+            {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
+            {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
+          </>
+        }
+        body={problem.body}
+        mediaImages={
+          imageAttachments.length > 0 ? (
+            <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
+          ) : undefined
+        }
+        fileAttachments={
+          otherAttachments.length > 0 ? (
+            <>
+              {otherAttachments.map(att => (
                 <PostAttachment key={att.id} url={att.attachment_url || att.file_url} filename={att.file_name} />
               ))}
-            </div>
-          </div>
-        )}
-        
-        {/* Voting Interactions */}
-        <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
-          <Button 
-            variant={localUserVote === 1 ? "default" : "secondary"} 
-            onClick={() => handleVote(localUserVote === 1 ? 0 : 1)} 
-          >
-            ▲ Upvote ({localVoteCount})
-          </Button>
-          <Button 
-            variant={localUserVote === -1 ? "default" : "ghost"} 
-            onClick={() => handleVote(localUserVote === -1 ? 0 : -1)} 
-          >
-            ▼ Downvote
-          </Button>
-          <Button variant="ghost" onClick={handleShare}>Share</Button>
-          {user?.clerk_id !== problem.author_details?.clerk_id && (
-            <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
-              {reportMutation.isPending ? "Reporting..." : "Report"}
+            </>
+          ) : undefined
+        }
+        interactions={
+          <>
+            <Button 
+              variant={localUserVote === 1 ? "default" : "secondary"} 
+              onClick={() => handleVote(localUserVote === 1 ? 0 : 1)} 
+            >
+              ▲ Upvote ({localVoteCount})
             </Button>
-          )}
-        </div>
-      </article>
+            <Button 
+              variant={localUserVote === -1 ? "default" : "ghost"} 
+              onClick={() => handleVote(localUserVote === -1 ? 0 : -1)} 
+            >
+              ▼ Downvote
+            </Button>
+            <Button variant="ghost" onClick={handleShare}>Share</Button>
+            {user?.clerk_id !== problem.author_details?.clerk_id && (
+              <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
+                {reportMutation.isPending ? "Reporting..." : "Report"}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       {/* Solutions Section */}
       <div className="mt-12">

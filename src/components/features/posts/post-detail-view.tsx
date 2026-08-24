@@ -11,6 +11,8 @@ import { PostComments } from "@/components/features/comments/post-comments";
 import { PostAuthorActions } from "@/components/features/posts/post-author-actions";
 import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
+import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
+import { BaseDetailedCard } from "@/components/ui/base-card";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -61,6 +63,8 @@ export function PostDetailView({ postId }: { postId: string }) {
   const tagNames = post.tags_data?.map(t => t.name) ?? [];
   const isAuthor = clerkUser?.id === author?.clerk_id;
 
+  const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <PageHeader
@@ -68,33 +72,44 @@ export function PostDetailView({ postId }: { postId: string }) {
         description={`Posted ${formatDate(post.created_at)}`}
         actions={isAuthor ? <PostAuthorActions postId={post.id} /> : undefined}
       />
-      <div className="rounded-2xl border border-line bg-card p-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {author ? (
-            <Link href={`/users/${author.id}`} className="flex items-center gap-2">
-              <Avatar size="sm">
-                {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-              </Avatar>
-              <span className="font-semibold text-ink">{author.display_name}</span>
-            </Link>
-          ) : null}
-          <Badge variant="default">{post.post_type}</Badge>
-          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {tagNames.map((t) => (
-            <Badge key={t} variant="outline">#{t}</Badge>
-          ))}
-        </div>
-        <div className="mt-6 whitespace-pre-wrap text-ink leading-relaxed">
-          {post.body}
-        </div>
-        {post.attachment_url ? (
-          <PostAttachment url={post.attachment_url} />
-        ) : null}
-
-        <PostInteractions post={post} />
-      </div>
+      <BaseDetailedCard
+        author={author ? {
+          id: author.id || "",
+          display_name: author.display_name || "Unknown",
+          profile_image_url: author.profile_image_url,
+        } : undefined}
+        badges={
+          <>
+            <Badge variant="default">{post.post_type}</Badge>
+            {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
+            {level ? <Badge variant="outline">{level.name}</Badge> : null}
+            {tagNames.map((t) => (
+              <Badge key={t} variant="outline">#{t}</Badge>
+            ))}
+          </>
+        }
+        body={post.body}
+        mediaImages={
+          isImageAttachment && post.attachment_url ? (
+            <LessonMediaViewer
+              imageAttachments={[{
+                id: post.id,
+                file_url: post.attachment_url,
+                file_name: post.attachment_name || "Attachment",
+                download_url: post.attachment_url,
+                created_at: post.created_at,
+              }]}
+              youtubeUrl={null}
+            />
+          ) : undefined
+        }
+        fileAttachments={
+          !isImageAttachment && post.attachment_url ? (
+            <PostAttachment url={post.attachment_url} filename={post.attachment_name || "Attachment"} />
+          ) : undefined
+        }
+        interactions={<PostInteractions post={post} />}
+      />
 
       <PostComments postId={post.id} initialCount={post.comment_count ?? 0} />
     </div>

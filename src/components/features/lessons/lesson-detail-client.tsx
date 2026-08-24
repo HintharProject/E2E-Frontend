@@ -11,9 +11,10 @@ import { formatDate } from "@/lib/utils";
 import { apiFetch } from "@/services/api-client";
 import { Lesson } from "@/types";
 import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
-import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
 import LessonDetailLoading from "@/app/(app)/lessons/[id]/loading";
+import { BaseDetailedCard } from "@/components/ui/base-card";
+import { PostAttachment } from "@/components/features/posts/post-attachment";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -100,60 +101,54 @@ export function LessonDetailClient({ id }: { id: string }) {
         description={`Published ${formatDate(lesson.created_at)} · no comments on lessons`}
         actions={<LessonDetailActions lesson={lesson} />}
       />
-      <article className="rounded-2xl border border-line bg-card p-6">
-        <div className="flex flex-wrap items-center gap-3">
-          {author ? (
-            <Link href={`/users/${author.id}`} className="flex items-center gap-2">
-              <Avatar size="sm">
-                 {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                 <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-              </Avatar>
-              <span className="font-semibold text-ink">{author.display_name}</span>
-            </Link>
-          ) : null}
-          <Badge variant="default">{lesson.state}</Badge>
-          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {tagNames.map((t) => (
-            <Badge key={t} variant="outline">#{t}</Badge>
-          ))}
-        </div>
-        
-        <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={lesson.embedded_video_url} />
-
-        <div className="mt-6 whitespace-pre-wrap text-ink leading-relaxed">
-          {lesson.body}
-        </div>
-
-        {otherAttachments.length > 0 ? (
-          <div className="mt-6 space-y-3">
-            <h3 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">Attachments</h3>
-            <div className="flex flex-col gap-3">
+      <BaseDetailedCard
+        author={author ? {
+          id: author.id || "",
+          display_name: author.display_name || "Unknown",
+          profile_image_url: author.profile_image_url,
+        } : undefined}
+        badges={
+          <>
+            <Badge variant="default">{lesson.state}</Badge>
+            {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
+            {level ? <Badge variant="outline">{level.name}</Badge> : null}
+            {tagNames.map((t) => (
+              <Badge key={t} variant="outline">#{t}</Badge>
+            ))}
+          </>
+        }
+        mediaImages={<LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={lesson.embedded_video_url} />}
+        body={lesson.body}
+        fileAttachments={
+          otherAttachments.length > 0 ? (
+            <>
               {otherAttachments.map((file) => (
                 <PostAttachment key={file.id} url={file.file_url} downloadUrl={file.download_url} filename={file.file_name} />
               ))}
-            </div>
-          </div>
-        ) : null}
-        <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
-          <Button 
-            variant={localUserVote === 1 ? "default" : "secondary"} 
-            onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
-          >
-            ▲ Upvote ({localVoteCount})
-          </Button>
-          <Button 
-            variant={localUserVote === -1 ? "default" : "ghost"} 
-            onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
-          >
-            ▼ Downvote
-          </Button>
-          <Button variant="secondary">Add to Study Plan</Button>
-          <Button variant="secondary">Save to session</Button>
-          <Button variant="ghost" onClick={handleShare}>Share</Button>
-          <Button variant="ghost">Report</Button>
-        </div>
-      </article>
+            </>
+          ) : undefined
+        }
+        interactions={
+          <>
+            <Button 
+              variant={localUserVote === 1 ? "default" : "secondary"} 
+              onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
+            >
+              ▲ Upvote ({localVoteCount})
+            </Button>
+            <Button 
+              variant={localUserVote === -1 ? "default" : "ghost"} 
+              onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
+            >
+              ▼ Downvote
+            </Button>
+            <Button variant="secondary">Add to Study Plan</Button>
+            <Button variant="secondary">Save to session</Button>
+            <Button variant="ghost" onClick={handleShare}>Share</Button>
+            <Button variant="ghost">Report</Button>
+          </>
+        }
+      />
     </div>
   );
 }

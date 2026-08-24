@@ -11,12 +11,8 @@ import { apiFetch } from "@/services/api-client";
 import { formatDate } from "@/lib/utils";
 import { ProblemCardVote } from "./problem-card-vote";
 
-function getInitials(name?: string | null): string {
-  const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
+import { BaseFeedCard } from "@/components/ui/base-card";
+
 
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>?/gm, '');
@@ -46,65 +42,43 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   };
 
   return (
-    <article
-      className="group rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)] relative"
+    <BaseFeedCard
+      href={`/problems/${problem.id}`}
       onMouseEnter={handleMouseEnter}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          {author ? (
-            <Link href={`/users/${author.id}`}>
-              <Avatar size="sm">
-                {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-              </Avatar>
-            </Link>
-          ) : null}
-          <div>
-            <Link
-              href={`/users/${author?.id}`}
-              className="text-sm font-semibold text-ink hover:text-brand-dark"
-            >
-              {author?.display_name}
-            </Link>
-            <p className="text-xs text-ink-muted">
-              {formatDate(problem.created_at)}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={
-              problem.status === "SOLVED"
-                ? "default" // Highlight solved
-                : problem.status === "CLOSED"
-                  ? "secondary" // Gray out closed
-                  : "outline" // Open is neutral
-            }
-            className={problem.status === "OPEN" ? "border-brand/50 text-brand bg-brand/10" : ""}
-          >
-            {problem.status}
-          </Badge>
-        </div>
-      </div>
-      <Link href={`/problems/${problem.id}`} className="mt-3 block">
-        <h2 className="font-display text-xl text-ink group-hover:text-brand-dark">
-          {problem.title}
-        </h2>
-        <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-ink-muted">
-          {stripHtml(problem.body)}
-        </p>
-      </Link>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-        {level ? <Badge variant="outline">{level.name}</Badge> : null}
-        
-        <div className="ml-auto flex items-center gap-2 text-xs font-semibold text-ink-muted">
+      author={author ? {
+        id: author.id || "",
+        display_name: author.display_name || "Unknown",
+        profile_image_url: author.profile_image_url,
+      } : undefined}
+      subtitle={formatDate(problem.created_at)}
+      topRight={
+        <Badge
+          variant={
+            problem.status === "SOLVED"
+              ? "default"
+              : problem.status === "CLOSED"
+                ? "secondary"
+                : "outline"
+          }
+          className={problem.status === "OPEN" ? "border-brand/50 text-brand bg-brand/10" : ""}
+        >
+          {problem.status}
+        </Badge>
+      }
+      title={problem.title}
+      body={problem.body}
+      bottomLeft={
+        <>
+          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
+          {level ? <Badge variant="outline">{level.name}</Badge> : null}
+        </>
+      }
+      bottomRight={
+        <>
           <ProblemCardVote problemId={problem.id} initialVoteCount={problem.vote_count ?? 0} initialUserVote={problem.user_vote} />
-          <span>·</span>
-          <span>{problem.solution_count ?? 0} solutions</span>
-        </div>
-      </div>
-    </article>
+          <span>· {problem.solution_count ?? 0} solutions</span>
+        </>
+      }
+    />
   );
 }

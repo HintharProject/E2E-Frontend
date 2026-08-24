@@ -39,6 +39,18 @@ export function useProblem(id: string) {
   });
 }
 
+export function useSolution(id: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["solution", id],
+    queryFn: async () => {
+      const token = await getToken();
+      return apiFetch<Solution>(`/solutions/${id}/`, token);
+    },
+    enabled: !!id,
+  });
+}
+
 export function useSolutions(problemId: string) {
   const { getToken } = useAuth();
   return useInfiniteQuery({

@@ -57,7 +57,7 @@ export function UpdateLessonForm({
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       
-      await apiFetch(`/lessons/${lesson.id}/attachments/${attachmentId}/`, token, {
+      await apiFetch(`/lessons/${lesson.id}/attachment/${attachmentId}/`, token, {
         method: "DELETE",
       });
       queryClient.invalidateQueries({ queryKey: ["lessons"] });

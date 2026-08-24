@@ -37,6 +37,22 @@ export function UpdateProblemForm({
   const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
+  const [existingAttachments, setExistingAttachments] = useState(problem.attachments || []);
+
+  const handleRemoveExistingAttachment = async (attachmentId: string) => {
+    const toastId = toast.loading("Removing attachment...");
+    try {
+      const token = await getToken();
+      await apiFetch(`/problems/${problem.id}/attachment/${attachmentId}/`, token, {
+        method: "DELETE",
+      });
+      setExistingAttachments(prev => prev.filter(att => att.id !== attachmentId));
+      toast.success("Attachment removed", { id: toastId });
+      queryClient.invalidateQueries({ queryKey: ["problem", problem.id] });
+    } catch (err: any) {
+      toast.error("Failed to remove attachment", { id: toastId });
+    }
+  };
 
   const formSchema = z.object({
     title: z.string().min(1, "Title is required").max(100, "Max 100 characters"),
@@ -177,7 +193,24 @@ export function UpdateProblemForm({
         </Field>
       </div>
 
-      <Field label="Add new attachment (optional · max 1 per upload · 5MB · jpg/png/pdf)">
+      <Field label="New attachment (optional · max 3 · 5MB · jpg/png/pdf)">
+        {existingAttachments.length > 0 && (
+          <div className="mb-4">
+            <p className="text-sm font-medium mb-2">Existing attachments:</p>
+            <ul className="flex flex-col gap-2">
+              {existingAttachments.map(att => (
+                <li key={att.id} className="flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
+                  <div className="flex items-center gap-3 overflow-hidden">
+                    <span className="truncate flex-1 min-w-0 font-medium">{att.file_name}</span>
+                  </div>
+                  <Button type="button" variant="ghost" size="xs" onClick={() => handleRemoveExistingAttachment(att.id)} className="shrink-0 text-ink-muted hover:text-danger">
+                    Remove
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         <FileDropzone 
           onFilesSelected={(files) => {
             setValue("attachment", files, { shouldValidate: true });
