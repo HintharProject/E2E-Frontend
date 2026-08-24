@@ -33,8 +33,8 @@ export default function SearchPage(props: {
   const { data: levels = [] } = useLevels();
   const { data: tags = [] } = useTags();
 
-  const { data: postData, isLoading: postsLoading } = useInfinitePosts({ search: q, subject, level, type: postType });
-  const { data: lessonData, isLoading: lessonsLoading } = useInfiniteLessons({ search: q, subject, level });
+  const { data: postData, isLoading: postsLoading } = useInfinitePosts({ search: q, subject, level, type: postType, tags: tag });
+  const { data: lessonData, isLoading: lessonsLoading } = useInfiniteLessons({ search: q, subject, level, tags: tag });
 
   const postResults = postData?.pages.flatMap(p => p.data) || [];
   const lessonResults = lessonData?.pages.flatMap(p => p.data) || [];

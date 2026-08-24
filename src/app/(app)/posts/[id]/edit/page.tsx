@@ -4,14 +4,15 @@ import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
 import { Post, PaginatedResponse, Subject, Level, Tag } from "@/types";
 import { isWriteLocked } from "@/types/user";
+import { fetchCurrentUser } from "@/services/user-service";
 import { UpdatePostForm } from "@/components/features/posts/update-post-form";
+import { getServerAuthToken } from "@/lib/auth-server";
 
 export default async function EditPostPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const { getToken, userId } = await auth();
-  const token = await getToken();
+  const token = await getServerAuthToken();
   
   if (!token) notFound();
 
@@ -22,18 +23,22 @@ export default async function EditPostPage(props: {
     notFound();
   }
   
-  const user = userId ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" };
+  const user = await fetchCurrentUser(token).catch(() => null);
   
+  if (!user) {
+    notFound();
+  }
+
   // Verify permissions: only author or admin can edit
-  if (user.role !== "ADMIN" && post.author_details?.clerk_id !== userId) {
+  if (user.role !== "ADMIN" && post.author !== user.id) {
     notFound(); // Alternatively, show a permission denied page
   }
 
-  const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");
+  const writeLocked = isWriteLocked(user.ban_state);
 
   const [subjects, levels, tags] = await Promise.all([
-    apiFetch<Subject[]>("/subjects/", ""),
-    apiFetch<Level[]>("/levels/", ""),
+    apiFetch<Subject[]>("/subjects/", token),
+    apiFetch<Level[]>("/levels/", token),
     apiFetch<Tag[]>("/tags/", token)
   ]).catch(() => [
     [] as Subject[],

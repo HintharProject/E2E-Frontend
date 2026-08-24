@@ -47,11 +47,13 @@ export function DevTools() {
 
   const handleLogin = (userId: string) => {
     localStorage.setItem("dev_token", `dev_${userId}`);
+    document.cookie = `dev_token=dev_${userId}; path=/; max-age=86400`;
     window.location.reload();
   };
 
   const handleLogout = () => {
     localStorage.removeItem("dev_token");
+    document.cookie = "dev_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
     window.location.reload();
   };
 

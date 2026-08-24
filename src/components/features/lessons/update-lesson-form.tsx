@@ -99,8 +99,8 @@ export function UpdateLessonForm({
       const payload = {
         title: data.title,
         body: data.body,
-        subject_id: data.subject_id,
-        level_id: data.level_id,
+        subject: data.subject_id,
+        level: data.level_id,
         state: data.state,
         ...(data.embedded_video_url && { embedded_video_url: data.embedded_video_url }),
         ...(data.tag_id && { tags: [data.tag_id] }),

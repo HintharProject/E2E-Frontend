@@ -12,6 +12,7 @@ import { PostCardVote } from "./posts/post-card-vote";
 import { PostAuthorActions } from "./posts/post-author-actions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { apiFetch } from "@/services/api-client";
+import { LessonDetailActions } from "./lessons/lesson-detail-actions";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -133,9 +134,15 @@ export function PostCard({ post }: { post: Post }) {
 }
 
 export function LessonCard({ lesson }: { lesson: Lesson }) {
+  const { user } = useCurrentUser();
   const author = lesson.author_details;
   const subject = lesson.subject_details;
   const level = lesson.level_details;
+
+  const isAuthor = user?.id === author?.id;
+  const isAdmin = user?.role === "ADMIN";
+  const isCreator = user?.role === "CREATOR";
+  const canEdit = isAdmin || (isCreator && isAuthor);
 
   return (
     <article className="rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]">
@@ -176,13 +183,9 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         {/* Lesson tags might not have names resolved in the basic schema, just IDs. For now, we omit them if they are just strings, or we map them. 
             The schema says Lesson.tags is an array of UUIDs (writeOnly mostly) or tags_data maybe missing. We'll leave them out if not mapped. */}
       </div>
-      {lesson.state !== "PUBLISHED" ? (
-        <div className="mt-4">
-          <Button variant="secondary" nativeButton={false} render={<Link href={`/lessons/${lesson.id}/edit`} />}>
-            Edit
-          </Button>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <LessonDetailActions lesson={lesson} />
         </div>
-      ) : null}
     </article>
   );
 }

@@ -3,12 +3,34 @@ import { PageHeader } from "@/components/ui/page-header";
 import { SubNav } from "@/components/ui/sub-nav";
 import { LessonsFeed } from "@/components/features/lessons-feed";
 import Link from "next/link";
+import { auth } from "@clerk/nextjs/server";
+import { redirect, notFound } from "next/navigation";
+import { apiFetch } from "@/services/api-client";
+import { UserPublic } from "@/types";
+import { getServerAuthToken } from "@/lib/auth-server";
 
 export default async function MyLessonsPage(props: {
   searchParams?: Promise<{ state?: string }>;
 }) {
   const searchParams = await props.searchParams;
   
+  const token = await getServerAuthToken();
+
+  if (!token) {
+    redirect("/sign-in");
+  }
+
+  let user: UserPublic | null = null;
+  try {
+    user = await apiFetch<UserPublic>("/users/me/", token);
+  } catch {
+    // Ignore, let user be null
+  }
+
+  if (!user || (user.role !== "CREATOR" && user.role !== "ADMIN")) {
+    notFound();
+  }
+
   const state = searchParams?.state;
   const active =
     (state?.toUpperCase() as "DRAFT" | "PUBLISHED" | "ARCHIVED") || "PUBLISHED";
@@ -40,7 +62,7 @@ export default async function MyLessonsPage(props: {
         ]}
       />
       <div className="mt-6">
-        <LessonsFeed subjects={[]} levels={[]} tagIds={[]} />
+        <LessonsFeed subjects={[]} levels={[]} tagIds={[]} onlyMine state={active} />
       </div>
     </div>
   );

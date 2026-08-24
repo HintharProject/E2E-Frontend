@@ -8,6 +8,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
 import { apiFetch } from "@/services/api-client";
 import { Lesson } from "@/types";
+import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
+import { getServerAuthToken } from "@/lib/auth-server";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -18,8 +20,7 @@ export default async function LessonDetailPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
-  const { getToken } = await auth();
-  const token = await getToken();
+  const token = await getServerAuthToken();
 
   if (!token) notFound();
 
@@ -43,15 +44,7 @@ export default async function LessonDetailPage(props: {
       <PageHeader
         title={lesson.title}
         description={`Published ${formatDate(lesson.created_at)} · no comments on lessons`}
-        actions={
-          <>
-            <Button variant="secondary" nativeButton={false} render={<Link href={`/lessons/${lesson.id}/edit`} />}>
-              Edit
-            </Button>
-            <Button variant="secondary">Archive</Button>
-            <Button variant="destructive">Delete</Button>
-          </>
-        }
+        actions={<LessonDetailActions lesson={lesson} />}
       />
       <article className="rounded-2xl border border-line bg-card p-6">
         <div className="flex flex-wrap items-center gap-3">

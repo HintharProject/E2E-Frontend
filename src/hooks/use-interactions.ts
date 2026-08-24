@@ -176,6 +176,72 @@ export function useDeletePost() {
   });
 }
 
+export function useDeleteLesson() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (lessonId: string) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      await apiFetch(`/lessons/${lessonId}/`, token, { method: "DELETE" });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+    },
+  });
+}
+
+export function useUpdateLessonState() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ lessonId, state }: { lessonId: string; state: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      await apiFetch(`/lessons/${lessonId}/`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ state }),
+      });
+    },
+    onMutate: async ({ lessonId, state }) => {
+      await queryClient.cancelQueries({ queryKey: ["lessons"] });
+      await queryClient.cancelQueries({ queryKey: ["lesson", lessonId] });
+
+      const previousList = queryClient.getQueryData(["lessons"]);
+      const previousDetail = queryClient.getQueryData(["lesson", lessonId]);
+
+      queryClient.setQueryData(["lessons"], (old: any) => {
+        if (!old?.pages) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page: any) => ({
+            ...page,
+            data: page.data.map((lesson: any) =>
+              lesson.id === lessonId ? { ...lesson, state } : lesson
+            ),
+          })),
+        };
+      });
+
+      if (previousDetail) {
+        queryClient.setQueryData(["lesson", lessonId], (old: any) => ({ ...old, state }));
+      }
+
+      return { previousList, previousDetail };
+    },
+    onError: (_err, { lessonId }, context) => {
+      if (context?.previousList) queryClient.setQueryData(["lessons"], context.previousList);
+      if (context?.previousDetail) queryClient.setQueryData(["lesson", lessonId], context.previousDetail);
+    },
+    onSettled: (_data, _err, { lessonId }) => {
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["lesson", lessonId] });
+    },
+  });
+}
+
 export function useVoteComment() {
   const queryClient = useQueryClient();
   const { getToken } = useAuth();

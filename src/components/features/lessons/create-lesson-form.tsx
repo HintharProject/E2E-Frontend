@@ -103,11 +103,11 @@ export function CreateLessonForm({
       const payload = {
         title: data.title,
         body: data.body,
-        subject_id: data.subject_id,
-        level_id: data.level_id,
+        subject: data.subject_id,
+        level: data.level_id,
         state: data.state,
         ...(data.embedded_video_url && { embedded_video_url: data.embedded_video_url }),
-        ...(data.tag_id && { tags: data.tag_id }),
+        ...(data.tag_id && { tags: [data.tag_id] }),
       };
 
       const res = await apiFetch<Lesson>("/lessons/", token, {
@@ -116,19 +116,14 @@ export function CreateLessonForm({
       });
 
       if (data.resources && data.resources.length > 0) {
-        // Upload each file independently if the API expects one by one, 
-        // or together if it accepts an array. The API contract says:
-        // "POST /lessons/{id}/attachments/ -> Uploads lesson attachments (Max 5, 20MB limit)"
-        // Let's assume it accepts an array or multiple files under the "resources" or "attachments" key.
-        // Wait, the API contract actually says: `POST /lessons/{id}/attachments/`.
-        const formData = new FormData();
         for (let i = 0; i < data.resources.length; i++) {
-          formData.append("attachments", data.resources[i]);
+          const formData = new FormData();
+          formData.append("file", data.resources[i]);
+          await apiFetch(`/lessons/${res.id}/attachments/`, token, {
+            method: "POST",
+            body: formData,
+          });
         }
-        await apiFetch(`/lessons/${res.id}/attachments/`, token, {
-          method: "POST",
-          body: formData,
-        });
       }
 
       queryClient.invalidateQueries({ queryKey: ["lessons"] });

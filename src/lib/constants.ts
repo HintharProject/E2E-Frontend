@@ -44,7 +44,7 @@ export const PRIMARY_NAV: NavItem[] = [
   {
     href: "/lessons/mine",
     label: "My Lessons",
-    roles: ["CREATOR"],
+    roles: ["CREATOR", "ADMIN"],
     match: "/lessons/mine",
   },
   {
