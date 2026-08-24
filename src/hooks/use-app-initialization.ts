@@ -19,7 +19,25 @@ export function useAppInitialization() {
 
   useEffect(() => {
     // Only run when Clerk auth has loaded (so we definitively know if user is signed in)
-    if (!isLoaded || isAppInitialized || initStarted.current) return;
+    if (!isLoaded) return;
+
+    const currentUserKey = isSignedIn ? "signed_in" : "guest";
+
+    // Check if session was already initialized
+    if (typeof window !== "undefined") {
+      const sessionInitialized = sessionStorage.getItem("e2e_session_initialized") === "true";
+      const lastSessionUser = sessionStorage.getItem("e2e_session_user");
+
+      // If already initialized in this session for this user state, mark initialized immediately without blocking screen
+      if (sessionInitialized && lastSessionUser === currentUserKey) {
+        if (!isAppInitialized) {
+          setAppInitialized(true);
+        }
+        return;
+      }
+    }
+
+    if (isAppInitialized || initStarted.current) return;
     
     initStarted.current = true;
 
@@ -81,6 +99,10 @@ export function useAppInitialization() {
       } catch (error) {
         console.error("Initialization error:", error);
       } finally {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("e2e_session_initialized", "true");
+          sessionStorage.setItem("e2e_session_user", currentUserKey);
+        }
         setAppInitialized(true);
       }
     }

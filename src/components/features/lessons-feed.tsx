@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { LessonCardSkeleton } from "./skeletons";
+import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 
 export function LessonsFeed({
   subjects = [],
@@ -81,7 +82,7 @@ export function LessonsFeed({
     getToken,
   ]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, refetch, isRefetching } =
     useInfiniteLessons({
       subject: subjects.join(","),
       level: levels.join(","),
@@ -129,7 +130,11 @@ export function LessonsFeed({
   }
 
   return (
-    <div>
+    <TopmostScrollRefresh
+      onRefresh={() => refetch()}
+      isRefreshing={isRefetching}
+      label="lessons"
+    >
       <div className="grid gap-4 md:grid-cols-2">
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} />
@@ -147,6 +152,6 @@ export function LessonsFeed({
           </Button>
         </div>
       )}
-    </div>
+    </TopmostScrollRefresh>
   );
 }

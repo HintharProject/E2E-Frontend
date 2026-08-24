@@ -5,6 +5,7 @@ import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { PostCardSkeleton } from "./skeletons";
+import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 
 export function ForumFeed({
   subjects = [],
@@ -21,7 +22,7 @@ export function ForumFeed({
   feed?: 'main' | 'announcement' | 'creator';
   authorId?: string;
 }) {
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, refetch, isRefetching } =
     useInfinitePosts({
       subject: subjects.join(","),
       level: levels.join(","),
@@ -69,22 +70,28 @@ export function ForumFeed({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {posts.map((post) => (
-        <PostCard key={post.id} post={post} />
-      ))}
-      
-      {hasNextPage && (
-        <div className="mt-4 flex justify-center">
-          <Button
-            variant="secondary"
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-          >
-            {isFetchingNextPage ? "Loading more..." : "Load more"}
-          </Button>
-        </div>
-      )}
-    </div>
+    <TopmostScrollRefresh 
+      onRefresh={() => refetch()} 
+      isRefreshing={isRefetching}
+      label="posts"
+    >
+      <div className="flex flex-col gap-4">
+        {posts.map((post) => (
+          <PostCard key={post.id} post={post} />
+        ))}
+        
+        {hasNextPage && (
+          <div className="mt-4 flex justify-center">
+            <Button
+              variant="secondary"
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+            >
+              {isFetchingNextPage ? "Loading more..." : "Load more"}
+            </Button>
+          </div>
+        )}
+      </div>
+    </TopmostScrollRefresh>
   );
 }

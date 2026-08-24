@@ -13,6 +13,7 @@ import { Field } from "@/components/ui/field";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isWriteLocked } from "@/types/user";
+import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 
 export default function ProblemsPage() {
   const { user } = useCurrentUser();
@@ -30,6 +31,8 @@ export default function ProblemsPage() {
     isFetchingNextPage,
     isLoading,
     isError,
+    refetch,
+    isRefetching,
   } = useProblems({
     subject: subjectFilter,
     level: levelFilter,
@@ -100,43 +103,49 @@ export default function ProblemsPage() {
       </FilterBar>
 
       <div className="mt-8">
-        {isLoading ? (
-          <div className="space-y-4">
-            <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-            <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-            <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-          </div>
-        ) : isError ? (
-          <EmptyState
-            title="Failed to load problems"
-            description="We ran into an issue retrieving the data. Please try again."
-          />
-        ) : problems.length === 0 ? (
-          <EmptyState
-            title="No problems found"
-            description="Try adjusting your filters or be the first to post a problem."
-          />
-        ) : (
-          <Virtuoso
-            useWindowScroll
-            data={problems}
-            endReached={() => {
-              if (hasNextPage) fetchNextPage();
-            }}
-            components={{
-              Footer: () => (
-                isFetchingNextPage ? (
-                  <div className="py-4 text-center text-sm text-ink-muted">Loading more...</div>
-                ) : null
-              )
-            }}
-            itemContent={(index, problem) => (
-              <div className="pb-4">
-                <ProblemCard problem={problem} />
-              </div>
-            )}
-          />
-        )}
+        <TopmostScrollRefresh
+          onRefresh={() => refetch()}
+          isRefreshing={isRefetching}
+          label="problems"
+        >
+          {isLoading ? (
+            <div className="space-y-4">
+              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+            </div>
+          ) : isError ? (
+            <EmptyState
+              title="Failed to load problems"
+              description="We ran into an issue retrieving the data. Please try again."
+            />
+          ) : problems.length === 0 ? (
+            <EmptyState
+              title="No problems found"
+              description="Try adjusting your filters or be the first to post a problem."
+            />
+          ) : (
+            <Virtuoso
+              useWindowScroll
+              data={problems}
+              endReached={() => {
+                if (hasNextPage) fetchNextPage();
+              }}
+              components={{
+                Footer: () => (
+                  isFetchingNextPage ? (
+                    <div className="py-4 text-center text-sm text-ink-muted">Loading more...</div>
+                  ) : null
+                )
+              }}
+              itemContent={(index, problem) => (
+                <div className="pb-4">
+                  <ProblemCard problem={problem} />
+                </div>
+              )}
+            />
+          )}
+        </TopmostScrollRefresh>
       </div>
     </div>
   );
