@@ -10,6 +10,12 @@ interface UIState {
   isMobileNavOpen: boolean;
   toggleMobileNav: () => void;
   closeMobileNav: () => void;
+  
+  /** Initial app loading state */
+  isAppInitialized: boolean;
+  initializationMessage: string;
+  setAppInitialized: (initialized: boolean) => void;
+  setInitializationMessage: (msg: string) => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -17,4 +23,9 @@ export const useUIStore = create<UIState>((set) => ({
   toggleMobileNav: () =>
     set((state) => ({ isMobileNavOpen: !state.isMobileNavOpen })),
   closeMobileNav: () => set({ isMobileNavOpen: false }),
+
+  isAppInitialized: false,
+  initializationMessage: "Starting up the render backend...",
+  setAppInitialized: (initialized) => set({ isAppInitialized: initialized }),
+  setInitializationMessage: (msg) => set({ initializationMessage: msg }),
 }));

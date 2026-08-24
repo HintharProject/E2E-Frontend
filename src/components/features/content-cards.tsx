@@ -135,6 +135,10 @@ export function PostCard({ post }: { post: Post }) {
 
 export function LessonCard({ lesson }: { lesson: Lesson }) {
   const { user } = useCurrentUser();
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  const prefetchedRef = useRef(false);
+
   const author = lesson.author_details;
   const subject = lesson.subject_details;
   const level = lesson.level_details;
@@ -144,8 +148,25 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const isCreator = user?.role === "CREATOR";
   const canEdit = isAdmin || (isCreator && isAuthor);
 
+  const handleMouseEnter = () => {
+    if (prefetchedRef.current) return;
+    prefetchedRef.current = true;
+    queryClient.prefetchQuery({
+      queryKey: ["lesson", lesson.id],
+      queryFn: async () => {
+        const token = await getToken();
+        if (!token) return lesson;
+        return apiFetch<Lesson>(`/lessons/${lesson.id}/`, token);
+      },
+      staleTime: 5 * 60 * 1000,
+    });
+  };
+
   return (
-    <article className="rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]">
+    <article 
+      className="rounded-2xl border border-line bg-card p-5 transition hover:border-brand/35 hover:shadow-[0_12px_40px_-24px_oklch(0.508_0.118_165.612_/_0.45)]"
+      onMouseEnter={handleMouseEnter}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-2">
           <Badge

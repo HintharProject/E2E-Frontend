@@ -40,7 +40,9 @@ Agents must respect the following architecture when creating or modifying files:
 * **Auth**: Clerk (Identity Provider). Session JWT must be attached to every API request header as `Authorization: Bearer <token>`. Do not handle auth manually.
 * **Backend API**: REST API. Endpoints are paginated.
 * **Network/Server State**: TanStack Query MUST be used for all API fetching, caching, and mutation (optimistic updates). Do not use bare `useEffect` for data fetching.
-* **Client UI State**: Zustand MUST be used for global UI state (e.g. read-only modes, limits).
+  * **Strict Cache Limits**: Our custom `cache-manager.ts` strictly limits list queries to 35 items and detail queries to 10 items. When building new features, ensure query keys follow existing conventions (e.g., `["posts", ...]`, `["post", id]`) or update the cache manager if introducing entirely new high-volume feeds.
+  * **Prefetch on Intent**: Secondary tabs and routes should use `PrefetchingSubNav` or custom `onTouchStart`/`onMouseEnter` logic to trigger background prefetching, preserving Free Tier database read limits. Do not eagerly prefetch everything on initial page load.
+* **Client UI State**: Zustand MUST be used for global UI state (e.g. read-only modes, limits, initial loading state orchestration).
 * **Rich Text Editing**: Tiptap is used for all rich text inputs.
 * **DOM Optimization**: `react-virtuoso` MUST be used for long lists and threaded comments.
 * **Cold Starts**: The backend is on a free tier. You must always implement robust loading states, skeletons, and appropriate timeouts (~60s) for initial API calls to handle server wake-ups gracefully.

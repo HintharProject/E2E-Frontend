@@ -4,6 +4,7 @@ import { useInfinitePosts } from "@/hooks/use-posts";
 import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { PostCardSkeleton } from "./skeletons";
 
 export function ForumFeed({
   subjects = [],
@@ -36,9 +37,9 @@ export function ForumFeed({
   if (status === "pending") {
     return (
       <div className="flex flex-col gap-4">
-        <div className="h-32 animate-pulse rounded-2xl bg-card border border-line" />
-        <div className="h-32 animate-pulse rounded-2xl bg-card border border-line" />
-        <div className="text-center text-sm text-ink-muted">Waking up server... (can take up to 60s)</div>
+        <PostCardSkeleton />
+        <PostCardSkeleton />
+        <PostCardSkeleton />
       </div>
     );
   }

@@ -7,6 +7,8 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+import { Skeleton } from "@/components/ui/skeleton";
+
 function parseYouTubeUrl(url: string) {
   try {
     const urlObj = new URL(url);
@@ -36,12 +38,15 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
     imageAttachments.length > 0 ? "images" : "video"
   );
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState<Record<number, boolean>>({});
+  const [videoLoaded, setVideoLoaded] = useState(false);
 
   if (imageAttachments.length === 0 && !youtubeUrl) return null;
 
   const showTabs = imageAttachments.length > 0 && !!youtubeUrl;
 
   const currentImage = imageAttachments[currentImageIndex];
+  const isCurrentImageLoaded = imageLoaded[currentImageIndex];
 
   const handleNextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % imageAttachments.length);
@@ -49,6 +54,10 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev - 1 + imageAttachments.length) % imageAttachments.length);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoaded((prev) => ({ ...prev, [currentImageIndex]: true }));
   };
 
   return (
@@ -82,12 +91,18 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
       <div className="w-full bg-surface border border-line rounded-xl overflow-hidden relative">
         {activeTab === "images" && currentImage && (
           <div className="relative aspect-video flex items-center justify-center bg-black/5">
+            {!isCurrentImageLoaded && (
+              <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
+            )}
             <Dialog>
-              <DialogTrigger className="w-full h-full flex items-center justify-center p-2 group outline-none">
+              <DialogTrigger className="w-full h-full flex items-center justify-center p-2 group outline-none z-10">
                 <img 
                   src={currentImage.file_url} 
                   alt={currentImage.file_name} 
-                  className="max-w-full max-h-full object-contain mx-auto shadow-sm rounded-lg" 
+                  className={cn("max-w-full max-h-full object-contain mx-auto shadow-sm rounded-lg transition-opacity duration-300", !isCurrentImageLoaded ? "opacity-0" : "opacity-100")}
+                  loading={currentImageIndex === 0 ? "eager" : "lazy"}
+                  fetchPriority={currentImageIndex === 0 ? "high" : "auto"}
+                  onLoad={handleImageLoad}
                 />
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-10">
                   <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white shadow-lg">
@@ -101,7 +116,8 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                   <img 
                     src={currentImage.file_url} 
                     alt="Attachment full size" 
-                    className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl mx-auto" 
+                    className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl mx-auto"
+                    loading="lazy"
                   />
                   <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                     <a 
@@ -147,13 +163,18 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
               const yt = parseYouTubeUrl(youtubeUrl);
               if (yt.type === 'video') {
                 return (
-                  <div className="aspect-video w-full bg-black">
+                  <div className="aspect-video w-full bg-black relative">
+                    {!videoLoaded && (
+                      <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
+                    )}
                     <iframe
                       src={`https://www.youtube.com/embed/${yt.videoId}`}
                       title="YouTube video player"
-                      className="w-full h-full border-0"
+                      className={cn("w-full h-full border-0 relative z-10 transition-opacity duration-300", !videoLoaded ? "opacity-0" : "opacity-100")}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                       allowFullScreen
+                      loading="lazy"
+                      onLoad={() => setVideoLoaded(true)}
                     ></iframe>
                   </div>
                 );

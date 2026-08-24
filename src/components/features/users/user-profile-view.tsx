@@ -19,26 +19,7 @@ function getInitials(name?: string | null): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-function ProfileSkeleton() {
-  return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 animate-pulse">
-      <div className="rounded-3xl border border-line bg-card p-6 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <div className="h-16 w-16 rounded-full bg-line shrink-0" />
-          <div className="flex-1 space-y-3">
-            <div className="h-7 w-48 rounded-lg bg-line" />
-            <div className="h-5 w-20 rounded bg-line" />
-          </div>
-        </div>
-      </div>
-      <div className="mt-10 space-y-4">
-        <div className="h-6 w-40 rounded bg-card border border-line" />
-        <div className="h-32 w-full rounded-2xl bg-card border border-line" />
-        <div className="h-32 w-full rounded-2xl bg-card border border-line" />
-      </div>
-    </div>
-  );
-}
+import { ProfileSkeleton } from "../skeletons";
 
 export function UserProfileView({ userId }: { userId: string }) {
   const { getToken } = useAuth();

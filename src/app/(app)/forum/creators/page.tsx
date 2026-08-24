@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
-import { SubNav } from "@/components/ui/sub-nav";
+import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
 import { ForumFeed } from "@/components/features/forum-feed";
 import Link from "next/link";
 

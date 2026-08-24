@@ -1,6 +1,6 @@
 "use client";
 
-import { SubNav } from "@/components/ui/sub-nav";
+import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function LessonsTabs() {

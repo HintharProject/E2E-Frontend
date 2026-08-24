@@ -64,6 +64,9 @@ export function FilterSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  const isManagePage = pathname === "/lessons/manage";
+  const effectiveShowStateFilter = showStateFilter || isManagePage;
+
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
   const { data: tags = [] } = useTags();
@@ -132,7 +135,7 @@ export function FilterSidebar({
             onToggle={(value) => toggle("post_type", selectedTypes, value)}
           />
         ) : null}
-        {showStateFilter ? (
+        {effectiveShowStateFilter ? (
           <fieldset>
             <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
               Status

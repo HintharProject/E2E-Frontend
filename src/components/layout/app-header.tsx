@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
-import { UserButton } from "@clerk/nextjs";
+import { FormEvent, useState, useEffect } from "react";
+import { UserButton, useAuth } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
+import { apiFetch } from "@/services/api-client";
 import { Menu, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -52,6 +54,41 @@ export function AppHeader() {
   const { user, isLoading } = useCurrentUser();
   const { toggleMobileNav } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!user || isLoading) return;
+
+    const prefetchTabs = async () => {
+      const token = await getToken();
+      if (!token) return;
+
+      // 1. Prefetch Profile
+      queryClient.prefetchQuery({
+        queryKey: ["currentUser"],
+        queryFn: () => apiFetch("/users/me/", token),
+      });
+
+      // 2. Prefetch default Lessons Feed
+      queryClient.prefetchInfiniteQuery({
+        queryKey: ["lessons", { subject: "", level: "", tags: "", authorId: undefined, state: undefined }],
+        initialPageParam: 1,
+        queryFn: ({ pageParam = 1 }) => apiFetch(`/lessons/?page=${pageParam}`, token),
+      });
+
+      // 3. Prefetch My Lessons (if applicable)
+      if (user.role === "CREATOR" || user.role === "ADMIN") {
+        queryClient.prefetchInfiniteQuery({
+          queryKey: ["lessons", { subject: "", level: "", tags: "", authorId: user.id, state: "PUBLISHED" }],
+          initialPageParam: 1,
+          queryFn: ({ pageParam = 1 }) => apiFetch(`/lessons/?author_id=${user.id}&state=PUBLISHED&page=${pageParam}`, token),
+        });
+      }
+    };
+
+    prefetchTabs();
+  }, [user, isLoading, getToken, queryClient]);
 
   // Show skeleton while user data loads (handles cold starts gracefully)
   if (isLoading) {

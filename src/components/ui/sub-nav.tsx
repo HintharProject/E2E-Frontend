@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 export function SubNav({
   items,
 }: {
-  items: { href: string; label: string; active?: boolean }[];
+  items: { href: string; label: string; active?: boolean; onPrefetch?: () => void }[];
 }) {
   const pathname = usePathname();
 
@@ -18,6 +18,8 @@ export function SubNav({
           <Link
             key={item.href}
             href={item.href}
+            onMouseEnter={item.onPrefetch}
+            onTouchStart={item.onPrefetch}
             className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
               isActive
                 ? "border-brand text-brand-dark"

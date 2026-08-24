@@ -1,10 +1,15 @@
 "use client";
 
+import { useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@clerk/nextjs";
+import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useInfiniteLessons } from "@/hooks/use-lessons";
 import { LessonCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { LessonCardSkeleton } from "./skeletons";
 
 export function LessonsFeed({
   subjects = [],
@@ -22,8 +27,59 @@ export function LessonsFeed({
   onlyMine?: boolean;
 }) {
   const { user, isLoading: userLoading } = useCurrentUser();
+  const queryClient = useQueryClient();
+  const { getToken } = useAuth();
 
   const effectiveAuthorId = onlyMine ? user?.id : authorId;
+
+  // Prefetch Draft and Archived if we are looking at My Lessons (Published)
+  useEffect(() => {
+    if (onlyMine && state === "PUBLISHED" && effectiveAuthorId) {
+      const prefetchStates = async () => {
+        const token = await getToken();
+        if (!token) return;
+
+        const statesToPrefetch = ["DRAFT", "ARCHIVED"];
+
+        statesToPrefetch.forEach((prefetchState) => {
+          queryClient.prefetchInfiniteQuery({
+            queryKey: [
+              "lessons",
+              {
+                subject: subjects.join(","),
+                level: levels.join(","),
+                tags: tagIds.join(","),
+                authorId: effectiveAuthorId,
+                state: prefetchState,
+              },
+            ],
+            initialPageParam: 1,
+            queryFn: ({ pageParam = 1 }) => {
+              const queryStr = buildQueryString({
+                subject_id: subjects.join(","),
+                level_id: levels.join(","),
+                tags: tagIds.join(","),
+                author_id: effectiveAuthorId,
+                state: prefetchState,
+                page: pageParam,
+              });
+              return apiFetch(`/lessons/${queryStr}`, token);
+            },
+          });
+        });
+      };
+      prefetchStates();
+    }
+  }, [
+    onlyMine,
+    state,
+    effectiveAuthorId,
+    subjects,
+    levels,
+    tagIds,
+    queryClient,
+    getToken,
+  ]);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteLessons({
@@ -40,8 +96,10 @@ export function LessonsFeed({
   if (status === "pending" || (onlyMine && userLoading)) {
     return (
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="h-40 animate-pulse rounded-2xl bg-card border border-line" />
-        <div className="h-40 animate-pulse rounded-2xl bg-card border border-line" />
+        <LessonCardSkeleton />
+        <LessonCardSkeleton />
+        <LessonCardSkeleton />
+        <LessonCardSkeleton />
       </div>
     );
   }
