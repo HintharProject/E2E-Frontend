@@ -1,20 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
-import { toast } from "sonner";
 import { Problem } from "@/types";
+import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
+import { applyFieldErrorsToForm } from "@/lib/form-errors";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -52,8 +54,10 @@ export function CreateProblemForm() {
   const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+
   const [serverError, setServerError] = useState("");
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
@@ -62,7 +66,8 @@ export function CreateProblemForm() {
     register,
     handleSubmit,
     setValue,
-    control,
+    setError,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -74,45 +79,80 @@ export function CreateProblemForm() {
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
-    setServerError("");
-    
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-
-      const formData = new FormData();
-      formData.append("title", data.title);
-      formData.append("body", data.body);
-      formData.append("subject", data.subject_id);
-      formData.append("level", data.level_id);
-
-      if (data.attachments && data.attachments.length > 0) {
-        for (let i = 0; i < data.attachments.length; i++) {
-          formData.append("uploaded_attachments", data.attachments[i]);
-        }
+  // Recover state and field errors if background creation failed
+  useEffect(() => {
+    const failed = getFailedSubmission("create_problem");
+    if (failed) {
+      if (failed.formValues) {
+        reset(failed.formValues as FormValues);
       }
-
-      const res = await apiFetch<Problem>("/problems/", token, {
-        method: "POST",
-        body: formData,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
-      toast.success("Problem posted successfully!");
-      router.push(`/problems/${res.id}`);
-    } catch (err: any) {
-      const msg = err.details ? "Validation failed. Please check your inputs." : (err.message || "Failed to post problem.");
-      setServerError(msg);
-      toast.error(msg);
-      setIsSubmitting(false);
+      if (failed.files && failed.files.length > 0) {
+        setValue("attachments", failed.files, { shouldValidate: true });
+      }
+      if (failed.serverMessage) {
+        setServerError(failed.serverMessage);
+      }
+      if (failed.fieldErrors) {
+        setServerFieldErrors(failed.fieldErrors);
+        applyFieldErrorsToForm(failed.fieldErrors, setError);
+      }
+      clearFailedSubmission("create_problem");
     }
+  }, [getFailedSubmission, clearFailedSubmission, reset, setValue, setError]);
+
+  const onSubmit = async (data: FormValues) => {
+    setServerError("");
+    setServerFieldErrors({});
+
+    // Minimize form and navigate immediately
+    router.push("/problems");
+
+    startBackgroundSubmission({
+      key: "create_problem",
+      loadingMessage: "Posting problem...",
+      successMessage: "Problem posted successfully!",
+      returnUrl: "/problems/new",
+      formValues: data,
+      files: data.attachments,
+      fieldMapping: {
+        subject: "subject_id",
+        level: "level_id",
+        uploaded_attachments: "attachments",
+        file: "attachments",
+        attachments: "attachments",
+      },
+      router,
+      execute: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Unauthorized");
+
+        const formData = new FormData();
+        formData.append("title", data.title);
+        formData.append("body", data.body);
+        formData.append("subject", data.subject_id);
+        formData.append("level", data.level_id);
+
+        if (data.attachments && data.attachments.length > 0) {
+          for (let i = 0; i < data.attachments.length; i++) {
+            formData.append("uploaded_attachments", data.attachments[i]);
+          }
+        }
+
+        const res = await apiFetch<Problem>("/problems/", token, {
+          method: "POST",
+          body: formData,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+        return res;
+      },
+      onSuccessUrl: (res) => `/problems/${res.id}`,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 rounded-2xl border border-line bg-card p-6 shadow-sm">
-      {serverError && <div className="text-danger text-sm font-medium">{serverError}</div>}
+      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
       <Field label="Title">
         <input
@@ -167,8 +207,8 @@ export function CreateProblemForm() {
       </Field>
 
       <div className="flex gap-3 pt-4 border-t border-line">
-        <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
-          {isSubmitting ? "Posting..." : "Post Problem"}
+        <Button type="submit" className="w-full sm:w-auto">
+          Post Problem
         </Button>
         <Button variant="secondary" nativeButton={false} render={<Link href="/problems" />} className="w-full sm:w-auto">
           Cancel

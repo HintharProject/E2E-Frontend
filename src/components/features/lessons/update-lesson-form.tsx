@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Subject, Level, Tag, Lesson } from "@/types";
@@ -14,6 +15,9 @@ import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
+import { applyFieldErrorsToForm } from "@/lib/form-errors";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -47,8 +51,11 @@ export function UpdateLessonForm({
   const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionKey = `update_lesson_${lesson.id}`;
+  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+
   const [serverError, setServerError] = useState("");
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
 
   const handleDeleteAttachment = async (attachmentId: string) => {
     if (!confirm("Are you sure you want to delete this attachment? This action cannot be undone.")) return;
@@ -57,14 +64,15 @@ export function UpdateLessonForm({
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       
-      await apiFetch(`/lessons/${lesson.id}/attachment/${attachmentId}/`, token, {
+      await apiFetch(`/lessons/${lesson.id}/attachments/${attachmentId}/`, token, {
         method: "DELETE",
       });
       queryClient.invalidateQueries({ queryKey: ["lessons"] });
       queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
       router.refresh();
+      toast.success("Attachment deleted");
     } catch (err: any) {
-      alert("Failed to delete attachment: " + err.message);
+      toast.error("Failed to delete attachment: " + err.message);
     }
   };
 
@@ -99,7 +107,8 @@ export function UpdateLessonForm({
     register,
     handleSubmit,
     setValue,
-    control,
+    setError,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -114,53 +123,90 @@ export function UpdateLessonForm({
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    setIsSubmitting(true);
-    setServerError("");
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-
-      const payload = {
-        title: data.title,
-        body: data.body,
-        subject: data.subject_id,
-        level: data.level_id,
-        state: data.state,
-        ...(data.embedded_video_url && { embedded_video_url: data.embedded_video_url }),
-        ...(data.tag_id && { tags: [data.tag_id] }),
-      };
-
-      await apiFetch(`/lessons/${lesson.id}/`, token, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-
-      if (data.attachments && data.attachments.length > 0) {
-        for (let i = 0; i < data.attachments.length; i++) {
-          const formData = new FormData();
-          formData.append("file", data.attachments[i]);
-          await apiFetch(`/lessons/${lesson.id}/attachments/`, token, {
-            method: "POST",
-            body: formData,
-          });
-        }
+  // Recover state and field errors if background update failed
+  useEffect(() => {
+    const failed = getFailedSubmission(submissionKey);
+    if (failed) {
+      if (failed.formValues) {
+        reset(failed.formValues as FormValues);
       }
-
-      queryClient.invalidateQueries({ queryKey: ["lessons"] });
-      queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
-      router.push(`/lessons/${lesson.id}`);
-      router.refresh();
-    } catch (err: any) {
-      setServerError(err.message || "Something went wrong.");
-    } finally {
-      setIsSubmitting(false);
+      if (failed.files && failed.files.length > 0) {
+        setValue("attachments", failed.files, { shouldValidate: true });
+      }
+      if (failed.serverMessage) {
+        setServerError(failed.serverMessage);
+      }
+      if (failed.fieldErrors) {
+        setServerFieldErrors(failed.fieldErrors);
+        applyFieldErrorsToForm(failed.fieldErrors, setError);
+      }
+      clearFailedSubmission(submissionKey);
     }
+  }, [getFailedSubmission, clearFailedSubmission, submissionKey, reset, setValue, setError]);
+
+  const onSubmit = async (data: FormValues) => {
+    setServerError("");
+    setServerFieldErrors({});
+
+    // Minimize form and navigate immediately
+    router.push(`/lessons/${lesson.id}`);
+
+    startBackgroundSubmission({
+      key: submissionKey,
+      loadingMessage: "Saving changes...",
+      successMessage: "Changes saved successfully!",
+      returnUrl: `/lessons/${lesson.id}/edit`,
+      formValues: data,
+      files: data.attachments,
+      fieldMapping: {
+        subject: "subject_id",
+        level: "level_id",
+        tags: "tag_id",
+        embedded_video_url: "embedded_video_url",
+        file: "attachments",
+        attachments: "attachments",
+      },
+      router,
+      execute: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Unauthorized");
+
+        const payload = {
+          title: data.title,
+          body: data.body,
+          subject: data.subject_id,
+          level: data.level_id,
+          state: data.state,
+          ...(data.embedded_video_url && { embedded_video_url: data.embedded_video_url }),
+          ...(data.tag_id && { tags: [data.tag_id] }),
+        };
+
+        await apiFetch(`/lessons/${lesson.id}/`, token, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        });
+
+        if (data.attachments && data.attachments.length > 0) {
+          for (let i = 0; i < data.attachments.length; i++) {
+            const formData = new FormData();
+            formData.append("file", data.attachments[i]);
+            await apiFetch(`/lessons/${lesson.id}/attachments/`, token, {
+              method: "POST",
+              body: formData,
+            });
+          }
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["lessons"] });
+        queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
+      },
+      onSuccessUrl: () => `/lessons/${lesson.id}`,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      {serverError && <div className="text-danger text-sm">{serverError}</div>}
+      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
 
       <Field label="Title">
         <input
@@ -263,8 +309,8 @@ export function UpdateLessonForm({
       </Field>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Changes"}
+        <Button type="submit" disabled={writeLocked}>
+          Save Changes
         </Button>
         <Button variant="secondary" nativeButton={false} render={<Link href={`/lessons/${lesson.id}`} />}>
           Cancel

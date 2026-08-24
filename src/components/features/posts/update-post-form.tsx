@@ -1,18 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
 import { Subject, Level, Tag, Post } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
+import { applyFieldErrorsToForm } from "@/lib/form-errors";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -39,8 +42,11 @@ export function UpdatePostForm({
   const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionKey = `update_post_${post.id}`;
+  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+
   const [serverError, setServerError] = useState("");
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
   const [existingAttachment, setExistingAttachment] = useState<{ url: string; name: string } | null>(
     post.attachment_url ? { url: post.attachment_url, name: post.attachment_name || "Attachment" } : null
   );
@@ -87,7 +93,8 @@ export function UpdatePostForm({
     register,
     handleSubmit,
     setValue,
-    control,
+    setError,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -101,70 +108,87 @@ export function UpdatePostForm({
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    // Navigate away immediately
-    router.push("/forum");
-
-    const promise = (async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-
-      const payload = {
-        post_type: data.post_type,
-        title: data.title,
-        body: data.body,
-        ...(data.subject_id && { subject: data.subject_id }),
-        ...(data.level_id && { level: data.level_id }),
-        ...(data.tag_id && { tags: [data.tag_id] }),
-      };
-
-      const res = await apiFetch(`/posts/${post.id}/`, token, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-
-      if (data.attachment && data.attachment.length > 0) {
-        const formData = new FormData();
-        formData.append("file", data.attachment[0]);
-        await apiFetch(`/posts/${post.id}/attachment/`, token, {
-          method: "POST",
-          body: formData,
-        });
+  // Recover state and field errors if background update failed
+  useEffect(() => {
+    const failed = getFailedSubmission(submissionKey);
+    if (failed) {
+      if (failed.formValues) {
+        reset(failed.formValues as FormValues);
       }
+      if (failed.files && failed.files.length > 0) {
+        setValue("attachment", failed.files, { shouldValidate: true });
+      }
+      if (failed.serverMessage) {
+        setServerError(failed.serverMessage);
+      }
+      if (failed.fieldErrors) {
+        setServerFieldErrors(failed.fieldErrors);
+        applyFieldErrorsToForm(failed.fieldErrors, setError);
+      }
+      clearFailedSubmission(submissionKey);
+    }
+  }, [getFailedSubmission, clearFailedSubmission, submissionKey, reset, setValue, setError]);
 
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
-      return res;
-    })();
+  const onSubmit = async (data: FormValues) => {
+    setServerError("");
+    setServerFieldErrors({});
 
-    const toastId = toast.loading("Saving changes...");
+    // Minimize form and navigate immediately
+    router.push(`/posts/${post.id}`);
 
-    promise
-      .then(() => {
-        router.refresh();
-        toast.success("Changes saved successfully!", {
-          id: toastId,
-          action: {
-            label: "View",
-            onClick: () => router.push(`/posts/${post.id}`),
-          },
+    startBackgroundSubmission({
+      key: submissionKey,
+      loadingMessage: "Saving changes...",
+      successMessage: "Changes saved successfully!",
+      returnUrl: `/posts/${post.id}/edit`,
+      formValues: data,
+      files: data.attachment,
+      fieldMapping: {
+        subject: "subject_id",
+        level: "level_id",
+        tags: "tag_id",
+        file: "attachment",
+        attachment: "attachment",
+      },
+      router,
+      execute: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Unauthorized");
+
+        const payload = {
+          post_type: data.post_type,
+          title: data.title,
+          body: data.body,
+          ...(data.subject_id && { subject: data.subject_id }),
+          ...(data.level_id && { level: data.level_id }),
+          ...(data.tag_id && { tags: [data.tag_id] }),
+        };
+
+        const res = await apiFetch<Post>(`/posts/${post.id}/`, token, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
         });
-      })
-      .catch((err: any) => {
-        const msg = err.details ? "Validation failed" : (err.message || "Something went wrong");
-        toast.error(`Failed to save: ${msg}`, {
-          id: toastId,
-          action: {
-            label: "Retry",
-            onClick: () => router.push(`/posts/${post.id}/edit`),
-          },
-        });
-      });
+
+        if (data.attachment && data.attachment.length > 0) {
+          const formData = new FormData();
+          formData.append("file", data.attachment[0]);
+          await apiFetch(`/posts/${post.id}/attachment/`, token, {
+            method: "POST",
+            body: formData,
+          });
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        queryClient.invalidateQueries({ queryKey: ["post", post.id] });
+        return res;
+      },
+      onSuccessUrl: () => `/posts/${post.id}`,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      {serverError && <div className="text-danger text-sm">{serverError}</div>}
+      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
       <Field label="Post type">
         <select {...register("post_type")} className={`${inputClass} ${errors.post_type ? errorClass : ""}`}>
@@ -246,8 +270,8 @@ export function UpdatePostForm({
       </Field>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Changes"}
+        <Button type="submit" disabled={writeLocked}>
+          Save Changes
         </Button>
         <Button variant="secondary" nativeButton={false} render={<Link href={`/posts/${post.id}`} />}>
           Cancel

@@ -1,19 +1,21 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
 import { Post } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
-import { toast } from "sonner";
+import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
+import { applyFieldErrorsToForm } from "@/lib/form-errors";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -32,8 +34,10 @@ export function CreatePostForm({
   const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+
   const [serverError, setServerError] = useState("");
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
@@ -66,7 +70,7 @@ export function CreatePostForm({
     handleSubmit,
     setValue,
     setError,
-    control,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -80,93 +84,86 @@ export function CreatePostForm({
     },
   });
 
-  // Recover draft if available on mount
+  // Recover state and field errors if background submission failed
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("recover") === "1") {
-      const draft = localStorage.getItem("post_draft");
-      if (draft) {
-        try {
-          const parsed = JSON.parse(draft);
-          Object.keys(parsed).forEach((key) => {
-            if (key !== "attachment") {
-              setValue(key as keyof FormValues, parsed[key]);
-            }
-          });
-        } catch (e) {
-          console.error("Failed to parse draft", e);
-        }
+    const failed = getFailedSubmission("create_post");
+    if (failed) {
+      if (failed.formValues) {
+        reset(failed.formValues as FormValues);
       }
+      if (failed.files && failed.files.length > 0) {
+        setValue("attachment", failed.files, { shouldValidate: true });
+      }
+      if (failed.serverMessage) {
+        setServerError(failed.serverMessage);
+      }
+      if (failed.fieldErrors) {
+        setServerFieldErrors(failed.fieldErrors);
+        applyFieldErrorsToForm(failed.fieldErrors, setError);
+      }
+      clearFailedSubmission("create_post");
     }
-  }, [setValue]);
+  }, [getFailedSubmission, clearFailedSubmission, reset, setValue, setError]);
 
   const onSubmit = async (data: FormValues) => {
-    // We immediately navigate away to minimize the process
+    setServerError("");
+    setServerFieldErrors({});
+
+    // Minimize form and navigate to forum immediately
     router.push("/forum");
 
-    const promise = (async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
+    startBackgroundSubmission({
+      key: "create_post",
+      loadingMessage: "Publishing post...",
+      successMessage: "Post published successfully!",
+      returnUrl: "/posts/create",
+      formValues: data,
+      files: data.attachment,
+      fieldMapping: {
+        subject: "subject_id",
+        level: "level_id",
+        tags: "tag_id",
+        file: "attachment",
+        attachment: "attachment",
+      },
+      router,
+      execute: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Unauthorized");
 
-      const payload = {
-        post_type: data.post_type,
-        title: data.title,
-        body: data.body,
-        ...(data.subject_id && { subject: data.subject_id }),
-        ...(data.level_id && { level: data.level_id }),
-        ...(data.tag_id && { tags: [data.tag_id] }),
-      };
+        const payload = {
+          post_type: data.post_type,
+          title: data.title,
+          body: data.body,
+          ...(data.subject_id && { subject: data.subject_id }),
+          ...(data.level_id && { level: data.level_id }),
+          ...(data.tag_id && { tags: [data.tag_id] }),
+        };
 
-      const res = await apiFetch<Post>("/posts/", token, {
-        method: "POST",
-        body: JSON.stringify(payload),
-      });
-
-      if (data.attachment && data.attachment.length > 0) {
-        const formData = new FormData();
-        formData.append("file", data.attachment[0]);
-        await apiFetch(`/posts/${res.id}/attachment/`, token, {
+        const res = await apiFetch<Post>("/posts/", token, {
           method: "POST",
-          body: formData,
+          body: JSON.stringify(payload),
         });
-      }
 
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      // Clear draft on success
-      localStorage.removeItem("post_draft");
-      return res;
-    })();
+        if (data.attachment && data.attachment.length > 0) {
+          const formData = new FormData();
+          formData.append("file", data.attachment[0]);
+          await apiFetch(`/posts/${res.id}/attachment/`, token, {
+            method: "POST",
+            body: formData,
+          });
+        }
 
-    const toastId = toast.loading("Publishing post...");
-
-    promise
-      .then((res) => {
-        toast.success("Post published successfully!", {
-          id: toastId,
-          action: {
-            label: "View",
-            onClick: () => router.push(`/posts/${res.id}`),
-          },
-        });
-      })
-      .catch((err: any) => {
-        // Save draft so user can recover
-        localStorage.setItem("post_draft", JSON.stringify(data));
-        const msg = err.details ? "Validation failed" : (err.message || "Something went wrong");
-        
-        toast.error(`Failed to publish: ${msg}`, {
-          id: toastId,
-          action: {
-            label: "Retry",
-            onClick: () => router.push("/posts/create?recover=1"),
-          },
-        });
-      });
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+        return res;
+      },
+      onSuccessUrl: (res) => `/posts/${res.id}`,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      {serverError && <div className="text-danger text-sm font-medium">{serverError}</div>}
+      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
       <Field label="Post type">
         <select {...register("post_type")} className={`${inputClass} ${errors.post_type ? errorClass : ""}`}>
@@ -240,8 +237,8 @@ export function CreatePostForm({
       </Field>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isSubmitting}>
-          {isSubmitting ? "Publishing..." : "Publish"}
+        <Button type="submit" disabled={writeLocked}>
+          Publish
         </Button>
         <Button variant="secondary" nativeButton={false} render={<Link href="/forum" />}>
           Cancel

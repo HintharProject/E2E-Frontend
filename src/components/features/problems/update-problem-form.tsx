@@ -1,18 +1,21 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
 import { Subject, Level, Problem } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
+import { applyFieldErrorsToForm } from "@/lib/form-errors";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -35,8 +38,11 @@ export function UpdateProblemForm({
   const router = useRouter();
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionKey = `update_problem_${problem.id}`;
+  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+
   const [serverError, setServerError] = useState("");
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
   const [existingAttachments, setExistingAttachments] = useState(problem.attachments || []);
 
   const handleRemoveExistingAttachment = async (attachmentId: string) => {
@@ -79,7 +85,8 @@ export function UpdateProblemForm({
     register,
     handleSubmit,
     setValue,
-    control,
+    setError,
+    reset,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -91,68 +98,85 @@ export function UpdateProblemForm({
     },
   });
 
-  const onSubmit = async (data: FormValues) => {
-    // Navigate away immediately
-    router.push("/problems");
-
-    const promise = (async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-
-      const payload = {
-        title: data.title,
-        body: data.body,
-        subject: data.subject_id,
-        level: data.level_id,
-      };
-
-      const res = await apiFetch(`/problems/${problem.id}/`, token, {
-        method: "PATCH",
-        body: JSON.stringify(payload),
-      });
-
-      if (data.attachment && data.attachment.length > 0) {
-        const formData = new FormData();
-        formData.append("file", data.attachment[0]);
-        await apiFetch(`/problems/${problem.id}/attachment/`, token, {
-          method: "POST",
-          body: formData,
-        });
+  // Recover state and field errors if background update failed
+  useEffect(() => {
+    const failed = getFailedSubmission(submissionKey);
+    if (failed) {
+      if (failed.formValues) {
+        reset(failed.formValues as FormValues);
       }
+      if (failed.files && failed.files.length > 0) {
+        setValue("attachment", failed.files, { shouldValidate: true });
+      }
+      if (failed.serverMessage) {
+        setServerError(failed.serverMessage);
+      }
+      if (failed.fieldErrors) {
+        setServerFieldErrors(failed.fieldErrors);
+        applyFieldErrorsToForm(failed.fieldErrors, setError);
+      }
+      clearFailedSubmission(submissionKey);
+    }
+  }, [getFailedSubmission, clearFailedSubmission, submissionKey, reset, setValue, setError]);
 
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
-      queryClient.invalidateQueries({ queryKey: ["problem", problem.id] });
-      return res;
-    })();
+  const onSubmit = async (data: FormValues) => {
+    setServerError("");
+    setServerFieldErrors({});
 
-    const toastId = toast.loading("Saving changes...");
+    // Minimize form and navigate immediately
+    router.push(`/problems/${problem.id}`);
 
-    promise
-      .then(() => {
-        router.refresh();
-        toast.success("Changes saved successfully!", {
-          id: toastId,
-          action: {
-            label: "View",
-            onClick: () => router.push(`/problems/${problem.id}`),
-          },
+    startBackgroundSubmission({
+      key: submissionKey,
+      loadingMessage: "Saving changes...",
+      successMessage: "Changes saved successfully!",
+      returnUrl: `/problems/${problem.id}/edit`,
+      formValues: data,
+      files: data.attachment,
+      fieldMapping: {
+        subject: "subject_id",
+        level: "level_id",
+        uploaded_attachments: "attachment",
+        file: "attachment",
+        attachment: "attachment",
+      },
+      router,
+      execute: async () => {
+        const token = await getToken();
+        if (!token) throw new Error("Unauthorized");
+
+        const payload = {
+          title: data.title,
+          body: data.body,
+          subject: data.subject_id,
+          level: data.level_id,
+        };
+
+        const res = await apiFetch<Problem>(`/problems/${problem.id}/`, token, {
+          method: "PATCH",
+          body: JSON.stringify(payload),
         });
-      })
-      .catch((err: any) => {
-        const msg = err.details ? "Validation failed" : (err.message || "Something went wrong");
-        toast.error(`Failed to save: ${msg}`, {
-          id: toastId,
-          action: {
-            label: "Retry",
-            onClick: () => router.push(`/problems/${problem.id}/edit`),
-          },
-        });
-      });
+
+        if (data.attachment && data.attachment.length > 0) {
+          const formData = new FormData();
+          formData.append("file", data.attachment[0]);
+          await apiFetch(`/problems/${problem.id}/attachment/`, token, {
+            method: "POST",
+            body: formData,
+          });
+        }
+
+        queryClient.invalidateQueries({ queryKey: ["problems"] });
+        queryClient.invalidateQueries({ queryKey: ["problem", problem.id] });
+        return res;
+      },
+      onSuccessUrl: () => `/problems/${problem.id}`,
+    });
   };
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
-      {serverError && <div className="text-danger text-sm">{serverError}</div>}
+      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
       <Field label="Title (max 100)">
         <input
@@ -193,7 +217,7 @@ export function UpdateProblemForm({
         </Field>
       </div>
 
-      <Field label="New attachment (optional · max 3 · 5MB · jpg/png/pdf)">
+      <Field label="New attachment (optional · max 1 · 5MB · jpg/png/pdf)">
         {existingAttachments.length > 0 && (
           <div className="mb-4">
             <p className="text-sm font-medium mb-2">Existing attachments:</p>
@@ -228,8 +252,8 @@ export function UpdateProblemForm({
       </Field>
 
       <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isSubmitting}>
-          {isSubmitting ? "Saving..." : "Save Changes"}
+        <Button type="submit" disabled={writeLocked}>
+          Save Changes
         </Button>
         <Button variant="secondary" nativeButton={false} render={<Link href={`/problems/${problem.id}`} />}>
           Cancel

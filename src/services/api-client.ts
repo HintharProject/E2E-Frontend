@@ -6,12 +6,14 @@ import { API_BASE_URL, API_TIMEOUT_MS } from "@/lib/constants";
 // Per AGENTS.md §3: Authorization: Bearer <Clerk_JWT> on every request.
 // ---------------------------------------------------------------------------
 
+export type ApiErrorDetails = Record<string, string[] | string>;
+
 export class ApiError extends Error {
   constructor(
     public status: number,
     public code: string,
     message: string,
-    public details?: Record<string, string[]>
+    public details?: ApiErrorDetails
   ) {
     super(message);
     this.name = "ApiError";
@@ -63,20 +65,35 @@ export async function apiFetch<T>(
     });
 
     if (!response.ok) {
-      let errorBody: {
-        error?: { code?: string; message?: string; details?: Record<string, string[]> };
-      } = {};
+      let errorBody: any = {};
       try {
         errorBody = await response.json();
       } catch {
         // Response body wasn't JSON — fall through to generic error
       }
 
+      let code = "UNKNOWN_ERROR";
+      let message = `Request failed with status ${response.status}`;
+      let details: ApiErrorDetails | undefined = undefined;
+
+      if (errorBody && typeof errorBody === "object") {
+        if (errorBody.error && typeof errorBody.error === "object") {
+          code = errorBody.error.code ?? code;
+          message = errorBody.error.message ?? message;
+          details = errorBody.error.details;
+        } else {
+          details = errorBody;
+          if (errorBody.detail && typeof errorBody.detail === "string") {
+            message = errorBody.detail;
+          }
+        }
+      }
+
       throw new ApiError(
         response.status,
-        errorBody.error?.code ?? "UNKNOWN_ERROR",
-        errorBody.error?.message ?? `Request failed with status ${response.status}`,
-        errorBody.error?.details
+        code,
+        message,
+        details
       );
     }
 
