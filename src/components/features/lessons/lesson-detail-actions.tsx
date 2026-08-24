@@ -29,7 +29,7 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
   const isAdmin = user?.role === "ADMIN";
   const isCreator = user?.role === "CREATOR";
 
-  const canEdit = isAdmin || (isCreator && isAuthor);
+  const canEdit = isCreator && isAuthor;
   const canDelete = isAdmin || (isCreator && isAuthor);
   const canChangeState = isAdmin || (isCreator && isAuthor);
 

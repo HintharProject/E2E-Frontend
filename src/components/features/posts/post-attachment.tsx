@@ -1,3 +1,5 @@
+"use client";
+
 import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
 import { Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -16,8 +18,9 @@ function getFileInfo(url: string) {
   }
 }
 
-export function PostAttachment({ url }: { url: string }) {
-  const { filename, isImage } = getFileInfo(url);
+export function PostAttachment({ url, downloadUrl, filename: overrideFilename }: { url: string; downloadUrl?: string; filename?: string }) {
+  const { filename: extractedFilename, isImage } = getFileInfo(url);
+  const filename = overrideFilename || extractedFilename;
 
   if (isImage) {
     return (
@@ -25,7 +28,7 @@ export function PostAttachment({ url }: { url: string }) {
         <Dialog>
           <DialogTrigger 
             render={
-              <button className="relative overflow-hidden rounded-xl border border-line bg-surface transition-transform hover:scale-[1.02] max-h-72 flex items-center justify-center cursor-zoom-in group" />
+              <button type="button" className="relative overflow-hidden rounded-xl border border-line bg-surface transition-transform hover:scale-[1.02] max-h-72 flex items-center justify-center cursor-zoom-in group" />
             }
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -47,7 +50,7 @@ export function PostAttachment({ url }: { url: string }) {
               <img src={url} alt="Attachment full size" className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl" />
               <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                 <a 
-                  href={url} 
+                  href={downloadUrl || url} 
                   target="_blank" 
                   rel="noopener noreferrer" 
                   download 
@@ -66,10 +69,11 @@ export function PostAttachment({ url }: { url: string }) {
   return (
     <div className="mt-4 inline-block w-full sm:w-auto">
       <a 
-        href={url} 
+        href={downloadUrl || url} 
         target="_blank" 
         rel="noopener noreferrer"
-        className="inline-flex items-center gap-4 px-5 py-3.5 rounded-xl border border-line bg-surface hover:bg-surface-raised transition-colors shadow-sm w-full group"
+        download
+        className="inline-flex items-center gap-4 px-5 py-3.5 rounded-xl border border-line bg-surface hover:bg-surface-raised transition-colors shadow-sm w-full group text-left"
       >
         <div className="p-2.5 bg-brand/10 text-brand rounded-lg shrink-0">
           <FileIcon className="w-6 h-6" />
@@ -78,7 +82,7 @@ export function PostAttachment({ url }: { url: string }) {
           <span className="text-sm font-semibold text-ink truncate block">{filename}</span>
           <span className="text-xs text-ink-muted mt-0.5 font-medium">Click to view or download</span>
         </div>
-        <div className="pl-2 border-l border-line">
+        <div className="pl-2 border-l border-line flex items-center justify-center">
           <Download className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors ml-2" />
         </div>
       </a>

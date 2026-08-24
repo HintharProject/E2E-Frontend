@@ -7,8 +7,10 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
+import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { Subject, Level, Tag, Lesson } from "@/types";
+import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -23,6 +25,10 @@ const ACCEPTED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
   "application/vnd.openxmlformats-officedocument.presentationml.presentation", // .pptx
   "application/zip",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
 ];
 
 export function UpdateLessonForm({
@@ -44,6 +50,24 @@ export function UpdateLessonForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [serverError, setServerError] = useState("");
 
+  const handleDeleteAttachment = async (attachmentId: string) => {
+    if (!confirm("Are you sure you want to delete this attachment? This action cannot be undone.")) return;
+    
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      
+      await apiFetch(`/lessons/${lesson.id}/attachments/${attachmentId}/`, token, {
+        method: "DELETE",
+      });
+      queryClient.invalidateQueries({ queryKey: ["lessons"] });
+      queryClient.invalidateQueries({ queryKey: ["lesson", lesson.id] });
+      router.refresh();
+    } catch (err: any) {
+      alert("Failed to delete attachment: " + err.message);
+    }
+  };
+
   const formSchema = z.object({
     title: z.string().min(1, "Title is required").max(100, "Max 100 characters"),
     body: z.string().min(1, "Body is required").max(5000, "Max 5000 characters"),
@@ -64,8 +88,8 @@ export function UpdateLessonForm({
         "Max file size is 20MB per file."
       )
       .refine(
-        (files) => !files || Array.from(files as File[]).every((file) => ACCEPTED_FILE_TYPES.includes(file.type) || file.name.endsWith('.docx') || file.name.endsWith('.pptx') || file.name.endsWith('.zip')),
-        "Only .pdf, .docx, .pptx, and .zip formats are supported."
+        (files) => !files || Array.from(files as File[]).every((file) => ACCEPTED_FILE_TYPES.includes(file.type) || file.name.match(/\.(pdf|docx|pptx|zip|jpe?g|png|gif|webp)$/i)),
+        "Only .pdf, .docx, .pptx, .zip, and images are supported."
       ),
   });
 
@@ -205,7 +229,7 @@ export function UpdateLessonForm({
         {errors.state && <p className="mt-1 text-xs text-danger">{errors.state.message}</p>}
       </Field>
 
-      <Field label="Add new attachments (optional · max 5 · 20MB · pdf/docx/pptx/zip)">
+      <Field label="Add new attachments (optional · max 5 · 20MB · pdf/docx/pptx/zip/images)">
         <FileDropzone 
           onFilesSelected={(files) => {
             setValue("attachments", files, { shouldValidate: true });
@@ -218,12 +242,22 @@ export function UpdateLessonForm({
         {lesson.attachments && lesson.attachments.length > 0 && (
           <div className="mt-2 text-xs text-ink-muted">
             <p>Current attachments:</p>
-            <ul className="list-disc pl-4">
+            <div className="mt-2 flex flex-col gap-3">
               {lesson.attachments.map(att => (
-                <li key={att.id}><a href={att.file_url} target="_blank" rel="noreferrer" className="text-brand hover:underline">{att.file_name}</a></li>
+                <div key={att.id} className="relative group">
+                  <PostAttachment url={att.file_url} filename={att.file_name} />
+                  <button 
+                    type="button" 
+                    onClick={() => handleDeleteAttachment(att.id)} 
+                    className="absolute -top-2 -right-2 bg-card border border-line text-danger hover:text-danger hover:bg-danger/10 p-1.5 rounded-full shadow-sm transition-colors z-10" 
+                    title="Delete attachment"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
-            </ul>
-            <p className="mt-1">Note: Uploading new files will add to these. You can delete individual files from the lesson page.</p>
+            </div>
+            <p className="mt-2">Note: Uploading new files will add to these.</p>
           </div>
         )}
       </Field>

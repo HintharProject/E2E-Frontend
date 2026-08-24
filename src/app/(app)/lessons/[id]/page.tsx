@@ -10,6 +10,8 @@ import { apiFetch } from "@/services/api-client";
 import { Lesson } from "@/types";
 import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
 import { getServerAuthToken } from "@/lib/auth-server";
+import { PostAttachment } from "@/components/features/posts/post-attachment";
+import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -39,6 +41,16 @@ export default async function LessonDetailPage(props: {
   const level = lesson.level_details;
   const tagNames = lesson.tags ?? [];
 
+  const imageAttachments = lesson.attachments?.filter(att => {
+    const ext = att.file_name.split('.').pop()?.toLowerCase() || '';
+    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+  }) || [];
+  
+  const otherAttachments = lesson.attachments?.filter(att => {
+    const ext = att.file_name.split('.').pop()?.toLowerCase() || '';
+    return !['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
+  }) || [];
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
       <PageHeader
@@ -64,41 +76,22 @@ export default async function LessonDetailPage(props: {
             <Badge key={t} variant="outline">#{t}</Badge>
           ))}
         </div>
+        
+        <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={lesson.embedded_video_url} />
+
         <p className="mt-6 whitespace-pre-wrap text-[15px] leading-relaxed text-ink">
           {lesson.body}
         </p>
-        {lesson.embedded_video_url ? (
-          <div className="mt-6 overflow-hidden rounded-xl border border-line bg-surface">
-            <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-brand-soft to-surface p-6 text-center">
-              <div>
-                <p className="font-display text-lg text-brand-dark">
-                  Embedded video
-                </p>
-                <a
-                  href={lesson.embedded_video_url}
-                  className="mt-2 inline-block text-sm font-semibold text-ink underline"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {lesson.embedded_video_url}
-                </a>
-              </div>
+
+        {otherAttachments.length > 0 ? (
+          <div className="mt-6 space-y-3">
+            <h3 className="text-sm font-semibold text-ink-muted uppercase tracking-wider">Attachments</h3>
+            <div className="flex flex-col gap-3">
+              {otherAttachments.map((file) => (
+                <PostAttachment key={file.id} url={file.file_url} downloadUrl={file.download_url} filename={file.file_name} />
+              ))}
             </div>
           </div>
-        ) : null}
-        {lesson.attachments.length > 0 ? (
-          <ul className="mt-6 space-y-2">
-            {lesson.attachments.map((file) => (
-              <li
-                key={file.id}
-                className="rounded-lg border border-line bg-surface px-3 py-2 text-sm font-semibold text-brand-dark"
-              >
-                <a href={file.file_url} target="_blank" rel="noopener noreferrer">
-                  {file.file_name}
-                </a>
-              </li>
-            ))}
-          </ul>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
           <Button variant="secondary">▲ Upvote</Button>

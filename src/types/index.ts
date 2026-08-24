@@ -33,6 +33,7 @@ export interface LessonAttachment {
   id: string;
   lesson?: string; // Sometimes omitted or just string ID
   file_url: string;
+  download_url?: string;
   file_name: string;
 }
 

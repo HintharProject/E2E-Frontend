@@ -24,6 +24,10 @@ const ACCEPTED_FILE_TYPES = [
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
   "application/zip",
   "application/x-zip-compressed",
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
 ];
 
 const formSchema = z.object({
@@ -50,12 +54,12 @@ const formSchema = z.object({
       if (!files || files.length === 0) return true;
       for (let i = 0; i < files.length; i++) {
         // Fallback for types that might not be accurately detected
-        if (!ACCEPTED_FILE_TYPES.includes(files[i].type) && !files[i].name.match(/\.(pdf|docx|pptx|zip)$/i)) {
+        if (!ACCEPTED_FILE_TYPES.includes(files[i].type) && !files[i].name.match(/\.(pdf|docx|pptx|zip|jpe?g|png|gif|webp)$/i)) {
           return false;
         }
       }
       return true;
-    }, "Only .pdf, .docx, .pptx, and .zip formats are supported."),
+    }, "Only .pdf, .docx, .pptx, .zip, and images are supported."),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -198,7 +202,7 @@ export function CreateLessonForm({
         {errors.embedded_video_url && <p className="mt-1 text-xs text-danger">{errors.embedded_video_url.message}</p>}
       </Field>
 
-      <Field label="Resources (max 5 · 20MB total · pdf/docx/pptx/zip)">
+      <Field label="Resources (max 5 · 20MB total · pdf/docx/pptx/zip/images)">
         <FileDropzone 
           onFilesSelected={(files) => {
             setValue("resources", files, { shouldValidate: true });
