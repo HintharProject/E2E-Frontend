@@ -118,7 +118,7 @@ export function CardMoreMenu({
       <DropdownMenu>
         <DropdownMenuTrigger
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-          className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted opacity-0 transition-opacity hover:bg-muted hover:text-ink group-hover:opacity-100 focus:opacity-100"
+          className="flex h-7 w-7 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-muted hover:text-ink focus:opacity-100"
           aria-label="More options"
         >
           <MoreHorizontal className="h-4 w-4" />

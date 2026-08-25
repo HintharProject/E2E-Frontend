@@ -21,6 +21,8 @@ import { useUIStore } from "@/lib/store/ui-store";
 import { isWriteLocked } from "@/types/user";
 import { AppHeaderSkeleton } from "./app-header-skeleton";
 import { MobileNav } from "./mobile-nav";
+import { MobileFilterToggle } from "./mobile-filter-toggle";
+import { LessonsMobileFilterToggle } from "@/components/features/lessons/lessons-mobile-filter";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 // ---------------------------------------------------------------------------
@@ -239,18 +241,21 @@ export function AppHeader() {
             )}
           </nav>
 
-          {/* Mobile search */}
-          <form onSubmit={onSearch} className="md:hidden">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search titles…"
-                className="h-9 rounded-full pl-9"
-              />
-            </div>
-          </form>
+          {/* Mobile search & filter */}
+          <div className="flex items-center gap-2 md:hidden">
+            <form onSubmit={onSearch} className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search titles…"
+                  className="h-9 rounded-full pl-9"
+                />
+              </div>
+            </form>
+            <AppHeaderMobileFilter pathname={pathname} />
+          </div>
         </div>
       </header>
 
@@ -258,4 +263,17 @@ export function AppHeader() {
       <MobileNav user={user} />
     </>
   );
+}
+
+function AppHeaderMobileFilter({ pathname }: { pathname: string }) {
+  if (pathname.startsWith("/forum")) {
+    return <MobileFilterToggle showPostType={true} />;
+  }
+  if (pathname.startsWith("/lessons")) {
+    return <LessonsMobileFilterToggle />;
+  }
+  if (pathname.startsWith("/problems")) {
+    return <MobileFilterToggle hideTags={true} showProblemStatus={true} />;
+  }
+  return null;
 }

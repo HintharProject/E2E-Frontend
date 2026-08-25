@@ -28,10 +28,7 @@ export function ForumSubNav({
 
   return (
     <div className="relative">
-      <SubNav
-        items={items}
-        mobileExtra={filterProps ? <MobileFilterToggle {...filterProps} /> : undefined}
-      />
+      <SubNav items={items} />
     </div>
   );
 }

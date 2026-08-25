@@ -224,8 +224,8 @@ export function FilterContent({
 /** Desktop sidebar — hidden on mobile (use MobileFilterToggle instead) */
 export function FilterSidebar(props: FilterSidebarProps) {
   return (
-    <aside className="hidden w-full shrink-0 lg:block lg:w-56">
-      <div className="sticky top-28 rounded-2xl border border-line bg-card p-4">
+    <aside className="hidden w-full shrink-0 lg:block lg:w-56 sticky top-[104px] self-start">
+      <div className="rounded-2xl border border-line bg-card p-4">
         <FilterContent {...props} />
       </div>
     </aside>

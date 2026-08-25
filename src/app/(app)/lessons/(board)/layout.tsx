@@ -8,7 +8,7 @@ export default function LessonsBoardLayout({ children }: { children: React.React
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <LessonsHeader />
-      <LessonsTabs mobileExtra={<LessonsMobileFilterToggle />} />
+      <LessonsTabs />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
         <Suspense fallback={null}>
           {/* Note: FilterSidebar is hidden on mobile; LessonsMobileFilterToggle handles mobile. */}

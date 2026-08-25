@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
 import { useCurrentUser } from "@/hooks/use-current-user";
 
-export function LessonsTabs({ mobileExtra }: { mobileExtra?: ReactNode }) {
+export function LessonsTabs() {
   const { user } = useCurrentUser();
   const showManage = user?.role === "CREATOR" || user?.role === "ADMIN";
 
@@ -18,7 +18,7 @@ export function LessonsTabs({ mobileExtra }: { mobileExtra?: ReactNode }) {
 
   return (
     <div className="relative">
-      <SubNav items={items} mobileExtra={mobileExtra} />
+      <SubNav items={items} />
     </div>
   );
 }

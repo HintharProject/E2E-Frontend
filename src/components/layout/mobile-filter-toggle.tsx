@@ -35,9 +35,9 @@ export function MobileFilterToggle(props: FilterSidebarProps) {
         Filters
       </button>
 
-      {/* Collapsible panel — slides down under the sub-nav bar */}
+      {/* Collapsible panel — slides down full screen under the header */}
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 border-b border-line bg-background/95 px-4 py-4 shadow-md backdrop-blur-md lg:hidden sm:px-6">
+        <div className="fixed inset-x-0 bottom-0 top-[112px] z-50 overflow-y-auto bg-background/95 p-4 shadow-md backdrop-blur-md lg:hidden sm:p-6">
           <Suspense fallback={null}>
             <FilterContent {...props} />
           </Suspense>
