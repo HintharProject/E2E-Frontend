@@ -82,14 +82,6 @@ function ProblemsFeed() {
 export default function ProblemsPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
-      {/* Mobile-only sticky filter bar */}
-      <div className="relative">
-        <div className="sticky top-[57px] z-30 -mx-4 mb-6 flex items-center justify-end gap-2 border-b border-line bg-background/90 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:hidden">
-          <Suspense fallback={null}>
-            <MobileFilterToggle hideTags showProblemStatus />
-          </Suspense>
-        </div>
-      </div>
 
       <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-start">
         <Suspense fallback={null}>

@@ -1,5 +1,8 @@
 "use client";
 
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   parseFilterList,
@@ -14,6 +17,7 @@ export type FilterSidebarProps = {
   hideTags?: boolean;
   showProblemStatus?: boolean;
   postTypeOptions?: { value: string; label: string }[];
+  isMobile?: boolean;
 };
 
 function CheckboxGroup({
@@ -21,36 +25,53 @@ function CheckboxGroup({
   options,
   selected,
   onToggle,
+  isMobile,
 }: {
   legend: string;
   options: { value: string; label: string }[];
   selected: string[];
   onToggle: (value: string) => void;
+  isMobile?: boolean;
 }) {
+  const [isExpanded, setIsExpanded] = useState(!isMobile);
+
   return (
     <fieldset>
-      <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-        {legend}
-      </legend>
-      <div className="flex flex-col gap-2">
-        {options.map((opt) => {
-          const checked = selected.includes(opt.value);
-          return (
-            <label
-              key={opt.value}
-              className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
-            >
-              <input
-                type="checkbox"
-                className="h-4 w-4 shrink-0 rounded border-line accent-brand"
-                checked={checked}
-                onChange={() => onToggle(opt.value)}
-              />
-              <span>{opt.label}</span>
-            </label>
-          );
-        })}
-      </div>
+      {isMobile ? (
+        <button
+          type="button"
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-ink-muted"
+        >
+          {legend}
+          <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+        </button>
+      ) : (
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          {legend}
+        </legend>
+      )}
+      {isExpanded && (
+        <div className="flex flex-col gap-2">
+          {options.map((opt) => {
+            const checked = selected.includes(opt.value);
+            return (
+              <label
+                key={opt.value}
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+              >
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 rounded border-line accent-brand"
+                  checked={checked}
+                  onChange={() => onToggle(opt.value)}
+                />
+                <span>{opt.label}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
     </fieldset>
   );
 }
@@ -65,6 +86,7 @@ export function FilterContent({
     { value: "QUESTION", label: "Question" },
     { value: "SHARING", label: "Sharing" },
   ],
+  isMobile = false,
 }: FilterSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -126,12 +148,14 @@ export function FilterContent({
         options={subjects.map((s) => ({ value: s.id, label: s.name }))}
         selected={selectedSubjects}
         onToggle={(value) => toggle("subject", selectedSubjects, value)}
+        isMobile={isMobile}
       />
       <CheckboxGroup
         legend="Level"
         options={levels.map((l) => ({ value: l.id, label: l.name }))}
         selected={selectedLevels}
         onToggle={(value) => toggle("level", selectedLevels, value)}
+        isMobile={isMobile}
       />
       {showPostType ? (
         <CheckboxGroup
@@ -139,6 +163,7 @@ export function FilterContent({
           options={postTypeOptions}
           selected={selectedTypes}
           onToggle={(value) => toggle("post_type", selectedTypes, value)}
+          isMobile={isMobile}
         />
       ) : null}
       {effectiveShowStateFilter ? (
