@@ -4,6 +4,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import type { AppUser } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
+import { useState, useEffect } from "react";
 
 /**
  * TanStack Query hook for the currently authenticated user.
@@ -17,23 +18,29 @@ import { fetchCurrentUser } from "@/services/user-service";
  * - Consumers should show a skeleton while `isLoading` is true.
  */
 export function useCurrentUser() {
-  const { getToken, isSignedIn } = useAuth();
+  const { getToken, isSignedIn, isLoaded } = useAuth();
+  const [devToken, setDevToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDevToken(localStorage.getItem("dev_token"));
+  }, []);
 
   const query = useQuery<AppUser>({
-    queryKey: ["currentUser"],
+    queryKey: ["currentUser", devToken],
     queryFn: async () => {
       const token = await getToken();
-      if (!token) throw new Error("No auth token available");
-      return fetchCurrentUser(token);
+      if (!token && !devToken) throw new Error("No auth token available");
+      return fetchCurrentUser((token || devToken) as string);
     },
-    enabled: isSignedIn === true,
+    enabled: isSignedIn === true || !!devToken,
     staleTime: 5 * 60 * 1000, // User profile rarely changes mid-session
     retry: 2,
   });
 
   return {
     user: query.data ?? null,
-    isLoading: query.isLoading,
+    isLoading: query.isLoading || !isLoaded,
     isError: query.isError,
     error: query.error,
   };

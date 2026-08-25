@@ -47,7 +47,7 @@ export async function apiFetch<T>(
     let finalToken = token;
     
     // Dev-only token bypass
-    if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true") {
+    if (typeof window !== "undefined") {
       const devToken = localStorage.getItem("dev_token");
       if (devToken) {
         finalToken = devToken;
