@@ -1,0 +1,19 @@
+import { PageHeader } from "@/components/ui/page-header";
+import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
+import { ForumFeed } from "@/components/features/forum-feed";
+
+export default function CreatorsFeedPage() {
+  return (
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
+      <div className="mt-6">
+        <ForumFeed 
+          subjects={[]} 
+          levels={[]} 
+          tagIds={[]} 
+          postTypes={[]} 
+          feed="creator"
+        />
+      </div>
+    </div>
+  );
+}

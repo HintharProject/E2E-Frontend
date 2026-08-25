@@ -101,10 +101,14 @@ E2E-Frontend/
 │   ├── app/            # Next.js App Router pages & layouts
 │   ├── components/     # Reusable UI components (Shadcn/ui, custom)
 │   ├── lib/            # Utility functions & API integrations
+│   ├── proxy.ts        # Next.js 16 Middleware (formerly middleware.ts)
 ├── public/             # Static assets
 ├── next.config.mjs     # Next.js configuration
 └── tsconfig.json       # TypeScript configuration
 ```
+
+> [!NOTE]
+> **Next.js 16 Convention**: The Next.js middleware file is intentionally named `proxy.ts` (instead of `middleware.ts`). This is a new convention introduced in Next.js 16 to emphasize its role as a network boundary. Do not rename this back to `middleware.ts`.
 
 ---
 
