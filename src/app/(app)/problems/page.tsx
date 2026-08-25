@@ -2,7 +2,6 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { Virtuoso } from "react-virtuoso";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemCard } from "@/components/features/problems/problem-card";
@@ -58,25 +57,23 @@ function ProblemsFeed() {
           description="Try adjusting your filters or be the first to post a problem."
         />
       ) : (
-        <Virtuoso
-          useWindowScroll
-          data={problems}
-          endReached={() => {
-            if (hasNextPage) fetchNextPage();
-          }}
-          components={{
-            Footer: () => (
-              isFetchingNextPage ? (
-                <div className="py-4 text-center text-sm text-ink-muted">Loading more...</div>
-              ) : null
-            )
-          }}
-          itemContent={(index, problem) => (
-            <div className="pb-4">
-              <ProblemCard problem={problem} />
+        <div className="flex flex-col gap-4">
+          {problems.map((problem) => (
+            <ProblemCard key={problem.id} problem={problem} />
+          ))}
+
+          {hasNextPage && (
+            <div className="mt-4 flex justify-center">
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
+              >
+                {isFetchingNextPage ? "Loading more..." : "Load more"}
+              </button>
             </div>
           )}
-        />
+        </div>
       )}
     </TopmostScrollRefresh>
   );
@@ -84,7 +81,7 @@ function ProblemsFeed() {
 
 export default function ProblemsPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
       {/* Mobile-only sticky filter bar */}
       <div className="relative">
         <div className="sticky top-[57px] z-30 -mx-4 mb-6 flex items-center justify-end gap-2 border-b border-line bg-background/90 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:hidden">
@@ -98,7 +95,7 @@ export default function ProblemsPage() {
         <Suspense fallback={null}>
           <FilterSidebar hideTags showProblemStatus />
         </Suspense>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:custom-scrollbar lg:pr-2">
           <Suspense fallback={<div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>}>
             <ProblemsFeed />
           </Suspense>

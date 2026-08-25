@@ -12,7 +12,7 @@ export function SubNav({
   const pathname = usePathname();
 
   return (
-    <nav className="sticky top-[112px] md:top-[104px] z-30 -mx-4 mb-6 flex items-center gap-1 overflow-x-auto border-b border-line bg-background/90 px-4 pb-px backdrop-blur-md sm:-mx-6 sm:px-6">
+    <nav className="flex items-center gap-1 overflow-x-auto pb-px">
       <div className="flex flex-1 items-center gap-1 overflow-x-auto">
         {items.map((item) => {
           const isActive = item.active ?? pathname === item.href;
@@ -22,10 +22,10 @@ export function SubNav({
               href={item.href}
               onMouseEnter={item.onPrefetch}
               onTouchStart={item.onPrefetch}
-              className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
+              className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
                 isActive
-                  ? "border-brand text-brand-dark"
-                  : "border-transparent text-ink-muted hover:text-ink"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-ink-muted hover:bg-muted hover:text-ink"
               }`}
             >
               {item.label}

@@ -223,8 +223,8 @@ export function FilterContent({
 /** Desktop sidebar — hidden on mobile (use MobileFilterToggle instead) */
 export function FilterSidebar(props: FilterSidebarProps) {
   return (
-    <aside className="hidden w-full shrink-0 lg:block lg:w-56 sticky top-[104px] self-start">
-      <div className="rounded-2xl border border-line bg-card p-4 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
+    <aside className="hidden w-full shrink-0 lg:block lg:w-56 sticky top-[180px] self-start -ml-4">
+      <div className="rounded-2xl border border-line bg-card p-4 max-h-[calc(100vh-170px)] overflow-y-auto custom-scrollbar">
         <FilterContent {...props} />
       </div>
     </aside>

@@ -22,6 +22,9 @@ export function InitialLoadingScreen() {
           <p className="text-sm font-medium text-muted-foreground animate-pulse">
             {initializationMessage}
           </p>
+          <p className="text-base font-medium text-foreground mt-2">
+            Education to Everyone
+          </p>
         </div>
       </div>
     </div>

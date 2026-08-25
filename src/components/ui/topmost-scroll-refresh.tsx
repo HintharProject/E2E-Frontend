@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Loader2, RefreshCw, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRefreshStore } from "@/lib/store/refresh-store";
 
 interface TopmostScrollRefreshProps {
   onRefresh: () => Promise<unknown> | void;
@@ -30,8 +31,21 @@ export function TopmostScrollRefresh({
   const startY = useRef<number>(0);
   const currentY = useRef<number>(0);
 
-  // We only enable pull if we are at the absolute top of the window
-  const isAtTop = () => window.scrollY <= 0;
+  // We enable pull if we are at the top of the closest scrollable container, or window
+  const isAtTop = () => {
+    const el = containerRef.current;
+    if (!el) return window.scrollY <= 0;
+    
+    let parent = el.parentElement;
+    while (parent && parent !== document.body) {
+      const style = window.getComputedStyle(parent);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        return parent.scrollTop <= 0;
+      }
+      parent = parent.parentElement;
+    }
+    return window.scrollY <= 0;
+  };
 
   const handleTouchStart = useCallback((e: TouchEvent) => {
     if (!isAtTop()) return;
@@ -88,6 +102,18 @@ export function TopmostScrollRefresh({
     };
   }, [handleTouchStart, handleTouchMove, handleTouchEnd]);
 
+  // Connect to global refresh store so the button in AppHeader can trigger it
+  const { setTriggerRefresh, setIsRefreshing: setStoreIsRefreshing } = useRefreshStore();
+
+  useEffect(() => {
+    setTriggerRefresh(onRefresh as () => void);
+    return () => setTriggerRefresh(() => {});
+  }, [onRefresh, setTriggerRefresh]);
+
+  useEffect(() => {
+    setStoreIsRefreshing(isRefreshing);
+  }, [isRefreshing, setStoreIsRefreshing]);
+
   // Handle success state briefly when refreshing finishes
   const wasRefreshing = useRef(isRefreshing);
   useEffect(() => {
@@ -104,37 +130,6 @@ export function TopmostScrollRefresh({
 
   return (
     <div ref={containerRef} className={cn("relative w-full", className)}>
-      {/* Background/Floating Refresh Indicator (Desktop/Manual + Pull) */}
-      <div className="mb-4 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          {isRefreshing ? (
-            <>
-              <Loader2 className="size-4 animate-spin text-primary" />
-              <span className="font-medium animate-pulse">Updating {label}...</span>
-            </>
-          ) : showSuccess ? (
-            <>
-              <Check className="size-4 text-green-500" />
-              <span className="font-medium text-green-600 dark:text-green-400">Refreshed</span>
-            </>
-          ) : (
-            <span className="hidden sm:inline-block">Up to date</span>
-          )}
-        </div>
-        
-        {/* Manual Refresh Button */}
-        <button
-          type="button"
-          onClick={() => onRefresh()}
-          disabled={isRefreshing}
-          className="flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 cursor-pointer"
-          title={`Refresh ${label}`}
-        >
-          <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
-      </div>
-
       {/* Pull Indicator Overlay (Mobile Touch) */}
       <div 
         className={cn(

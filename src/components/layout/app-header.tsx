@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState, useEffect } from "react";
+import { FormEvent, useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
@@ -24,6 +24,11 @@ import { MobileNav } from "./mobile-nav";
 import { MobileFilterToggle } from "./mobile-filter-toggle";
 import { LessonsMobileFilterToggle } from "@/components/features/lessons/lessons-mobile-filter";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
+import { LessonsTabs } from "@/components/features/lessons/lessons-tabs";
+import { useRefreshStore } from "@/lib/store/refresh-store";
+import { RefreshCw, Loader2, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // AppHeader — Main sticky navigation
@@ -58,6 +63,7 @@ export function AppHeader() {
   const [searchQuery, setSearchQuery] = useState("");
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { isRefreshing, triggerRefresh } = useRefreshStore();
 
   useEffect(() => {
     if (!user || isLoading) return;
@@ -98,6 +104,18 @@ export function AppHeader() {
 
     prefetchTabs();
   }, [user, isLoading, getToken, queryClient]);
+
+  const [showSuccess, setShowSuccess] = useState(false);
+  const wasRefreshing = useRef(isRefreshing);
+
+  useEffect(() => {
+    if (wasRefreshing.current && !isRefreshing) {
+      setShowSuccess(true);
+      const timer = setTimeout(() => setShowSuccess(false), 2000);
+      return () => clearTimeout(timer);
+    }
+    wasRefreshing.current = isRefreshing;
+  }, [isRefreshing]);
 
   // Show skeleton while user data loads (handles cold starts gracefully)
   if (isLoading) {
@@ -209,37 +227,69 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Desktop navigation pills */}
-          <nav className="hidden gap-1 overflow-x-auto pb-1 md:flex">
-            {visibleNav.map((item) => {
-              const active = isNavActive(pathname, item.match, item.exclude);
-              return (
+          {/* Navigation Pills and Refresh Block */}
+          <div className="flex items-center justify-between gap-4 w-full">
+            {/* Desktop navigation pills */}
+            <nav className="hidden gap-2 overflow-x-auto md:flex">
+              {visibleNav.map((item) => {
+                const active = isNavActive(pathname, item.match, item.exclude);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
+                      active
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+              {user && (
                 <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                    active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  href={`/users/${user.id}`}
+                  className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
+                    pathname === `/users/${user.id}`
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
                   }`}
                 >
-                  {item.label}
+                  Profile
                 </Link>
-              );
-            })}
-            {user && (
-              <Link
-                href={`/users/${user.id}`}
-                className={`rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors ${
-                  pathname === `/users/${user.id}`
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                }`}
+              )}
+            </nav>
+
+            <div className="flex items-center gap-3 shrink-0 ml-auto">
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {isRefreshing ? (
+                  <>
+                    <Loader2 className="size-3.5 animate-spin text-primary" />
+                    <span className="font-medium animate-pulse">Updating...</span>
+                  </>
+                ) : showSuccess ? (
+                  <>
+                    <Check className="size-3.5 text-green-500" />
+                    <span className="font-medium text-green-600 dark:text-green-400">Refreshed</span>
+                  </>
+                ) : (
+                  <span className="hidden sm:inline-block">Up to date</span>
+                )}
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => triggerRefresh()}
+                disabled={isRefreshing}
+                className="flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 cursor-pointer"
+                title="Refresh feed"
               >
-                Profile
-              </Link>
-            )}
-          </nav>
+                <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
+          </div>
 
           {/* Mobile search & filter */}
           <div className="flex items-center gap-2 md:hidden">
@@ -256,6 +306,20 @@ export function AppHeader() {
             </form>
             <AppHeaderMobileFilter pathname={pathname} />
           </div>
+
+          {/* Sub Nav Row */}
+          {(pathname.startsWith("/forum") || pathname.startsWith("/lessons")) && (
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex-1 overflow-x-auto min-w-0">
+                {pathname.startsWith("/forum") && (
+                  <ForumSubNav activeHref={pathname} />
+                )}
+                {pathname.startsWith("/lessons") && (
+                  <LessonsTabs />
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </header>
 

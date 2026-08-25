@@ -60,18 +60,23 @@ export function BaseFeedCard({
             </Link>
           ) : null}
           <div>
-            {author ? (
-              <Link
-                href={`/users/${author.id}`}
-                className="text-sm font-semibold text-ink hover:text-brand-dark"
-              >
-                {author.display_name}
-              </Link>
-            ) : null}
+            <div className="flex items-center gap-2">
+              {author ? (
+                <Link
+                  href={`/users/${author.id}`}
+                  className="text-sm font-semibold text-ink hover:text-brand-dark"
+                >
+                  {author.display_name}
+                </Link>
+              ) : null}
+            </div>
             {subtitle && <p className="text-xs text-ink-muted">{subtitle}</p>}
           </div>
         </div>
-        {topRight && <div className="flex items-center gap-2">{topRight}</div>}
+        <div className="flex items-center gap-1">
+          {topRight}
+          {moreMenu}
+        </div>
       </div>
       <Link href={href} className="mt-3 block">
         <h2 className="font-display text-xl text-ink group-hover:text-brand-dark">
@@ -89,12 +94,6 @@ export function BaseFeedCard({
           {bottomRight}
         </div>
       </div>
-      {/* Three-dot more menu — absolutely positioned top-right corner */}
-      {moreMenu && (
-        <div className="absolute right-3 top-3">
-          {moreMenu}
-        </div>
-      )}
     </article>
   );
 }
