@@ -15,7 +15,7 @@ export default async function ForumMainPage(props: {
   const tagIds = parseFilterList(searchParams?.tags);
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-8 sm:px-6">
       <ForumSubNav
         activeHref="/forum"
         filterProps={{ showPostType: true }}

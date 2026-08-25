@@ -6,7 +6,7 @@ import { LessonsMobileFilterToggle } from "@/components/features/lessons/lessons
 
 export default function LessonsBoardLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-8 sm:px-6">
       <LessonsHeader />
       <LessonsTabs />
       <div className="flex flex-col gap-6 lg:flex-row lg:items-start">

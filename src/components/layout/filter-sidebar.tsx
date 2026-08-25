@@ -6,6 +6,7 @@ import {
   serializeFilterList,
 } from "@/lib/filter-params";
 import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
+import { TagSearchFilter } from "./tag-search-filter";
 
 export type FilterSidebarProps = {
   showPostType?: boolean;
@@ -210,10 +211,8 @@ export function FilterContent({
         </fieldset>
       ) : null}
       {!hideTags && (
-        <CheckboxGroup
-          legend="Tag"
-          options={tags.map((t) => ({ value: t.id, label: t.name }))}
-          selected={selectedTags}
+        <TagSearchFilter
+          selectedTags={selectedTags}
           onToggle={(value) => toggle("tags", selectedTags, value)}
         />
       )}
@@ -225,7 +224,7 @@ export function FilterContent({
 export function FilterSidebar(props: FilterSidebarProps) {
   return (
     <aside className="hidden w-full shrink-0 lg:block lg:w-56 sticky top-[104px] self-start">
-      <div className="rounded-2xl border border-line bg-card p-4">
+      <div className="rounded-2xl border border-line bg-card p-4 max-h-[calc(100vh-120px)] overflow-y-auto custom-scrollbar">
         <FilterContent {...props} />
       </div>
     </aside>

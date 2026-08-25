@@ -4,7 +4,7 @@ import { ForumFeed } from "@/components/features/forum-feed";
 
 export default function CreatorsFeedPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-8 sm:px-6">
       <ForumSubNav activeHref="/forum/creators" />
       <div className="mt-6">
         <ForumFeed 

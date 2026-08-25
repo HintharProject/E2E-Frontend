@@ -37,10 +37,25 @@ export function MobileFilterToggle(props: FilterSidebarProps) {
 
       {/* Collapsible panel — slides down full screen under the header */}
       {open && (
-        <div className="fixed inset-x-0 bottom-0 top-[112px] z-50 overflow-y-auto bg-background/95 p-4 shadow-md backdrop-blur-md lg:hidden sm:p-6">
-          <Suspense fallback={null}>
-            <FilterContent {...props} />
-          </Suspense>
+        <div className="fixed inset-0 z-50 flex flex-col bg-background lg:hidden">
+          {/* Header */}
+          <div className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-background/90 px-4 py-3 backdrop-blur-md">
+            <h2 className="font-semibold text-ink">Filters</h2>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-full p-2 text-ink-muted transition-colors hover:bg-muted hover:text-ink"
+              aria-label="Close filters"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          {/* Scrollable Content */}
+          <div className="flex-1 overflow-y-auto p-4 custom-scrollbar sm:p-6 pb-24">
+            <Suspense fallback={null}>
+              <FilterContent {...props} />
+            </Suspense>
+          </div>
         </div>
       )}
     </>
