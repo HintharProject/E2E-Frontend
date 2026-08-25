@@ -15,13 +15,13 @@ function parseYouTubeUrl(url: string) {
     if (urlObj.hostname.includes('youtube.com') || urlObj.hostname.includes('youtu.be')) {
       const listId = urlObj.searchParams.get('list');
       if (listId) {
-        return { type: 'playlist', url };
+        return { type: 'playlist', listId, url };
       }
       const videoId = urlObj.hostname.includes('youtu.be') 
         ? urlObj.pathname.slice(1) 
         : urlObj.searchParams.get('v');
       if (videoId) {
-        return { type: 'video', videoId };
+        return { type: 'video', videoId, url };
       }
     }
   } catch (e) {}
@@ -199,7 +199,7 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                       <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
                     )}
                     <iframe
-                      src={`https://www.youtube.com/embed/${yt.videoId}`}
+                      src={`https://www.youtube.com/embed/${yt.videoId}?rel=0`}
                       title="YouTube video player"
                       className={cn("w-full h-full border-0 relative z-10 transition-opacity duration-300", !videoLoaded ? "opacity-0" : "opacity-100")}
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -212,17 +212,42 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
               }
               if (yt.type === 'playlist') {
                 return (
-                  <div className="relative p-8 flex items-center justify-center group hover:bg-surface-raised transition-colors aspect-video flex-col gap-4 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-[#FF0000]/10 text-[#FF0000] shadow-sm">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-youtube"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                  <div className="w-full flex flex-col gap-4">
+                    <div className="aspect-video w-full bg-black relative overflow-hidden rounded-xl">
+                      {!videoLoaded && (
+                        <Skeleton className="absolute inset-0 z-0 h-full w-full rounded-none" />
+                      )}
+                      <iframe
+                        src={`https://www.youtube.com/embed?listType=playlist&list=${yt.listId}&rel=0`}
+                        title="YouTube playlist player"
+                        className={cn("w-full h-full border-0 relative z-10 transition-opacity duration-300", !videoLoaded ? "opacity-0" : "opacity-100")}
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                        loading="lazy"
+                        onLoad={() => setVideoLoaded(true)}
+                      ></iframe>
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-xl text-ink group-hover:text-[#FF0000] transition-colors">YouTube Playlist</h4>
-                      <p className="text-sm text-ink-muted mt-2 max-w-md mx-auto line-clamp-2">{youtubeUrl}</p>
+
+                    <div className="flex items-center justify-between bg-surface-raised border border-line rounded-xl p-4 shadow-sm">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#FF0000]/10 text-[#FF0000]">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-youtube"><path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 0 1-1.4 1.4 49.55 49.55 0 0 1-16.2 0A2 2 0 0 1 2.5 17"/><path d="m10 15 5-3-5-3z"/></svg>
+                        </div>
+                        <div>
+                          <h4 className="font-semibold text-sm text-ink">YouTube Playlist</h4>
+                          <p className="text-xs text-ink-muted hidden sm:block">Watch the full playlist on YouTube</p>
+                        </div>
+                      </div>
+                      <a
+                        href={yt.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-2 hover:bg-[#FF0000]/5 hover:text-[#FF0000] hover:border-[#FF0000]/20 transition-colors")}
+                      >
+                        Open Playlist
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-external-link"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>
+                      </a>
                     </div>
-                    <a href={youtubeUrl} target="_blank" rel="noopener noreferrer" className="absolute inset-0 rounded-xl">
-                      <span className="sr-only">Open YouTube Playlist</span>
-                    </a>
                   </div>
                 );
               }
