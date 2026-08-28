@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { LessonAttachment } from "@/types";
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Video, Download, Expand } from "lucide-react";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
@@ -114,20 +115,21 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                     </div>
                   ) : (
                     <Dialog>
-                      <DialogTrigger className="w-full h-full flex items-center justify-center group outline-none">
-                        <img
+                      <DialogTrigger className="relative w-full h-full flex items-center justify-center group outline-none">
+                        <Image
                           src={url}
                           alt={img.file_name || "Attachment"}
+                          fill
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                           className={cn(
-                            "max-w-full max-h-full object-contain mx-auto shadow-sm rounded-lg transition-opacity duration-200",
+                            "object-contain shadow-sm rounded-lg transition-opacity duration-200",
                             !isLoaded ? "opacity-0" : "opacity-100"
                           )}
-                          loading={idx === 0 ? "eager" : "lazy"}
-                          fetchPriority={idx === 0 ? "high" : "auto"}
+                          priority={idx === 0}
                           onLoad={() => setImageLoaded((prev) => ({ ...prev, [idx]: true }))}
                           onError={() => setImageErrors((prev) => ({ ...prev, [idx]: true }))}
                         />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center z-20">
                           <div className="bg-white/20 backdrop-blur-md p-3 rounded-full text-white shadow-lg">
                             <Expand className="w-6 h-6" />
                           </div>
@@ -136,11 +138,11 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                       <DialogContent className="max-w-6xl w-full h-[90vh] bg-transparent border-none shadow-none flex items-center justify-center p-0">
                         <DialogTitle className="sr-only">Image View</DialogTitle>
                         <div className="relative w-full h-full flex items-center justify-center group">
-                          <img
+                          <Image
                             src={url}
                             alt="Attachment full size"
-                            className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl mx-auto"
-                            loading="lazy"
+                            fill
+                            className="object-contain rounded-md shadow-2xl mx-auto"
                           />
                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                             <a

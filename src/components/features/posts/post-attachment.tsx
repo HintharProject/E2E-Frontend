@@ -4,6 +4,7 @@ import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription, D
 import { Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 function getFileInfo(url: string) {
   try {
@@ -24,16 +25,21 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
 
   if (isImage) {
     return (
-      <div className="mt-4 flex justify-center">
+      <div className="mt-4 flex justify-center w-full max-w-2xl mx-auto">
         <Dialog>
           <DialogTrigger 
             render={
-              <button type="button" className="relative overflow-hidden rounded-xl border border-line bg-surface transition-transform hover:scale-[1.02] max-h-72 flex items-center justify-center cursor-zoom-in group" />
+              <button type="button" className="relative overflow-hidden w-full aspect-video rounded-xl border border-line bg-surface transition-transform hover:scale-[1.02] flex items-center justify-center cursor-zoom-in group" />
             }
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={url} alt={filename} className="object-contain max-h-72" />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+            <Image
+              src={url}
+              alt={filename}
+              fill
+              className="object-contain"
+              sizes="(max-width: 768px) 100vw, 800px"
+            />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
               <ImageIcon className="text-white w-8 h-8 opacity-80" />
             </div>
           </DialogTrigger>
@@ -45,10 +51,15 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
               <DialogTitle>Image Preview</DialogTitle>
               <DialogDescription>Full size image preview of {filename}</DialogDescription>
             </DialogHeader>
-            <div className="relative group flex flex-col items-center justify-center w-full h-full max-h-[90vh]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="Attachment full size" className="max-h-[90vh] w-auto object-contain rounded-md shadow-2xl" />
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="relative group flex w-[90vw] h-[90vh] items-center justify-center">
+              <Image 
+                src={url} 
+                alt="Attachment full size" 
+                fill
+                className="object-contain rounded-md shadow-2xl" 
+                sizes="90vw"
+              />
+              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
                 <a 
                   href={downloadUrl || url} 
                   target="_blank" 

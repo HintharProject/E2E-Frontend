@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from "react";
+import Image from "next/image";
 import { UploadCloud, X } from "lucide-react";
 import { Button } from "./button";
 
@@ -143,7 +144,7 @@ export function FileDropzone({
               <li key={i} className="flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
                 <div className="flex items-center gap-3 overflow-hidden">
                   {previewUrl ? (
-                    <img src={previewUrl} alt={file.name} className="h-10 w-10 object-cover rounded border border-line shrink-0" />
+                    <Image src={previewUrl} alt={file.name} width={40} height={40} unoptimized className="h-10 w-10 object-cover rounded border border-line shrink-0" />
                   ) : (
                     <div className="h-10 w-10 bg-muted rounded border border-line flex items-center justify-center shrink-0">
                       <span className="text-[10px] uppercase font-bold text-ink-muted">{file.name.split('.').pop()}</span>
