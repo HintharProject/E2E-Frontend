@@ -36,6 +36,7 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
               src={url}
               alt={filename}
               fill
+              unoptimized
               className="object-contain"
               sizes="(max-width: 768px) 100vw, 800px"
             />
@@ -56,6 +57,7 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
                 src={url} 
                 alt="Attachment full size" 
                 fill
+                unoptimized
                 className="object-contain rounded-md shadow-2xl" 
                 sizes="90vw"
               />

@@ -12,7 +12,11 @@ import { ChevronLeft } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { SolutionItem } from "@/components/features/problems/solution-item";
-import { CreateSolutionForm } from "@/components/features/problems/create-solution-form";
+import dynamic from "next/dynamic";
+const CreateSolutionForm = dynamic(() => import("@/components/features/problems/create-solution-form").then(mod => mod.CreateSolutionForm), {
+  loading: () => <div className="h-64 w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  ssr: false
+});
 import { formatDate } from "@/lib/utils";
 import { isWriteLocked } from "@/types/user";
 import { useVoteProblem } from "@/hooks/use-problems";
@@ -21,7 +25,10 @@ import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 import { BaseDetailedCard } from "@/components/ui/base-card";
-import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
+const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
+  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  ssr: false
+});
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);

@@ -126,6 +126,7 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                             !isLoaded ? "opacity-0" : "opacity-100"
                           )}
                           priority={idx === 0}
+                          unoptimized
                           onLoad={() => setImageLoaded((prev) => ({ ...prev, [idx]: true }))}
                           onError={() => setImageErrors((prev) => ({ ...prev, [idx]: true }))}
                         />
@@ -142,6 +143,7 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                             src={url}
                             alt="Attachment full size"
                             fill
+                            unoptimized
                             className="object-contain rounded-md shadow-2xl mx-auto"
                           />
                           <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">

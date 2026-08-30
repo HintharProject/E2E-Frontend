@@ -11,7 +11,11 @@ import { formatDate } from "@/lib/utils";
 import { apiFetch } from "@/services/api-client";
 import { Lesson } from "@/types";
 import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
-import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
+import dynamic from "next/dynamic";
+const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
+  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  ssr: false
+});
 import LessonDetailLoading from "@/app/(app)/lessons/[id]/loading";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
