@@ -57,11 +57,11 @@ export function PostCard({ post }: { post: Post }) {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["post", post.id],
+      queryKey: ["post", post.id, "v2"],
       queryFn: async () => {
         const token = await getToken();
         if (!token) return post;
-        return apiFetch<Post>(`/posts/${post.id}/`, token);
+        return apiFetch<Post>(`/posts/${post.id}/?expand=author_details,subject_details,level_details,tags_data`, token);
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -165,11 +165,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["lesson", lesson.id],
+      queryKey: ["lesson", lesson.id, "v2"],
       queryFn: async () => {
         const token = await getToken();
         if (!token) return lesson;
-        return apiFetch<Lesson>(`/lessons/${lesson.id}/`, token);
+        return apiFetch<Lesson>(`/lessons/${lesson.id}/?expand=author_details,attachments`, token);
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -214,6 +214,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
       } : undefined}
+      subtitle={author?.role === 'CREATOR' ? 'Creator' : undefined}
       topRight={
         <div className="flex items-center gap-2">
           <Badge

@@ -15,6 +15,7 @@ import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-vi
 import LessonDetailLoading from "@/app/(app)/lessons/[id]/loading";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
+import { useLesson } from "@/hooks/use-lessons";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -29,15 +30,7 @@ export function LessonDetailClient({ id }: { id: string }) {
   const { getToken } = useAuth();
   const voteMutation = useVoteLesson();
 
-  const { data: lesson, isLoading, isError } = useQuery<Lesson>({
-    queryKey: ["lesson", id],
-    queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-      return apiFetch<Lesson>(`/lessons/${id}/`, token);
-    },
-    staleTime: 5 * 60 * 1000,
-  });
+  const { data: lesson, isLoading, isError } = useLesson(id);
 
   const [localVoteCount, setLocalVoteCount] = useState(0);
   const [localUserVote, setLocalUserVote] = useState(0);
@@ -85,12 +78,12 @@ export function LessonDetailClient({ id }: { id: string }) {
   const tagNames = lesson.tags ?? [];
 
   const imageAttachments = lesson.attachments?.filter(att => {
-    const ext = att.file_name.split('.').pop()?.toLowerCase() || '';
+    const ext = att?.file_name?.split('.').pop()?.toLowerCase() || '';
     return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
   }) || [];
   
   const otherAttachments = lesson.attachments?.filter(att => {
-    const ext = att.file_name.split('.').pop()?.toLowerCase() || '';
+    const ext = att?.file_name?.split('.').pop()?.toLowerCase() || '';
     return !['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
   }) || [];
 

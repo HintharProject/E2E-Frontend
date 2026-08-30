@@ -73,6 +73,7 @@ export interface Comment {
   reply_count?: number;
   vote_count?: number;
   user_vote?: 1 | -1 | null;
+  replies?: Comment[];
 }
 
 export interface Lesson {

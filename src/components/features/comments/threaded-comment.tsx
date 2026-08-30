@@ -46,7 +46,13 @@ export function ThreadedComment({
 
   const author = comment.author_details;
   
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(comment.id, hasReplies);
+  const preloadedReplies = comment.replies;
+  const isPreloaded = Array.isArray(preloadedReplies);
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(
+    comment.id,
+    hasReplies && !isPreloaded
+  );
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();
@@ -125,7 +131,7 @@ export function ThreadedComment({
     }, 1000);
   };
 
-  const replies = data?.pages.flatMap((p) => p.data) ?? [];
+  const replies = isPreloaded ? preloadedReplies : (data?.pages.flatMap((p) => p.data) ?? []);
 
   return (
     <div className="flex flex-col gap-3 py-3">

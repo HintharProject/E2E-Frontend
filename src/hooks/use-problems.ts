@@ -14,10 +14,10 @@ export function useProblems(filters: ProblemFilters = {}) {
   const { getToken } = useAuth();
   
   return useInfiniteQuery({
-    queryKey: ["problems", filters],
+    queryKey: ["problems", filters, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
-      const qs = buildQueryString({ ...filters, page: pageParam });
+      const qs = buildQueryString({ ...filters, page: pageParam, expand: "attachments,author_details,subject_details,level_details" });
       return apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
     },
     initialPageParam: 1,
@@ -30,10 +30,10 @@ export function useProblems(filters: ProblemFilters = {}) {
 export function useProblem(id: string) {
   const { getToken } = useAuth();
   return useQuery({
-    queryKey: ["problem", id],
+    queryKey: ["problem", id, "v2"],
     queryFn: async () => {
       const token = await getToken();
-      return apiFetch<Problem>(`/problems/${id}/`, token);
+      return apiFetch<Problem>(`/problems/${id}/?expand=attachments,author_details,subject_details,level_details`, token);
     },
     enabled: !!id,
   });
@@ -45,7 +45,7 @@ export function useSolution(id: string) {
     queryKey: ["solution", id],
     queryFn: async () => {
       const token = await getToken();
-      return apiFetch<Solution>(`/solutions/${id}/`, token);
+      return apiFetch<Solution>(`/solutions/${id}/?expand=attachments,author_details`, token);
     },
     enabled: !!id,
   });
@@ -57,7 +57,7 @@ export function useSolutions(problemId: string) {
     queryKey: ["solutions", problemId],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({ page: pageParam, expand: "attachments,author_details" });
       return apiFetch<PaginatedResponse<Solution>>(`/problems/${problemId}/solutions/${qs}`, token);
     },
     initialPageParam: 1,

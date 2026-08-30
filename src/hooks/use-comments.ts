@@ -10,7 +10,7 @@ export function useTopLevelComments(postId: string) {
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({ page: pageParam, expand: "replies" });
       return apiFetch<PaginatedResponse<Comment>>(`/posts/${postId}/comments/${qs}`, token);
     },
     initialPageParam: 1,

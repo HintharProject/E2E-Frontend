@@ -19,7 +19,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
   const { getToken } = useAuth();
 
   return useInfiniteQuery({
-    queryKey: ["posts", params],
+    queryKey: ["posts", params, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
@@ -33,6 +33,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
         feed: params.feed,
         author_id: params.authorId,
         page: pageParam,
+        expand: "author_details,subject_details,level_details,tags_data",
       };
 
       const queryStr = buildQueryString(backendParams);
@@ -53,11 +54,11 @@ export function usePost(id: string) {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ["post", id],
+    queryKey: ["post", id, "v2"],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
-      return apiFetch<Post>(`/posts/${id}/`, token);
+      return apiFetch<Post>(`/posts/${id}/?expand=author_details,subject_details,level_details,tags_data`, token);
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
