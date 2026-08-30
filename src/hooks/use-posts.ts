@@ -20,7 +20,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
 
   return useInfiniteQuery({
     queryKey: ["posts", params, "v2"],
-    queryFn: async ({ pageParam = 1 }) => {
+    queryFn: async ({ pageParam }) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
 
@@ -32,20 +32,28 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
         tags: params.tags,
         feed: params.feed,
         author_id: params.authorId,
-        page: pageParam,
+        cursor: pageParam,
+        limit: pageParam ? 6 : 12,
         expand: "author_details,subject_details,level_details,tags_data",
       };
 
       const queryStr = buildQueryString(backendParams);
       return apiFetch<PaginatedResponse<Post>>(`/posts/${queryStr}`, token);
     },
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage) => {
       if (lastPage.meta.next) {
-        return allPages.length + 1;
+        try {
+          const url = new URL(lastPage.meta.next);
+          return url.searchParams.get("cursor") || undefined;
+        } catch {
+          // If for some reason it's a relative URL
+          const match = lastPage.meta.next.match(/[?&]cursor=([^&]+)/);
+          return match ? match[1] : undefined;
+        }
       }
       return undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
   });
 }
 

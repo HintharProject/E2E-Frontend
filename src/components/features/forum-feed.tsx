@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { useInfinitePosts } from "@/hooks/use-posts";
 import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -31,6 +32,32 @@ export function ForumFeed({
       feed,
       authorId,
     });
+
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!hasNextPage || isFetchingNextPage) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          fetchNextPage();
+        }
+      },
+      { threshold: 0.1, rootMargin: "400px" }
+    );
+
+    const currentRef = loadMoreRef.current;
+    if (currentRef) {
+      observer.observe(currentRef);
+    }
+
+    return () => {
+      if (currentRef) {
+        observer.unobserve(currentRef);
+      }
+    };
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const hasActiveFilters =
     subjects.length > 0 || levels.length > 0 || postTypes.length > 0 || tagIds.length > 0;
@@ -81,7 +108,7 @@ export function ForumFeed({
         ))}
         
         {hasNextPage && (
-          <div className="mt-4 flex justify-center">
+          <div ref={loadMoreRef} className="mt-4 flex justify-center py-4">
             <Button
               variant="secondary"
               onClick={() => fetchNextPage()}
