@@ -93,7 +93,7 @@ export function AppHeader() {
       });
 
       // 3. Prefetch My Lessons (if applicable)
-      if (user.role === "CREATOR" || user.role === "ADMIN") {
+      if (user.role === "TEACHER" || user.role === "SENIOR_STUDENT" || user.role === "ADMIN") {
         queryClient.prefetchInfiniteQuery({
           queryKey: ["lessons", { subject: "", level: "", tags: "", authorId: user.id, state: "PUBLISHED" }],
           initialPageParam: 1,

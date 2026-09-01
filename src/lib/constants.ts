@@ -30,7 +30,7 @@ export type NavItem = {
  * Order matters — it defines the visual sequence of nav pills.
  *
  * Role-gated items:
- *  - "My Lessons" → CREATOR only
+ *  - "My Lessons" → TEACHER and SENIOR_STUDENT only
  *  - "Admin" → ADMIN only
  */
 export const PRIMARY_NAV: NavItem[] = [

@@ -150,7 +150,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
   const isAuthor = user?.id === author?.id;
   const isAdmin = user?.role === "ADMIN";
-  const isCreator = user?.role === "CREATOR";
+  const isCreator = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT";
   const canEdit = isCreator && isAuthor;
   const canDelete = isAdmin || (isCreator && isAuthor);
   const canChangeState = isAdmin || (isCreator && isAuthor);
@@ -214,7 +214,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
       } : undefined}
-      subtitle={author?.role === 'CREATOR' ? 'Creator' : undefined}
+      subtitle={author?.role === 'TEACHER' ? 'Teacher' : author?.role === 'SENIOR_STUDENT' ? 'Senior Student' : undefined}
       topRight={
         <div className="flex items-center gap-2">
           <Badge

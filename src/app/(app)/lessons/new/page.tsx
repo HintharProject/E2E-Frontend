@@ -21,7 +21,7 @@ export default async function NewLessonPage() {
     // Ignore, let user be null
   }
 
-  if (!user || (user.role !== "CREATOR" && user.role !== "ADMIN")) {
+  if (!user || (user.role !== "TEACHER" && user.role !== "SENIOR_STUDENT" && user.role !== "ADMIN")) {
     notFound();
   }
 

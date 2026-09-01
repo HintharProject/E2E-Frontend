@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
 import { Toaster } from "@/components/ui/sonner";
 import { DevTools } from "@/components/dev/dev-tools";
+import { ThemeProvider } from "@/components/providers/theme-provider";
 
 const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", preload: false });
 const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
@@ -38,25 +39,32 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         )}
       >
         <body className="min-h-full flex flex-col">
-          <Script id="clerk-error-suppress" strategy="beforeInteractive" dangerouslySetInnerHTML={{
-            __html: `
-              window.addEventListener('error', function(e) {
-                if (e.message && (e.message.includes('ClerkJS: Network error') || e.message.includes('NetworkError'))) {
-                  e.stopImmediatePropagation();
-                }
-              }, true);
-              window.addEventListener('unhandledrejection', function(e) {
-                if (e.reason && e.reason.message && (e.reason.message.includes('ClerkJS: Network error') || e.reason.message.includes('NetworkError'))) {
-                  e.stopImmediatePropagation();
-                }
-              }, true);
-            `
-          }} />
-          <Providers>
-            {children}
-            <DevTools />
-          </Providers>
-          <Toaster />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem={false}
+            disableTransitionOnChange
+          >
+            <Script id="clerk-error-suppress" strategy="beforeInteractive" dangerouslySetInnerHTML={{
+              __html: `
+                window.addEventListener('error', function(e) {
+                  if (e.message && (e.message.includes('ClerkJS: Network error') || e.message.includes('NetworkError'))) {
+                    e.stopImmediatePropagation();
+                  }
+                }, true);
+                window.addEventListener('unhandledrejection', function(e) {
+                  if (e.reason && e.reason.message && (e.reason.message.includes('ClerkJS: Network error') || e.reason.message.includes('NetworkError'))) {
+                    e.stopImmediatePropagation();
+                  }
+                }, true);
+              `
+            }} />
+            <Providers>
+              {children}
+              <DevTools />
+            </Providers>
+            <Toaster />
+          </ThemeProvider>
         </body>
       </html>
     </ClerkProvider>
