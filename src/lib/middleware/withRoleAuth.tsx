@@ -25,7 +25,7 @@ export type { Role };
  * @example
  * ```tsx
  * const AdminPage = withRoleAuth(AdminDashboard, ["ADMIN"]);
- * const CreatorPage = withRoleAuth(LessonManager, ["CREATOR", "ADMIN"]);
+ * const CreatorPage = withRoleAuth(LessonManager, ["TEACHER", "SENIOR_STUDENT", "ADMIN"]);
  * ```
  */
 export function withRoleAuth<P extends object>(

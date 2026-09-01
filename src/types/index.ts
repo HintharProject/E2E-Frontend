@@ -1,4 +1,4 @@
-export type RoleEnum = "STUDENT" | "CREATOR" | "ADMIN";
+export type RoleEnum = "STUDENT" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN";
 export type BanStatusEnum = "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
 export type PostTypeEnum = "QUESTION" | "SHARING" | "ANNOUNCEMENT";
 export type StateEnum = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -10,6 +10,11 @@ export interface UserPublic {
   profile_image_url: string | null;
   role: RoleEnum;
   created_at: string;
+  weak_subjects?: string[] | null;
+  good_subjects?: string[] | null;
+  bio?: string | null;
+  level?: string | null;
+  custom_level?: string | null;
 }
 
 export interface Subject {

@@ -49,7 +49,7 @@ export function GlobalFAB() {
   }
 
   // Lesson — Creators only
-  if (role === "CREATOR" && !writeLocked) {
+  if ((role === "TEACHER" || role === "SENIOR_STUDENT") && !writeLocked) {
     options.push({
       label: "Lesson",
       href: "/lessons/new",

@@ -27,7 +27,7 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
 
   const isAuthor = user?.id === lesson.author_details?.id;
   const isAdmin = user?.role === "ADMIN";
-  const isCreator = user?.role === "CREATOR";
+  const isCreator = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT";
 
   const canEdit = isCreator && isAuthor;
   const canDelete = isAdmin || (isCreator && isAuthor);

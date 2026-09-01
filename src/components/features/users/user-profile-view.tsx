@@ -19,11 +19,15 @@ function getInitials(name?: string | null): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
+import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { ProfileSkeleton } from "../skeletons";
 
 export function UserProfileView({ userId }: { userId: string }) {
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
+
+  const { data: levels = [] } = useLevels();
+  const { data: subjects = [] } = useSubjects();
 
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
     queryKey: ["user", userId],
@@ -46,6 +50,14 @@ export function UserProfileView({ userId }: { userId: string }) {
   }
 
   const isSelf = clerkUser?.id === profile.clerk_id;
+  
+  const levelName = profile.level ? levels.find(l => l.id === profile.level)?.name : null;
+  const goodSubjectNames = profile.good_subjects 
+    ? profile.good_subjects.map(id => subjects.find(s => s.id === id)?.name).filter(Boolean).join(", ")
+    : null;
+  const weakSubjectNames = profile.weak_subjects
+    ? profile.weak_subjects.map(id => subjects.find(s => s.id === id)?.name).filter(Boolean).join(", ")
+    : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
@@ -60,17 +72,34 @@ export function UserProfileView({ userId }: { userId: string }) {
             <div className="mt-[-1.5rem] flex flex-wrap gap-2">
               <Badge variant="default">{profile.role}</Badge>
             </div>
+            {profile.bio && <p className="mt-4 text-ink">{profile.bio}</p>}
+            
+            {(levelName || profile.custom_level || goodSubjectNames || weakSubjectNames) && (
+              <div className="mt-4 flex flex-col gap-1 text-sm text-ink-muted">
+                {(levelName || profile.custom_level) && (
+                  <p><span className="font-medium text-ink">Level:</span> {profile.custom_level || levelName}</p>
+                )}
+                {goodSubjectNames && <p><span className="font-medium text-ink">Good Subjects:</span> {goodSubjectNames}</p>}
+                {weakSubjectNames && <p><span className="font-medium text-ink">Weak Subjects:</span> {weakSubjectNames}</p>}
+              </div>
+            )}
+
             <div className="mt-4 flex flex-wrap gap-2">
-              {!isSelf && profile.role === "CREATOR" ? (
+              {!isSelf && (profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT") ? (
                 <Button>Follow</Button>
               ) : null}
               {!isSelf ? <Button variant="ghost">Report profile</Button> : null}
+              {isSelf && (
+                <Button variant="outline" nativeButton={false} render={<Link href="/settings/profile" />}>
+                  Edit Profile
+                </Button>
+              )}
             </div>
           </div>
         </div>
       </div>
 
-      {profile.role === "CREATOR" ? (
+      {profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT" ? (
         <div className="mt-10 grid gap-8 md:grid-cols-2">
           <section>
             <h2 className="font-display text-2xl text-ink">Published Lessons</h2>

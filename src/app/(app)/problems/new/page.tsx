@@ -8,7 +8,7 @@ import { isWriteLocked } from "@/types/user";
 export default function NewProblemPage() {
   const { user } = useCurrentUser();
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-  const isCreator = user?.role === "CREATOR";
+  const isCreator = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT";
   const cannotPost = writeLocked || isCreator;
 
   return (

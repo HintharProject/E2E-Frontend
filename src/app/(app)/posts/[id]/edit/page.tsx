@@ -54,7 +54,7 @@ export default async function EditPostPage(props: {
         subjects={subjects}
         levels={levels}
         tags={tags}
-        userRole={user.role}
+        userRole={user.role || ""}
         writeLocked={writeLocked}
       />
     </div>

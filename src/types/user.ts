@@ -1,7 +1,7 @@
 // Types for user data from the backend API (GET /users/me/)
 // Based on: docs/frontend_handoff/03_roles_and_business_rules.md
 
-export type Role = "ADMIN" | "CREATOR" | "STUDENT";
+export type Role = "ADMIN" | "TEACHER" | "SENIOR_STUDENT" | "STUDENT" | null;
 
 export type BanState =
   | "ACTIVE"
@@ -17,6 +17,11 @@ export interface AppUser {
   image_url: string | null;
   role: Role;
   ban_state: BanState;
+  weak_subjects?: string[];
+  good_subjects?: string[];
+  bio?: string | null;
+  level?: string | null;
+  custom_level?: string | null;
 }
 
 /**

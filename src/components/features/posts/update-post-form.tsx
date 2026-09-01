@@ -67,7 +67,7 @@ export function UpdatePostForm({
     }
   };
 
-  const canAnnounce = userRole === "CREATOR" || userRole === "ADMIN";
+  const canAnnounce = userRole === "TEACHER" || userRole === "SENIOR_STUDENT" || userRole === "ADMIN";
   const subjectRequired = userRole === "STUDENT";
 
   const formSchema = z.object({

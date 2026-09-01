@@ -6,7 +6,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function LessonsTabs() {
   const { user } = useCurrentUser();
-  const showManage = user?.role === "CREATOR" || user?.role === "ADMIN";
+  const showManage = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT" || user?.role === "ADMIN";
 
   const items = [
     { href: "/lessons", label: "Feed" },
