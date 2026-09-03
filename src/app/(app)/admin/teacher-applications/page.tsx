@@ -34,7 +34,8 @@ export default function AdminTeacherApplicationsPage() {
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      return apiFetch<TeacherApplication[]>("/users/teacher-applications/", token);
+      const res = await apiFetch<any>("/users/teacher-applications/", token);
+      return Array.isArray(res) ? res : (res.data || res.results || []);
     },
     enabled: !!user && user.role === "ADMIN",
   });
@@ -77,8 +78,8 @@ export default function AdminTeacherApplicationsPage() {
   });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-      <div className="mb-8 flex items-center justify-between">
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center justify-between">
         <PageHeader title="Teacher Applications" />
       </div>
 
