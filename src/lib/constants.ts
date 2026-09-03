@@ -42,6 +42,7 @@ export const PRIMARY_NAV: NavItem[] = [
     exclude: ["/lessons/new"],
   },
   { href: "/problems", label: "Solve!", match: "/problems" },
+  { href: "/resources", label: "Resources", match: "/resources" },
   {
     href: "/study-plans",
     label: "Collections",
