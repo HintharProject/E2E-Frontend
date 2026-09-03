@@ -75,7 +75,7 @@ export interface AnalyticsResponse {
 
 export type BaseDimension = "subject" | "level" | "content";
 export type GroupingDimension = "content" | "level" | "subject";
-export type ContentTypeKey = "lessons" | "posts" | "problems" | "solutions";
+export type ContentTypeKey = "lessons" | "posts" | "problems";
 
 export interface ExplorerFilters {
   selectedSubjectIds: string[];

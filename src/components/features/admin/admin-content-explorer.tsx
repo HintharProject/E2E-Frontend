@@ -26,7 +26,6 @@ import {
   BookOpen,
   MessageSquare,
   HelpCircle,
-  CheckCheck,
   ChevronDown,
   SlidersHorizontal,
 } from "lucide-react";
@@ -44,7 +43,6 @@ const CONTENT_TYPE_CONFIG: Record<
   lessons: { label: "Lessons", color: "#0d9488", icon: BookOpen }, // Teal
   posts: { label: "Posts", color: "#0284c7", icon: MessageSquare }, // Sky
   problems: { label: "Problems", color: "#f59e0b", icon: HelpCircle }, // Amber
-  solutions: { label: "Solutions", color: "#10b981", icon: CheckCheck }, // Emerald
 };
 
 const CATEGORICAL_PALETTE = [
@@ -81,7 +79,7 @@ export function AdminContentExplorer({
   );
   const [selectedContentTypes, setSelectedContentTypes] = useState<
     ContentTypeKey[]
-  >(["lessons", "posts", "problems", "solutions"]);
+  >(["lessons", "posts", "problems"]);
 
   // 3. UI Filter drawer visibility
   const [showFilters, setShowFilters] = useState(false);
@@ -148,13 +146,13 @@ export function AdminContentExplorer({
   const resetAllFilters = () => {
     setSelectedSubjectIds(subjects.map((s) => s.id));
     setSelectedLevelIds(levels.map((l) => l.id));
-    setSelectedContentTypes(["lessons", "posts", "problems", "solutions"]);
+    setSelectedContentTypes(["lessons", "posts", "problems"]);
   };
 
   const isFiltered =
     selectedSubjectIds.length < subjects.length ||
     selectedLevelIds.length < levels.length ||
-    selectedContentTypes.length < 4;
+    selectedContentTypes.length < 3;
 
   // Compute Fast Lookup Matrix Map: `${subject_id}_${level_id}` -> MatrixItem
   const matrixMap = useMemo(() => {
@@ -198,15 +196,12 @@ export function AdminContentExplorer({
               return item.posts_count;
             case "problems":
               return item.problems_count;
-            case "solutions":
-              return item.solutions_count;
           }
         }
         let cellSum = 0;
         if (activeTypes.includes("lessons")) cellSum += item.lessons_count;
         if (activeTypes.includes("posts")) cellSum += item.posts_count;
         if (activeTypes.includes("problems")) cellSum += item.problems_count;
-        if (activeTypes.includes("solutions")) cellSum += item.solutions_count;
         return cellSum;
       };
 
@@ -223,9 +218,11 @@ export function AdminContentExplorer({
           }));
 
           data = activeSubjects.map((s) => {
+            const subjectCode = s.code || s.name;
             const row: Record<string, string | number> = {
-              name: s.name,
+              name: subjectCode,
               code: s.code,
+              fullName: s.name,
             };
             let rowTotal = 0;
 
@@ -241,7 +238,7 @@ export function AdminContentExplorer({
             totalVolume += rowTotal;
             if (rowTotal > highestVol) {
               highestVol = rowTotal;
-              topLabel = s.name;
+              topLabel = `${s.name} (${subjectCode})`;
             }
             return row;
           });
@@ -254,9 +251,11 @@ export function AdminContentExplorer({
           }));
 
           data = activeSubjects.map((s) => {
+            const subjectCode = s.code || s.name;
             const row: Record<string, string | number> = {
-              name: s.name,
+              name: subjectCode,
               code: s.code,
+              fullName: s.name,
             };
             let rowTotal = 0;
 
@@ -269,7 +268,7 @@ export function AdminContentExplorer({
             totalVolume += rowTotal;
             if (rowTotal > highestVol) {
               highestVol = rowTotal;
-              topLabel = s.name;
+              topLabel = `${s.name} (${subjectCode})`;
             }
             return row;
           });
@@ -292,6 +291,7 @@ export function AdminContentExplorer({
             const row: Record<string, string | number> = {
               name: l.name,
               code: l.code,
+              fullName: l.name,
             };
             let rowTotal = 0;
 
@@ -313,22 +313,27 @@ export function AdminContentExplorer({
           });
         } else {
           // Grouping = Subject
-          series = activeSubjects.map((s, idx) => ({
-            key: s.name,
-            label: s.name,
-            color: CATEGORICAL_PALETTE[idx % CATEGORICAL_PALETTE.length],
-          }));
+          series = activeSubjects.map((s, idx) => {
+            const subjectCode = s.code || s.name;
+            return {
+              key: subjectCode,
+              label: subjectCode,
+              color: CATEGORICAL_PALETTE[idx % CATEGORICAL_PALETTE.length],
+            };
+          });
 
           data = activeLevels.map((l) => {
             const row: Record<string, string | number> = {
               name: l.name,
               code: l.code,
+              fullName: l.name,
             };
             let rowTotal = 0;
 
             activeSubjects.forEach((s) => {
+              const subjectCode = s.code || s.name;
               const count = getCellCount(s.id, l.id);
-              row[s.name] = count;
+              row[subjectCode] = count;
               rowTotal += count;
             });
 
@@ -348,23 +353,30 @@ export function AdminContentExplorer({
       else {
         if (groupingDimension === "subject") {
           // Series = Subjects
-          series = activeSubjects.map((s, idx) => ({
-            key: s.name,
-            label: s.name,
-            color: CATEGORICAL_PALETTE[idx % CATEGORICAL_PALETTE.length],
-          }));
+          series = activeSubjects.map((s, idx) => {
+            const subjectCode = s.code || s.name;
+            return {
+              key: subjectCode,
+              label: subjectCode,
+              color: CATEGORICAL_PALETTE[idx % CATEGORICAL_PALETTE.length],
+            };
+          });
 
           data = activeTypes.map((t) => {
             const typeLabel = CONTENT_TYPE_CONFIG[t].label;
-            const row: Record<string, string | number> = { name: typeLabel };
+            const row: Record<string, string | number> = {
+              name: typeLabel,
+              fullName: typeLabel,
+            };
             let rowTotal = 0;
 
             activeSubjects.forEach((s) => {
+              const subjectCode = s.code || s.name;
               const count = activeLevels.reduce(
                 (sum, l) => sum + getCellCount(s.id, l.id, t),
                 0
               );
-              row[s.name] = count;
+              row[subjectCode] = count;
               rowTotal += count;
             });
 
@@ -385,7 +397,10 @@ export function AdminContentExplorer({
 
           data = activeTypes.map((t) => {
             const typeLabel = CONTENT_TYPE_CONFIG[t].label;
-            const row: Record<string, string | number> = { name: typeLabel };
+            const row: Record<string, string | number> = {
+              name: typeLabel,
+              fullName: typeLabel,
+            };
             let rowTotal = 0;
 
             activeLevels.forEach((l) => {
@@ -570,7 +585,7 @@ export function AdminContentExplorer({
               {/* 1. Content Types Filter */}
               <div className="flex flex-col gap-2">
                 <span className="text-xs font-semibold text-ink">
-                  Content Types ({selectedContentTypes.length}/4)
+                  Content Types ({selectedContentTypes.length}/3)
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {(
@@ -676,8 +691,9 @@ export function AdminContentExplorer({
                             ? "border-primary bg-primary/10 text-primary font-semibold"
                             : "border-line/60 bg-muted/20 text-ink-muted hover:text-ink"
                         }`}
+                        title={s.name}
                       >
-                        {s.name}
+                        {s.code || s.name}
                       </button>
                     );
                   })}
@@ -736,6 +752,13 @@ export function AdminContentExplorer({
                 allowDecimals={false}
               />
               <Tooltip
+                labelFormatter={(label, payload) => {
+                  const fn = payload?.[0]?.payload?.fullName;
+                  if (fn && fn !== label) {
+                    return `${fn} (${label})`;
+                  }
+                  return label;
+                }}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--line)",

@@ -26,6 +26,7 @@ type Dimension = "subjects" | "levels";
 interface ResponseChartItem {
   name: string;
   code: string;
+  fullName?: string;
   Problems?: number;
   Solutions?: number;
   "Mean Solutions/Prob"?: number;
@@ -45,19 +46,25 @@ export function AdminResponseDepthChart({
 
   const { chartData, overallMeanRatio } = useMemo(() => {
     const isProb = domain === "problems";
+    const isSubjects = dimension === "subjects";
+
     const data: ResponseChartItem[] = sourceData.map((item) => {
+      const displayLabel = isSubjects ? (item.code || item.name) : item.name;
+
       if (isProb) {
         return {
-          name: item.name,
+          name: displayLabel,
           code: item.code,
+          fullName: item.name,
           Problems: item.problems_count,
           Solutions: item.solutions_count,
           "Mean Solutions/Prob": item.avg_solutions_per_problem,
         };
       }
       return {
-        name: item.name,
+        name: displayLabel,
         code: item.code,
+        fullName: item.name,
         Posts: item.posts_count,
         Comments: item.comments_count,
         "Mean Comments/Post": item.avg_comments_per_post,
@@ -79,7 +86,7 @@ export function AdminResponseDepthChart({
       chartData: data,
       overallMeanRatio: mean,
     };
-  }, [domain, sourceData]);
+  }, [domain, dimension, sourceData]);
 
   return (
     <div className="rounded-2xl border border-line bg-card p-6 shadow-xs transition-all">
@@ -236,6 +243,13 @@ export function AdminResponseDepthChart({
                 unit="x"
               />
               <Tooltip
+                labelFormatter={(label, payload) => {
+                  const fn = payload?.[0]?.payload?.fullName;
+                  if (fn && fn !== label) {
+                    return `${fn} (${label})`;
+                  }
+                  return label;
+                }}
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--line)",
