@@ -339,5 +339,8 @@ function AppHeaderMobileFilter({ pathname }: { pathname: string }) {
   if (pathname.startsWith("/problems")) {
     return <MobileFilterToggle hideTags={true} showProblemStatus={true} />;
   }
+  if (pathname.startsWith("/resources")) {
+    return <MobileFilterToggle hideTags={true} />;
+  }
   return null;
 }

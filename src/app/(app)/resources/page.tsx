@@ -10,8 +10,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { 
   Loader2, 
   Folder, 
-  FolderOpen,
-  FileText, 
+  FolderOpen, 
   ChevronRight, 
   ChevronDown, 
   Download,
@@ -19,13 +18,13 @@ import {
   Calendar,
   Eye,
   ExternalLink,
-  X
+  X,
 } from "lucide-react";
 import { parseFilterList } from "@/lib/filter-params";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-
-const ALL_YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
+import { YEARS as ALL_YEARS, getFileExtension } from "@/lib/resources";
+import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
 function ResourcesFeed() {
   const { getToken } = useAuth();
@@ -39,8 +38,8 @@ function ResourcesFeed() {
   // Active section tab: 'PAST_PAPERS' or 'TEXTBOOKS'
   const [activeTab, setActiveTab] = useState<"PAST_PAPERS" | "TEXTBOOKS">("PAST_PAPERS");
 
-  // In-app PDF Viewer Modal State
-  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string } | null>(null);
+  // In-app Document Viewer Modal State
+  const [viewingDoc, setViewingDoc] = useState<{ title: string; url: string; downloadUrl?: string } | null>(null);
 
   // Expanded Year folders (default expand recent years e.g. 2026, 2025, 2024, 2023)
   const [expandedYears, setExpandedYears] = useState<Record<number, boolean>>({
@@ -117,6 +116,11 @@ function ResourcesFeed() {
     return s || "";
   };
 
+  const isPdf = (title: string, url: string) => {
+    const ext = getFileExtension(title) || getFileExtension(url.split('?')[0]);
+    return ext === ".pdf" || !ext;
+  };
+
   return (
     <div className="flex flex-col gap-5">
       {/* Top Tab Switcher */}
@@ -154,7 +158,7 @@ function ResourcesFeed() {
             }`}
           >
             <BookOpen className="size-4" />
-            <span>Textbooks</span>
+            <span>Textbooks & Resources</span>
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 activeTab === "TEXTBOOKS"
@@ -224,77 +228,91 @@ function ResourcesFeed() {
                       </p>
                     ) : (
                       <div className="divide-y divide-line border border-line rounded-xl bg-card overflow-hidden">
-                        {papers.map((paper: any) => (
-                          <div
-                            key={paper.id}
-                            className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 hover:bg-muted/40 transition-colors group"
-                          >
-                            <div className="flex items-start gap-3 min-w-0">
-                              <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-red-500/10 text-red-500 shrink-0">
-                                <FileText className="size-4" />
-                              </div>
+                        {papers.map((paper: any) => {
+                          const ext = getFileExtension(paper.file_name);
+                          return (
+                            <div
+                              key={paper.id}
+                              className="flex flex-col sm:flex-row sm:items-center justify-between p-3 gap-3 hover:bg-muted/40 transition-colors group"
+                            >
+                              <div className="flex items-start gap-3 min-w-0">
+                                <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
+                                  <DocTypeIcon filename={paper.file_name} resourceType={paper.resource_type} />
+                                </div>
 
-                              <div className="flex flex-col min-w-0">
-                                <span className="font-medium text-ink text-sm truncate" title={paper.file_name}>
-                                  {paper.file_name}
-                                </span>
-                                <div className="flex flex-wrap items-center gap-2 mt-1">
-                                  {paper.session && (
-                                    <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
-                                      {formatSession(paper.session)}
-                                    </span>
-                                  )}
-                                  {paper.paper_type && (
-                                    <Badge
-                                      variant="outline"
-                                      className={`text-[10px] uppercase font-semibold ${
-                                        paper.paper_type === "QP"
-                                          ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5"
-                                          : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
-                                      }`}
-                                    >
-                                      {paper.paper_type === "QP" ? "Question Paper" : "Mark Scheme"}
-                                    </Badge>
-                                  )}
-                                  {paper.subject_details?.name && (
-                                    <span className="text-[11px] text-ink-muted">
-                                      {paper.subject_details.name}
-                                    </span>
-                                  )}
+                                <div className="flex flex-col min-w-0">
+                                  <span className="font-medium text-ink text-sm truncate" title={paper.file_name}>
+                                    {paper.file_name}
+                                  </span>
+                                  <div className="flex flex-wrap items-center gap-2 mt-1">
+                                    {paper.session && (
+                                      <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
+                                        {formatSession(paper.session)}
+                                      </span>
+                                    )}
+                                    {paper.paper_type && (
+                                      <Badge
+                                        variant="outline"
+                                        className={`text-[10px] uppercase font-semibold ${
+                                          paper.paper_type === "QP"
+                                            ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5"
+                                            : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+                                        }`}
+                                      >
+                                        {paper.paper_type === "QP" ? "Question Paper" : "Mark Scheme"}
+                                      </Badge>
+                                    )}
+                                    {ext && (
+                                      <span className="text-[10px] uppercase font-semibold text-ink-muted bg-muted px-1.5 py-0.5 rounded">
+                                        {ext.replace(".", "")}
+                                      </span>
+                                    )}
+                                    {paper.subject_details?.name && (
+                                      <span className="text-[11px] text-ink-muted">
+                                        {paper.subject_details.name}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
-                            </div>
 
-                            <div className="flex items-center justify-end gap-2 shrink-0 sm:self-center">
-                              {/* View In-App Modal */}
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
-                                onClick={() => setViewingDoc({ title: paper.file_name, url: paper.file_url })}
-                              >
-                                <Eye className="size-3.5" />
-                                <span>View</span>
-                              </Button>
+                              <div className="flex items-center justify-end gap-2 shrink-0 sm:self-center">
+                                {/* View In-App Modal */}
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
+                                  onClick={() =>
+                                    setViewingDoc({
+                                      title: paper.file_name,
+                                      url: paper.file_url,
+                                      downloadUrl: paper.download_url,
+                                    })
+                                  }
+                                >
+                                  <Eye className="size-3.5" />
+                                  <span>View</span>
+                                </Button>
 
-                              {/* Download Link */}
-                              <a
-                                href={paper.download_url || paper.file_url}
-                                download={paper.file_name}
-                                target="_blank"
-                                rel="noreferrer"
-                                className={buttonVariants({
-                                  variant: "secondary",
-                                  size: "sm",
-                                  className: "h-8 px-2.5 gap-1.5 text-xs font-semibold shadow-2xs hover:bg-primary hover:text-primary-foreground transition-colors",
-                                })}
-                              >
-                                <Download className="size-3.5" />
-                                <span>Download</span>
-                              </a>
+                                {/* Download Link */}
+                                <a
+                                  href={paper.download_url || paper.file_url}
+                                  download={paper.file_name}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className={buttonVariants({
+                                    variant: "secondary",
+                                    size: "sm",
+                                    className: "h-8 px-2.5 gap-1.5 text-xs font-semibold shadow-2xs hover:bg-primary hover:text-primary-foreground transition-colors",
+                                  })}
+                                >
+                                  <Download className="size-3.5" />
+                                  <span>Download</span>
+                                </a>
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -316,77 +334,93 @@ function ResourcesFeed() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {textbooks.map((tb: any) => (
-                <div
-                  key={tb.id}
-                  className="rounded-2xl border border-line bg-card p-5 flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors shadow-2xs group"
-                >
-                  <div className="flex items-start gap-3.5">
-                    <div className="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
-                      <BookOpen className="size-5" />
+              {textbooks.map((tb: any) => {
+                const ext = getFileExtension(tb.file_name);
+                return (
+                  <div
+                    key={tb.id}
+                    className="rounded-2xl border border-line bg-card p-5 flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors shadow-2xs group"
+                  >
+                    <div className="flex items-start gap-3.5">
+                      <div className="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+                        <DocTypeIcon filename={tb.file_name} resourceType={tb.resource_type} className="size-5 shrink-0" />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <h4 className="font-semibold text-ink text-sm line-clamp-2 leading-snug">
+                          {tb.file_name}
+                        </h4>
+                        <div className="flex items-center gap-2 mt-1.5 text-xs text-ink-muted">
+                          {tb.level_details?.name && (
+                            <span className="bg-surface border border-line px-2 py-0.5 rounded">
+                              {tb.level_details.name}
+                            </span>
+                          )}
+                          {tb.subject_details?.name && (
+                            <span className="bg-surface border border-line px-2 py-0.5 rounded">
+                              {tb.subject_details.name}
+                            </span>
+                          )}
+                          {ext && (
+                            <span className="bg-muted px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold">
+                              {ext.replace(".", "")}
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex flex-col min-w-0">
-                      <h4 className="font-semibold text-ink text-sm line-clamp-2 leading-snug">
-                        {tb.file_name}
-                      </h4>
-                      <div className="flex items-center gap-2 mt-1.5 text-xs text-ink-muted">
-                        {tb.level_details?.name && (
-                          <span className="bg-surface border border-line px-2 py-0.5 rounded">
-                            {tb.level_details.name}
-                          </span>
-                        )}
-                        {tb.subject_details?.name && (
-                          <span className="bg-surface border border-line px-2 py-0.5 rounded">
-                            {tb.subject_details.name}
-                          </span>
-                        )}
+
+                    <div className="pt-2 border-t border-line/60 flex items-center justify-between">
+                      <span className="text-[11px] text-ink-muted uppercase">
+                        {ext ? `${ext.replace(".", "")} Document` : "Document"}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
+                          onClick={() =>
+                            setViewingDoc({
+                              title: tb.file_name,
+                              url: tb.file_url,
+                              downloadUrl: tb.download_url,
+                            })
+                          }
+                        >
+                          <Eye className="size-3.5" />
+                          <span>View</span>
+                        </Button>
+                        <a
+                          href={tb.download_url || tb.file_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          download={tb.file_name}
+                          className={buttonVariants({
+                            variant: "secondary",
+                            size: "sm",
+                            className: "h-8 px-2.5 gap-1.5 text-xs font-semibold shadow-2xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors",
+                          })}
+                        >
+                          <Download className="size-3.5" />
+                          <span>Download</span>
+                        </a>
                       </div>
                     </div>
                   </div>
-
-                  <div className="pt-2 border-t border-line/60 flex items-center justify-between">
-                    <span className="text-[11px] text-ink-muted">PDF Document</span>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
-                        onClick={() => setViewingDoc({ title: tb.file_name, url: tb.file_url })}
-                      >
-                        <Eye className="size-3.5" />
-                        <span>View</span>
-                      </Button>
-                      <a
-                        href={tb.download_url || tb.file_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        download={tb.file_name}
-                        className={buttonVariants({
-                          variant: "secondary",
-                          size: "sm",
-                          className: "h-8 px-2.5 gap-1.5 text-xs font-semibold shadow-2xs group-hover:bg-primary group-hover:text-primary-foreground transition-colors",
-                        })}
-                      >
-                        <Download className="size-3.5" />
-                        <span>Download</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
       )}
 
-      {/* In-App PDF Viewer Modal */}
+      {/* In-App Document Viewer Modal */}
       {viewingDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-xs p-4 animate-in fade-in-0 duration-150">
           <div className="relative flex flex-col w-full max-w-5xl h-[90vh] bg-card border border-line rounded-2xl shadow-2xl overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-3.5 border-b border-line bg-surface">
               <div className="flex items-center gap-2.5 min-w-0">
-                <FileText className="size-4 text-primary shrink-0" />
+                <DocTypeIcon filename={viewingDoc.title} />
                 <span className="font-semibold text-sm text-ink truncate">
                   {viewingDoc.title}
                 </span>
@@ -407,8 +441,8 @@ function ResourcesFeed() {
                   <span>Open in Tab</span>
                 </a>
                 <a
-                  href={viewingDoc.url}
-                  download
+                  href={viewingDoc.downloadUrl || viewingDoc.url}
+                  download={viewingDoc.title}
                   target="_blank"
                   rel="noreferrer"
                   className={buttonVariants({
@@ -431,14 +465,57 @@ function ResourcesFeed() {
               </div>
             </div>
 
-            {/* Embedded PDF iframe */}
-            <div className="flex-1 w-full bg-muted/20">
-              <iframe
-                src={`${viewingDoc.url}#toolbar=1&navpanes=0`}
-                className="w-full h-full border-none"
-                title={viewingDoc.title}
-              />
-            </div>
+            {/* Viewer Body: PDF Iframe or Document Card */}
+            {isPdf(viewingDoc.title, viewingDoc.url) ? (
+              <div className="flex-1 w-full bg-muted/20">
+                <iframe
+                  src={`${viewingDoc.url}#toolbar=1&navpanes=0`}
+                  className="w-full h-full border-none"
+                  title={viewingDoc.title}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 w-full flex flex-col items-center justify-center p-8 bg-muted/10 text-center gap-4">
+                <div className="size-16 rounded-2xl bg-primary/10 flex items-center justify-center text-primary">
+                  <DocTypeIcon filename={viewingDoc.title} className="size-8" />
+                </div>
+                <div className="max-w-md flex flex-col gap-1">
+                  <h4 className="font-semibold text-ink text-base">{viewingDoc.title}</h4>
+                  <p className="text-xs text-ink-muted">
+                    This document format ({getFileExtension(viewingDoc.title).toUpperCase()}) can be downloaded directly or opened in an external viewer.
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <a
+                    href={viewingDoc.downloadUrl || viewingDoc.url}
+                    download={viewingDoc.title}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonVariants({
+                      variant: "default",
+                      size: "sm",
+                      className: "gap-2",
+                    })}
+                  >
+                    <Download className="size-4" />
+                    <span>Download File</span>
+                  </a>
+                  <a
+                    href={viewingDoc.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                      className: "gap-2",
+                    })}
+                  >
+                    <ExternalLink className="size-4" />
+                    <span>Open Directly</span>
+                  </a>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -466,3 +543,4 @@ export default function ResourcesPage() {
     </div>
   );
 }
+
