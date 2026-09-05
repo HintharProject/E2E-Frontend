@@ -10,6 +10,8 @@ export type BanState =
   | "BANNED_7D"
   | "PERMANENT_BAN";
 
+import type { ContributorTier, ReputationSummary } from "./contribution";
+
 export interface AppUser {
   id: string;
   clerk_id: string;
@@ -22,6 +24,10 @@ export interface AppUser {
   bio?: string | null;
   level?: string | null;
   custom_level?: string | null;
+  contribution_points?: number;
+  contributor_tier?: ContributorTier;
+  dynamic_vote_weight?: number;
+  reputation?: ReputationSummary;
 }
 
 /**

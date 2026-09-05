@@ -1,3 +1,6 @@
+export * from "./contribution";
+import type { ContributorTier, ReputationSummary } from "./contribution";
+
 export type RoleEnum = "STUDENT" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN";
 export type BanStatusEnum = "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
 export type PostTypeEnum = "QUESTION" | "SHARING" | "ANNOUNCEMENT";
@@ -15,6 +18,10 @@ export interface UserPublic {
   bio?: string | null;
   level?: string | null;
   custom_level?: string | null;
+  contribution_points?: number;
+  contributor_tier?: ContributorTier;
+  dynamic_vote_weight?: number;
+  reputation?: ReputationSummary;
 }
 
 export interface Subject {
@@ -171,7 +178,11 @@ export interface Problem {
   status: ProblemStatusEnum;
   attachments: ProblemAttachment[];
   vote_count?: number;
+  vote_score?: number;
   solution_count?: number;
+  accepted_solution?: string | null;
+  accepted_solution_id?: string | null;
+  milestone_claimed?: boolean;
   user_vote?: 1 | -1 | null;
   created_at: string;
   updated_at: string;
@@ -194,6 +205,7 @@ export interface Solution {
   status: SolutionStatusEnum;
   attachments: SolutionAttachment[];
   vote_count?: number;
+  vote_score?: number;
   user_vote?: 1 | -1 | null;
   created_at: string;
   updated_at: string;

@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { Virtuoso } from "react-virtuoso";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { VoteWidget } from "@/components/features/contributions/vote-widget";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
   loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
   ssr: false
@@ -158,7 +160,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           profile_image_url: author.profile_image_url,
         } : undefined}
         badges={
-          <>
+          <div className="flex flex-wrap items-center gap-1.5">
             <Badge
               variant={
                 problem.status === "SOLVED"
@@ -171,9 +173,10 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             >
               {problem.status}
             </Badge>
+            {author && <ContributorBadge tier={author.contributor_tier} size="sm" />}
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
             {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
-          </>
+          </div>
         }
         body={problem.body}
         mediaImages={
@@ -191,26 +194,23 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           ) : undefined
         }
         interactions={
-          <>
-            <Button 
-              variant={localUserVote === 1 ? "default" : "secondary"} 
-              onClick={() => handleVote(localUserVote === 1 ? 0 : 1)} 
-            >
-              ▲ Upvote ({localVoteCount})
-            </Button>
-            <Button 
-              variant={localUserVote === -1 ? "default" : "ghost"} 
-              onClick={() => handleVote(localUserVote === -1 ? 0 : -1)} 
-            >
-              ▼ Downvote
-            </Button>
-            <Button variant="ghost" onClick={handleShare}>Share</Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <VoteWidget
+              contentType="problems"
+              contentId={problem.id}
+              initialScore={problem.vote_score ?? problem.vote_count ?? 0}
+              initialUserVote={problem.user_vote}
+              authorId={author?.id}
+              authorClerkId={author?.clerk_id}
+              variant="pill"
+            />
+            <Button variant="ghost" size="sm" onClick={handleShare}>Share</Button>
             {user?.clerk_id !== problem.author_details?.clerk_id && (
-              <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
+              <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}
               </Button>
             )}
-          </>
+          </div>
         }
       />
 

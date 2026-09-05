@@ -21,5 +21,9 @@ export async function fetchCurrentUser(token: string): Promise<AppUser> {
     image_url: data.profile_image_url,
     role: data.role,
     ban_state: data.ban_status,
+    contribution_points: data.contribution_points ?? data.reputation?.contribution_points ?? 0,
+    contributor_tier: data.contributor_tier ?? data.reputation?.contributor_tier ?? 0,
+    dynamic_vote_weight: data.dynamic_vote_weight ?? data.reputation?.dynamic_vote_weight ?? 1,
+    reputation: data.reputation,
   };
 }

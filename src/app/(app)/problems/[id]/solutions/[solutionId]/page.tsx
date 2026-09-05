@@ -3,17 +3,19 @@
 import { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSolution, useProblem, useMarkSolutionStatus, useVoteSolution } from "@/hooks/use-problems";
+import { useSolution, useProblem, useMarkSolutionStatus } from "@/hooks/use-problems";
 import { useReport } from "@/hooks/use-interactions";
+import { useAcceptSolution } from "@/hooks/use-contribution";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, CheckCircle2, Check } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { formatDate } from "@/lib/utils";
-import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import {
@@ -36,18 +38,8 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
   const { data: problem } = useProblem(problemId);
   
   const markStatusMutation = useMarkSolutionStatus();
-  const voteMutation = useVoteSolution();
+  const acceptMutation = useAcceptSolution();
   const reportMutation = useReport();
-
-  const [localVoteCount, setLocalVoteCount] = useState(0);
-  const [localUserVote, setLocalUserVote] = useState<number>(0);
-
-  useEffect(() => {
-    if (solution) {
-      setLocalVoteCount(solution.vote_count ?? 0);
-      setLocalUserVote(solution.user_vote ?? 0);
-    }
-  }, [solution]);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -64,18 +56,11 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
-  const handleVote = (value: 1 | -1 | 0) => {
-    if (localUserVote === value || !solution) return;
-    const diff = value - localUserVote;
-    setLocalUserVote(value);
-    setLocalVoteCount((prev) => prev + diff);
-
-    voteMutation.mutate({ solutionId: solution.id, value }, {
-      onError: () => {
-        setLocalUserVote(localUserVote);
-        setLocalVoteCount((prev) => prev - diff);
-        toast.error("Failed to register vote.");
-      }
+  const handleToggleAccept = (action: "accept" | "unaccept") => {
+    acceptMutation.mutate({
+      problemId,
+      solutionId,
+      action,
     });
   };
 
@@ -99,6 +84,8 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const author = solution.author_details;
+  const isProblemAuthor = user?.clerk_id === problem?.author_details?.clerk_id;
+  const isAccepted = solution.status === "WORKED";
 
   const imageAttachments = solution.attachments?.filter(att => {
     const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
@@ -130,23 +117,24 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
           profile_image_url: author.profile_image_url,
         } : undefined}
         badges={
-          <>
-            {solution.status === "WORKED" && (
-              <Badge variant="default" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
-                Marked as Working Solution
+          <div className="flex flex-wrap items-center gap-1.5">
+            <ContributorBadge tier={author?.contributor_tier} size="sm" />
+            {isAccepted && (
+              <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px]">
+                <CheckCircle2 className="size-3" /> Accepted Solution
               </Badge>
             )}
             {solution.status === "INCORRECT" && (
-              <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">
+              <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20 text-[10px]">
                 Marked as Incorrect
               </Badge>
             )}
             {solution.status === "PENDING" && (
-              <Badge variant="outline">
+              <Badge variant="outline" className="text-[10px]">
                 Pending Review
               </Badge>
             )}
-          </>
+          </div>
         }
         body={solution.body}
         mediaImages={
@@ -164,77 +152,117 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
           ) : undefined
         }
         interactions={
-          <>
-            <Button 
-              variant={localUserVote === 1 ? "default" : "secondary"} 
-              onClick={() => handleVote(localUserVote === 1 ? 0 : 1)} 
-            >
-              ▲ Upvote ({localVoteCount})
-            </Button>
-            <Button 
-              variant={localUserVote === -1 ? "default" : "ghost"} 
-              onClick={() => handleVote(localUserVote === -1 ? 0 : -1)} 
-            >
-              ▼ Downvote
-            </Button>
-            <Button variant="ghost" onClick={handleShare}>Share</Button>
-            {user?.clerk_id === author?.clerk_id && solution.status !== "WORKED" && (
-              <Button variant="ghost" nativeButton={false} render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}>
+          <div className="flex flex-wrap items-center gap-2">
+            <VoteWidget
+              contentType="solutions"
+              contentId={solution.id}
+              initialScore={solution.vote_score ?? solution.vote_count ?? 0}
+              initialUserVote={solution.user_vote}
+              authorId={author?.id}
+              authorClerkId={author?.clerk_id}
+              variant="pill"
+            />
+            <Button variant="ghost" size="sm" onClick={handleShare}>Share</Button>
+            {user?.clerk_id === author?.clerk_id && !isAccepted && (
+              <Button variant="ghost" size="sm" nativeButton={false} render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}>
                 Edit
               </Button>
             )}
             {user?.clerk_id !== author?.clerk_id && (
-              <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
+              <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}
               </Button>
             )}
-            {user?.clerk_id === problem?.author_details?.clerk_id && solution.status === "PENDING" && (
-              <>
-                <Button
-                  variant="outline"
-                  className="border-green-500/50 text-green-600 hover:bg-green-500/10"
-                  disabled={markStatusMutation.isPending}
-                  onClick={() => {
-                    markStatusMutation.mutate(
-                      { solutionId: solution.id, status: "WORKED" },
-                      { onSuccess: () => toast.success("Marked as correct solution.") }
-                    );
-                  }}
-                >
-                  Mark as Correct
-                </Button>
-                <Dialog>
-                  <DialogTrigger render={<Button variant="outline" className="border-red-500/50 text-red-600 hover:bg-red-500/10" disabled={markStatusMutation.isPending} />}>
-                    Mark as Incorrect
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Mark as Incorrect</DialogTitle>
-                      <DialogDescription>
-                        Are you sure? This will mark it as incorrect and auto-delete it.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
-                      <DialogClose render={
-                        <Button
-                          variant="destructive"
-                          onClick={() => {
-                            markStatusMutation.mutate(
-                              { solutionId: solution.id, status: "INCORRECT" },
-                              { onSuccess: () => { toast.success("Marked as incorrect."); router.push(`/problems/${problemId}`); } }
-                            );
-                          }}
-                        />
-                      }>
-                        Confirm
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </>
+
+            {/* Problem Author Accept / Unaccept Actions */}
+            {isProblemAuthor && (
+              <div className="ml-auto flex items-center gap-2">
+                {isAccepted ? (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleToggleAccept("unaccept")}
+                    disabled={acceptMutation.isPending}
+                    className="text-xs border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
+                  >
+                    <Check className="size-3.5 mr-1" /> Accepted (Undo)
+                  </Button>
+                ) : (
+                  <>
+                    <Dialog>
+                      <DialogTrigger
+                        render={
+                          <Button
+                            variant="default"
+                            size="sm"
+                            disabled={acceptMutation.isPending}
+                            className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                          >
+                            <Check className="size-3.5 mr-1" /> Accept Solution (+10 pts)
+                          </Button>
+                        }
+                      />
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <CheckCircle2 className="size-5 text-emerald-500" />
+                            Accept {author?.display_name || "this user"}&apos;s Solution?
+                          </DialogTitle>
+                          <DialogDescription>
+                            Accepting this solution will mark this problem as <strong>SOLVED</strong> and reward <strong>+10 milestone points</strong> to you.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
+                          <DialogClose
+                            render={
+                              <Button
+                                variant="default"
+                                onClick={() => handleToggleAccept("accept")}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                              />
+                            }
+                          >
+                            Confirm Acceptance
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+
+                    <Dialog>
+                      <DialogTrigger render={<Button variant="outline" size="sm" className="text-xs border-red-500/50 text-red-600 hover:bg-red-500/10" disabled={markStatusMutation.isPending} />}>
+                        Mark as Incorrect
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Mark as Incorrect</DialogTitle>
+                          <DialogDescription>
+                            Are you sure? This will mark it as incorrect and auto-delete it.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
+                          <DialogClose render={
+                            <Button
+                              variant="destructive"
+                              onClick={() => {
+                                markStatusMutation.mutate(
+                                  { solutionId: solution.id, status: "INCORRECT" },
+                                  { onSuccess: () => { toast.success("Marked as incorrect."); router.push(`/problems/${problemId}`); } }
+                                );
+                              }}
+                            />
+                          }>
+                            Confirm
+                          </DialogClose>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  </>
+                )}
+              </div>
             )}
-          </>
+          </div>
         }
       />
     </div>
