@@ -15,6 +15,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
+import { isAdminOrSuperAdmin, isStaffRole } from "@/types/user";
 import { ProfileSkeleton } from "../skeletons";
 import { Sparkles } from "lucide-react";
 
@@ -54,7 +55,7 @@ export function UserProfileView({ userId }: { userId: string }) {
   }
 
   const isSelf = clerkUser?.id === profile.clerk_id;
-  const isAdmin = appCurrentUser?.role === "ADMIN";
+  const isAdmin = isAdminOrSuperAdmin(appCurrentUser?.role);
 
   const levelName = profile.level ? levels.find((l) => l.id === profile.level)?.name : null;
   const goodSubjectNames = profile.good_subjects
@@ -90,7 +91,9 @@ export function UserProfileView({ userId }: { userId: string }) {
               <div>
                 <PageHeader title={profile.display_name} />
                 <div className="mt-[-1.5rem] flex flex-wrap items-center gap-2.5">
-                  <Badge variant="default">{profile.role}</Badge>
+                  {isStaffRole(profile.role) && (
+                    <Badge variant="outline">{profile.role}</Badge>
+                  )}
                   <ContributorBadge tier={effectiveTier} size="md" />
                   <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
                     <Sparkles className="size-3.5" />
@@ -135,9 +138,7 @@ export function UserProfileView({ userId }: { userId: string }) {
             )}
 
             <div className="flex flex-wrap gap-2 pt-2">
-              {!isSelf && (profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT") ? (
-                <Button size="sm">Follow</Button>
-              ) : null}
+              {!isSelf && <Button size="sm">Follow</Button>}
               {!isSelf ? <Button variant="ghost" size="sm">Report profile</Button> : null}
               {isSelf && (
                 <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings/profile" />}>
@@ -151,29 +152,20 @@ export function UserProfileView({ userId }: { userId: string }) {
 
       {/* Published Content */}
       <div className="space-y-8">
-        {profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT" ? (
-          <div className="grid gap-8 md:grid-cols-2">
-            <section>
-              <h2 className="font-heading text-xl font-bold text-ink">Published Lessons</h2>
-              <div className="mt-4">
-                <LessonsFeed authorId={userId} />
-              </div>
-            </section>
-            <section>
-              <h2 className="font-heading text-xl font-bold text-ink">Recent Posts</h2>
-              <div className="mt-4">
-                <ForumFeed authorId={userId} />
-              </div>
-            </section>
-          </div>
-        ) : (
+        <div className="grid gap-8 md:grid-cols-2">
+          <section>
+            <h2 className="font-heading text-xl font-bold text-ink">Published Lessons</h2>
+            <div className="mt-4">
+              <LessonsFeed authorId={userId} />
+            </div>
+          </section>
           <section>
             <h2 className="font-heading text-xl font-bold text-ink">Recent Posts</h2>
             <div className="mt-4">
               <ForumFeed authorId={userId} />
             </div>
           </section>
-        )}
+        </div>
       </div>
     </div>
   );

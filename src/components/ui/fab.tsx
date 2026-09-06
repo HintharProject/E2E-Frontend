@@ -33,12 +33,9 @@ export function GlobalFAB() {
   if (!user) return null;
   const writeLocked = isWriteLocked(user.ban_state);
 
-  const role = user.role;
-
-  // Build options based on role
+  // Build creation options for all active users
   const options: FabOption[] = [];
 
-  // Post — everyone who isn't write-locked
   if (!writeLocked) {
     options.push({
       label: "Post",
@@ -46,25 +43,17 @@ export function GlobalFAB() {
       icon: <FileText className="h-4 w-4" />,
       description: "Share or ask in the forum",
     });
-  }
-
-  // Lesson — Creators only
-  if ((role === "TEACHER" || role === "SENIOR_STUDENT") && !writeLocked) {
     options.push({
       label: "Lesson",
       href: "/lessons/new",
       icon: <BookOpen className="h-4 w-4" />,
-      description: "Write a new lesson",
+      description: "Write and publish a lesson",
     });
-  }
-
-  // Problem — Students only (not Creator, not Admin)
-  if (role === "STUDENT" && !writeLocked) {
     options.push({
       label: "Problem",
       href: "/problems/new",
       icon: <HelpCircle className="h-4 w-4" />,
-      description: "Post a problem for solutions",
+      description: "Post an academic problem for solutions",
     });
   }
 

@@ -41,7 +41,7 @@ export function PostCard({ post }: { post: Post }) {
 
   const author = post.author_details;
   const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
   const canModify = isAuthor || isAdmin;
   const subject = post.subject_details;
   const level = post.level_details;
@@ -149,11 +149,10 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const level = lesson.level_details;
 
   const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
-  const isCreator = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT";
-  const canEdit = isCreator && isAuthor;
-  const canDelete = isAdmin || (isCreator && isAuthor);
-  const canChangeState = isAdmin || (isCreator && isAuthor);
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const canEdit = isAuthor;
+  const canDelete = isAuthor || isAdmin;
+  const canChangeState = isAuthor || isAdmin;
   const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
   const canArchive = canChangeState && lesson.state === "PUBLISHED";
 
@@ -214,7 +213,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
       } : undefined}
-      subtitle={author?.role === 'TEACHER' ? 'Teacher' : author?.role === 'SENIOR_STUDENT' ? 'Senior Student' : undefined}
+      subtitle={formatDateStr(lesson.created_at)}
       topRight={
         <div className="flex items-center gap-2">
           <Badge
