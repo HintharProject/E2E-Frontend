@@ -1,5 +1,6 @@
 import { auth } from "@clerk/nextjs/server";
 import { cookies } from "next/headers";
+import { getValidDevToken } from "@/lib/dev-auth";
 
 export async function getServerAuthToken(): Promise<string | null> {
   let token: string | null = null;
@@ -8,7 +9,7 @@ export async function getServerAuthToken(): Promise<string | null> {
     const cookieStore = await cookies();
     const devToken = cookieStore.get("dev_token")?.value;
     if (devToken) {
-      token = devToken;
+      token = getValidDevToken(devToken);
     }
   } catch (e) {
     // Ignore cookie errors
@@ -17,11 +18,14 @@ export async function getServerAuthToken(): Promise<string | null> {
   if (!token) {
     try {
       const { getToken } = await auth();
-      token = await getToken();
+      const serverToken = await getToken();
+      if (serverToken) {
+        token = getValidDevToken(serverToken);
+      }
     } catch (e) {
       // Ignore auth errors
     }
   }
 
-  return token;
+  return token || getValidDevToken(null);
 }

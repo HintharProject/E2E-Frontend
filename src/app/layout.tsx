@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
 import { Geist_Mono, Montserrat, Manrope } from "next/font/google";
 import "./globals.css";
@@ -21,52 +20,34 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <ClerkProvider
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignOutUrl="/sign-in"
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={cn(
+        "h-full",
+        "antialiased",
+        geistMono.variable,
+        "font-sans",
+        montserrat.variable,
+        manropeHeading.variable
+      )}
     >
-      <html
-        lang="en"
-        suppressHydrationWarning
-        className={cn(
-          "h-full",
-          "antialiased",
-          geistMono.variable,
-          "font-sans",
-          montserrat.variable,
-          manropeHeading.variable
-        )}
-      >
-        <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        <ClerkProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="dark"
             enableSystem={false}
             disableTransitionOnChange
           >
-            <Script id="clerk-error-suppress" strategy="beforeInteractive" dangerouslySetInnerHTML={{
-              __html: `
-                window.addEventListener('error', function(e) {
-                  if (e.message && (e.message.includes('ClerkJS: Network error') || e.message.includes('NetworkError'))) {
-                    e.stopImmediatePropagation();
-                  }
-                }, true);
-                window.addEventListener('unhandledrejection', function(e) {
-                  if (e.reason && e.reason.message && (e.reason.message.includes('ClerkJS: Network error') || e.reason.message.includes('NetworkError'))) {
-                    e.stopImmediatePropagation();
-                  }
-                }, true);
-              `
-            }} />
             <Providers>
               {children}
               <DevTools />
             </Providers>
             <Toaster />
           </ThemeProvider>
-        </body>
-      </html>
-    </ClerkProvider>
+        </ClerkProvider>
+      </body>
+    </html>
   );
 }

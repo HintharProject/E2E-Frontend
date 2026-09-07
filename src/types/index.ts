@@ -1,4 +1,4 @@
-export type RoleEnum = "STUDENT" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN";
+export type RoleEnum = "STUDENT" | "CREATOR" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN";
 export type BanStatusEnum = "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
 export type PostTypeEnum = "QUESTION" | "SHARING" | "ANNOUNCEMENT";
 export type StateEnum = "DRAFT" | "PUBLISHED" | "ARCHIVED";
@@ -197,4 +197,6 @@ export interface Solution {
   user_vote?: 1 | -1 | null;
   created_at: string;
   updated_at: string;
+  problem_title?: string;
+  problem_details?: Problem;
 }

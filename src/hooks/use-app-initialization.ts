@@ -18,84 +18,66 @@ export function useAppInitialization() {
   const initStarted = useRef(false);
 
   useEffect(() => {
-    // Only run when Clerk auth has loaded (so we definitively know if user is signed in)
-    if (!isLoaded) return;
+    // Failsafe timeout: Never let the splash screen hang longer than 1.5s
+    const failsafeTimer = setTimeout(() => {
+      setAppInitialized(true);
+    }, 1500);
+
+    if (!isLoaded) return () => clearTimeout(failsafeTimer);
 
     const currentUserKey = isSignedIn ? "signed_in" : "guest";
 
-    // Check if session was already initialized
     if (typeof window !== "undefined") {
       const sessionInitialized = sessionStorage.getItem("e2e_session_initialized") === "true";
       const lastSessionUser = sessionStorage.getItem("e2e_session_user");
 
-      // If already initialized in this session for this user state, mark initialized immediately without blocking screen
       if (sessionInitialized && lastSessionUser === currentUserKey) {
         if (!isAppInitialized) {
           setAppInitialized(true);
         }
-        return;
+        return () => clearTimeout(failsafeTimer);
       }
     }
 
-    if (isAppInitialized || initStarted.current) return;
-    
+    if (isAppInitialized || initStarted.current) return () => clearTimeout(failsafeTimer);
     initStarted.current = true;
 
     async function initializeApp() {
       try {
-        setInitializationMessage("Starting up the render backend...");
+        setInitializationMessage("Loading local development environment...");
         const token = isSignedIn ? await getToken() : null;
 
-        // 1. Fetch User Profile & Admin data if logged in
         if (isSignedIn && token) {
           setInitializationMessage("Fetching user profile...");
-          const user = await queryClient.fetchQuery({
-            queryKey: ["currentUser"],
+          await queryClient.prefetchQuery({
+            queryKey: ["currentUser", token],
             queryFn: () => fetchCurrentUser(token),
             staleTime: 5 * 60 * 1000,
-          });
+          }).catch(() => null);
 
-          // Fetch collections/study plans
           setInitializationMessage("Loading study plans...");
           await queryClient.prefetchQuery({
             queryKey: ["saved-sessions"],
             queryFn: () => apiFetch(`/saved-sessions/`, token),
             staleTime: 5 * 60 * 1000,
-          });
-
-          // If admin, we could fetch admin dashboard data here (example placeholder)
-          // if (user.role === 'admin') {
-          //   setInitializationMessage("Loading admin panel...");
-          //   await queryClient.prefetchQuery({ ... })
-          // }
+          }).catch(() => null);
         }
 
-        // 2. Fetch Forum Feed (Main)
         setInitializationMessage("Fetching forum posts...");
         await queryClient.prefetchInfiniteQuery({
-          queryKey: ["posts", {}],
-          queryFn: async ({ pageParam = 1 }) => {
-            const queryStr = buildQueryString({ page: pageParam });
+          queryKey: ["posts", {}, "v2"],
+          queryFn: async ({ pageParam }) => {
+            const queryStr = buildQueryString({
+              cursor: pageParam,
+              limit: 12,
+              expand: "author_details,subject_details,level_details,tags_data",
+            });
             return apiFetch(`/posts/${queryStr}`, token || undefined);
           },
-          initialPageParam: 1,
-        });
-
-        // 3. Fetch Lessons Feed
-        setInitializationMessage("Fetching lessons...");
-        await queryClient.prefetchInfiniteQuery({
-          queryKey: ["lessons", {}],
-          queryFn: async ({ pageParam = 1 }) => {
-            const queryStr = buildQueryString({ page: pageParam });
-            return apiFetch(`/lessons/${queryStr}`, token || undefined);
-          },
-          initialPageParam: 1,
-        });
+          initialPageParam: undefined as string | undefined,
+        }).catch(() => null);
 
         setInitializationMessage("Finalizing setup...");
-        
-        // Wait a tiny bit for UI to settle
-        await new Promise((resolve) => setTimeout(resolve, 300));
       } catch (error) {
         console.error("Initialization error:", error);
       } finally {
@@ -104,10 +86,13 @@ export function useAppInitialization() {
           sessionStorage.setItem("e2e_session_user", currentUserKey);
         }
         setAppInitialized(true);
+        clearTimeout(failsafeTimer);
       }
     }
 
     initializeApp();
+
+    return () => clearTimeout(failsafeTimer);
   }, [isLoaded, isSignedIn, getToken, queryClient, isAppInitialized, setAppInitialized, setInitializationMessage]);
 
   return { isAppInitialized };

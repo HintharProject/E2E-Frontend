@@ -5,17 +5,12 @@ import { useQuery } from "@tanstack/react-query";
 import type { AppUser } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
 import { useState, useEffect } from "react";
+import { getValidDevToken } from "@/lib/dev-auth";
 
 /**
  * TanStack Query hook for the currently authenticated user.
  *
- * Fetches from `GET /users/me/` using the Clerk session token.
- * The query is only enabled once a valid token is available.
- *
- * Cold-start handling:
- * - The API client has a 60s timeout.
- * - The query retries twice with backoff.
- * - Consumers should show a skeleton while `isLoading` is true.
+ * Fetches from `GET /users/me/` using the session token / dev token.
  */
 export function useCurrentUser() {
   const { getToken, isSignedIn, isLoaded } = useAuth();
@@ -23,24 +18,25 @@ export function useCurrentUser() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDevToken(localStorage.getItem("dev_token"));
+    const raw = localStorage.getItem("dev_token");
+    setDevToken(getValidDevToken(raw));
   }, []);
 
   const query = useQuery<AppUser>({
     queryKey: ["currentUser", devToken],
     queryFn: async () => {
       const token = await getToken();
-      if (!token && !devToken) throw new Error("No auth token available");
-      return fetchCurrentUser((token || devToken) as string);
+      const valid = getValidDevToken(token || devToken);
+      return fetchCurrentUser(valid);
     },
     enabled: isSignedIn === true || !!devToken,
-    staleTime: 5 * 60 * 1000, // User profile rarely changes mid-session
-    retry: 2,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
   });
 
   return {
     user: query.data ?? null,
-    isLoading: query.isLoading || !isLoaded,
+    isLoading: !isLoaded || query.isLoading,
     isError: query.isError,
     error: query.error,
   };

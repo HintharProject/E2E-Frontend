@@ -5,12 +5,14 @@ import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { apiFetch } from "@/services/api-client";
 import { UserPublic } from "@/types";
-import { PageHeader } from "@/components/ui/page-header";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ForumFeed } from "@/components/features/forum-feed";
-import { LessonsFeed } from "@/components/features/lessons-feed";
+import { useLevels, useSubjects } from "@/hooks/use-metadata";
+import { ProfileSkeleton } from "../skeletons";
+import { ProfileLessonsRail } from "./profile-lessons-rail";
+import { ProfileActivityTabs } from "./profile-activity-tabs";
+import { formatDate } from "@/lib/utils";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -19,8 +21,13 @@ function getInitials(name?: string | null): string {
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
 }
 
-import { useLevels, useSubjects } from "@/hooks/use-metadata";
-import { ProfileSkeleton } from "../skeletons";
+function roleLabel(role: UserPublic["role"]) {
+  if (role === "CREATOR") return "Creator";
+  if (role === "TEACHER") return "Teacher";
+  if (role === "SENIOR_STUDENT") return "Senior Student";
+  if (role === "ADMIN") return "Admin";
+  return "Student";
+}
 
 export function UserProfileView({ userId }: { userId: string }) {
   const { getToken } = useAuth();
@@ -50,44 +57,72 @@ export function UserProfileView({ userId }: { userId: string }) {
   }
 
   const isSelf = clerkUser?.id === profile.clerk_id;
-  
-  const levelName = profile.level ? levels.find(l => l.id === profile.level)?.name : null;
-  const goodSubjectNames = profile.good_subjects 
-    ? profile.good_subjects.map(id => subjects.find(s => s.id === id)?.name).filter(Boolean).join(", ")
+  const canFollow =
+    !isSelf &&
+    (profile.role === "CREATOR" ||
+      profile.role === "TEACHER" ||
+      profile.role === "SENIOR_STUDENT");
+
+  const levelName = profile.level ? levels.find((l) => l.id === profile.level)?.name : null;
+  const goodSubjectNames = profile.good_subjects
+    ? profile.good_subjects.map((id) => subjects.find((s) => s.id === id)?.name).filter(Boolean).join(", ")
     : null;
   const weakSubjectNames = profile.weak_subjects
-    ? profile.weak_subjects.map(id => subjects.find(s => s.id === id)?.name).filter(Boolean).join(", ")
+    ? profile.weak_subjects.map((id) => subjects.find((s) => s.id === id)?.name).filter(Boolean).join(", ")
     : null;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <div className="rounded-3xl border border-line bg-card p-6 sm:p-8">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <Avatar size="lg">
+      <article className="rounded-3xl border border-line bg-card p-6 sm:p-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
+          <Avatar className="size-20 sm:size-24">
             {profile.profile_image_url && <AvatarImage src={profile.profile_image_url} />}
             <AvatarFallback>{getInitials(profile.display_name)}</AvatarFallback>
           </Avatar>
-          <div className="flex-1">
-            <PageHeader title={profile.display_name} />
-            <div className="mt-[-1.5rem] flex flex-wrap gap-2">
-              <Badge variant="default">{profile.role}</Badge>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-heading text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+                {profile.display_name}
+              </h1>
+              <Badge variant={profile.role === "ADMIN" ? "outline" : "default"}>
+                {roleLabel(profile.role)}
+              </Badge>
             </div>
-            {profile.bio && <p className="mt-4 text-ink">{profile.bio}</p>}
-            
+
+            <p className="mt-1 text-sm text-ink-muted">
+              Joined {formatDate(profile.created_at)}
+            </p>
+
+            {profile.bio ? (
+              <p className="mt-4 max-w-2xl text-ink">{profile.bio}</p>
+            ) : (
+              <p className="mt-4 text-sm text-ink-muted">No bio yet.</p>
+            )}
+
             {(levelName || profile.custom_level || goodSubjectNames || weakSubjectNames) && (
               <div className="mt-4 flex flex-col gap-1 text-sm text-ink-muted">
                 {(levelName || profile.custom_level) && (
-                  <p><span className="font-medium text-ink">Level:</span> {profile.custom_level || levelName}</p>
+                  <p>
+                    <span className="font-medium text-ink">Level:</span>{" "}
+                    {profile.custom_level || levelName}
+                  </p>
                 )}
-                {goodSubjectNames && <p><span className="font-medium text-ink">Good Subjects:</span> {goodSubjectNames}</p>}
-                {weakSubjectNames && <p><span className="font-medium text-ink">Weak Subjects:</span> {weakSubjectNames}</p>}
+                {goodSubjectNames && (
+                  <p>
+                    <span className="font-medium text-ink">Good subjects:</span> {goodSubjectNames}
+                  </p>
+                )}
+                {weakSubjectNames && (
+                  <p>
+                    <span className="font-medium text-ink">Weak subjects:</span> {weakSubjectNames}
+                  </p>
+                )}
               </div>
             )}
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {!isSelf && (profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT") ? (
-                <Button>Follow</Button>
-              ) : null}
+            <div className="mt-5 flex flex-wrap gap-2">
+              {canFollow ? <Button>Follow</Button> : null}
               {!isSelf ? <Button variant="ghost">Report profile</Button> : null}
               {isSelf && (
                 <Button variant="outline" nativeButton={false} render={<Link href="/settings/profile" />}>
@@ -97,31 +132,10 @@ export function UserProfileView({ userId }: { userId: string }) {
             </div>
           </div>
         </div>
-      </div>
+      </article>
 
-      {profile.role === "TEACHER" || profile.role === "SENIOR_STUDENT" ? (
-        <div className="mt-10 grid gap-8 md:grid-cols-2">
-          <section>
-            <h2 className="font-display text-2xl text-ink">Published Lessons</h2>
-            <div className="mt-6">
-              <LessonsFeed authorId={userId} />
-            </div>
-          </section>
-          <section>
-            <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
-            <div className="mt-6">
-              <ForumFeed authorId={userId} />
-            </div>
-          </section>
-        </div>
-      ) : (
-        <section className="mt-10">
-          <h2 className="font-display text-2xl text-ink">Recent Posts</h2>
-          <div className="mt-6">
-            <ForumFeed authorId={userId} />
-          </div>
-        </section>
-      )}
+      <ProfileLessonsRail userId={userId} />
+      <ProfileActivityTabs userId={userId} />
     </div>
   );
 }

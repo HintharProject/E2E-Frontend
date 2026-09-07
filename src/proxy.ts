@@ -1,12 +1,15 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-const isPublicRoute = createRouteMatcher(["/sign-in(.*)", "/sign-up(.*)"]);
+// ---------------------------------------------------------------------------
+// Network Boundary Proxy (proxy.ts)
+// Per AGENTS.md: Next.js 16 Network Boundary proxy. Do not rename to middleware.ts.
+// Clerk components disabled for development without external Clerk dependencies.
+// ---------------------------------------------------------------------------
 
-export default clerkMiddleware(async (auth, request) => {
-  if (!isPublicRoute(request)) {
-    await auth.protect();
-  }
-});
+export default function proxy(_request: NextRequest) {
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

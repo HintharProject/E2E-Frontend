@@ -12,13 +12,19 @@ export interface ProblemFilters {
 
 export function useProblems(filters: ProblemFilters = {}) {
   const { getToken } = useAuth();
+  const { authorId, ...apiFilters } = filters;
   
   return useInfiniteQuery({
     queryKey: ["problems", filters, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
-      const qs = buildQueryString({ ...filters, page: pageParam, expand: "attachments,author_details,subject_details,level_details" });
-      return apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      const qs = buildQueryString({ ...apiFilters, page: pageParam, expand: "attachments,author_details,subject_details,level_details" });
+      const page = await apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      if (!authorId) return page;
+      return {
+        ...page,
+        data: page.data.filter((problem) => problem.author === authorId),
+      };
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
