@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import {
   Loader2,
@@ -23,17 +23,18 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
 
-  if (isLoading) {
+  useEffect(() => {
+    if (!isLoading && (!user || !isAdminOrSuperAdmin(user.role))) {
+      router.replace("/");
+    }
+  }, [isLoading, user, router]);
+
+  if (isLoading || !user || !isAdminOrSuperAdmin(user.role)) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
     );
-  }
-
-  if (!user || !isAdminOrSuperAdmin(user.role)) {
-    router.push("/");
-    return null;
   }
 
   return <>{children}</>;

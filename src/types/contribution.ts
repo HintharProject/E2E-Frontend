@@ -33,13 +33,6 @@ export interface ReputationSummary {
   tier_progress: TierProgress;
 }
 
-export interface CurationQuota {
-  daily_cap: number;
-  points_earned_today: number;
-  points_remaining_today: number;
-  resets_at: string;
-}
-
 export interface PointsBreakdown {
   solutions_upvotes: number;
   solutions_downvotes: number;
@@ -53,7 +46,6 @@ export interface PointsBreakdown {
   lessons_downvotes: number;
   comments_upvotes: number;
   comments_downvotes: number;
-  peer_curation_votes: number;
   admin_adjustments: number;
 }
 
@@ -70,7 +62,6 @@ export interface ContributionStats {
   user_id: string;
   current_net_points: number;
   contributor_tier: ContributorTier;
-  curation_quota: CurationQuota;
   points_breakdown_by_category: PointsBreakdown;
   lifetime_totals: LifetimeTotals;
 }
@@ -88,8 +79,6 @@ export type ContributionEventType =
   | "LESSON_DOWNVOTE"
   | "COMMENT_UPVOTE"
   | "COMMENT_DOWNVOTE"
-  | "CURATION_VOTE"
-  | "CURATION_REVOKED"
   | "ADMIN_ADJUSTMENT"
   | string;
 
@@ -129,9 +118,6 @@ export interface VoteMutationResponse {
   content_score: number;
   author_points_awarded?: number;
   author_points_reverted?: number;
-  curation_point_awarded?: boolean;
-  curation_point_reverted?: boolean;
-  curation_quota_remaining_today?: number;
   solution_pruned?: boolean;
 }
 
