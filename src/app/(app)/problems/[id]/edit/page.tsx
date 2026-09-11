@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
 import { Problem, Subject, Level } from "@/types";
-import { isWriteLocked } from "@/types/user";
+import { isWriteLocked, isAdminOrSuperAdmin } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
 import { UpdateProblemForm } from "@/components/features/problems/update-problem-form";
 import { getServerAuthToken } from "@/lib/auth-server";
@@ -30,7 +30,7 @@ export default async function EditProblemPage(props: {
   }
 
   // Verify permissions: only author or admin can edit
-  if (user.role !== "ADMIN" && problem.author !== user.id) {
+  if (!isAdminOrSuperAdmin(user.role) && problem.author !== user.id) {
     notFound();
   }
 

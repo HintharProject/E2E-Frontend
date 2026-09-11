@@ -15,6 +15,7 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -23,12 +24,12 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== "ADMIN")) {
+    if (!isLoading && (!user || !isAdminOrSuperAdmin(user.role))) {
       router.replace("/");
     }
   }, [isLoading, user, router]);
 
-  if (isLoading || !user || user.role !== "ADMIN") {
+  if (isLoading || !user || !isAdminOrSuperAdmin(user.role)) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
@@ -61,7 +62,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Teacher Apps", href: "/admin/teacher-applications", icon: UserCheck },
     { name: "Moderation Queue", href: "/admin/reports/posts", activeMatch: "/admin/reports", icon: ShieldAlert },
     { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree },
     { name: "Resources", href: "/admin/resources", icon: FolderTree },

@@ -26,12 +26,11 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
   const stateMutation = useUpdateLessonState();
 
   const isAuthor = user?.id === lesson.author_details?.id;
-  const isAdmin = user?.role === "ADMIN";
-  const isCreator = user?.role === "TEACHER" || user?.role === "SENIOR_STUDENT";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
 
-  const canEdit = isCreator && isAuthor;
-  const canDelete = isAdmin || (isCreator && isAuthor);
-  const canChangeState = isAdmin || (isCreator && isAuthor);
+  const canEdit = isAuthor;
+  const canDelete = isAuthor || isAdmin;
+  const canChangeState = isAuthor || isAdmin;
 
   const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
   const canArchive = canChangeState && lesson.state === "PUBLISHED";

@@ -215,9 +215,7 @@ export function ProfileForm({
             {levels.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
-            {(user?.role === "SENIOR_STUDENT" || user?.role === "TEACHER" || user?.role === "ADMIN") && (
-              <option value="more">More...</option>
-            )}
+            <option value="more">More...</option>
           </select>
           {errors.level && <p className="mt-1 text-xs text-danger">{errors.level.message}</p>}
         </Field>

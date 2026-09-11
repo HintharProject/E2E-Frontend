@@ -1,7 +1,7 @@
 export * from "./contribution";
 import type { ContributorTier, ReputationSummary } from "./contribution";
 
-export type RoleEnum = "STUDENT" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN";
+export type RoleEnum = "USER" | "MODERATOR" | "ADMIN" | "SUPERADMIN";
 export type BanStatusEnum = "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
 export type PostTypeEnum = "QUESTION" | "SHARING" | "ANNOUNCEMENT";
 export type StateEnum = "DRAFT" | "PUBLISHED" | "ARCHIVED";

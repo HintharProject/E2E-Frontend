@@ -106,7 +106,16 @@ export function DevTools() {
                   <span className="text-xs text-muted-foreground truncate block">{user.email}</span>
                 </div>
 
-                <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'secondary'} className="shrink-0 text-[10px]">
+                <Badge
+                  variant={
+                    user.role === 'SUPERADMIN' || user.role === 'ADMIN'
+                      ? 'destructive'
+                      : user.role === 'MODERATOR'
+                        ? 'default'
+                        : 'secondary'
+                  }
+                  className="shrink-0 text-[10px]"
+                >
                   {user.role}
                 </Badge>
               </button>

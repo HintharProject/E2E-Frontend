@@ -18,12 +18,13 @@ import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { PRIMARY_NAV, isNavActive } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
-import { isWriteLocked } from "@/types/user";
+import { isWriteLocked, isStaffRole } from "@/types/user";
 import { AppHeaderSkeleton } from "./app-header-skeleton";
 import { MobileNav } from "./mobile-nav";
 import { MobileFilterToggle } from "./mobile-filter-toggle";
 import { LessonsMobileFilterToggle } from "@/components/features/lessons/lessons-mobile-filter";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
 import { LessonsTabs } from "@/components/features/lessons/lessons-tabs";
 import { useRefreshStore } from "@/lib/store/refresh-store";
@@ -92,8 +93,8 @@ export function AppHeader() {
         queryFn: ({ pageParam = 1 }) => apiFetch(`/problems/?status=OPEN&page=${pageParam}`, token),
       });
 
-      // 3. Prefetch My Lessons (if applicable)
-      if (user.role === "TEACHER" || user.role === "SENIOR_STUDENT" || user.role === "ADMIN") {
+      // 4. Prefetch My Lessons
+      if (user) {
         queryClient.prefetchInfiniteQuery({
           queryKey: ["lessons", { subject: "", level: "", tags: "", authorId: user.id, state: "PUBLISHED" }],
           initialPageParam: 1,
@@ -207,13 +208,13 @@ export function AppHeader() {
                   <span className="hidden text-sm font-semibold sm:inline">
                     {user.display_name}
                   </span>
-                  <Badge
-                    variant={
-                      user.role === "ADMIN" ? "outline" : "default"
-                    }
-                  >
-                    {user.role}
-                  </Badge>
+                  {isStaffRole(user.role) ? (
+                    <Badge variant="outline">
+                      {user.role}
+                    </Badge>
+                  ) : (
+                    <ContributorBadge tier={user.contributor_tier} size="sm" />
+                  )}
                 </Link>
               )}
               <ThemeToggle />

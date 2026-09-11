@@ -7,14 +7,16 @@ import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Loader2, Search, UserCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isSuperAdmin, isAdminOrSuperAdmin } from "@/types/user";
 
-interface AppUser {
+interface AdminUserItem {
   id: string;
   clerk_id: string;
   display_name: string;
   email: string;
   profile_image_url: string;
-  role: "STUDENT" | "SENIOR_STUDENT" | "TEACHER" | "ADMIN" | null;
+  role: "USER" | "MODERATOR" | "ADMIN" | "SUPERADMIN" | null;
   ban_status: "ACTIVE" | "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN";
   ban_expires_at: string | null;
 }
@@ -22,8 +24,11 @@ interface AppUser {
 export default function AdminUsersPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useCurrentUser();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  const isActorSuperAdmin = isSuperAdmin(currentUser?.role);
 
   const { data, isLoading } = useQuery<any>({
     queryKey: ["adminUsers", debouncedSearch],
@@ -35,7 +40,7 @@ export default function AdminUsersPage() {
     },
   });
 
-  const users: AppUser[] = Array.isArray(data) ? data : (data?.data || data?.results || []);
+  const users: AdminUserItem[] = Array.isArray(data) ? data : (data?.data || data?.results || []);
 
   const updateRoleMutation = useMutation({
     mutationFn: async ({ id, role }: { id: string; role: string }) => {
@@ -107,57 +112,67 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {users.map((u) => (
-                  <tr key={u.id} className="hover:bg-muted/50 transition-colors">
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        {u.profile_image_url ? (
-                          <img src={u.profile_image_url} alt="" className="size-8 rounded-full object-cover" />
-                        ) : (
-                          <div className="size-8 rounded-full bg-line flex items-center justify-center">
-                            <UserCheck className="size-4 text-ink-muted" />
+                {users.map((u) => {
+                  const targetIsAdminOrSuper = isAdminOrSuperAdmin(u.role);
+                  const canManageRole = isActorSuperAdmin || !targetIsAdminOrSuper;
+                  const canManageBan = isActorSuperAdmin || !targetIsAdminOrSuper;
+
+                  return (
+                    <tr key={u.id} className="hover:bg-muted/50 transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          {u.profile_image_url ? (
+                            <img src={u.profile_image_url} alt="" className="size-8 rounded-full object-cover" />
+                          ) : (
+                            <div className="size-8 rounded-full bg-line flex items-center justify-center">
+                              <UserCheck className="size-4 text-ink-muted" />
+                            </div>
+                          )}
+                          <div>
+                            <div className="font-medium">{u.display_name}</div>
+                            <div className="text-xs text-ink-muted">{u.email}</div>
                           </div>
-                        )}
-                        <div>
-                          <div className="font-medium">{u.display_name}</div>
-                          <div className="text-xs text-ink-muted">{u.email}</div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <select
-                        className="rounded border border-line bg-surface px-2 py-1 text-sm focus:outline-none"
-                        value={u.role || ""}
-                        onChange={(e) => updateRoleMutation.mutate({ id: u.id, role: e.target.value })}
-                        disabled={updateRoleMutation.isPending}
-                      >
-                        <option value="STUDENT">STUDENT</option>
-                        <option value="SENIOR_STUDENT">SENIOR_STUDENT</option>
-                        <option value="TEACHER">TEACHER</option>
-                        <option value="ADMIN">ADMIN</option>
-                      </select>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant={u.ban_status === "ACTIVE" ? "default" : "destructive"}>
-                        {u.ban_status}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <select
-                        className="rounded border border-line bg-surface px-2 py-1 text-sm focus:outline-none text-danger"
-                        value={u.ban_status}
-                        onChange={(e) => updateBanMutation.mutate({ id: u.id, ban_status: e.target.value })}
-                        disabled={updateBanMutation.isPending}
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="WARNING">WARNING</option>
-                        <option value="BANNED_24H">BANNED_24H</option>
-                        <option value="BANNED_7D">BANNED_7D</option>
-                        <option value="PERMANENT_BAN">PERMANENT_BAN</option>
-                      </select>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="p-4">
+                        <select
+                          className="rounded border border-line bg-surface px-2 py-1 text-sm focus:outline-none disabled:opacity-50"
+                          value={u.role || ""}
+                          onChange={(e) => updateRoleMutation.mutate({ id: u.id, role: e.target.value })}
+                          disabled={updateRoleMutation.isPending || !canManageRole}
+                        >
+                          <option value="USER">USER</option>
+                          <option value="MODERATOR">MODERATOR</option>
+                          <option value="ADMIN" disabled={!isActorSuperAdmin}>
+                            ADMIN {!isActorSuperAdmin ? "(SuperAdmin only)" : ""}
+                          </option>
+                          <option value="SUPERADMIN" disabled={!isActorSuperAdmin}>
+                            SUPERADMIN {!isActorSuperAdmin ? "(SuperAdmin only)" : ""}
+                          </option>
+                        </select>
+                      </td>
+                      <td className="p-4">
+                        <Badge variant={u.ban_status === "ACTIVE" ? "default" : "destructive"}>
+                          {u.ban_status}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <select
+                          className="rounded border border-line bg-surface px-2 py-1 text-sm focus:outline-none text-danger disabled:opacity-50"
+                          value={u.ban_status}
+                          onChange={(e) => updateBanMutation.mutate({ id: u.id, ban_status: e.target.value })}
+                          disabled={updateBanMutation.isPending || !canManageBan}
+                        >
+                          <option value="ACTIVE">ACTIVE</option>
+                          <option value="WARNING">WARNING</option>
+                          <option value="BANNED_24H">BANNED_24H</option>
+                          <option value="BANNED_7D">BANNED_7D</option>
+                          <option value="PERMANENT_BAN">PERMANENT_BAN</option>
+                        </select>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
