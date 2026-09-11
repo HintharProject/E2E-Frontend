@@ -21,12 +21,11 @@ const EVENT_TYPE_OPTIONS = [
   { value: "SOLUTION_DOWNVOTE", label: "Solution Downvotes" },
   { value: "PROBLEM_SOLVED", label: "Problem Solved Milestone" },
   { value: "PROBLEM_UPVOTE", label: "Problem Upvotes" },
-  { value: "CURATION_VOTE", label: "Daily Curation" },
   { value: "ADMIN_ADJUSTMENT", label: "Admin Adjustments" },
 ];
 
 function getEventBadgeVariant(eventType: string) {
-  if (eventType.includes("UPVOTE") || eventType === "PROBLEM_SOLVED" || eventType === "CURATION_VOTE") {
+  if (eventType.includes("UPVOTE") || eventType === "PROBLEM_SOLVED") {
     return "default";
   }
   if (eventType.includes("DOWNVOTE") || eventType.includes("PRUNED")) {

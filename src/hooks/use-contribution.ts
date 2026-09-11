@@ -73,13 +73,6 @@ export function useVoteContribution({
       return { prevVote, prevScore, optimisticScore, targetValue, voterMultiplier };
     },
     onSuccess: (data) => {
-      if (data?.status === "APPLIED" && data?.curation_point_awarded) {
-        toast.success(
-          `+1 Curation Point earned! (${data.curation_quota_remaining_today ?? 0} remaining today)`,
-          { icon: "⚡" }
-        );
-      }
-
       // Invalidate relevant query caches
       queryClient.invalidateQueries({ queryKey: [contentType] });
       queryClient.invalidateQueries({ queryKey: [contentType, contentId] });
