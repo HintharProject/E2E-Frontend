@@ -44,7 +44,7 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
 
   // Find accepted solution if any (displayed as hero banner)
   const acceptedSolution = useMemo(() => {
-    return activeSolutions.find((s) => s.is_accepted || s.status === "WORKED");
+    return activeSolutions.find((s) => s.is_accepted);
   }, [activeSolutions]);
 
   const competingSolutions = useMemo(() => {
