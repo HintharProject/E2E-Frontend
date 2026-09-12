@@ -1,4 +1,5 @@
 import { API_BASE_URL, API_TIMEOUT_MS } from "@/lib/constants";
+import { getValidDevToken } from "@/lib/dev-auth";
 
 // ---------------------------------------------------------------------------
 // Authenticated API Client
@@ -50,7 +51,7 @@ export async function apiFetch<T>(
     if (typeof window !== "undefined") {
       const devToken = localStorage.getItem("dev_token");
       if (devToken) {
-        finalToken = devToken;
+        finalToken = getValidDevToken(devToken);
       }
     }
 

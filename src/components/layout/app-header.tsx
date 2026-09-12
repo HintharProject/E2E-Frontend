@@ -6,7 +6,7 @@ import { FormEvent, useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -189,6 +189,17 @@ export function AppHeader() {
 
             {/* User area */}
             <div className="ml-auto flex items-center gap-2">
+              {!user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
+                  className="h-8 gap-1.5 text-xs font-semibold border-dashed border-primary/50 text-primary hover:bg-primary/10 cursor-pointer"
+                >
+                  <UserCog className="h-3.5 w-3.5" />
+                  <span>Switch Account</span>
+                </Button>
+              )}
               {user && (
                 <Link
                   href={`/users/${user.id}`}

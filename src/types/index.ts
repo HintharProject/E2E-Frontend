@@ -209,4 +209,6 @@ export interface Solution {
   user_vote?: 1 | -1 | null;
   created_at: string;
   updated_at: string;
+  problem_title?: string;
+  problem_details?: Problem;
 }
