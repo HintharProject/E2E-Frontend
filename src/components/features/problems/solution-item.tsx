@@ -1,30 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Solution } from "@/types";
+import { Solution, Problem } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useDeleteSolution } from "@/hooks/use-problems";
-import { useAcceptSolution } from "@/hooks/use-contribution";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
+import { AuthorEndorseButton } from "./author-endorse-button";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { ChevronRight, CheckCircle2, Check } from "lucide-react";
+import {
+  CheckCircle2,
+  Star,
+  Video,
+  Image as ImageIcon,
+  Lock,
+  UserCheck,
+  Archive,
+} from "lucide-react";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -37,22 +35,33 @@ function stripHtml(html: string): string {
   return html.replace(/<[^>]*>?/gm, "");
 }
 
+export interface SolutionItemProps {
+  solution: Solution;
+  problem: Problem;
+  isProblemAuthor: boolean;
+  isAcceptedHero?: boolean;
+  isArchivedAttempt?: boolean;
+}
+
 export function SolutionItem({
   solution,
+  problem,
   isProblemAuthor = false,
-}: {
-  solution: Solution;
-  isProblemAuthor?: boolean;
-}) {
+  isAcceptedHero = false,
+  isArchivedAttempt = false,
+}: SolutionItemProps) {
   const { user } = useCurrentUser();
   const deleteMutation = useDeleteSolution();
-  const acceptMutation = useAcceptSolution();
 
   const author = solution.author_details;
-  const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
+  const isAuthor = (user?.id && user.id === author?.id) || (user?.clerk_id && user.clerk_id === author?.clerk_id);
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
   const canModify = isAuthor || isAdmin;
-  const isAccepted = solution.status === "WORKED";
+
+  const isAccepted = solution.is_accepted || solution.status === "WORKED";
+  const isAuthorSolution = solution.is_author_solution || (author && (author.id === problem.author || author.clerk_id === problem.author_details?.clerk_id));
+  const isEndorsed = solution.is_author_endorsed;
+  const isArchived = isArchivedAttempt || solution.is_active_pool === false;
 
   const shareUrl =
     typeof window !== "undefined"
@@ -60,155 +69,169 @@ export function SolutionItem({
       : `/problems/${solution.problem}/solutions/${solution.id}`;
 
   const handleDelete = async () => {
+    if (problem.status === "FINAL" && isAccepted) {
+      toast.error("Accepted solutions on finalized problems cannot be deleted.");
+      return;
+    }
+
     toast.promise(deleteMutation.mutateAsync(solution.id), {
       loading: "Deleting solution...",
       success: "Solution deleted successfully",
-      error: "Failed to delete solution. Please try again.",
-    });
-  };
-
-  const handleToggleAccept = (action: "accept" | "unaccept") => {
-    acceptMutation.mutate({
-      problemId: solution.problem,
-      solutionId: solution.id,
-      action,
+      error: (err: any) => err?.message || "Failed to delete solution. Please try again.",
     });
   };
 
   return (
     <div
-      className={`group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border p-4 transition-all ${
-        isAccepted
-          ? "border-emerald-500/50 bg-emerald-500/5 shadow-xs"
-          : "border-line bg-card hover:border-brand/40"
+      className={`group relative flex flex-col gap-4 rounded-2xl border p-5 transition-all ${
+        isAcceptedHero
+          ? "border-emerald-500/60 bg-emerald-500/5 shadow-xs"
+          : isArchived
+            ? "border-dashed border-line bg-muted/20 opacity-80"
+            : "border-line bg-card hover:border-brand/40"
       }`}
     >
-      {/* Left Area: Vote Widget + Author & Content Preview */}
-      <div className="flex flex-1 flex-col sm:flex-row sm:items-center gap-4">
-        {/* Vote Widget */}
-        <div className="shrink-0">
-          <VoteWidget
-            contentType="solutions"
-            contentId={solution.id}
-            initialScore={solution.vote_score ?? solution.vote_count ?? 0}
-            initialUserVote={solution.user_vote}
-            authorId={author?.id}
-            authorClerkId={author?.clerk_id}
-            variant="stack"
-          />
-        </div>
+      {/* Top Banner for Accepted Hero Solution */}
+      {isAcceptedHero && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/20 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
+            <CheckCircle2 className="size-4" />
+            <span>Accepted Community Solution</span>
+          </div>
 
-        <div className="h-12 w-px bg-line hidden sm:block" />
-
-        {/* Author details and body preview */}
-        <Link
-          href={`/problems/${solution.problem}/solutions/${solution.id}`}
-          className="flex flex-1 flex-col gap-1.5 cursor-pointer pr-10 sm:pr-0"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <Avatar size="sm">
-              {author?.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-              <AvatarFallback>{getInitials(author?.display_name)}</AvatarFallback>
-            </Avatar>
-            <span className="text-sm font-semibold text-ink">{author?.display_name}</span>
-            <ContributorBadge tier={author?.contributor_tier} size="sm" />
-            <span className="text-xs text-ink-muted">· {formatDate(solution.created_at)}</span>
-
-            {isAccepted && (
-              <Badge
-                variant="default"
-                className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px] h-5 ml-1"
-              >
-                <CheckCircle2 className="size-3" /> Accepted Solution
+          <div>
+            {problem.status === "FINAL" ? (
+              <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-[11px] gap-1">
+                <Lock className="size-3" /> Verified Consensus Finality (Locked)
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 text-[11px]">
+                Provisional Acceptance — Peer Review Maturing
               </Badge>
             )}
           </div>
+        </div>
+      )}
 
-          <p className="line-clamp-2 text-sm text-ink-muted">
-            {stripHtml(solution.body)}
-          </p>
-        </Link>
-      </div>
+      {/* Main Solution Row */}
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+        {/* Left Side: Vote Widget + Author & Content */}
+        <div className="flex flex-1 items-start gap-4">
+          <div className="shrink-0 pt-0.5">
+            <VoteWidget
+              contentType="solutions"
+              contentId={solution.id}
+              initialScore={solution.vote_score ?? solution.vote_count ?? 0}
+              initialUserVote={solution.user_vote}
+              authorId={author?.id}
+              authorClerkId={author?.clerk_id}
+              problemAuthorId={problem.author}
+              problemAuthorClerkId={problem.author_details?.clerk_id}
+              isActivePool={!isArchived}
+              variant="stack"
+            />
+          </div>
 
-      {/* Right Area: Author Actions / Acceptance Flow */}
-      <div className="flex items-center gap-3 self-end sm:self-center shrink-0">
-        {/* Problem Author Accept / Unaccept Checkmark Button */}
-        {isProblemAuthor && (
-          <div>
-            {isAccepted ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleToggleAccept("unaccept")}
-                disabled={acceptMutation.isPending}
-                className="text-xs h-7 gap-1 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/10"
-              >
-                <Check className="size-3.5" /> Accepted (Undo)
-              </Button>
-            ) : (
-              <Dialog>
-                <DialogTrigger
-                  render={
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={acceptMutation.isPending}
-                      className="text-xs h-7 gap-1 hover:border-emerald-500 hover:text-emerald-600"
+          <div className="flex flex-1 flex-col gap-2 min-w-0">
+            {/* Author Info & Badges */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Link href={`/users/${author?.id}`} className="flex items-center gap-2 hover:opacity-85">
+                <Avatar size="sm">
+                  {author?.profile_image_url && <AvatarImage src={author.profile_image_url} />}
+                  <AvatarFallback>{getInitials(author?.display_name)}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-semibold text-ink">{author?.display_name || "Community Solver"}</span>
+              </Link>
+
+              {author?.contributor_tier !== undefined && (
+                <ContributorBadge tier={author.contributor_tier} size="sm" />
+              )}
+
+              <span className="text-xs text-ink-muted">· {formatDate(solution.created_at)}</span>
+
+              {/* Status & Role Badges */}
+              {isAuthorSolution && (
+                <Badge variant="outline" className="border-brand/40 text-brand text-[10px] h-5 gap-1" title="Self-solution by problem author">
+                  <UserCheck className="size-3" /> Problem Author
+                </Badge>
+              )}
+
+              {isEndorsed && (
+                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] h-5 gap-1">
+                  <Star className="size-3 fill-amber-500 text-amber-500" /> Author Endorsed ★ (+5)
+                </Badge>
+              )}
+
+              {isArchived && (
+                <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                  <Archive className="size-3" /> Archived Attempt
+                </Badge>
+              )}
+            </div>
+
+            {/* Solution Working Content */}
+            <div className="text-sm leading-relaxed text-ink whitespace-pre-line break-words pt-1">
+              {solution.body}
+            </div>
+
+            {/* Video Walkthrough Link */}
+            {solution.video_url && (
+              <div className="mt-1">
+                <a
+                  href={solution.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+                >
+                  <Video className="size-3.5" />
+                  <span>Watch Video Walkthrough ↗</span>
+                </a>
+              </div>
+            )}
+
+            {/* Attachments Preview */}
+            {solution.attachments && solution.attachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 pt-2">
+                {solution.attachments.map((att) => {
+                  const url = att.attachment_url || att.file_url;
+                  return (
+                    <a
+                      key={att.id}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-muted/40 text-xs text-ink hover:border-brand/40"
                     >
-                      <Check className="size-3.5" /> Accept Solution
-                    </Button>
-                  }
-                />
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                      <CheckCircle2 className="size-5 text-emerald-500" />
-                      Accept this Solution?
-                    </DialogTitle>
-                    <DialogDescription>
-                      Marking <strong>{author?.display_name || "this user"}&apos;s</strong> solution as accepted will mark this problem as <strong>SOLVED</strong> and reward <strong>+10 milestone points</strong> to you.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <DialogFooter>
-                    <DialogClose render={<Button variant="secondary" />}>
-                      Cancel
-                    </DialogClose>
-                    <DialogClose
-                      render={
-                        <Button
-                          variant="default"
-                          onClick={() => handleToggleAccept("accept")}
-                          className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                        />
-                      }
-                    >
-                      Confirm & Accept (+10 pts)
-                    </DialogClose>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+                      <ImageIcon className="size-3.5 text-brand" />
+                      <span className="truncate max-w-[150px]">{att.file_name}</span>
+                    </a>
+                  );
+                })}
+              </div>
             )}
           </div>
-        )}
+        </div>
 
-        <Link
-          href={`/problems/${solution.problem}/solutions/${solution.id}`}
-          className="flex items-center text-brand font-medium text-xs gap-1 group-hover:underline"
-        >
-          View details <ChevronRight className="w-3.5 h-3.5" />
-        </Link>
-      </div>
+        {/* Right Side: Author Endorse Button & More Menu */}
+        <div className="flex items-center gap-2 shrink-0 self-end sm:self-start">
+          <AuthorEndorseButton
+            solutionId={solution.id}
+            problemId={problem.id}
+            isEndorsed={!!isEndorsed}
+            solutionScore={solution.vote_score ?? solution.vote_count ?? 0}
+            problemStatus={problem.status}
+            isAuthor={isProblemAuthor}
+            isOwnSolution={!!isAuthor}
+          />
 
-      {/* Three-dot more menu */}
-      <div className="absolute right-3 top-3">
-        <CardMoreMenu
-          shareUrl={shareUrl}
-          contentType="SOLUTION"
-          contentId={solution.id}
-          editHref={canModify ? `/problems/${solution.problem}/solutions/${solution.id}/edit` : undefined}
-          onDelete={canModify ? handleDelete : undefined}
-          deleteLabel="this solution"
-        />
+          <CardMoreMenu
+            shareUrl={shareUrl}
+            contentType="SOLUTION"
+            contentId={solution.id}
+            onDelete={canModify ? handleDelete : undefined}
+            deleteLabel="this solution"
+          />
+        </div>
       </div>
     </div>
   );

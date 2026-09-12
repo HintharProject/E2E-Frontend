@@ -8,11 +8,13 @@ import {
   revokeVote,
   fetchContributionStats,
   fetchContributionLedger,
+  endorseSolution,
   acceptSolution,
   unacceptSolution,
   adjustPointsAdmin,
   ContentVoteType,
 } from "@/services/contribution-service";
+
 import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function useVoteContribution({
@@ -72,7 +74,7 @@ export function useVoteContribution({
 
       return { prevVote, prevScore, optimisticScore, targetValue, voterMultiplier };
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate relevant query caches
       queryClient.invalidateQueries({ queryKey: [contentType] });
       queryClient.invalidateQueries({ queryKey: [contentType, contentId] });
@@ -175,7 +177,6 @@ export function useAcceptSolution() {
       queryClient.invalidateQueries({ queryKey: ["problem", variables.problemId] });
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       queryClient.invalidateQueries({ queryKey: ["solution", variables.solutionId] });
-      queryClient.invalidateQueries({ queryKey: ["solutions", variables.problemId] });
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
     },
     onError: (err: any) => {
@@ -183,6 +184,50 @@ export function useAcceptSolution() {
     },
   });
 }
+
+export function useEndorseSolution() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+
+  return useMutation({
+    mutationFn: async ({
+      solutionId,
+      problemId,
+    }: {
+      solutionId: string;
+      problemId: string;
+    }) => {
+      const token = (await getToken()) || devToken;
+      if (!token) throw new Error("Authentication required");
+      return endorseSolution(solutionId, token);
+    },
+    onSuccess: (data, variables) => {
+      if (data.is_author_endorsed) {
+        toast.success("Solution endorsed! +5 Solved Score boost applied.");
+      } else {
+        toast.info("Author endorsement removed.");
+      }
+
+      if (data.dynamic_acceptance_triggered) {
+        toast.success("🎉 Problem Solved! +10 Milestone Contribution Points awarded.", {
+          duration: 5000,
+        });
+      }
+
+      queryClient.invalidateQueries({ queryKey: ["problem", variables.problemId] });
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["solution", variables.solutionId] });
+      queryClient.invalidateQueries({ queryKey: ["solutions", variables.problemId] });
+      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+    },
+    onError: (err: any) => {
+      const msg = err?.message || err?.detail || "Failed to update endorsement.";
+      toast.error(msg);
+    },
+  });
+}
+
 
 export function useAdminAdjustPoints() {
   const { getToken } = useAuth();

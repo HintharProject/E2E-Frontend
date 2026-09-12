@@ -57,6 +57,29 @@ export async function fetchContributionLedger(
   );
 }
 
+/**
+ * Problem author toggles endorsement on candidate solution (+5 Solved Score boost).
+ */
+export async function endorseSolution(
+  solutionId: string,
+  token: string | null
+): Promise<{
+  solution_id: string;
+  is_author_endorsed: boolean;
+  solved_score: number;
+  problem_status: string;
+  dynamic_acceptance_triggered: boolean;
+  message: string;
+}> {
+  return apiFetch(`/solutions/${solutionId}/endorse/`, token, {
+    method: "POST",
+  });
+}
+
+/**
+ * @deprecated Manual solution acceptance is superseded by the automated Dynamic Acceptance Engine.
+ * Calling this endpoint will return HTTP 410 Gone (MANUAL_ACCEPTANCE_DEPRECATED).
+ */
 export async function acceptSolution(
   problemId: string,
   solutionId: string,
@@ -74,6 +97,10 @@ export async function acceptSolution(
   });
 }
 
+/**
+ * @deprecated Manual solution unacceptance is superseded by the automated Dynamic Acceptance Engine.
+ * Calling this endpoint will return HTTP 410 Gone (MANUAL_ACCEPTANCE_DEPRECATED).
+ */
 export async function unacceptSolution(
   problemId: string,
   solutionId: string,
@@ -90,6 +117,7 @@ export async function unacceptSolution(
     method: "DELETE",
   });
 }
+
 
 export async function adjustPointsAdmin(
   payload: {

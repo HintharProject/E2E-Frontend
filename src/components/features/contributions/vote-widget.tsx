@@ -16,6 +16,9 @@ export interface VoteWidgetProps {
   initialUserVote?: 1 | -1 | 0 | null;
   authorId?: string;
   authorClerkId?: string;
+  problemAuthorId?: string;      // For solutions: locks author peer votes
+  problemAuthorClerkId?: string; // Clerk ID support for author lock
+  isActivePool?: boolean;        // If false, locks voting (archived attempt)
   variant?: "stack" | "pill";
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
@@ -29,6 +32,9 @@ export function VoteWidget({
   initialUserVote = 0,
   authorId,
   authorClerkId,
+  problemAuthorId,
+  problemAuthorClerkId,
+  isActivePool = true,
   variant = "pill",
   size = "md",
   disabled = false,
@@ -59,8 +65,16 @@ export function VoteWidget({
   }, []);
 
   const isSelf = (authorId && user?.id === authorId) || (authorClerkId && user?.clerk_id === authorClerkId);
+  const isProblemAuthor =
+    contentType === "solutions" &&
+    Boolean(
+      (problemAuthorId && user?.id === problemAuthorId) ||
+      (problemAuthorClerkId && user?.clerk_id === problemAuthorClerkId)
+    );
+  const isArchived = isActivePool === false;
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-  const isActionDisabled = disabled || isSelf || writeLocked || !user;
+  const isActionDisabled = disabled || isSelf || isProblemAuthor || isArchived || writeLocked || !user;
+
 
   const voterMultiplier =
     user?.dynamic_vote_weight ??
@@ -89,6 +103,16 @@ export function VoteWidget({
 
     if (isSelf) {
       toast.error("You cannot vote on your own content.");
+      return;
+    }
+
+    if (isProblemAuthor) {
+      toast.info("Problem authors review solutions via the Author Endorse button.");
+      return;
+    }
+
+    if (isArchived) {
+      toast.info("Voting is locked on archived solution attempts.");
       return;
     }
 
@@ -138,10 +162,13 @@ export function VoteWidget({
 
   const getDisabledTooltip = () => {
     if (isSelf) return "You cannot vote on your own content";
+    if (isProblemAuthor) return "Problem authors review solutions via the Author Endorse button";
+    if (isArchived) return "Voting is locked on archived solution attempts";
     if (writeLocked) return "Account restricted from voting";
     if (!user) return "Sign in to vote";
     return undefined;
   };
+
 
   if (variant === "stack") {
     return (
