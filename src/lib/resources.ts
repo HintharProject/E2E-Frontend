@@ -160,3 +160,10 @@ export function parseResourceFileName(rawName: string): {
     resourceType,
   };
 }
+
+export function formatSession(s?: string): string {
+  if (s === "MAY_JUNE") return "May / June";
+  if (s === "OCT_NOV") return "Oct / Nov";
+  if (s === "JANUARY") return "January";
+  return s || "";
+}

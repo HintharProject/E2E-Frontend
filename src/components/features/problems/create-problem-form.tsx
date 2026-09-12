@@ -22,8 +22,10 @@ import { applyFieldErrorsToForm } from "@/lib/form-errors";
 import { inspectImageGeometry } from "./canvas-geometry-inspector";
 import { PreCreationPreviewDrawer } from "./pre-creation-preview-drawer";
 import { useProblemByPaper, generateProblemUploadUrl } from "@/hooks/use-problems";
-import { Camera, FileText, BookOpen, AlertCircle, Check } from "lucide-react";
+import { Camera, FileText, BookOpen, AlertCircle, Check, FolderOpen, X } from "lucide-react";
 import { toast } from "sonner";
+import { PastPaperSelectorModal } from "./past-paper-selector-modal";
+import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -44,6 +46,8 @@ const PathASchema = z.object({
 
 const PathBSchema = z.object({
   origin: z.literal("PAST_PAPER"),
+  level_id: z.string().min(1, "Please select an education level"),
+  subject_id: z.string().min(1, "Please select a subject"),
   resource_id: z.string().min(1, "Please select a curated past paper"),
   question_number: z.string().min(1, "Question number is required").max(50, "Max 50 characters"),
   title: z.string().max(150, "Max 150 characters").optional(),
@@ -79,24 +83,18 @@ export function CreateProblemForm({
   const [stagedFiles, setStagedFiles] = useState<File[]>([]);
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
 
+  const [selectedPaper, setSelectedPaper] = useState<Resource | null>(null);
+  const [isPaperModalOpen, setIsPaperModalOpen] = useState(false);
+
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
-
-  // Fetch Curated Past Papers for Path B
-  const { data: pastPaperResources = [] } = useQuery<Resource[]>({
-    queryKey: ["pastPaperResources"],
-    queryFn: async () => {
-      const token = await getToken();
-      const res = await apiFetch<any>("/resources/files/?resource_type=PAST_PAPER", token);
-      return Array.isArray(res) ? res : res?.data || res?.results || [];
-    },
-  });
 
   const {
     register,
     handleSubmit,
     setValue,
     setError,
+    clearErrors,
     watch,
     reset,
     formState: { errors },
@@ -116,6 +114,101 @@ export function CreateProblemForm({
 
   const watchedResourceId = watch("resource_id" as any);
   const watchedQuestionNumber = watch("question_number" as any);
+  const watchedLevelId = watch("level_id" as any);
+  const watchedSubjectId = watch("subject_id" as any);
+
+  // Fetch individual resource details when a resource is selected or initialized
+  const { data: fetchedSelectedResource } = useQuery<Resource | null>({
+    queryKey: ["resourceDetail", watchedResourceId],
+    queryFn: async () => {
+      if (!watchedResourceId) return null;
+      const token = await getToken();
+      const res = await apiFetch<any>(`/resources/files/${watchedResourceId}/`, token);
+      return res;
+    },
+    enabled: !!watchedResourceId,
+  });
+
+  // Selected Resource entity for taxonomy inheritance and display
+  const selectedResource = useMemo(() => {
+    if (!watchedResourceId) return null;
+    if (selectedPaper && selectedPaper.id === watchedResourceId) return selectedPaper;
+    if (fetchedSelectedResource && fetchedSelectedResource.id === watchedResourceId) return fetchedSelectedResource;
+    return null;
+  }, [watchedResourceId, selectedPaper, fetchedSelectedResource]);
+
+  // If fetched resource loads (e.g. from initialResourceId or restored form), populate taxonomy
+  useEffect(() => {
+    if (fetchedSelectedResource && fetchedSelectedResource.id === watchedResourceId) {
+      const resLvl =
+        fetchedSelectedResource.level_details?.id ||
+        (typeof fetchedSelectedResource.level === "string"
+          ? fetchedSelectedResource.level
+          : (fetchedSelectedResource.level as any)?.id);
+      const resSub =
+        fetchedSelectedResource.subject_details?.id ||
+        (typeof fetchedSelectedResource.subject === "string"
+          ? fetchedSelectedResource.subject
+          : (fetchedSelectedResource.subject as any)?.id);
+
+      if (resLvl && !watchedLevelId) {
+        setValue("level_id" as any, resLvl, { shouldValidate: true });
+      }
+      if (resSub && !watchedSubjectId) {
+        setValue("subject_id" as any, resSub, { shouldValidate: true });
+      }
+    }
+  }, [fetchedSelectedResource, watchedResourceId, setValue, watchedLevelId, watchedSubjectId]);
+
+  // Invalidate paper if user changes level or subject to an incompatible value in Path B
+  useEffect(() => {
+    if (selectedOrigin === "PAST_PAPER" && selectedResource) {
+      const resLvl =
+        selectedResource.level_details?.id ||
+        (typeof selectedResource.level === "string"
+          ? selectedResource.level
+          : (selectedResource.level as any)?.id);
+      const resSub =
+        selectedResource.subject_details?.id ||
+        (typeof selectedResource.subject === "string"
+          ? selectedResource.subject
+          : (selectedResource.subject as any)?.id);
+
+      if (
+        (resLvl && watchedLevelId && resLvl !== watchedLevelId) ||
+        (resSub && watchedSubjectId && resSub !== watchedSubjectId)
+      ) {
+        setValue("resource_id" as any, "", { shouldValidate: true });
+        setSelectedPaper(null);
+      }
+    }
+  }, [selectedOrigin, selectedResource, watchedLevelId, watchedSubjectId, setValue]);
+
+  const handleOpenPaperModal = () => {
+    let hasError = false;
+    if (!watchedLevelId) {
+      setError("level_id" as any, { type: "manual", message: "Please select an education level first." });
+      hasError = true;
+    }
+    if (!watchedSubjectId) {
+      setError("subject_id" as any, { type: "manual", message: "Please select a subject first." });
+      hasError = true;
+    }
+
+    if (hasError) {
+      toast.error("Please select both Level and Subject to choose a paper.");
+      return;
+    }
+
+    setIsPaperModalOpen(true);
+  };
+
+  const formatSession = (s?: string) => {
+    if (s === "MAY_JUNE") return "May / June";
+    if (s === "OCT_NOV") return "Oct / Nov";
+    if (s === "JANUARY") return "January";
+    return s || "";
+  };
 
   // Debounced Deduplication Check for Path B
   const [debouncedQuestion, setDebouncedQuestion] = useState(watchedQuestionNumber || "");
@@ -137,12 +230,6 @@ export function CreateProblemForm({
       setPreviewDrawerOpen(true);
     }
   }, [selectedOrigin, dedupData]);
-
-  // Selected Resource entity for taxonomy inheritance
-  const selectedResource = useMemo(() => {
-    if (!watchedResourceId) return null;
-    return pastPaperResources.find((r) => r.id === watchedResourceId) || null;
-  }, [watchedResourceId, pastPaperResources]);
 
   // Recover state if background submission failed
   useEffect(() => {
@@ -434,48 +521,138 @@ export function CreateProblemForm({
         {/* Path B Workflow */}
         {selectedOrigin === "PAST_PAPER" && (
           <>
-            <Field label="Curated Exam Paper">
-              <select
-                {...register("resource_id" as any)}
-                className={`${inputClass} ${(errors as any).resource_id ? errorClass : ""}`}
-              >
-                <option value="">Select past paper from curated library...</option>
-                {pastPaperResources.map((res) => {
-                  const title = res.title || res.file_name || "Past Paper";
-                  const yearSession = [res.year, res.session, res.paper_type].filter(Boolean).join(" ");
-                  return (
-                    <option key={res.id} value={res.id}>
-                      {yearSession ? `${title} (${yearSession})` : title}
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Education Level">
+                <select
+                  {...register("level_id" as any)}
+                  className={`${inputClass} ${(errors as any).level_id ? errorClass : ""}`}
+                >
+                  <option value="">Select level...</option>
+                  {levels.map((lvl) => (
+                    <option key={lvl.id} value={lvl.id}>
+                      {lvl.name}
                     </option>
-                  );
-                })}
-              </select>
-              {(errors as any).resource_id && (
-                <p className="mt-1 text-xs text-danger font-normal">{(errors as any).resource_id.message}</p>
+                  ))}
+                </select>
+                {(errors as any).level_id && (
+                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).level_id.message}</p>
+                )}
+              </Field>
+
+              <Field label="Subject">
+                <select
+                  {...register("subject_id" as any)}
+                  className={`${inputClass} ${(errors as any).subject_id ? errorClass : ""}`}
+                >
+                  <option value="">Select subject...</option>
+                  {subjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+                {(errors as any).subject_id && (
+                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).subject_id.message}</p>
+                )}
+              </Field>
+            </div>
+
+            <Field label="Curated Exam Paper">
+              <input type="hidden" {...register("resource_id" as any)} />
+
+              {!selectedResource ? (
+                <div className="space-y-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-line bg-surface/40">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleOpenPaperModal}
+                      className="h-9 px-4 gap-2 font-semibold text-xs border-line hover:border-brand hover:text-brand transition-colors shrink-0"
+                    >
+                      <FolderOpen className="size-4 text-brand" />
+                      <span>Select a Paper</span>
+                    </Button>
+                    <span className="text-xs text-ink-muted">
+                      Requires Level and Subject above to be selected first.
+                    </span>
+                  </div>
+                  {(errors as any).resource_id && (
+                    <p className="text-xs text-danger font-normal">{(errors as any).resource_id.message}</p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-line bg-card p-3.5 shadow-2xs space-y-2.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-start gap-3 min-w-0">
+                      <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
+                        <DocTypeIcon
+                          filename={selectedResource.file_name || selectedResource.title || ""}
+                          resourceType={selectedResource.resource_type}
+                        />
+                      </div>
+                      <div className="flex flex-col min-w-0">
+                        <span
+                          className="font-semibold text-ink text-xs sm:text-sm truncate"
+                          title={selectedResource.title || selectedResource.file_name}
+                        >
+                          {selectedResource.title || selectedResource.file_name || "Past Paper"}
+                        </span>
+                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                          {selectedResource.session && (
+                            <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
+                              {formatSession(selectedResource.session)}
+                            </span>
+                          )}
+                          {selectedResource.paper_type && (
+                            <Badge
+                              variant="outline"
+                              className={`text-[10px] uppercase font-semibold ${
+                                selectedResource.paper_type === "QP"
+                                  ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5"
+                                  : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+                              }`}
+                            >
+                              {selectedResource.paper_type === "QP" ? "Question Paper" : "Mark Scheme"}
+                            </Badge>
+                          )}
+                          {selectedResource.year && (
+                            <Badge variant="secondary" className="text-[10px]">
+                              {selectedResource.year}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0 sm:self-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handleOpenPaperModal}
+                        className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
+                      >
+                        <FolderOpen className="size-3.5" />
+                        <span>Change Paper</span>
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setValue("resource_id" as any, "", { shouldValidate: true });
+                          setSelectedPaper(null);
+                        }}
+                        className="h-8 px-2 text-xs text-ink-muted hover:text-danger hover:bg-danger/10"
+                        title="Remove paper"
+                      >
+                        <X className="size-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
               )}
             </Field>
-
-            {/* Inherited Taxonomy Indicators */}
-            {selectedResource && (
-              <div className="flex flex-wrap items-center gap-2 p-3 rounded-xl border border-line bg-card/60">
-                <span className="text-xs text-ink-muted font-medium">Inherited Taxonomy:</span>
-                {selectedResource.subject_details && (
-                  <Badge variant="outline" className="text-xs">
-                    {selectedResource.subject_details.name}
-                  </Badge>
-                )}
-                {selectedResource.level_details && (
-                  <Badge variant="outline" className="text-xs">
-                    {selectedResource.level_details.name}
-                  </Badge>
-                )}
-                {selectedResource.year && (
-                  <Badge variant="secondary" className="text-xs">
-                    {selectedResource.year} {selectedResource.session}
-                  </Badge>
-                )}
-              </div>
-            )}
 
             <Field label="Question Number">
               <input
@@ -546,6 +723,22 @@ export function CreateProblemForm({
           }}
         />
       )}
+
+      {/* Past Paper Selector Modal */}
+      <PastPaperSelectorModal
+        isOpen={isPaperModalOpen}
+        onClose={() => setIsPaperModalOpen(false)}
+        levelId={watchedLevelId}
+        subjectId={watchedSubjectId}
+        levelName={levels.find((l) => l.id === watchedLevelId)?.name}
+        subjectName={subjects.find((s) => s.id === watchedSubjectId)?.name}
+        selectedPaperId={watchedResourceId}
+        onSelectPaper={(paper) => {
+          setSelectedPaper(paper);
+          setValue("resource_id" as any, paper.id, { shouldValidate: true });
+          clearErrors("resource_id" as any);
+        }}
+      />
     </div>
   );
 }
