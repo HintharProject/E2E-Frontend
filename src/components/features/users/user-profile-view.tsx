@@ -13,6 +13,7 @@ import { PointAdjustmentModal } from "@/components/features/admin/point-adjustme
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { isAdminOrSuperAdmin, isStaffRole } from "@/types/user";
+import { useContributionStats } from "@/hooks/use-contribution";
 import { ProfileSkeleton } from "../skeletons";
 import { ProfileLessonsRail } from "./profile-lessons-rail";
 import { ProfileActivityTabs } from "./profile-activity-tabs";
@@ -33,6 +34,9 @@ export function UserProfileView({ userId }: { userId: string }) {
 
   const { data: levels = [] } = useLevels();
   const { data: subjects = [] } = useSubjects();
+
+  // Warm up contribution stats for the profile tabs and lessons rail
+  useContributionStats(userId);
 
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
     queryKey: ["user", userId],

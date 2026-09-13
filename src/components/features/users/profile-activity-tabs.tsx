@@ -11,6 +11,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useProblems } from "@/hooks/use-problems";
 import { useUserContributions } from "@/hooks/use-user-contributions";
+import { useContributionStats } from "@/hooks/use-contribution";
+import { getActivityPoints, formatContributionPoints } from "@/lib/contribution-utils";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { cn } from "@/lib/utils";
 
@@ -130,6 +132,14 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
   const [tab, setTab] = useState<ProfileTab>("posts");
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
+  const { data: stats } = useContributionStats(userId);
+  const activityPoints = getActivityPoints(stats);
+
+  const pointsMap: Record<ProfileTab, number> = {
+    posts: activityPoints.posts,
+    problems: activityPoints.problems,
+    contributions: activityPoints.solutions,
+  };
 
   const prefetch = async (next: ProfileTab) => {
     const token = await getToken();
@@ -161,24 +171,38 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
 
   return (
     <section className="mt-10">
-      <nav className="flex items-center gap-1 overflow-x-auto border-b border-line pb-px">
-        {TABS.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onMouseEnter={() => prefetch(item.id)}
-            onTouchStart={() => prefetch(item.id)}
-            onClick={() => setTab(item.id)}
-            className={cn(
-              "rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors cursor-pointer",
-              tab === item.id
-                ? "bg-primary text-primary-foreground"
-                : "text-ink-muted hover:bg-muted hover:text-ink"
-            )}
-          >
-            {item.label}
-          </button>
-        ))}
+      <nav className="flex items-center gap-1.5 overflow-x-auto border-b border-line pb-2">
+        {TABS.map((item) => {
+          const pts = pointsMap[item.id] ?? 0;
+          const isActive = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onMouseEnter={() => prefetch(item.id)}
+              onTouchStart={() => prefetch(item.id)}
+              onClick={() => setTab(item.id)}
+              className={cn(
+                "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors cursor-pointer",
+                isActive
+                  ? "bg-primary text-primary-foreground shadow-2xs"
+                  : "text-ink-muted hover:bg-muted hover:text-ink"
+              )}
+            >
+              <span>{item.label}</span>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition-colors",
+                  isActive
+                    ? "bg-primary-foreground/20 text-primary-foreground"
+                    : "bg-muted text-ink-muted group-hover:text-ink"
+                )}
+              >
+                {formatContributionPoints(pts)}
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
       <div className="mt-6">

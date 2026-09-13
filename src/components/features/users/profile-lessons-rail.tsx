@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { useInfiniteLessons } from "@/hooks/use-lessons";
+import { useContributionStats } from "@/hooks/use-contribution";
+import { getActivityPoints, formatContributionPoints } from "@/lib/contribution-utils";
 import { LessonCardSkeleton } from "@/components/features/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -41,11 +43,20 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
   const [expanded, setExpanded] = useState(false);
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status } =
     useInfiniteLessons({ authorId: userId, state: "PUBLISHED" });
+  const { data: stats } = useContributionStats(userId);
+  const activityPoints = getActivityPoints(stats);
+  const lessonPoints = activityPoints.lessons;
 
   if (status === "pending") {
     return (
       <section className="mt-8">
-        <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+            <Sparkles className="size-3" />
+            <span>{formatContributionPoints(lessonPoints)}</span>
+          </span>
+        </div>
         <div className="mt-4 flex gap-4 overflow-hidden">
           <LessonCardSkeleton />
           <LessonCardSkeleton />
@@ -57,7 +68,13 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
   if (status === "error") {
     return (
       <section className="mt-8">
-        <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+        <div className="flex items-center gap-2.5">
+          <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+            <Sparkles className="size-3" />
+            <span>{formatContributionPoints(lessonPoints)}</span>
+          </span>
+        </div>
         <EmptyState
           title="Could not load lessons"
           description="Try refreshing the profile in a moment."
@@ -88,7 +105,13 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
     <section className="mt-8">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+              <Sparkles className="size-3" />
+              <span>{formatContributionPoints(lessonPoints)}</span>
+            </span>
+          </div>
           <p className="text-sm text-ink-muted">
             {lessons.length === 0
               ? "No published lessons yet"

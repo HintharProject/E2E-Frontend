@@ -58,10 +58,19 @@ export interface LifetimeTotals {
   problems_solved_count: number;
 }
 
+export interface ActivityTotals {
+  lessons: number;
+  posts: number;
+  problems: number;
+  solutions: number;
+  comments?: number;
+}
+
 export interface ContributionStats {
   user_id: string;
   current_net_points: number;
   contributor_tier: ContributorTier;
+  activity_totals?: ActivityTotals;
   points_breakdown_by_category: PointsBreakdown;
   lifetime_totals: LifetimeTotals;
 }
