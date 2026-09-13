@@ -1,4 +1,5 @@
 export * from "./contribution";
+export * from "./train";
 import type { ContributorTier, ReputationSummary } from "./contribution";
 
 export type RoleEnum = "USER" | "MODERATOR" | "ADMIN" | "SUPERADMIN";
@@ -33,6 +34,7 @@ export interface Subject {
 export interface Level {
   id: string;
   name: string;
+  code?: string;
   order?: number;
 }
 
@@ -168,7 +170,9 @@ export interface Resource {
   year?: number;
   session?: string;
   paper_type?: string;
+  paper_code?: string | null;
   file_url?: string;
+  download_url?: string;
   subject?: string;
   level?: string;
   subject_details?: Subject;

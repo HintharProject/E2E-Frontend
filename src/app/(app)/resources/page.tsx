@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState, useMemo } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
@@ -13,6 +14,7 @@ import {
   BookOpen,
   Calendar,
   Eye,
+  Play,
 } from "lucide-react";
 import { parseFilterList } from "@/lib/filter-params";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -23,6 +25,7 @@ import {
   DocumentViewerModal,
   ViewingDocument,
 } from "@/components/features/resources/document-viewer-modal";
+import type { Resource } from "@/types";
 
 function ResourcesFeed() {
   const { getToken } = useAuth();
@@ -40,7 +43,7 @@ function ResourcesFeed() {
   const [viewingDoc, setViewingDoc] = useState<ViewingDocument | null>(null);
 
   // Fetch Resources List
-  const { data: resources = [], isLoading, isError } = useQuery<any[]>({
+  const { data: resources = [], isLoading, isError } = useQuery<Resource[]>({
     queryKey: ["userResourcesList", levels.join(","), subjects.join(",")],
     queryFn: async () => {
       const token = await getToken();
@@ -48,18 +51,18 @@ function ResourcesFeed() {
       if (levels.length > 0) params.append("level", levels.join(","));
       if (subjects.length > 0) params.append("subject", subjects.join(","));
 
-      const res = await apiFetch<any>(`/resources/files/?${params.toString()}`, token as string);
-      return Array.isArray(res) ? res : res?.data || res?.results || [];
+      const res = await apiFetch<{ results?: Resource[] } | Resource[]>(`/resources/files/?${params.toString()}`, token as string);
+      return Array.isArray(res) ? res : res?.results || [];
     },
   });
 
   // Split into Past Papers and Textbooks
   const pastPapers = useMemo(() => {
-    return resources.filter((r: any) => r.resource_type === "PAST_PAPER");
+    return resources.filter((r) => r.resource_type === "PAST_PAPER");
   }, [resources]);
 
   const textbooks = useMemo(() => {
-    return resources.filter((r: any) => r.resource_type === "TEXTBOOK");
+    return resources.filter((r) => r.resource_type === "TEXTBOOK");
   }, [resources]);
 
   if (isLoading) {
@@ -127,6 +130,18 @@ function ResourcesFeed() {
               {textbooks.length}
             </span>
           </button>
+
+          <Link
+            href={`/train${searchParams.toString() ? `?${searchParams.toString()}` : ""}`}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all ml-1"
+            title="Switch to Train! Exam Practice Workspace"
+          >
+            <Play className="size-3.5 fill-current" />
+            <span>Train! Workspace</span>
+            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-primary text-primary-foreground">
+              New
+            </span>
+          </Link>
         </div>
 
         <div className="text-xs text-ink-muted hidden sm:block">
@@ -155,8 +170,8 @@ function ResourcesFeed() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {textbooks.map((tb: any) => {
-                const ext = getFileExtension(tb.file_name);
+              {textbooks.map((tb) => {
+                const ext = getFileExtension(tb.file_name || "");
                 return (
                   <div
                     key={tb.id}
@@ -164,7 +179,7 @@ function ResourcesFeed() {
                   >
                     <div className="flex items-start gap-3.5">
                       <div className="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
-                        <DocTypeIcon filename={tb.file_name} resourceType={tb.resource_type} className="size-5 shrink-0" />
+                        <DocTypeIcon filename={tb.file_name || ""} resourceType={tb.resource_type} className="size-5 shrink-0" />
                       </div>
                       <div className="flex flex-col min-w-0">
                         <h4 className="font-semibold text-ink text-sm line-clamp-2 leading-snug">
@@ -201,8 +216,8 @@ function ResourcesFeed() {
                           className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
                           onClick={() =>
                             setViewingDoc({
-                              title: tb.file_name,
-                              url: tb.file_url,
+                              title: tb.file_name || "Textbook",
+                              url: tb.file_url || "",
                               downloadUrl: tb.download_url,
                             })
                           }

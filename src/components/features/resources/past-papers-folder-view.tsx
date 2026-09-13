@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useMemo, useEffect } from "react";
+import Link from "next/link";
 import { Resource } from "@/types";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
   Eye,
   Download,
   Check,
+  Play,
 } from "lucide-react";
 
 export function formatSession(s?: string): string {
@@ -85,6 +87,7 @@ export function PastPapersFolderView({
   // Whenever papers update, ensure folders containing papers are expanded
   useEffect(() => {
     if (papers.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setExpandedYears((prev) => {
         const next = { ...prev };
         for (const p of papers) {
@@ -227,6 +230,23 @@ export function PastPapersFolderView({
                           <div className="flex items-center justify-end gap-2 shrink-0 sm:self-center">
                             {variant === "browse" ? (
                               <>
+                                {/* Train CTA for Question Papers */}
+                                {paper.paper_type === "QP" && (
+                                  <Link
+                                    href={`/train/${paper.id}`}
+                                    className={buttonVariants({
+                                      variant: "default",
+                                      size: "sm",
+                                      className:
+                                        "h-8 px-2.5 gap-1.5 text-xs font-semibold bg-primary text-primary-foreground shadow-2xs hover:opacity-90 transition-opacity",
+                                    })}
+                                    title="Open Exam Practice Workspace"
+                                  >
+                                    <Play className="size-3 fill-current" />
+                                    <span>Train ↗</span>
+                                  </Link>
+                                )}
+
                                 {/* View In-App Modal */}
                                 {onView && paper.file_url && (
                                   <Button
@@ -238,7 +258,7 @@ export function PastPapersFolderView({
                                         paper,
                                         title: paper.file_name || title,
                                         url: paper.file_url!,
-                                        downloadUrl: (paper as any).download_url,
+                                        downloadUrl: paper.download_url,
                                       })
                                     }
                                   >
@@ -249,7 +269,7 @@ export function PastPapersFolderView({
 
                                 {/* Download Link */}
                                 <a
-                                  href={(paper as any).download_url || paper.file_url}
+                                  href={paper.download_url || paper.file_url}
                                   download={paper.file_name || title}
                                   target="_blank"
                                   rel="noreferrer"
@@ -278,7 +298,7 @@ export function PastPapersFolderView({
                                         paper,
                                         title: paper.file_name || title,
                                         url: paper.file_url!,
-                                        downloadUrl: (paper as any).download_url,
+                                        downloadUrl: paper.download_url,
                                       })
                                     }
                                   >

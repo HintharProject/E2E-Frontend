@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Resource } from "@/types";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { getFileExtension } from "@/lib/resources";
-import { ExternalLink, Download, X, Check } from "lucide-react";
+import { ExternalLink, Download, X, Check, Play } from "lucide-react";
 
 export interface ViewingDocument {
   title: string;
@@ -53,6 +54,22 @@ export function DocumentViewerModal({ doc, onClose, onSelect }: DocumentViewerMo
                 <Check className="size-3.5" />
                 <span>Select This Paper</span>
               </Button>
+            )}
+
+            {/* Open in Train Workspace for Question Papers */}
+            {doc.paper && doc.paper.paper_type === "QP" && (
+              <Link
+                href={`/train/${doc.paper.id}`}
+                className={buttonVariants({
+                  variant: "default",
+                  size: "sm",
+                  className: "h-8 px-2.5 gap-1.5 text-xs font-semibold bg-primary text-primary-foreground shadow-xs",
+                })}
+                onClick={onClose}
+              >
+                <Play className="size-3.5 fill-current" />
+                <span>Open in Train! ↗</span>
+              </Link>
             )}
 
             <a

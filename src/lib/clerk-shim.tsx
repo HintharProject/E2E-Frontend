@@ -9,6 +9,7 @@ import { UserCog, LogOut, Check } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -191,17 +192,19 @@ export function UserButton({
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-64">
-        <DropdownMenuLabel className="font-normal">
-          <div className="flex flex-col space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-semibold leading-none">{ctx.activeUser.display_name}</p>
-              <Badge variant="outline" className="text-[10px]">
-                {ctx.activeUser.role}
-              </Badge>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="font-normal">
+            <div className="flex flex-col space-y-1">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold leading-none">{ctx.activeUser.display_name}</p>
+                <Badge variant="outline" className="text-[10px]">
+                  {ctx.activeUser.role}
+                </Badge>
+              </div>
+              <p className="text-xs leading-none text-muted-foreground">{ctx.activeUser.email}</p>
             </div>
-            <p className="text-xs leading-none text-muted-foreground">{ctx.activeUser.email}</p>
-          </div>
-        </DropdownMenuLabel>
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
