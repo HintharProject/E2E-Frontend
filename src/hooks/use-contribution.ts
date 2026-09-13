@@ -17,6 +17,13 @@ import {
 
 import { useCurrentUser } from "@/hooks/use-current-user";
 
+function getDevToken(): string | null {
+  if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true") {
+    return localStorage.getItem("dev_token");
+  }
+  return null;
+}
+
 export function useVoteContribution({
   contentType,
   contentId,
@@ -42,7 +49,7 @@ export function useVoteContribution({
 
   return useMutation({
     mutationFn: async ({ targetValue }: { targetValue: 1 | -1 | 0 }) => {
-      const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+      const devToken = getDevToken();
       const token = (await getToken()) || devToken;
       if (!token) throw new Error("Authentication required to vote");
 
@@ -102,7 +109,7 @@ export function useVoteContribution({
 
 export function useContributionStats(userId: string | undefined | null) {
   const { getToken } = useAuth();
-  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+  const devToken = getDevToken();
 
   return useQuery({
     queryKey: ["contribution-stats", userId],
@@ -127,7 +134,7 @@ export function useContributionLedger(
   }
 ) {
   const { getToken } = useAuth();
-  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+  const devToken = getDevToken();
 
   return useQuery({
     queryKey: ["contribution-ledger", userId, params],
@@ -144,7 +151,7 @@ export function useContributionLedger(
 export function useAcceptSolution() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+  const devToken = getDevToken();
 
   return useMutation({
     mutationFn: async ({
@@ -188,7 +195,7 @@ export function useAcceptSolution() {
 export function useEndorseSolution() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+  const devToken = getDevToken();
 
   return useMutation({
     mutationFn: async ({
@@ -232,7 +239,7 @@ export function useEndorseSolution() {
 export function useAdminAdjustPoints() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const devToken = typeof window !== "undefined" ? localStorage.getItem("dev_token") : null;
+  const devToken = getDevToken();
 
   return useMutation({
     mutationFn: async (payload: {
