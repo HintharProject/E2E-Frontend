@@ -30,7 +30,13 @@ export function ThreadedComment({
   postId: string;
 }) {
   const { user: currentUser } = useCurrentUser();
-  const isAuthor = currentUser?.id === comment.author_details?.id;
+  const isAuthor = Boolean(
+    currentUser && (
+      (comment.author && currentUser.id === comment.author) ||
+      (comment.author_details?.id && currentUser.id === comment.author_details.id) ||
+      (comment.author_details?.clerk_id && currentUser.clerk_id === comment.author_details.clerk_id)
+    )
+  );
 
   const [showReplyForm, setShowReplyForm] = useState(false);
   const hasReplies = Boolean(comment.reply_count && comment.reply_count > 0);
@@ -43,6 +49,11 @@ export function ThreadedComment({
 
   const [localVoteCount, setLocalVoteCount] = useState(comment.vote_count ?? 0);
   const [localUserVote, setLocalUserVote] = useState(comment.user_vote ?? 0);
+
+  useEffect(() => {
+    setLocalVoteCount(comment.vote_count ?? 0);
+    setLocalUserVote(comment.user_vote ?? 0);
+  }, [comment.vote_count, comment.user_vote]);
 
   const author = comment.author_details;
   
@@ -119,9 +130,16 @@ export function ThreadedComment({
     };
   }, []);
 
+  const userWeight =
+    (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
+
   const handleVote = (value: 1 | -1 | 0) => {
+    if (isAuthor) {
+      toast.info("You cannot vote on your own comment.");
+      return;
+    }
     if (localUserVote === value) return;
-    const diff = value - localUserVote;
+    const diff = (value - localUserVote) * userWeight;
     setLocalUserVote(value);
     setLocalVoteCount((prev) => prev + diff);
 
@@ -171,14 +189,22 @@ export function ThreadedComment({
               <div className="flex items-center gap-1 mr-2">
                 <button
                   onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
-                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${localUserVote === 1 ? "text-brand" : "text-ink-muted hover:text-brand"}`}
+                  disabled={isAuthor}
+                  title={isAuthor ? "You cannot vote on your own comment" : "Upvote comment"}
+                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  } ${localUserVote === 1 ? "text-brand font-bold" : "text-ink-muted hover:text-brand"}`}
                 >
                   ▲
                 </button>
                 <span className="text-xs font-semibold text-ink-muted">{localVoteCount}</span>
                 <button
                   onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
-                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${localUserVote === -1 ? "text-destructive" : "text-ink-muted hover:text-destructive"}`}
+                  disabled={isAuthor}
+                  title={isAuthor ? "You cannot vote on your own comment" : "Downvote comment"}
+                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${
+                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+                  } ${localUserVote === -1 ? "text-destructive font-bold" : "text-ink-muted hover:text-destructive"}`}
                 >
                   ▼
                 </button>

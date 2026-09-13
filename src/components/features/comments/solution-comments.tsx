@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   useSolutionComments,
   useCreateComment,
@@ -81,9 +81,13 @@ function FlatCommentItem({
   const voteMutation = useVoteComment();
   const reportMutation = useReport();
 
-  const isAuthor =
-    (currentUser?.id && currentUser.id === comment.author_details?.id) ||
-    (currentUser?.clerk_id && currentUser.clerk_id === comment.author_details?.clerk_id);
+  const isAuthor = Boolean(
+    currentUser && (
+      (comment.author && currentUser.id === comment.author) ||
+      (comment.author_details?.id && currentUser.id === comment.author_details.id) ||
+      (comment.author_details?.clerk_id && currentUser.clerk_id === comment.author_details.clerk_id)
+    )
+  );
   const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "SUPERADMIN";
 
   const [isEditing, setIsEditing] = useState(false);
@@ -94,6 +98,11 @@ function FlatCommentItem({
   const [localVoteCount, setLocalVoteCount] = useState(comment.vote_count ?? 0);
   const [localUserVote, setLocalUserVote] = useState<number | null>(comment.user_vote ?? null);
 
+  useEffect(() => {
+    setLocalVoteCount(comment.vote_count ?? 0);
+    setLocalUserVote(comment.user_vote ?? null);
+  }, [comment.vote_count, comment.user_vote]);
+
   const author = comment.author_details;
   const replies = comment.replies ?? [];
 
@@ -102,6 +111,12 @@ function FlatCommentItem({
       toast.error("You must be logged in to vote.");
       return;
     }
+    if (isAuthor) {
+      toast.info("You cannot vote on your own comment.");
+      return;
+    }
+    const userWeight =
+      (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
     const currentVal = localUserVote;
     const currentScore = localVoteCount;
     let newScore = currentScore;
@@ -109,11 +124,11 @@ function FlatCommentItem({
 
     if (currentVal === value) {
       newUserVote = null;
-      newScore = currentScore - value;
+      newScore = currentScore - (value * userWeight);
     } else if (currentVal !== null) {
-      newScore = currentScore - currentVal + value;
+      newScore = currentScore + ((value - currentVal) * userWeight);
     } else {
-      newScore = currentScore + value;
+      newScore = currentScore + (value * userWeight);
     }
 
     setLocalVoteCount(newScore);
@@ -272,13 +287,15 @@ function FlatCommentItem({
           <button
             type="button"
             onClick={() => handleVote(1)}
-            disabled={voteMutation.isPending}
+            disabled={voteMutation.isPending || isAuthor}
             className={`p-1 rounded-full transition-colors ${
+              isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            } ${
               localUserVote === 1
                 ? "text-brand bg-brand/15 font-bold"
                 : "text-ink-muted hover:text-ink"
             }`}
-            title="Upvote"
+            title={isAuthor ? "You cannot vote on your own comment" : "Upvote"}
           >
             <ArrowUp className="h-3 w-3" />
           </button>
@@ -288,13 +305,15 @@ function FlatCommentItem({
           <button
             type="button"
             onClick={() => handleVote(-1)}
-            disabled={voteMutation.isPending}
+            disabled={voteMutation.isPending || isAuthor}
             className={`p-1 rounded-full transition-colors ${
+              isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            } ${
               localUserVote === -1
                 ? "text-amber-600 bg-amber-500/15 font-bold"
                 : "text-ink-muted hover:text-ink"
             }`}
-            title="Downvote"
+            title={isAuthor ? "You cannot vote on your own comment" : "Downvote"}
           >
             <ArrowDown className="h-3 w-3" />
           </button>

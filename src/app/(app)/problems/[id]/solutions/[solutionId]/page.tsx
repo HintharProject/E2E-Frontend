@@ -250,7 +250,7 @@ export default function SolutionDetailPage({
                 contentId={solution.id}
                 initialScore={solution.vote_score ?? solution.vote_count ?? 0}
                 initialUserVote={solution.user_vote}
-                authorId={author?.id}
+                authorId={author?.id || (typeof solution.author === "string" ? solution.author : undefined)}
                 authorClerkId={author?.clerk_id}
                 problemAuthorId={problem?.author}
                 problemAuthorClerkId={problem?.author_details?.clerk_id}

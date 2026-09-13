@@ -181,7 +181,8 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             problemId={problem.id}
             initialVoteCount={problem.vote_score ?? problem.vote_count ?? 0}
             initialUserVote={problem.user_vote}
-            authorId={author?.id}
+            authorId={author?.id || (typeof problem.author === "string" ? problem.author : undefined)}
+            authorClerkId={author?.clerk_id}
           />
           <span>· {problem.solution_count ?? 0} {problem.solution_count === 1 ? "solution" : "solutions"}</span>
         </>

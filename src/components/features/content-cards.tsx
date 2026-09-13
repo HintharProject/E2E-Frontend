@@ -115,7 +115,13 @@ export function PostCard({ post }: { post: Post }) {
       bottomRight={
         post.post_type !== "ANNOUNCEMENT" ? (
           <>
-            <PostCardVote postId={post.id} initialVoteCount={post.vote_count ?? 0} initialUserVote={post.user_vote} />
+            <PostCardVote
+              postId={post.id}
+              initialVoteCount={post.vote_count ?? 0}
+              initialUserVote={post.user_vote}
+              authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
+              authorClerkId={author?.clerk_id}
+            />
             <span>· {post.comment_count ?? 0} comments</span>
           </>
         ) : (
@@ -228,7 +234,13 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           >
             {lesson.state}
           </Badge>
-          <LessonCardVote lessonId={lesson.id} initialVoteCount={lesson.vote_count ?? 0} initialUserVote={lesson.user_vote} />
+          <LessonCardVote
+            lessonId={lesson.id}
+            initialVoteCount={lesson.vote_count ?? 0}
+            initialUserVote={lesson.user_vote}
+            authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
+            authorClerkId={author?.clerk_id}
+          />
         </div>
       }
       title={lesson.title}

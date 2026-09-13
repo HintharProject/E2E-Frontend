@@ -208,7 +208,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               contentId={problem.id}
               initialScore={problem.vote_score ?? problem.vote_count ?? 0}
               initialUserVote={problem.user_vote}
-              authorId={author?.id}
+              authorId={author?.id || (typeof problem.author === "string" ? problem.author : undefined)}
               authorClerkId={author?.clerk_id}
               variant="pill"
             />

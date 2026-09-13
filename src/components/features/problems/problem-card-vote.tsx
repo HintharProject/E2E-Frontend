@@ -10,11 +10,13 @@ export function ProblemCardVote({
   initialVoteCount,
   initialUserVote,
   authorId,
+  authorClerkId,
 }: {
   problemId: string;
   initialVoteCount: number;
   initialUserVote?: number | null;
   authorId?: string;
+  authorClerkId?: string;
 }) {
   const { user } = useCurrentUser();
   const voteMutation = useVoteProblem();
@@ -39,7 +41,13 @@ export function ProblemCardVote({
     };
   }, []);
 
-  const isSelf = user && authorId && (user.id === authorId || user.clerk_id === authorId);
+  const isSelf = Boolean(
+    user && (
+      (authorId && user.id === authorId) ||
+      (authorClerkId && user.clerk_id === authorClerkId) ||
+      (authorId && user.clerk_id === authorId)
+    )
+  );
 
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -51,7 +59,7 @@ export function ProblemCardVote({
     }
 
     if (isSelf) {
-      toast.error("You cannot vote on your own content.");
+      toast.info("You cannot vote on your own question.");
       return;
     }
 
@@ -70,9 +78,11 @@ export function ProblemCardVote({
   return (
     <button
       onClick={handleVote}
-      disabled={!!isSelf}
+      disabled={isSelf}
       title={isSelf ? "You cannot vote on your own question" : "Vote on question"}
-      className={`flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 cursor-pointer ${
+      className={`flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
+        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+      } ${
         userVote === 1 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-ink-muted hover:text-brand"
       }`}
     >
