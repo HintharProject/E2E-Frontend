@@ -64,7 +64,12 @@ export function VoteWidget({
     };
   }, []);
 
-  const isSelf = (authorId && user?.id === authorId) || (authorClerkId && user?.clerk_id === authorClerkId);
+  const isSelf = Boolean(
+    user && (
+      (authorId && user.id === authorId) ||
+      (authorClerkId && user.clerk_id === authorClerkId)
+    )
+  );
   const isProblemAuthor =
     contentType === "solutions" &&
     Boolean(

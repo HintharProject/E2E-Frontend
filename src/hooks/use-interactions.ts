@@ -7,7 +7,7 @@ export function useVotePost() {
   const { getToken } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ postId, value }: { postId: string; value: 1 | -1 | 0 }) => {
+    mutationFn: async ({ postId, value, voteWeight = 1 }: { postId: string; value: 1 | -1 | 0; voteWeight?: number }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       if (value === 0) {
@@ -19,28 +19,52 @@ export function useVotePost() {
         });
       }
     },
-    onMutate: async ({ postId, value }) => {
+    onMutate: async ({ postId, value, voteWeight = 1 }) => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
+      await queryClient.cancelQueries({ queryKey: ["post", postId] });
       const previousPosts = queryClient.getQueryData(["posts"]);
-      const previousPost = queryClient.getQueryData(["posts", postId]);
+      const previousPost = queryClient.getQueryData(["post", postId]);
 
-      // Optimistically update lists (infinite query structure)
+      // Optimistically update lists (infinite query structure) – update both user_vote AND vote_count
       queryClient.setQueryData(["posts"], (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            data: page.data.map((post: any) => 
-              post.id === postId ? { ...post, user_vote: value } : post
-            )
+            data: page.data.map((post: any) => {
+              if (post.id !== postId) return post;
+              const prevVote = post.user_vote ?? 0;
+              let delta = 0;
+              if (value === 0) {
+                delta = -(prevVote * voteWeight);
+              } else if (prevVote === 0) {
+                delta = value * voteWeight;
+              } else {
+                delta = (value - prevVote) * voteWeight;
+              }
+              return { ...post, user_vote: value, vote_count: (post.vote_count ?? 0) + delta };
+            }),
           }))
         };
       });
 
       // Optimistically update individual post if cached
       if (previousPost) {
-        queryClient.setQueryData(["post", postId], (old: any) => ({ ...old, user_vote: value }));
+        const prevVote = (previousPost as any)?.user_vote ?? 0;
+        let delta = 0;
+        if (value === 0) {
+          delta = -(prevVote * voteWeight);
+        } else if (prevVote === 0) {
+          delta = value * voteWeight;
+        } else {
+          delta = (value - prevVote) * voteWeight;
+        }
+        queryClient.setQueryData(["post", postId], (old: any) => ({
+          ...old,
+          user_vote: value,
+          vote_count: ((old?.vote_count) ?? 0) + delta,
+        }));
       }
 
       return { previousPosts, previousPost };
@@ -61,7 +85,7 @@ export function useVoteLesson() {
   const { getToken } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ lessonId, value }: { lessonId: string; value: 1 | -1 | 0 }) => {
+    mutationFn: async ({ lessonId, value, voteWeight = 1 }: { lessonId: string; value: 1 | -1 | 0; voteWeight?: number }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       if (value === 0) {
@@ -73,26 +97,52 @@ export function useVoteLesson() {
         });
       }
     },
-    onMutate: async ({ lessonId, value }) => {
+    onMutate: async ({ lessonId, value, voteWeight = 1 }) => {
       await queryClient.cancelQueries({ queryKey: ["lessons"] });
+      await queryClient.cancelQueries({ queryKey: ["lesson", lessonId] });
       const previousLessons = queryClient.getQueryData(["lessons"]);
-      const previousLesson = queryClient.getQueryData(["lessons", lessonId]);
+      const previousLesson = queryClient.getQueryData(["lesson", lessonId]);
 
+      // Optimistically update lists – update both user_vote AND vote_count
       queryClient.setQueryData(["lessons"], (old: any) => {
         if (!old?.pages) return old;
         return {
           ...old,
           pages: old.pages.map((page: any) => ({
             ...page,
-            data: page.data.map((lesson: any) => 
-              lesson.id === lessonId ? { ...lesson, user_vote: value } : lesson
-            )
+            data: page.data.map((lesson: any) => {
+              if (lesson.id !== lessonId) return lesson;
+              const prevVote = lesson.user_vote ?? 0;
+              let delta = 0;
+              if (value === 0) {
+                delta = -(prevVote * voteWeight);
+              } else if (prevVote === 0) {
+                delta = value * voteWeight;
+              } else {
+                delta = (value - prevVote) * voteWeight;
+              }
+              return { ...lesson, user_vote: value, vote_count: (lesson.vote_count ?? 0) + delta };
+            }),
           }))
         };
       });
 
+      // Optimistically update individual lesson if cached
       if (previousLesson) {
-        queryClient.setQueryData(["lesson", lessonId], (old: any) => ({ ...old, user_vote: value }));
+        const prevVote = (previousLesson as any)?.user_vote ?? 0;
+        let delta = 0;
+        if (value === 0) {
+          delta = -(prevVote * voteWeight);
+        } else if (prevVote === 0) {
+          delta = value * voteWeight;
+        } else {
+          delta = (value - prevVote) * voteWeight;
+        }
+        queryClient.setQueryData(["lesson", lessonId], (old: any) => ({
+          ...old,
+          user_vote: value,
+          vote_count: ((old?.vote_count) ?? 0) + delta,
+        }));
       }
 
       return { previousLessons, previousLesson };
