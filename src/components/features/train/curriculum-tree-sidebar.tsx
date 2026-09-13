@@ -221,6 +221,11 @@ export function CurriculumTreeSidebar({
 
                           <div className="space-y-0.5">
                             {sessionItem.papers.map((paper) => {
+                              const paperWithMeta: TrainTreePaper = {
+                                ...paper,
+                                year: paper.year ?? yearItem.year,
+                                session: paper.session ?? sessionItem.session,
+                              };
                               const isLeft = leftPaperId !== undefined ? leftPaperId === paper.id : activePaperId === paper.id;
                               const isRight = rightPaperId === paper.id;
                               const isAttempted = attemptedSet.has(paper.id);
@@ -292,7 +297,7 @@ export function CurriculumTreeSidebar({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
-                                          onToggleLeft(paper);
+                                          onToggleLeft(paperWithMeta);
                                         }}
                                         className={cn(
                                           "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
@@ -316,7 +321,7 @@ export function CurriculumTreeSidebar({
                                         onClick={(e) => {
                                           e.stopPropagation();
                                           e.preventDefault();
-                                          onToggleRight(paper);
+                                          onToggleRight(paperWithMeta);
                                         }}
                                         className={cn(
                                           "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
@@ -342,9 +347,9 @@ export function CurriculumTreeSidebar({
                                   key={paper.id}
                                   onClick={() => {
                                     if (isMS && onToggleRight) {
-                                      onToggleRight(paper);
+                                      onToggleRight(paperWithMeta);
                                     } else {
-                                      onToggleLeft(paper);
+                                      onToggleLeft(paperWithMeta);
                                     }
                                   }}
                                   className={cn(

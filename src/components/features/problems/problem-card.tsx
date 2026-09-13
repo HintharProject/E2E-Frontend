@@ -145,13 +145,21 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               )}
 
               {/* Deep Link to Train! */}
-              <span
-                title="Train! practice mode coming soon"
-                className="inline-flex items-center gap-1 ml-auto text-[11px] font-medium text-ink-muted hover:text-ink cursor-default opacity-80"
-              >
-                <span>Open in Train!</span>
-                <ExternalLink className="size-3" />
-              </span>
+              {Boolean(problem.resource || (problem as any).resource_id || pastPaperDetails?.id) && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const resId = problem.resource || (problem as any).resource_id || pastPaperDetails?.id;
+                    router.push(`/train/${resId}`);
+                  }}
+                  className="inline-flex items-center gap-1 ml-auto text-[11px] font-semibold text-primary hover:underline cursor-pointer"
+                  title="Open this paper in Train practice workspace"
+                >
+                  <span>Open in Train!</span>
+                  <ExternalLink className="size-3" />
+                </button>
+              )}
             </div>
           )}
 

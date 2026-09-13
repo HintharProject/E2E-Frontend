@@ -24,7 +24,6 @@ import { PreCreationPreviewDrawer } from "./pre-creation-preview-drawer";
 import { useProblemByPaper, generateProblemUploadUrl } from "@/hooks/use-problems";
 import { Camera, FileText, BookOpen, AlertCircle, Check, FolderOpen, X } from "lucide-react";
 import { toast } from "sonner";
-import { PastPaperSelectorModal } from "./past-paper-selector-modal";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
 const inputClass =
@@ -75,7 +74,12 @@ export function CreateProblemForm({
   const queryClient = useQueryClient();
   const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
 
-  const urlOrigin = (searchParams.get("origin") as "USER_UPLOAD" | "PAST_PAPER") || initialOrigin || "USER_UPLOAD";
+  const urlResource = searchParams.get("resource") || searchParams.get("resource_id") || initialResourceId || "";
+  const urlLevel = searchParams.get("level") || searchParams.get("level_id") || "";
+  const urlSubject = searchParams.get("subject") || searchParams.get("subject_id") || "";
+  const urlQuestionNumber = searchParams.get("question") || searchParams.get("question_number") || initialQuestionNumber || "";
+  const urlOrigin = (urlResource || searchParams.get("origin") === "PAST_PAPER" ? "PAST_PAPER" : (searchParams.get("origin") as "USER_UPLOAD" | "PAST_PAPER")) || initialOrigin || "USER_UPLOAD";
+
   const [selectedOrigin, setSelectedOrigin] = useState<"USER_UPLOAD" | "PAST_PAPER">(urlOrigin);
   const [serverError, setServerError] = useState("");
   const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
@@ -84,10 +88,32 @@ export function CreateProblemForm({
   const [previewDrawerOpen, setPreviewDrawerOpen] = useState(false);
 
   const [selectedPaper, setSelectedPaper] = useState<Resource | null>(null);
-  const [isPaperModalOpen, setIsPaperModalOpen] = useState(false);
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
+
+  // Resolve level and subject whether passed as UUID, code, or name
+  const resolvedLevelId = useMemo(() => {
+    if (!urlLevel) return "";
+    const found = levels.find(
+      (l) =>
+        l.id === urlLevel ||
+        l.code?.toLowerCase() === urlLevel.toLowerCase() ||
+        l.name?.toLowerCase() === urlLevel.toLowerCase()
+    );
+    return found ? found.id : urlLevel;
+  }, [urlLevel, levels]);
+
+  const resolvedSubjectId = useMemo(() => {
+    if (!urlSubject) return "";
+    const found = subjects.find(
+      (s) =>
+        s.id === urlSubject ||
+        s.code?.toLowerCase() === urlSubject.toLowerCase() ||
+        s.name?.toLowerCase() === urlSubject.toLowerCase()
+    );
+    return found ? found.id : urlSubject;
+  }, [urlSubject, subjects]);
 
   const {
     register,
@@ -104,13 +130,31 @@ export function CreateProblemForm({
       origin: selectedOrigin,
       title: "",
       body: "",
-      subject_id: "",
-      level_id: "",
+      subject_id: resolvedSubjectId || urlSubject,
+      level_id: resolvedLevelId || urlLevel,
       source: "",
-      resource_id: initialResourceId || "",
-      question_number: initialQuestionNumber || "",
+      resource_id: urlResource,
+      question_number: urlQuestionNumber,
     } as any,
   });
+
+  // Sync URL parameters when navigated from Train or external deep-links
+  useEffect(() => {
+    if (urlResource) {
+      setSelectedOrigin("PAST_PAPER");
+      setValue("origin", "PAST_PAPER" as any);
+      setValue("resource_id" as any, urlResource, { shouldValidate: true });
+    }
+    if (resolvedLevelId) {
+      setValue("level_id" as any, resolvedLevelId, { shouldValidate: true });
+    }
+    if (resolvedSubjectId) {
+      setValue("subject_id" as any, resolvedSubjectId, { shouldValidate: true });
+    }
+    if (urlQuestionNumber) {
+      setValue("question_number" as any, urlQuestionNumber, { shouldValidate: true });
+    }
+  }, [urlResource, resolvedLevelId, resolvedSubjectId, urlQuestionNumber, setValue]);
 
   const watchedResourceId = watch("resource_id" as any);
   const watchedQuestionNumber = watch("question_number" as any);
@@ -137,9 +181,10 @@ export function CreateProblemForm({
     return null;
   }, [watchedResourceId, selectedPaper, fetchedSelectedResource]);
 
-  // If fetched resource loads (e.g. from initialResourceId or restored form), populate taxonomy
+  // When resource details load, populate level, subject, and paper details
   useEffect(() => {
     if (fetchedSelectedResource && fetchedSelectedResource.id === watchedResourceId) {
+      setSelectedPaper(fetchedSelectedResource);
       const resLvl =
         fetchedSelectedResource.level_details?.id ||
         (typeof fetchedSelectedResource.level === "string"
@@ -151,18 +196,18 @@ export function CreateProblemForm({
           ? fetchedSelectedResource.subject
           : (fetchedSelectedResource.subject as any)?.id);
 
-      if (resLvl && !watchedLevelId) {
+      if (resLvl) {
         setValue("level_id" as any, resLvl, { shouldValidate: true });
       }
-      if (resSub && !watchedSubjectId) {
+      if (resSub) {
         setValue("subject_id" as any, resSub, { shouldValidate: true });
       }
     }
-  }, [fetchedSelectedResource, watchedResourceId, setValue, watchedLevelId, watchedSubjectId]);
+  }, [fetchedSelectedResource, watchedResourceId, setValue]);
 
-  // Invalidate paper if user changes level or subject to an incompatible value in Path B
+  // Invalidate paper if user manually changes level or subject to an incompatible value in Path B
   useEffect(() => {
-    if (selectedOrigin === "PAST_PAPER" && selectedResource) {
+    if (selectedOrigin === "PAST_PAPER" && selectedResource && watchedResourceId && levels.length > 0 && subjects.length > 0) {
       const resLvl =
         selectedResource.level_details?.id ||
         (typeof selectedResource.level === "string"
@@ -175,32 +220,31 @@ export function CreateProblemForm({
           : (selectedResource.subject as any)?.id);
 
       if (
-        (resLvl && watchedLevelId && resLvl !== watchedLevelId) ||
-        (resSub && watchedSubjectId && resSub !== watchedSubjectId)
+        resLvl &&
+        watchedLevelId &&
+        resLvl !== watchedLevelId &&
+        levels.some((l) => l.id === watchedLevelId)
+      ) {
+        setValue("resource_id" as any, "", { shouldValidate: true });
+        setSelectedPaper(null);
+      } else if (
+        resSub &&
+        watchedSubjectId &&
+        resSub !== watchedSubjectId &&
+        subjects.some((s) => s.id === watchedSubjectId)
       ) {
         setValue("resource_id" as any, "", { shouldValidate: true });
         setSelectedPaper(null);
       }
     }
-  }, [selectedOrigin, selectedResource, watchedLevelId, watchedSubjectId, setValue]);
+  }, [selectedOrigin, selectedResource, watchedResourceId, watchedLevelId, watchedSubjectId, levels, subjects, setValue]);
 
-  const handleOpenPaperModal = () => {
-    let hasError = false;
-    if (!watchedLevelId) {
-      setError("level_id" as any, { type: "manual", message: "Please select an education level first." });
-      hasError = true;
-    }
-    if (!watchedSubjectId) {
-      setError("subject_id" as any, { type: "manual", message: "Please select a subject first." });
-      hasError = true;
-    }
-
-    if (hasError) {
-      toast.error("Please select both Level and Subject to choose a paper.");
-      return;
-    }
-
-    setIsPaperModalOpen(true);
+  const handleOpenTrainToSelectPaper = () => {
+    const params = new URLSearchParams();
+    if (watchedLevelId) params.set("level", watchedLevelId);
+    if (watchedSubjectId) params.set("subject", watchedSubjectId);
+    params.set("selectForProblem", "true");
+    router.push(`/train?${params.toString()}`);
   };
 
   const formatSession = (s?: string) => {
@@ -447,6 +491,10 @@ export function CreateProblemForm({
               <Field label="Subject">
                 <select
                   {...register("subject_id" as any)}
+                  value={watchedSubjectId || ""}
+                  onChange={(e) => {
+                    setValue("subject_id" as any, e.target.value, { shouldValidate: true });
+                  }}
                   className={`${inputClass} ${(errors as any).subject_id ? errorClass : ""}`}
                 >
                   <option value="">Select subject...</option>
@@ -461,9 +509,13 @@ export function CreateProblemForm({
                 )}
               </Field>
 
-              <Field label="Level">
+              <Field label="Education Level">
                 <select
                   {...register("level_id" as any)}
+                  value={watchedLevelId || ""}
+                  onChange={(e) => {
+                    setValue("level_id" as any, e.target.value, { shouldValidate: true });
+                  }}
                   className={`${inputClass} ${(errors as any).level_id ? errorClass : ""}`}
                 >
                   <option value="">Select level...</option>
@@ -525,6 +577,10 @@ export function CreateProblemForm({
               <Field label="Education Level">
                 <select
                   {...register("level_id" as any)}
+                  value={watchedLevelId || ""}
+                  onChange={(e) => {
+                    setValue("level_id" as any, e.target.value, { shouldValidate: true });
+                  }}
                   className={`${inputClass} ${(errors as any).level_id ? errorClass : ""}`}
                 >
                   <option value="">Select level...</option>
@@ -542,6 +598,10 @@ export function CreateProblemForm({
               <Field label="Subject">
                 <select
                   {...register("subject_id" as any)}
+                  value={watchedSubjectId || ""}
+                  onChange={(e) => {
+                    setValue("subject_id" as any, e.target.value, { shouldValidate: true });
+                  }}
                   className={`${inputClass} ${(errors as any).subject_id ? errorClass : ""}`}
                 >
                   <option value="">Select subject...</option>
@@ -566,14 +626,14 @@ export function CreateProblemForm({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={handleOpenPaperModal}
+                      onClick={handleOpenTrainToSelectPaper}
                       className="h-9 px-4 gap-2 font-semibold text-xs border-line hover:border-brand hover:text-brand transition-colors shrink-0"
                     >
                       <FolderOpen className="size-4 text-brand" />
-                      <span>Select a Paper</span>
+                      <span>Select a Paper in Train</span>
                     </Button>
                     <span className="text-xs text-ink-muted">
-                      Requires Level and Subject above to be selected first.
+                      Opens Train curriculum folders to choose and preview papers.
                     </span>
                   </div>
                   {(errors as any).resource_id && (
@@ -629,11 +689,11 @@ export function CreateProblemForm({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleOpenPaperModal}
+                        onClick={handleOpenTrainToSelectPaper}
                         className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
                       >
                         <FolderOpen className="size-3.5" />
-                        <span>Change Paper</span>
+                        <span>Change Paper in Train</span>
                       </Button>
                       <Button
                         type="button"
@@ -724,21 +784,6 @@ export function CreateProblemForm({
         />
       )}
 
-      {/* Past Paper Selector Modal */}
-      <PastPaperSelectorModal
-        isOpen={isPaperModalOpen}
-        onClose={() => setIsPaperModalOpen(false)}
-        levelId={watchedLevelId}
-        subjectId={watchedSubjectId}
-        levelName={levels.find((l) => l.id === watchedLevelId)?.name}
-        subjectName={subjects.find((s) => s.id === watchedSubjectId)?.name}
-        selectedPaperId={watchedResourceId}
-        onSelectPaper={(paper) => {
-          setSelectedPaper(paper);
-          setValue("resource_id" as any, paper.id, { shouldValidate: true });
-          clearErrors("resource_id" as any);
-        }}
-      />
     </div>
   );
 }

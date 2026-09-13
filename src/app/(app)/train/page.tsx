@@ -2,11 +2,12 @@
 
 import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useTrainTree } from "@/hooks/use-train";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DualPdfViewer } from "@/components/features/train/dual-pdf-viewer";
 import {
@@ -21,16 +22,34 @@ import {
   Search,
   ArrowRight,
   BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Resource, Level, Subject, TrainTreePaper } from "@/types";
+import { AskInSolveModal } from "@/components/features/train/ask-in-solve-modal";
 
 export default function TrainPage() {
   const { getToken } = useAuth();
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
-  // 1. Level & Subject Selection State (like in Admin Add paper panel)
-  const [selectedLevel, setSelectedLevel] = useState<string>("");
-  const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const urlLevel = searchParams.get("level") || "";
+  const urlSubject = searchParams.get("subject") || "";
+  const isSelectForProblem = searchParams.get("selectForProblem") === "true";
+
+  // 1. Level & Subject Selection State
+  const [selectedLevel, setSelectedLevel] = useState<string>(urlLevel);
+  const [selectedSubject, setSelectedSubject] = useState<string>(urlSubject);
+
+  // Ask in Solve modal state
+  const [isAskModalOpen, setIsAskModalOpen] = useState(false);
+  const [askModalPaper, setAskModalPaper] = useState<Resource | null>(null);
+
+  // Sync state if search params change
+  useEffect(() => {
+    if (urlLevel && !selectedLevel) setSelectedLevel(urlLevel);
+    if (urlSubject && !selectedSubject) setSelectedSubject(urlSubject);
+  }, [urlLevel, urlSubject]);
 
   // 2. Folder search filter
   const [folderSearch, setFolderSearch] = useState<string>("");
@@ -171,6 +190,35 @@ export default function TrainPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
+      {/* Informative Banner when selecting a paper for Solve! */}
+      {isSelectForProblem && (
+        <div className="mt-3 mb-2 p-3.5 rounded-2xl border border-brand/30 bg-brand/5 flex flex-wrap items-center justify-between gap-3 animate-in fade-in-50">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center justify-center size-8 rounded-lg bg-brand/10 text-brand shrink-0">
+              <BookOpen className="size-4" />
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="text-xs font-bold text-ink truncate">
+                Selecting a Curated Past Paper for Solve!
+              </span>
+              <span className="text-[11px] text-ink-muted truncate">
+                Browse folders below, preview the paper, and click &ldquo;Select for a Problem&rdquo; to view existing solutions or ask the community.
+              </span>
+            </div>
+          </div>
+          <Link
+            href="/problems/new?origin=PAST_PAPER"
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "h-7 px-2.5 text-xs font-semibold gap-1 shrink-0 border-line bg-surface text-ink hover:text-ink",
+            })}
+          >
+            <span>Back to Problem Form</span>
+          </Link>
+        </div>
+      )}
+
       <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Left Sidebar: Option to choose Level & Subject, then opens Folder Structure */}
         <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
@@ -412,6 +460,38 @@ export default function TrainPage() {
                                             <span>Train</span>
                                             <ArrowRight className="size-2.5" />
                                           </Link>
+
+                                          {/* Direct Select for Solve! CTA */}
+                                          {isSelectForProblem && (
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                const targetPaper: Resource = {
+                                                  id: p.id,
+                                                  file_name: p.file_name,
+                                                  file_url: p.file_url,
+                                                  download_url: p.download_url,
+                                                  paper_type: p.paper_type,
+                                                  paper_code: p.paper_code,
+                                                  year: (p.year ?? yearGroup.year) || undefined,
+                                                  session: (p.session ?? sessionGroup.session) || undefined,
+                                                  level: selectedLevel || "",
+                                                  subject: selectedSubject || "",
+                                                  level_details: levels.find((l) => l.id === selectedLevel),
+                                                  subject_details: subjects.find((s) => s.id === selectedSubject),
+                                                  resource_type: "PAST_PAPER",
+                                                };
+                                                setAskModalPaper(targetPaper);
+                                                setIsAskModalOpen(true);
+                                              }}
+                                              className="px-2 py-0.5 rounded text-[10px] font-bold shrink-0 transition-opacity ml-1 flex items-center gap-1 bg-brand/15 text-brand hover:bg-brand/25 cursor-pointer"
+                                              title="Open community discussions for this paper"
+                                            >
+                                              <span>Select</span>
+                                              <ArrowRight className="size-2.5" />
+                                            </button>
+                                          )}
                                         </div>
                                       </div>
                                     );
@@ -489,19 +569,41 @@ export default function TrainPage() {
                   </div>
                 </div>
 
-                {/* Primary Train Launch CTA */}
-                <Link
-                  href={`/train/${activePaper.id}`}
-                  className={buttonVariants({
-                    variant: "default",
-                    size: "default",
-                    className:
-                      "h-10 px-4 gap-2 font-semibold bg-primary text-primary-foreground shadow-xs hover:opacity-90 transition-opacity shrink-0",
-                  })}
-                >
-                  <Play className="size-4 fill-current" />
-                  <span>Start Practice Session ↗</span>
-                </Link>
+                {/* Action CTAs */}
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Select for a Problem CTA */}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setAskModalPaper(activePaper);
+                      setIsAskModalOpen(true);
+                    }}
+                    className={`h-10 px-4 gap-2 font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
+                      isSelectForProblem
+                        ? "border-brand bg-brand/10 text-brand hover:bg-brand/20 shadow-xs"
+                        : "border-line bg-surface text-ink hover:border-brand hover:text-brand"
+                    }`}
+                    title="Browse existing community solutions or post a new question"
+                  >
+                    <MessageSquare className="size-4 text-brand" />
+                    <span>Select for a Problem</span>
+                  </Button>
+
+                  {/* Primary Train Launch CTA */}
+                  <Link
+                    href={`/train/${activePaper.id}`}
+                    className={buttonVariants({
+                      variant: isSelectForProblem ? "outline" : "default",
+                      size: "default",
+                      className:
+                        "h-10 px-4 gap-2 font-semibold shadow-xs hover:opacity-90 transition-opacity shrink-0",
+                    })}
+                  >
+                    <Play className="size-4 fill-current" />
+                    <span>Start Practice Session ↗</span>
+                  </Link>
+                </div>
               </div>
 
               {/* In-Place Dual / Single PDF Preview Canvas */}
@@ -517,6 +619,17 @@ export default function TrainPage() {
           )}
         </main>
       </div>
+
+      {/* Ask in Solve! Community Discussions Modal Pop-up */}
+      {askModalPaper && (
+        <AskInSolveModal
+          isOpen={isAskModalOpen}
+          onClose={() => setIsAskModalOpen(false)}
+          activePaper={askModalPaper}
+          leftPaper={leftPaper?.id === askModalPaper.id ? leftPaper : askModalPaper}
+          rightPaper={rightPaper?.id === askModalPaper.id ? rightPaper : null}
+        />
+      )}
     </div>
   );
 }

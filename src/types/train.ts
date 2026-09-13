@@ -17,6 +17,8 @@ export interface PairMsResponse {
 
 export interface TrainTreePaper {
   id: string;
+  year?: number | null;
+  session?: string | null;
   paper_code: string | null;
   paper_type?: "QP" | "MS" | string;
   label: string;

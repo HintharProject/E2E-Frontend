@@ -131,13 +131,16 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          <span
-            title="Train! practice mode coming soon"
-            className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink cursor-default"
-          >
-            <span>Open in Train!</span>
-            <ExternalLink className="size-3" />
-          </span>
+          {Boolean(problem.resource || (problem as any).resource_id || pastPaperDetails?.id) && (
+            <Link
+              href={`/train/${problem.resource || (problem as any).resource_id || pastPaperDetails?.id}`}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
+              title="Open this past paper in Train practice workspace"
+            >
+              <span>Open in Train!</span>
+              <ExternalLink className="size-3" />
+            </Link>
+          )}
         </div>
       )}
 

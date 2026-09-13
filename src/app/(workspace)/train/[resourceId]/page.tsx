@@ -56,23 +56,23 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     return null;
   }, [rightPaperOverride, pairData]);
 
-  // Dynamic fetch for Left paper if different from initial paper and not in loaded cache
+  // Dynamic fetch for Left paper if different from initial paper/sibling and not fully loaded in cache
   const shouldFetchLeft = Boolean(
     leftPaperId &&
     leftPaperId !== resourceId &&
     leftPaperId !== pairData?.sibling?.id &&
-    !loadedResources[leftPaperId]
+    (!loadedResources[leftPaperId] || !loadedResources[leftPaperId].year)
   );
   const { data: fetchedLeftPaper, isLoading: isFetchedLeftLoading } = useTrainResource(
     shouldFetchLeft ? leftPaperId : null
   );
 
-  // Dynamic fetch for Right paper if different from initial paper/sibling and not in loaded cache
+  // Dynamic fetch for Right paper if different from initial paper/sibling and not fully loaded in cache
   const shouldFetchRight = Boolean(
     rightPaperId &&
     rightPaperId !== resourceId &&
     rightPaperId !== pairData?.sibling?.id &&
-    !loadedResources[rightPaperId]
+    (!loadedResources[rightPaperId] || !loadedResources[rightPaperId].year)
   );
   const { data: fetchedRightPaper, isLoading: isFetchedRightLoading } = useTrainResource(
     shouldFetchRight ? rightPaperId : null
@@ -90,20 +90,46 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     if (sibling) {
       setLoadedResources((prev) => ({
         ...prev,
-        [sibling.id]: sibling as unknown as Resource,
+        [sibling.id]: {
+          id: sibling.id,
+          file_name: sibling.file_name,
+          file_url: sibling.file_url,
+          download_url: sibling.download_url || sibling.file_url,
+          paper_type: sibling.paper_type,
+          paper_code: sibling.paper_code ?? paper?.paper_code,
+          year: sibling.year ?? paper?.year ?? null,
+          session: sibling.session ?? paper?.session ?? null,
+          level: paper?.level || "",
+          subject: paper?.subject || "",
+          level_details: paper?.level_details,
+          subject_details: paper?.subject_details,
+          resource_type: "PAST_PAPER",
+        } as Resource,
       }));
     }
-  }, [pairData]);
+  }, [pairData, paper]);
 
   useEffect(() => {
     if (fetchedLeftPaper) {
-      setLoadedResources((prev) => ({ ...prev, [fetchedLeftPaper.id]: fetchedLeftPaper }));
+      setLoadedResources((prev) => ({
+        ...prev,
+        [fetchedLeftPaper.id]: {
+          ...prev[fetchedLeftPaper.id],
+          ...fetchedLeftPaper,
+        },
+      }));
     }
   }, [fetchedLeftPaper]);
 
   useEffect(() => {
     if (fetchedRightPaper) {
-      setLoadedResources((prev) => ({ ...prev, [fetchedRightPaper.id]: fetchedRightPaper }));
+      setLoadedResources((prev) => ({
+        ...prev,
+        [fetchedRightPaper.id]: {
+          ...prev[fetchedRightPaper.id],
+          ...fetchedRightPaper,
+        },
+      }));
     }
   }, [fetchedRightPaper]);
 
@@ -111,28 +137,52 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
   const leftPaper = useMemo(() => {
     if (!leftPaperId) return null;
     if (paper && leftPaperId === paper.id) return paper;
-    const sibling = pairData?.sibling;
-    if (sibling && leftPaperId === sibling.id) {
-      return sibling as unknown as Resource;
-    }
     if (fetchedLeftPaper && fetchedLeftPaper.id === leftPaperId) {
       return fetchedLeftPaper;
     }
-    return loadedResources[leftPaperId] || null;
+    if (loadedResources[leftPaperId]) {
+      return loadedResources[leftPaperId];
+    }
+    const sibling = pairData?.sibling;
+    if (sibling && leftPaperId === sibling.id) {
+      return {
+        ...paper,
+        ...sibling,
+        paper_type: sibling.paper_type,
+      } as Resource;
+    }
+    return null;
   }, [leftPaperId, paper, pairData, fetchedLeftPaper, loadedResources]);
 
   const rightPaper = useMemo(() => {
     if (!rightPaperId) return null;
-    const sibling = pairData?.sibling;
-    if (sibling && rightPaperId === sibling.id) {
-      return sibling as unknown as Resource;
-    }
     if (paper && rightPaperId === paper.id) return paper;
     if (fetchedRightPaper && fetchedRightPaper.id === rightPaperId) {
       return fetchedRightPaper;
     }
-    return loadedResources[rightPaperId] || null;
+    if (loadedResources[rightPaperId]) {
+      return loadedResources[rightPaperId];
+    }
+    const sibling = pairData?.sibling;
+    if (sibling && rightPaperId === sibling.id) {
+      return {
+        ...paper,
+        ...sibling,
+        paper_type: sibling.paper_type,
+      } as Resource;
+    }
+    return null;
   }, [rightPaperId, paper, pairData, fetchedRightPaper, loadedResources]);
+
+  // Primary active paper:
+  // 1. If Left is QP, prefer Left.
+  // 2. If Right is QP and Left is not, prefer Right.
+  // 3. Otherwise prefer leftPaper, then rightPaper, then route paper.
+  const primaryPaper = useMemo(() => {
+    if (leftPaper && leftPaper.paper_type === "QP") return leftPaper;
+    if (rightPaper && rightPaper.paper_type === "QP") return rightPaper;
+    return (leftPaper || rightPaper || paper) as Resource;
+  }, [leftPaper, rightPaper, paper]);
 
   const isLoadingLeft = Boolean(leftPaperId && !leftPaper && (isFetchedLeftLoading || isPaperLoading));
   const isLoadingRight = Boolean(rightPaperId && !rightPaper && isFetchedRightLoading);
@@ -173,12 +223,16 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
             file_name: treePaper.file_name,
             file_url: treePaper.file_url!,
             download_url: treePaper.download_url || treePaper.file_url,
-            paper_type: (treePaper.paper_type as "QP" | "MS") || null,
+            paper_type: (treePaper.paper_type as "QP" | "MS") || undefined,
             paper_code: treePaper.paper_code,
+            year: treePaper.year ?? undefined,
+            session: treePaper.session ?? undefined,
             level: paper?.level || "",
             subject: paper?.subject || "",
+            level_details: paper?.level_details,
+            subject_details: paper?.subject_details,
             resource_type: "PAST_PAPER",
-          },
+          } as Resource,
         }));
       }
     }
@@ -204,12 +258,16 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
             file_name: treePaper.file_name,
             file_url: treePaper.file_url!,
             download_url: treePaper.download_url || treePaper.file_url,
-            paper_type: (treePaper.paper_type as "QP" | "MS") || null,
+            paper_type: (treePaper.paper_type as "QP" | "MS") || undefined,
             paper_code: treePaper.paper_code,
+            year: treePaper.year ?? undefined,
+            session: treePaper.session ?? undefined,
             level: paper?.level || "",
             subject: paper?.subject || "",
+            level_details: paper?.level_details,
+            subject_details: paper?.subject_details,
             resource_type: "PAST_PAPER",
-          },
+          } as Resource,
         }));
       }
     }
@@ -296,7 +354,7 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
       {/* 1. Sticky Action Top Bar */}
       <TrainTopBar
-        paper={leftPaper || paper}
+        paper={primaryPaper}
         leftPaper={leftPaper}
         rightPaper={rightPaper}
         onCloseLeft={leftPaper ? handleCloseLeft : undefined}
@@ -341,20 +399,22 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
       <SelfMarkingDrawer
         isOpen={isSelfMarkOpen}
         onClose={() => setIsSelfMarkOpen(false)}
-        paper={paper}
+        paper={primaryPaper}
         timer={timer}
       />
 
       <AskInSolveModal
         isOpen={isAskInSolveOpen}
         onClose={() => setIsAskInSolveOpen(false)}
-        paper={paper}
+        activePaper={primaryPaper}
+        leftPaper={leftPaper}
+        rightPaper={rightPaper}
       />
 
       <SolveAPaperModal
         isOpen={isSolveAPaperOpen}
         onClose={() => setIsSolveAPaperOpen(false)}
-        paper={paper}
+        paper={primaryPaper}
       />
     </div>
   );

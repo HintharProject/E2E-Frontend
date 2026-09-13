@@ -62,14 +62,18 @@ export function TrainTopBar({
   const canSolvePaper = tierNumber >= 2 || isAdminOrSuperAdmin(user?.role);
 
   // Format session label
-  const sessionLabel =
-    paper.session === "MAY_JUNE"
-      ? "May / June"
-      : paper.session === "OCT_NOV"
-      ? "Oct / Nov"
-      : paper.session === "JANUARY"
-      ? "January"
-      : paper.session || "";
+  const formatSession = (s?: string | null) => {
+    if (s === "MAY_JUNE") return "May / June";
+    if (s === "OCT_NOV") return "Oct / Nov";
+    if (s === "JANUARY") return "January";
+    return s || "";
+  };
+
+  const activeSubjectName =
+    paper.subject_details?.name ||
+    leftPaper?.subject_details?.name ||
+    rightPaper?.subject_details?.name ||
+    "";
 
   return (
     <header className="h-14 w-full border-b border-line bg-card/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
@@ -103,20 +107,54 @@ export function TrainTopBar({
 
         {/* Subject & Paper Identity */}
         <div className="flex items-center gap-2 min-w-0">
-          {paper.subject_details && (
+          {activeSubjectName && (
             <span className="text-xs font-semibold text-ink truncate max-w-[120px] sm:max-w-[180px] hidden md:inline">
-              {paper.subject_details.name}
+              {activeSubjectName}
             </span>
           )}
 
-          <Badge
-            variant="outline"
-            className="text-[11px] font-semibold border-line bg-surface text-ink px-2 py-0.5 shrink-0"
-          >
-            {paper.year} {sessionLabel && `· ${sessionLabel}`}
-            {paper.paper_code ? ` · P${paper.paper_code}` : ""}{" "}
-            {paper.paper_type ? `(${paper.paper_type})` : ""}
-          </Badge>
+          {isDual && leftPaper && rightPaper ? (
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Badge
+                variant="outline"
+                className="text-[11px] font-semibold border-primary/40 bg-primary/5 text-primary px-2 py-0.5 shrink-0 flex items-center gap-1"
+                title={`Left Document: ${leftPaper.file_name}`}
+              >
+                <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
+                  L
+                </span>
+                <span>
+                  {leftPaper.year || ""} {formatSession(leftPaper.session) && `· ${formatSession(leftPaper.session)}`}
+                  {leftPaper.paper_code ? ` · P${leftPaper.paper_code}` : ""}{" "}
+                  {leftPaper.paper_type ? `(${leftPaper.paper_type})` : ""}
+                </span>
+              </Badge>
+
+              <Badge
+                variant="outline"
+                className="text-[11px] font-semibold border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 shrink-0 flex items-center gap-1"
+                title={`Right Document: ${rightPaper.file_name}`}
+              >
+                <span className="font-bold text-[9px] bg-emerald-600 text-white px-1 rounded leading-none py-0.5">
+                  R
+                </span>
+                <span>
+                  {rightPaper.year || ""} {formatSession(rightPaper.session) && `· ${formatSession(rightPaper.session)}`}
+                  {rightPaper.paper_code ? ` · P${rightPaper.paper_code}` : ""}{" "}
+                  {rightPaper.paper_type ? `(${rightPaper.paper_type})` : ""}
+                </span>
+              </Badge>
+            </div>
+          ) : (
+            <Badge
+              variant="outline"
+              className="text-[11px] font-semibold border-line bg-surface text-ink px-2 py-0.5 shrink-0"
+            >
+              {paper.year || ""} {formatSession(paper.session) && `· ${formatSession(paper.session)}`}
+              {paper.paper_code ? ` · P${paper.paper_code}` : ""}{" "}
+              {paper.paper_type ? `(${paper.paper_type})` : ""}
+            </Badge>
+          )}
         </div>
       </div>
 

@@ -11,6 +11,26 @@ export interface ProblemFilters {
   ordering?: string;
   feed_visibility?: string;
   authorId?: string;
+  resource?: string;
+}
+
+export function usePaperProblems(resourceId?: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["paperProblems", resourceId],
+    queryFn: async () => {
+      if (!resourceId) return [];
+      const token = await getToken();
+      const qs = buildQueryString({
+        resource: resourceId,
+        feed_visibility: "all",
+        expand: "attachments,author_details,subject_details,level_details,solutions",
+      });
+      const res = await apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      return res.data || [];
+    },
+    enabled: !!resourceId,
+  });
 }
 
 export function useProblems(filters: ProblemFilters = {}) {
