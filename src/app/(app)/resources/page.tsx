@@ -50,9 +50,13 @@ function ResourcesFeed() {
       const params = new URLSearchParams();
       if (levels.length > 0) params.append("level", levels.join(","));
       if (subjects.length > 0) params.append("subject", subjects.join(","));
+      params.append("page_size", "100");
 
-      const res = await apiFetch<{ results?: Resource[] } | Resource[]>(`/resources/files/?${params.toString()}`, token as string);
-      return Array.isArray(res) ? res : res?.results || [];
+      const res = await apiFetch<{ data?: Resource[]; results?: Resource[] } | Resource[]>(
+        `/resources/files/?${params.toString()}`,
+        token as string
+      );
+      return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
   });
 

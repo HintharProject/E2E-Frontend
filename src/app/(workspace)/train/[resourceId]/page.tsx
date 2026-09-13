@@ -48,31 +48,94 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     }
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("train_default_view_mode");
-      if (saved === "DUAL" && pairData?.sibling) {
-        return pairData.sibling.id;
+      const sibling = pairData?.sibling;
+      if (saved === "DUAL" && sibling) {
+        return sibling.id;
       }
     }
     return null;
   }, [rightPaperOverride, pairData]);
 
+  // Dynamic fetch for Left paper if different from initial paper and not in loaded cache
+  const shouldFetchLeft = Boolean(
+    leftPaperId &&
+    leftPaperId !== resourceId &&
+    leftPaperId !== pairData?.sibling?.id &&
+    !loadedResources[leftPaperId]
+  );
+  const { data: fetchedLeftPaper, isLoading: isFetchedLeftLoading } = useTrainResource(
+    shouldFetchLeft ? leftPaperId : null
+  );
+
+  // Dynamic fetch for Right paper if different from initial paper/sibling and not in loaded cache
+  const shouldFetchRight = Boolean(
+    rightPaperId &&
+    rightPaperId !== resourceId &&
+    rightPaperId !== pairData?.sibling?.id &&
+    !loadedResources[rightPaperId]
+  );
+  const { data: fetchedRightPaper, isLoading: isFetchedRightLoading } = useTrainResource(
+    shouldFetchRight ? rightPaperId : null
+  );
+
+  // Store newly fetched papers into in-memory cache
+  useEffect(() => {
+    if (paper) {
+      setLoadedResources((prev) => ({ ...prev, [paper.id]: paper }));
+    }
+  }, [paper]);
+
+  useEffect(() => {
+    const sibling = pairData?.sibling;
+    if (sibling) {
+      setLoadedResources((prev) => ({
+        ...prev,
+        [sibling.id]: sibling as unknown as Resource,
+      }));
+    }
+  }, [pairData]);
+
+  useEffect(() => {
+    if (fetchedLeftPaper) {
+      setLoadedResources((prev) => ({ ...prev, [fetchedLeftPaper.id]: fetchedLeftPaper }));
+    }
+  }, [fetchedLeftPaper]);
+
+  useEffect(() => {
+    if (fetchedRightPaper) {
+      setLoadedResources((prev) => ({ ...prev, [fetchedRightPaper.id]: fetchedRightPaper }));
+    }
+  }, [fetchedRightPaper]);
+
   // Active Left & Right resources derived cleanly
   const leftPaper = useMemo(() => {
     if (!leftPaperId) return null;
     if (paper && leftPaperId === paper.id) return paper;
-    if (pairData?.sibling && leftPaperId === pairData.sibling.id) {
-      return pairData.sibling as unknown as Resource;
+    const sibling = pairData?.sibling;
+    if (sibling && leftPaperId === sibling.id) {
+      return sibling as unknown as Resource;
+    }
+    if (fetchedLeftPaper && fetchedLeftPaper.id === leftPaperId) {
+      return fetchedLeftPaper;
     }
     return loadedResources[leftPaperId] || null;
-  }, [leftPaperId, paper, pairData, loadedResources]);
+  }, [leftPaperId, paper, pairData, fetchedLeftPaper, loadedResources]);
 
   const rightPaper = useMemo(() => {
     if (!rightPaperId) return null;
-    if (pairData?.sibling && rightPaperId === pairData.sibling.id) {
-      return pairData.sibling as unknown as Resource;
+    const sibling = pairData?.sibling;
+    if (sibling && rightPaperId === sibling.id) {
+      return sibling as unknown as Resource;
     }
     if (paper && rightPaperId === paper.id) return paper;
+    if (fetchedRightPaper && fetchedRightPaper.id === rightPaperId) {
+      return fetchedRightPaper;
+    }
     return loadedResources[rightPaperId] || null;
-  }, [rightPaperId, paper, pairData, loadedResources]);
+  }, [rightPaperId, paper, pairData, fetchedRightPaper, loadedResources]);
+
+  const isLoadingLeft = Boolean(leftPaperId && !leftPaper && (isFetchedLeftLoading || isPaperLoading));
+  const isLoadingRight = Boolean(rightPaperId && !rightPaper && isFetchedRightLoading);
 
   // Sync preference whenever both panes are active
   useEffect(() => {
@@ -101,7 +164,8 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
       if (rightPaperId === treePaper.id) {
         setRightPaperOverride(null);
       }
-      if (treePaper.file_url) {
+      // If treePaper already has a valid pre-signed URL (contains AWS query signature), cache optimistically
+      if (treePaper.file_url && treePaper.file_url.includes("X-Amz-Signature")) {
         setLoadedResources((prev) => ({
           ...prev,
           [treePaper.id]: {
@@ -131,7 +195,8 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
       if (leftPaperId === treePaper.id) {
         setLeftPaperId(null);
       }
-      if (treePaper.file_url) {
+      // If treePaper already has a valid pre-signed URL (contains AWS query signature), cache optimistically
+      if (treePaper.file_url && treePaper.file_url.includes("X-Amz-Signature")) {
         setLoadedResources((prev) => ({
           ...prev,
           [treePaper.id]: {
@@ -264,6 +329,8 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
           <DualPdfViewer
             leftResource={leftPaper}
             rightResource={rightPaper}
+            isLoadingLeft={isLoadingLeft}
+            isLoadingRight={isLoadingRight}
             onCloseLeft={leftPaper ? handleCloseLeft : undefined}
             onCloseRight={rightPaper ? handleCloseRight : undefined}
           />

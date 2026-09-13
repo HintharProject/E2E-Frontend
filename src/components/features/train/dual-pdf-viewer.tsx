@@ -14,6 +14,7 @@ import {
   FileText,
   BookOpen,
   X,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,8 @@ interface DualPdfViewerProps {
   rightResource?: Resource | null;
   onCloseLeft?: () => void;
   onCloseRight?: () => void;
+  isLoadingLeft?: boolean;
+  isLoadingRight?: boolean;
 }
 
 interface PanelControlsState {
@@ -34,6 +37,8 @@ export function DualPdfViewer({
   rightResource,
   onCloseLeft,
   onCloseRight,
+  isLoadingLeft = false,
+  isLoadingRight = false,
 }: DualPdfViewerProps) {
   // Split ratio for desktop dual view (default 50%, clamped 30%-70%)
   const [splitRatio, setSplitRatio] = useState<number>(() => {
@@ -111,19 +116,22 @@ export function DualPdfViewer({
     updater((prev) => ({ ...prev, isFullscreen: !prev.isFullscreen }));
   }, []);
 
-  const hasLeft = Boolean(leftResource);
-  const hasRight = Boolean(rightResource);
+  const hasLeft = Boolean(leftResource) || Boolean(isLoadingLeft);
+  const hasRight = Boolean(rightResource) || Boolean(isLoadingRight);
   const isDual = hasLeft && hasRight;
 
   // Render individual document panel toolbar & viewport
   const renderPanel = (
     side: "LEFT" | "RIGHT",
-    resource: Resource,
+    resource?: Resource | null,
+    isLoading?: boolean,
     onClose?: () => void
   ) => {
     const controls = side === "LEFT" ? leftControls : rightControls;
-    const isQP = resource.paper_type === "QP";
-    const title = resource.file_name || "Document";
+    const isQP = resource?.paper_type === "QP";
+    const title = isLoading
+      ? "Opening document..."
+      : resource?.file_name || (side === "LEFT" ? "Left Document" : "Right Document");
 
     return (
       <div
@@ -135,7 +143,9 @@ export function DualPdfViewer({
         {/* Panel Mini Toolbar */}
         <div className="h-10 px-3 border-b border-line bg-surface/70 flex items-center justify-between gap-2 shrink-0 select-none">
           <div className="flex items-center gap-2 min-w-0">
-            {isQP ? (
+            {isLoading ? (
+              <Loader2 className="size-3.5 text-primary animate-spin shrink-0" />
+            ) : isQP ? (
               <FileText className="size-3.5 text-amber-500 shrink-0" />
             ) : (
               <BookOpen className="size-3.5 text-emerald-500 shrink-0" />
@@ -143,17 +153,19 @@ export function DualPdfViewer({
             <span className="text-xs font-semibold text-ink truncate max-w-[200px] sm:max-w-[320px]" title={title}>
               {title}
             </span>
-            <Badge
-              variant="outline"
-              className={cn(
-                "text-[10px] px-1.5 py-0 font-bold uppercase shrink-0",
-                isQP
-                  ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
-                  : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-              )}
-            >
-              {resource.paper_type || (side === "LEFT" ? "QP" : "MS")}
-            </Badge>
+            {resource && (
+              <Badge
+                variant="outline"
+                className={cn(
+                  "text-[10px] px-1.5 py-0 font-bold uppercase shrink-0",
+                  isQP
+                    ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                    : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                )}
+              >
+                {resource.paper_type || (side === "LEFT" ? "QP" : "MS")}
+              </Badge>
+            )}
             <Badge
               variant="secondary"
               className="text-[9px] px-1 py-0 font-mono font-bold uppercase hidden sm:inline-flex"
@@ -199,7 +211,7 @@ export function DualPdfViewer({
             </div>
 
             {/* Open in New Tab */}
-            {resource.file_url && (
+            {resource?.file_url && (
               <a
                 href={resource.file_url}
                 target="_blank"
@@ -212,7 +224,7 @@ export function DualPdfViewer({
             )}
 
             {/* Download */}
-            {resource.file_url && (
+            {resource?.file_url && (
               <a
                 href={resource.download_url || resource.file_url}
                 download={title}
@@ -255,7 +267,12 @@ export function DualPdfViewer({
 
         {/* PDF Frame Canvas Viewport */}
         <div className="flex-1 w-full h-full relative overflow-auto bg-muted/30">
-          {resource.file_url ? (
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-3 select-none">
+              <Loader2 className="size-7 animate-spin text-primary" />
+              <p className="text-xs font-medium">Opening document...</p>
+            </div>
+          ) : resource?.file_url ? (
             <div
               className="w-full h-full origin-top-left transition-transform duration-75"
               style={{
@@ -265,6 +282,7 @@ export function DualPdfViewer({
               }}
             >
               <iframe
+                key={resource.file_url}
                 src={`${resource.file_url}#toolbar=0&navpanes=0`}
                 className="w-full h-full border-0"
                 title={title}
@@ -310,7 +328,7 @@ export function DualPdfViewer({
                   : "text-ink-muted hover:text-ink"
               )}
             >
-              Left: {leftResource?.file_name || "Paper"}
+              Left: {isLoadingLeft ? "Loading..." : leftResource?.file_name || "Paper"}
             </button>
 
             <button
@@ -323,7 +341,7 @@ export function DualPdfViewer({
                   : "text-ink-muted hover:text-ink"
               )}
             >
-              Right: {rightResource?.file_name || "Paper"}
+              Right: {isLoadingRight ? "Loading..." : rightResource?.file_name || "Paper"}
             </button>
           </div>
         </div>
@@ -333,42 +351,42 @@ export function DualPdfViewer({
       <div className="lg:hidden flex-1 w-full h-full overflow-hidden">
         {isDual ? (
           mobileActiveTab === "LEFT" ? (
-            leftResource && renderPanel("LEFT", leftResource, onCloseLeft)
+            renderPanel("LEFT", leftResource, isLoadingLeft, onCloseLeft)
           ) : (
-            rightResource && renderPanel("RIGHT", rightResource, onCloseRight)
+            renderPanel("RIGHT", rightResource, isLoadingRight, onCloseRight)
           )
-        ) : hasLeft && leftResource ? (
-          renderPanel("LEFT", leftResource, onCloseLeft)
+        ) : hasLeft ? (
+          renderPanel("LEFT", leftResource, isLoadingLeft, onCloseLeft)
         ) : (
-          hasRight && rightResource && renderPanel("RIGHT", rightResource, onCloseRight)
+          renderPanel("RIGHT", rightResource, isLoadingRight, onCloseRight)
         )}
       </div>
 
       {/* Desktop View (>= 1024px) */}
       <div className="hidden lg:flex flex-1 w-full h-full overflow-hidden">
         {/* Single View: Only Left is active */}
-        {hasLeft && !hasRight && leftResource && (
+        {hasLeft && !hasRight && (
           <div className="w-full h-full">
-            {renderPanel("LEFT", leftResource, onCloseLeft)}
+            {renderPanel("LEFT", leftResource, isLoadingLeft, onCloseLeft)}
           </div>
         )}
 
         {/* Single View: Only Right is active */}
-        {!hasLeft && hasRight && rightResource && (
+        {!hasLeft && hasRight && (
           <div className="w-full h-full">
-            {renderPanel("RIGHT", rightResource, onCloseRight)}
+            {renderPanel("RIGHT", rightResource, isLoadingRight, onCloseRight)}
           </div>
         )}
 
         {/* Dual View: Both Left and Right are active */}
-        {isDual && leftResource && rightResource && (
+        {isDual && (
           <div className="flex w-full h-full overflow-hidden">
             {/* Left Panel */}
             <div
               style={{ width: `${splitRatio}%` }}
               className="h-full flex flex-col overflow-hidden"
             >
-              {renderPanel("LEFT", leftResource, onCloseLeft)}
+              {renderPanel("LEFT", leftResource, isLoadingLeft, onCloseLeft)}
             </div>
 
             {/* Draggable Divider Handle */}
@@ -390,7 +408,7 @@ export function DualPdfViewer({
               style={{ width: `${100 - splitRatio}%` }}
               className="h-full flex flex-col overflow-hidden"
             >
-              {renderPanel("RIGHT", rightResource, onCloseRight)}
+              {renderPanel("RIGHT", rightResource, isLoadingRight, onCloseRight)}
             </div>
           </div>
         )}

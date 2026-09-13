@@ -230,42 +230,20 @@ export function PastPapersFolderView({
                           <div className="flex items-center justify-end gap-2 shrink-0 sm:self-center">
                             {variant === "browse" ? (
                               <>
-                                {/* Train CTA for Question Papers */}
-                                {paper.paper_type === "QP" && (
-                                  <Link
-                                    href={`/train/${paper.id}`}
-                                    className={buttonVariants({
-                                      variant: "default",
-                                      size: "sm",
-                                      className:
-                                        "h-8 px-2.5 gap-1.5 text-xs font-semibold bg-primary text-primary-foreground shadow-2xs hover:opacity-90 transition-opacity",
-                                    })}
-                                    title="Open Exam Practice Workspace"
-                                  >
-                                    <Play className="size-3 fill-current" />
-                                    <span>Train ↗</span>
-                                  </Link>
-                                )}
-
-                                {/* View In-App Modal */}
-                                {onView && paper.file_url && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
-                                    onClick={() =>
-                                      onView({
-                                        paper,
-                                        title: paper.file_name || title,
-                                        url: paper.file_url!,
-                                        downloadUrl: paper.download_url,
-                                      })
-                                    }
-                                  >
-                                    <Eye className="size-3.5" />
-                                    <span>View</span>
-                                  </Button>
-                                )}
+                                {/* Train! CTA for All Papers and QPs */}
+                                <Link
+                                  href={`/train/${paper.id}`}
+                                  className={buttonVariants({
+                                    variant: "default",
+                                    size: "sm",
+                                    className:
+                                      "h-8 px-2.5 gap-1.5 text-xs font-semibold bg-primary text-primary-foreground shadow-2xs hover:opacity-90 transition-opacity",
+                                  })}
+                                  title="Open in Train! Practice Workspace"
+                                >
+                                  <Play className="size-3 fill-current" />
+                                  <span>Train!</span>
+                                </Link>
 
                                 {/* Download Link */}
                                 <a

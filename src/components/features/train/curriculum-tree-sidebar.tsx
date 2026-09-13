@@ -340,7 +340,13 @@ export function CurriculumTreeSidebar({
                               return onToggleLeft ? (
                                 <div
                                   key={paper.id}
-                                  onClick={() => onToggleLeft(paper)}
+                                  onClick={() => {
+                                    if (isMS && onToggleRight) {
+                                      onToggleRight(paper);
+                                    } else {
+                                      onToggleLeft(paper);
+                                    }
+                                  }}
                                   className={cn(
                                     "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border",
                                     isLeft

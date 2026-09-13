@@ -84,6 +84,7 @@ export default function TrainPage() {
         level: selectedLevel,
         subject: selectedSubject,
         resource_type: "PAST_PAPER",
+        page_size: "100",
       });
       const res = await apiFetch<{ results?: Resource[]; data?: Resource[] } | Resource[]>(
         `/resources/files/?${params.toString()}`,
