@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense, useState, useMemo } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
@@ -14,7 +13,6 @@ import {
   BookOpen,
   Calendar,
   Eye,
-  Play,
 } from "lucide-react";
 import { parseFilterList } from "@/lib/filter-params";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -134,18 +132,6 @@ function ResourcesFeed() {
               {textbooks.length}
             </span>
           </button>
-
-          <Link
-            href={`/train${searchParams.toString() ? `?${searchParams.toString()}` : ""}`}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold bg-primary/10 border border-primary/20 text-primary hover:bg-primary/20 transition-all ml-1"
-            title="Switch to Train! Exam Practice Workspace"
-          >
-            <Play className="size-3.5 fill-current" />
-            <span>Train! Workspace</span>
-            <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-primary text-primary-foreground">
-              New
-            </span>
-          </Link>
         </div>
 
         <div className="text-xs text-ink-muted hidden sm:block">
