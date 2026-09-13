@@ -7,7 +7,7 @@ import type { FilterSidebarProps } from "@/components/layout/filter-sidebar";
 const FORUM_ITEMS = [
   { href: "/forum", label: "Main" },
   { href: "/forum/announcements", label: "Announcements" },
-  { href: "/forum/creators", label: "Creators" },
+  { href: "/forum/creators", label: "Following" },
 ] as const;
 
 /**

@@ -43,8 +43,8 @@ export function CreatePostForm({
   const { data: levels = [] } = useLevels();
   const { data: tags = [] } = useTags();
 
-  const canAnnounce = userRole === "CREATOR" || userRole === "ADMIN";
-  const subjectRequired = userRole === "STUDENT";
+  const canAnnounce = userRole === "ADMIN" || userRole === "SUPERADMIN";
+  const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
 
   const formSchema = z.object({
     post_type: z.enum(["QUESTION", "SHARING", "ANNOUNCEMENT"]),

@@ -11,7 +11,11 @@ import { PostComments } from "@/components/features/comments/post-comments";
 import { PostAuthorActions } from "@/components/features/posts/post-author-actions";
 import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
-import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
+import dynamic from "next/dynamic";
+const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
+  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  ssr: false
+});
 import { BaseDetailedCard } from "@/components/ui/base-card";
 
 function getInitials(name?: string | null): string {

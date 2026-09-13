@@ -30,8 +30,8 @@ export type NavItem = {
  * Order matters — it defines the visual sequence of nav pills.
  *
  * Role-gated items:
- *  - "My Lessons" → CREATOR only
- *  - "Admin" → ADMIN only
+ *  - "Moderation" → MODERATOR, ADMIN, and SUPERADMIN
+ *  - "Admin" → ADMIN and SUPERADMIN only
  */
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/forum", label: "Forum", match: "/forum" },
@@ -42,13 +42,25 @@ export const PRIMARY_NAV: NavItem[] = [
     exclude: ["/lessons/new"],
   },
   { href: "/problems", label: "Solve!", match: "/problems" },
+  { href: "/train", label: "Train!", match: "/train" },
+  { href: "/resources", label: "Resources", match: "/resources" },
   {
     href: "/study-plans",
     label: "Collections",
-    roles: ["STUDENT"],
     match: ["/study-plans", "/saved-sessions"],
   },
-  { href: "/admin", label: "Admin", roles: ["ADMIN"], match: "/admin" },
+  {
+    href: "/admin/reports/posts",
+    label: "Moderation",
+    roles: ["MODERATOR", "ADMIN", "SUPERADMIN"],
+    match: ["/admin/reports", "/moderation"],
+  },
+  {
+    href: "/admin",
+    label: "Admin",
+    roles: ["ADMIN", "SUPERADMIN"],
+    match: "/admin",
+  },
 ];
 
 /**

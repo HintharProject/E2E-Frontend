@@ -19,8 +19,8 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
   const { getToken } = useAuth();
 
   return useInfiniteQuery({
-    queryKey: ["posts", params],
-    queryFn: async ({ pageParam = 1 }) => {
+    queryKey: ["posts", params, "v2"],
+    queryFn: async ({ pageParam }) => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
 
@@ -32,19 +32,28 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
         tags: params.tags,
         feed: params.feed,
         author_id: params.authorId,
-        page: pageParam,
+        cursor: pageParam,
+        limit: pageParam ? 6 : 12,
+        expand: "author_details,subject_details,level_details,tags_data",
       };
 
       const queryStr = buildQueryString(backendParams);
       return apiFetch<PaginatedResponse<Post>>(`/posts/${queryStr}`, token);
     },
-    getNextPageParam: (lastPage, allPages) => {
+    getNextPageParam: (lastPage) => {
       if (lastPage.meta.next) {
-        return allPages.length + 1;
+        try {
+          const url = new URL(lastPage.meta.next);
+          return url.searchParams.get("cursor") || undefined;
+        } catch {
+          // If for some reason it's a relative URL
+          const match = lastPage.meta.next.match(/[?&]cursor=([^&]+)/);
+          return match ? match[1] : undefined;
+        }
       }
       return undefined;
     },
-    initialPageParam: 1,
+    initialPageParam: undefined as string | undefined,
   });
 }
 
@@ -53,11 +62,11 @@ export function usePost(id: string) {
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ["post", id],
+    queryKey: ["post", id, "v2"],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Not authenticated");
-      return apiFetch<Post>(`/posts/${id}/`, token);
+      return apiFetch<Post>(`/posts/${id}/?expand=author_details,subject_details,level_details,tags_data`, token);
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,

@@ -114,12 +114,14 @@ E2E-Frontend/
 
 ## Key Features
 
-- **Forum Dashboard** — A dynamic community hub with a Main Feed for Q&A and sharing, an Announcements Feed, and a curated Creators Feed. 
-- **Lessons Board** — A repository for creator-published educational resources (videos, documents) with prioritized visibility for followed creators.
-- **Interactions & Feedback** — Flat-level comments and a strict one-vote up/down system for all posts and lessons.
-- **Collections** — Students can curate "Study Plans" (for lessons) and "Saved Sessions" (for posts and lessons), with public sharing capabilities.
+- **Forum Dashboard** — A dynamic community hub with a Main Feed for Q&A and sharing, an Announcements Feed, and a curated Feed. 
+- **Lessons Board** — A repository for community- and educator-published educational resources (videos, documents) with prioritized visibility for followed authors.
+- **Problems & Solutions** — Interactive STEM problem-solving with image attachments, community solutions, and accepted solution milestones (+10 reputation points).
+- **Dynamic Reputation (Tiers 0–4)** — Merit-based progression decoupled from static roles, awarding 1x to 5x dynamic vote weighting based on contribution points.
+- **Academic Resources** — Searchable repository for Past Exam Papers and Textbook bundles with direct streaming and downloads.
+- **Collections** — Users can curate "Study Plans" (for lessons) and "Saved Sessions" (for posts and lessons), with public sharing capabilities.
 - **Content Lifecycle** — A strict 30-day expiration rule for all forum posts to maintain freshness and prevent platform bloat.
-- **Role-Based Moderation** — A fast, Admin-controlled Moderation Queue driven by community reports and enforced through user bans.
+- **Staff Moderation & Auditing** — Tiered staff governance (`MODERATOR`, `ADMIN`, `SUPERADMIN`) with fast report triage, user suspensions, and immutable audit logging.
 
 ---
 
@@ -133,10 +135,11 @@ The frontend uses Clerk session JWTs (`Authorization: Bearer <token>`) against t
 | Swagger UI | `https://e2e-backend-4t9p.onrender.com/api/docs/` |
 | OpenAPI Schema | `https://e2e-backend-4t9p.onrender.com/api/schema/` |
 
-### Core Roles
-- **Admin**: Has superuser privileges, can post announcements globally, manages the Moderation Queue, and can issue bans.
-- **Creator**: Specifically approved users who can publish/draft lessons and have their posts prioritized in followers' Creator Feeds. 
-- **Student**: Default role. Can follow creators, manage collections, post questions/sharing (with mandatory subject/level tags), and report content.
+### Core Roles (4-Tier Architecture)
+- **`USER`**: Universal end-user role. Auto-assigned on JIT provisioning. Can post questions, author lessons, submit problems, solve challenges, vote (1x–5x weight), and create collections.
+- **`MODERATOR`**: Community safety staff. Triage reports, issue warnings, and hide/lock/soft-delete violating content.
+- **`ADMIN`**: Platform administrators. Issue suspensions, manage role elevations (`USER` $\leftrightarrow$ `MODERATOR`), adjust points, and manage academic resources.
+- **`SUPERADMIN`**: Supreme system authority. Manages `ADMIN`/`SUPERADMIN` roles and accesses immutable audit logs.
 
 ---
 

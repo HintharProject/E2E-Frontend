@@ -24,8 +24,8 @@ export type { Role };
  *
  * @example
  * ```tsx
- * const AdminPage = withRoleAuth(AdminDashboard, ["ADMIN"]);
- * const CreatorPage = withRoleAuth(LessonManager, ["CREATOR", "ADMIN"]);
+ * const AdminPage = withRoleAuth(AdminDashboard, ["ADMIN", "SUPERADMIN"]);
+ * const ModerationPage = withRoleAuth(ModQueue, ["MODERATOR", "ADMIN", "SUPERADMIN"]);
  * ```
  */
 export function withRoleAuth<P extends object>(
@@ -39,7 +39,7 @@ export function withRoleAuth<P extends object>(
       return <RoleAuthSkeleton />;
     }
 
-    if (!user || !allowedRoles.includes(user.role)) {
+    if (!user || !user.role || !allowedRoles.includes(user.role)) {
       return <AccessDenied allowedRoles={allowedRoles} />;
     }
 
@@ -66,7 +66,7 @@ function AccessDenied({ allowedRoles }: { allowedRoles: Role[] }) {
         <p className="text-sm text-muted-foreground">
           You do not have the required permissions to view this page.
           <br />
-          Requires: {allowedRoles.join(" or ")}
+          Requires: {allowedRoles.filter(Boolean).join(" or ")}
         </p>
       </div>
     </div>

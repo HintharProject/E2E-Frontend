@@ -7,9 +7,9 @@ export default async function NewPostPage() {
   const { userId } = await auth();
 
   // fallback for UI testing without auth
-  const user = userId ? { role: "STUDENT", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" }; 
+  const user = userId ? { role: "USER", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" }; 
 
-  const subjectRequired = user.role === "STUDENT";
+  const subjectRequired = user.role === "USER" || user.role === "MODERATOR";
   const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");
 
   return (
@@ -18,8 +18,8 @@ export default async function NewPostPage() {
         title="New post"
         description={
           subjectRequired
-            ? "Students must pick Question or Sharing, plus Subject and Level."
-            : "Creators and Admins may post Announcements and omit Subject/Level."
+            ? "Choose Question or Sharing, plus Subject and Level."
+            : "Admins may post Announcements and omit Subject/Level."
         }
       />
       

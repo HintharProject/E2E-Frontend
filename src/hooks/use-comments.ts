@@ -10,7 +10,7 @@ export function useTopLevelComments(postId: string) {
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({ page: pageParam, expand: "replies" });
       return apiFetch<PaginatedResponse<Comment>>(`/posts/${postId}/comments/${qs}`, token);
     },
     initialPageParam: 1,
@@ -18,6 +18,25 @@ export function useTopLevelComments(postId: string) {
       if (lastPage.meta?.next) return allPages.length + 1;
       return undefined;
     },
+  });
+}
+
+export function useSolutionComments(solutionId: string) {
+  const { getToken } = useAuth();
+  return useInfiniteQuery({
+    queryKey: ["comments", "solution", solutionId],
+    queryFn: async ({ pageParam = 1 }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+      const qs = buildQueryString({ page: pageParam });
+      return apiFetch<PaginatedResponse<Comment>>(`/solutions/${solutionId}/comments/${qs}`, token);
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.meta?.next) return allPages.length + 1;
+      return undefined;
+    },
+    enabled: Boolean(solutionId),
   });
 }
 
@@ -45,23 +64,43 @@ export function useCreateComment() {
   const { getToken } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ postId, body, parentId }: { postId: string; body: string; parentId?: string }) => {
+    mutationFn: async ({
+      postId,
+      solutionId,
+      body,
+      parentId,
+    }: {
+      postId?: string;
+      solutionId?: string;
+      body: string;
+      parentId?: string;
+    }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      if (!postId) throw new Error("postId is required to create a comment");
+      if (!postId && !solutionId) throw new Error("postId or solutionId is required to create a comment");
       
       const payload: Record<string, any> = { body };
       if (parentId) payload.parent_comment = parentId;
 
-      return apiFetch<Comment>(`/posts/${postId}/comments/`, token, {
+      const endpoint = solutionId
+        ? `/solutions/${solutionId}/comments/`
+        : `/posts/${postId}/comments/`;
+
+      return apiFetch<Comment>(endpoint, token, {
         method: "POST",
         body: JSON.stringify(payload),
       });
     },
     onSettled: (_, __, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["comments", variables.postId] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-      
+      if (variables.postId) {
+        queryClient.invalidateQueries({ queryKey: ["comments", variables.postId] });
+        queryClient.invalidateQueries({ queryKey: ["posts"] });
+      }
+      if (variables.solutionId) {
+        queryClient.invalidateQueries({ queryKey: ["comments", "solution", variables.solutionId] });
+        queryClient.invalidateQueries({ queryKey: ["solutions"] });
+        queryClient.invalidateQueries({ queryKey: ["solution", variables.solutionId] });
+      }
       if (variables.parentId) {
         queryClient.invalidateQueries({ queryKey: ["replies", variables.parentId] });
       }

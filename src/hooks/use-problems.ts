@@ -1,24 +1,53 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
-import { Problem, Solution, PaginatedResponse } from "@/types";
+import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse } from "@/types";
 
 export interface ProblemFilters {
   subject?: string;
   level?: string;
   status?: string;
+  origin?: string;
+  ordering?: string;
+  feed_visibility?: string;
   authorId?: string;
+  resource?: string;
+}
+
+export function usePaperProblems(resourceId?: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["paperProblems", resourceId],
+    queryFn: async () => {
+      if (!resourceId) return [];
+      const token = await getToken();
+      const qs = buildQueryString({
+        resource: resourceId,
+        feed_visibility: "all",
+        expand: "attachments,author_details,subject_details,level_details,solutions",
+      });
+      const res = await apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      return res.data || [];
+    },
+    enabled: !!resourceId,
+  });
 }
 
 export function useProblems(filters: ProblemFilters = {}) {
   const { getToken } = useAuth();
+  const { authorId, ...apiFilters } = filters;
   
   return useInfiniteQuery({
-    queryKey: ["problems", filters],
+    queryKey: ["problems", filters, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
-      const qs = buildQueryString({ ...filters, page: pageParam });
-      return apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      const qs = buildQueryString({ ...apiFilters, page: pageParam, expand: "attachments,author_details,subject_details,level_details,resource" });
+      const page = await apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
+      if (!authorId) return page;
+      return {
+        ...page,
+        data: page.data.filter((problem) => problem.author === authorId),
+      };
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -30,10 +59,10 @@ export function useProblems(filters: ProblemFilters = {}) {
 export function useProblem(id: string) {
   const { getToken } = useAuth();
   return useQuery({
-    queryKey: ["problem", id],
+    queryKey: ["problem", id, "v2"],
     queryFn: async () => {
       const token = await getToken();
-      return apiFetch<Problem>(`/problems/${id}/`, token);
+      return apiFetch<Problem>(`/problems/${id}/?expand=attachments,author_details,subject_details,level_details,resource`, token);
     },
     enabled: !!id,
   });
@@ -45,19 +74,23 @@ export function useSolution(id: string) {
     queryKey: ["solution", id],
     queryFn: async () => {
       const token = await getToken();
-      return apiFetch<Solution>(`/solutions/${id}/`, token);
+      return apiFetch<Solution>(`/solutions/${id}/?expand=attachments,author_details`, token);
     },
     enabled: !!id,
   });
 }
 
-export function useSolutions(problemId: string) {
+export function useSolutions(problemId: string, isActivePool: boolean = true) {
   const { getToken } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["solutions", problemId],
+    queryKey: ["solutions", problemId, isActivePool],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({
+        page: pageParam,
+        is_active_pool: isActivePool ? "true" : "false",
+        expand: "attachments,author_details",
+      });
       return apiFetch<PaginatedResponse<Solution>>(`/problems/${problemId}/solutions/${qs}`, token);
     },
     initialPageParam: 1,
@@ -68,12 +101,59 @@ export function useSolutions(problemId: string) {
   });
 }
 
+export function useProblemByPaper(resourceId?: string, questionNumber?: string) {
+  const { getToken } = useAuth();
+  return useQuery({
+    queryKey: ["by-paper", resourceId, questionNumber],
+    queryFn: async () => {
+      if (!resourceId || !questionNumber?.trim()) return null;
+      const token = await getToken();
+      const qs = buildQueryString({
+        resource: resourceId,
+        question: questionNumber.trim(),
+      });
+      return apiFetch<DeduplicationResponse>(`/problems/by-paper/${qs}`, token);
+    },
+    enabled: !!resourceId && !!questionNumber && questionNumber.trim().length > 0,
+    staleTime: 30 * 1000,
+  });
+}
+
+export async function generateProblemUploadUrl(
+  fileName: string,
+  contentType: string,
+  uploadType: "problem_attachment" | "solution_attachment",
+  token: string | null
+): Promise<PresignedUploadResponse> {
+  return apiFetch<PresignedUploadResponse>("/problems/generate_upload_url/", token, {
+    method: "POST",
+    body: JSON.stringify({
+      file_name: fileName,
+      content_type: contentType,
+      upload_type: uploadType,
+    }),
+  });
+}
+
+export interface CreateProblemPayload {
+  origin: "USER_UPLOAD" | "PAST_PAPER";
+  title?: string;
+  body?: string;
+  subject?: string;
+  level?: string;
+  source?: string;
+  resource?: string;
+  question_number?: string;
+  is_feed_visible?: boolean;
+  uploaded_attachments?: Array<{ file_key: string; file_name: string }>;
+}
+
 export function useCreateProblem() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: { title: string; body: string; subject: string; level: string }) => {
+    mutationFn: async (payload: CreateProblemPayload) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return apiFetch<Problem>("/problems/", token, {
@@ -87,17 +167,24 @@ export function useCreateProblem() {
   });
 }
 
+export interface CreateSolutionPayload {
+  problemId: string;
+  body: string;
+  video_url?: string;
+  attachments?: Array<{ file_key: string; file_name: string }>;
+}
+
 export function useCreateSolution() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ problemId, body }: { problemId: string; body: string }) => {
+    mutationFn: async ({ problemId, ...payload }: CreateSolutionPayload) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return apiFetch<Solution>(`/problems/${problemId}/solutions/`, token, {
         method: "POST",
-        body: JSON.stringify({ body }),
+        body: JSON.stringify(payload),
       });
     },
     onSuccess: (_, variables) => {
@@ -106,6 +193,7 @@ export function useCreateSolution() {
     },
   });
 }
+
 
 export function useVoteSolution() {
   const { getToken } = useAuth();
@@ -174,7 +262,7 @@ export function useMarkSolutionStatus() {
         body: JSON.stringify({ status }),
       });
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["solutions"] });
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       queryClient.invalidateQueries({ queryKey: ["problem"] });

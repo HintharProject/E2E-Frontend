@@ -41,7 +41,7 @@ export function PostCard({ post }: { post: Post }) {
 
   const author = post.author_details;
   const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
   const canModify = isAuthor || isAdmin;
   const subject = post.subject_details;
   const level = post.level_details;
@@ -57,11 +57,11 @@ export function PostCard({ post }: { post: Post }) {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["post", post.id],
+      queryKey: ["post", post.id, "v2"],
       queryFn: async () => {
         const token = await getToken();
         if (!token) return post;
-        return apiFetch<Post>(`/posts/${post.id}/`, token);
+        return apiFetch<Post>(`/posts/${post.id}/?expand=author_details,subject_details,level_details,tags_data`, token);
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -115,7 +115,13 @@ export function PostCard({ post }: { post: Post }) {
       bottomRight={
         post.post_type !== "ANNOUNCEMENT" ? (
           <>
-            <PostCardVote postId={post.id} initialVoteCount={post.vote_count ?? 0} initialUserVote={post.user_vote} />
+            <PostCardVote
+              postId={post.id}
+              initialVoteCount={post.vote_count ?? 0}
+              initialUserVote={post.user_vote}
+              authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
+              authorClerkId={author?.clerk_id}
+            />
             <span>· {post.comment_count ?? 0} comments</span>
           </>
         ) : (
@@ -149,11 +155,10 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const level = lesson.level_details;
 
   const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
-  const isCreator = user?.role === "CREATOR";
-  const canEdit = isCreator && isAuthor;
-  const canDelete = isAdmin || (isCreator && isAuthor);
-  const canChangeState = isAdmin || (isCreator && isAuthor);
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const canEdit = isAuthor;
+  const canDelete = isAuthor || isAdmin;
+  const canChangeState = isAuthor || isAdmin;
   const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
   const canArchive = canChangeState && lesson.state === "PUBLISHED";
 
@@ -165,11 +170,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     if (prefetchedRef.current) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["lesson", lesson.id],
+      queryKey: ["lesson", lesson.id, "v2"],
       queryFn: async () => {
         const token = await getToken();
         if (!token) return lesson;
-        return apiFetch<Lesson>(`/lessons/${lesson.id}/`, token);
+        return apiFetch<Lesson>(`/lessons/${lesson.id}/?expand=author_details,attachments`, token);
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -214,6 +219,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
       } : undefined}
+      subtitle={formatDateStr(lesson.created_at)}
       topRight={
         <div className="flex items-center gap-2">
           <Badge
@@ -228,7 +234,13 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           >
             {lesson.state}
           </Badge>
-          <LessonCardVote lessonId={lesson.id} initialVoteCount={lesson.vote_count ?? 0} initialUserVote={lesson.user_vote} />
+          <LessonCardVote
+            lessonId={lesson.id}
+            initialVoteCount={lesson.vote_count ?? 0}
+            initialUserVote={lesson.user_vote}
+            authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
+            authorClerkId={author?.clerk_id}
+          />
         </div>
       }
       title={lesson.title}

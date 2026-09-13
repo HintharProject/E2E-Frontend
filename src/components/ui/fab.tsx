@@ -33,12 +33,9 @@ export function GlobalFAB() {
   if (!user) return null;
   const writeLocked = isWriteLocked(user.ban_state);
 
-  const role = user.role;
-
-  // Build options based on role
+  // Build creation options for all active users
   const options: FabOption[] = [];
 
-  // Post — everyone who isn't write-locked
   if (!writeLocked) {
     options.push({
       label: "Post",
@@ -46,25 +43,17 @@ export function GlobalFAB() {
       icon: <FileText className="h-4 w-4" />,
       description: "Share or ask in the forum",
     });
-  }
-
-  // Lesson — Creators only
-  if (role === "CREATOR" && !writeLocked) {
     options.push({
       label: "Lesson",
       href: "/lessons/new",
       icon: <BookOpen className="h-4 w-4" />,
-      description: "Write a new lesson",
+      description: "Write and publish a lesson",
     });
-  }
-
-  // Problem — Students only (not Creator, not Admin)
-  if (role === "STUDENT" && !writeLocked) {
     options.push({
       label: "Problem",
       href: "/problems/new",
       icon: <HelpCircle className="h-4 w-4" />,
-      description: "Post a problem for solutions",
+      description: "Post an academic problem for solutions",
     });
   }
 
@@ -72,13 +61,13 @@ export function GlobalFAB() {
   if (options.length === 0) return null;
 
   return (
-    <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
+    <div ref={ref} className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 pointer-events-none">
       {/* Options pop-up — visible when open */}
       <div
         className={`flex flex-col items-end gap-2 transition-all duration-200 ${
           open
-            ? "translate-y-0 opacity-100 pointer-events-auto"
-            : "translate-y-4 opacity-0 pointer-events-none"
+            ? "translate-y-0 opacity-100 pointer-events-auto visible"
+            : "translate-y-4 opacity-0 pointer-events-none invisible"
         }`}
         aria-hidden={!open}
       >
@@ -106,7 +95,7 @@ export function GlobalFAB() {
         onClick={() => setOpen((prev) => !prev)}
         aria-label={open ? "Close menu" : "Create new content"}
         aria-expanded={open}
-        className={`flex h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_30px_-8px_oklch(0.508_0.118_165.612_/_0.6)] transition-all duration-200 hover:scale-105 hover:shadow-[0_12px_40px_-8px_oklch(0.508_0.118_165.612_/_0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
+        className={`pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_30px_-8px_oklch(0.508_0.118_165.612_/_0.6)] transition-all duration-200 hover:scale-105 hover:shadow-[0_12px_40px_-8px_oklch(0.508_0.118_165.612_/_0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
           open
             ? "bg-ink text-background rotate-45"
             : "bg-brand text-white"

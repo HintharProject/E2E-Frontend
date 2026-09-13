@@ -17,11 +17,11 @@ export function useSavedSessions() {
   const { getToken } = useAuth();
 
   return useQuery({
-    queryKey: ["saved-sessions"],
+    queryKey: ["collections", "v2"],
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      return apiFetch<PaginatedResponse<SavedSession>>(`/saved-sessions/`, token);
+      return apiFetch<PaginatedResponse<SavedSession>>(`/saved-sessions/?expand=items,items.lesson,items.post,items.problem`, token);
     },
   });
 }

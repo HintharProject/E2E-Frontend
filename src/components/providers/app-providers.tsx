@@ -7,14 +7,5 @@ import { ThemeProvider } from "./theme-provider";
  * Currently wraps ThemeProvider. (QueryProvider is handled at the RootLayout).
  */
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  return (
-    <ThemeProvider
-      attribute="class"
-      defaultTheme="dark"
-      enableSystem={false}
-      disableTransitionOnChange
-    >
-      {children}
-    </ThemeProvider>
-  );
+  return <>{children}</>;
 }

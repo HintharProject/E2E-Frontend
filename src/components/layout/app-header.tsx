@@ -6,7 +6,7 @@ import { FormEvent, useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
-import { Menu, Search } from "lucide-react";
+import { Menu, Search, UserCog } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,12 +18,13 @@ import { Input } from "@/components/ui/input";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { PRIMARY_NAV, isNavActive } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
-import { isWriteLocked } from "@/types/user";
+import { isWriteLocked, isStaffRole } from "@/types/user";
 import { AppHeaderSkeleton } from "./app-header-skeleton";
 import { MobileNav } from "./mobile-nav";
 import { MobileFilterToggle } from "./mobile-filter-toggle";
 import { LessonsMobileFilterToggle } from "@/components/features/lessons/lessons-mobile-filter";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
 import { LessonsTabs } from "@/components/features/lessons/lessons-tabs";
 import { useRefreshStore } from "@/lib/store/refresh-store";
@@ -92,8 +93,8 @@ export function AppHeader() {
         queryFn: ({ pageParam = 1 }) => apiFetch(`/problems/?status=OPEN&page=${pageParam}`, token),
       });
 
-      // 3. Prefetch My Lessons (if applicable)
-      if (user.role === "CREATOR" || user.role === "ADMIN") {
+      // 4. Prefetch My Lessons
+      if (user) {
         queryClient.prefetchInfiniteQuery({
           queryKey: ["lessons", { subject: "", level: "", tags: "", authorId: user.id, state: "PUBLISHED" }],
           initialPageParam: 1,
@@ -188,6 +189,17 @@ export function AppHeader() {
 
             {/* User area */}
             <div className="ml-auto flex items-center gap-2">
+              {!user && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
+                  className="h-8 gap-1.5 text-xs font-semibold border-dashed border-primary/50 text-primary hover:bg-primary/10 cursor-pointer"
+                >
+                  <UserCog className="h-3.5 w-3.5" />
+                  <span>Switch Account</span>
+                </Button>
+              )}
               {user && (
                 <Link
                   href={`/users/${user.id}`}
@@ -207,13 +219,13 @@ export function AppHeader() {
                   <span className="hidden text-sm font-semibold sm:inline">
                     {user.display_name}
                   </span>
-                  <Badge
-                    variant={
-                      user.role === "ADMIN" ? "outline" : "default"
-                    }
-                  >
-                    {user.role}
-                  </Badge>
+                  {isStaffRole(user.role) ? (
+                    <Badge variant="outline">
+                      {user.role}
+                    </Badge>
+                  ) : (
+                    <ContributorBadge tier={user.contributor_tier} size="sm" />
+                  )}
                 </Link>
               )}
               <ThemeToggle />
@@ -338,6 +350,9 @@ function AppHeaderMobileFilter({ pathname }: { pathname: string }) {
   }
   if (pathname.startsWith("/problems")) {
     return <MobileFilterToggle hideTags={true} showProblemStatus={true} />;
+  }
+  if (pathname.startsWith("/resources") || pathname === "/train") {
+    return <MobileFilterToggle hideTags={true} />;
   }
   return null;
 }
