@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,8 @@ import {
   Lock,
   UserCheck,
   Archive,
+  MessageSquare,
+  ArrowRight,
 } from "lucide-react";
 
 function getInitials(name?: string | null): string {
@@ -81,14 +84,26 @@ export function SolutionItem({
     });
   };
 
+  const router = useRouter();
+  const solutionUrl = `/problems/${problem.id}/solutions/${solution.id}`;
+
+  const handleCardClick = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    if (target.closest("button, a, input, textarea, [role='button'], [data-prevent-card-nav]")) {
+      return;
+    }
+    router.push(solutionUrl);
+  };
+
   return (
     <div
-      className={`group relative flex flex-col gap-4 rounded-2xl border p-5 transition-all ${
+      onClick={handleCardClick}
+      className={`group relative flex flex-col gap-4 rounded-2xl border p-5 transition-all cursor-pointer ${
         isAcceptedHero
-          ? "border-emerald-500/60 bg-emerald-500/5 shadow-xs"
+          ? "border-emerald-500/60 bg-emerald-500/5 shadow-xs hover:border-emerald-500 hover:shadow-md"
           : isArchived
-            ? "border-dashed border-line bg-muted/20 opacity-80"
-            : "border-line bg-card hover:border-brand/40"
+            ? "border-dashed border-line bg-muted/20 opacity-80 hover:opacity-95 hover:border-line"
+            : "border-line bg-card hover:border-brand/60 hover:shadow-md"
       }`}
     >
       {/* Top Banner for Accepted Hero Solution */}
@@ -232,6 +247,19 @@ export function SolutionItem({
             deleteLabel="this solution"
           />
         </div>
+      </div>
+
+      {/* Footer: Comment count and View Discussion indicator */}
+      <div className="flex items-center justify-between pt-3 border-t border-line/60 text-xs text-ink-muted">
+        <div className="flex items-center gap-1.5 font-medium text-ink-muted group-hover:text-ink transition-colors">
+          <MessageSquare className="size-3.5 text-brand" />
+          <span>{solution.comment_count ?? 0} {solution.comment_count === 1 ? "comment" : "comments"}</span>
+        </div>
+
+        <span className="inline-flex items-center gap-1 font-semibold text-brand opacity-90 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+          <span>View Discussion</span>
+          <ArrowRight className="size-3.5" />
+        </span>
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { SolutionPoolContainer } from "@/components/features/problems/solution-pool-container";
+import { SolutionFAB } from "@/components/features/problems/solution-fab";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -222,6 +223,9 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Solutions Section with 7-Slot Pool & Eviction Engine */}
       <SolutionPoolContainer problem={problem} isAuthor={isAuthor} />
+
+      {/* Floating Action Button for worked solution submission */}
+      <SolutionFAB problem={problem} />
     </div>
   );
 }

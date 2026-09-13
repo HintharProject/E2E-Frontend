@@ -51,6 +51,8 @@ export interface CreateSolutionFormProps {
   activePoolCount?: number;
   canEvict?: boolean;
   isPoolLocked?: boolean;
+  onSuccess?: () => void;
+  onCancel?: () => void;
 }
 
 export function CreateSolutionForm({
@@ -60,6 +62,8 @@ export function CreateSolutionForm({
   activePoolCount = 0,
   canEvict = false,
   isPoolLocked = false,
+  onSuccess,
+  onCancel,
 }: CreateSolutionFormProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -198,6 +202,7 @@ export function CreateSolutionForm({
       toast.success("Solution posted successfully!");
       reset({ body: "", video_url: "" });
       setValue("attachments", undefined);
+      onSuccess?.();
     } catch (err: any) {
       if (err.code === "POOL_CAPACITY_EXCEEDED") {
         setServerError("Active solution pool is full (7/7). Contributor Tier 2+ required to evict stale attempts.");
@@ -292,7 +297,18 @@ export function CreateSolutionForm({
         )}
       </Field>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex items-center justify-end gap-2.5 pt-2">
+        {onCancel && (
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
+            Cancel
+          </Button>
+        )}
         <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
           {isSubmitting ? "Submitting Solution..." : "Post Solution"}
         </Button>

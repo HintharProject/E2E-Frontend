@@ -75,12 +75,14 @@ export interface Post {
 
 export interface Comment {
   id: string;
-  post: string; // Post ID
+  post?: string | null;
+  solution?: string | null;
   author: string;
   author_details: UserPublic;
   body: string;
   created_at: string;
   updated_at: string;
+  parent_comment?: string | null;
   parent?: string | null;
   reply_count?: number;
   vote_count?: number;
@@ -252,6 +254,7 @@ export interface Solution {
   attachments: SolutionAttachment[];
   vote_count?: number;
   vote_score?: number;
+  comment_count?: number;
   user_vote?: 1 | -1 | null;
   created_at: string;
   updated_at: string;

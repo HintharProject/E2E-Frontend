@@ -5,7 +5,6 @@ import { Problem, Solution } from "@/types";
 import { useSolutions } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { SolutionItem } from "./solution-item";
-import { CreateSolutionForm } from "./create-solution-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronRight, Layers, Sparkles } from "lucide-react";
@@ -185,20 +184,6 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
               )}
             </div>
           )}
-        </div>
-      )}
-
-      {/* 4. Submission Form (Universal authoring; author self-solving permitted) */}
-      {!isClosed && !isFinal && (
-        <div className="pt-6">
-          <CreateSolutionForm
-            problemId={problem.id}
-            isSolved={problem.status === "SOLVED"}
-            isClosed={isClosed}
-            activePoolCount={activeCount}
-            canEvict={canEvict}
-            isPoolLocked={isPoolLocked}
-          />
         </div>
       )}
     </div>
