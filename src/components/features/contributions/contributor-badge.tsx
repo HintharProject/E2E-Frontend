@@ -3,7 +3,8 @@
 import * as React from "react";
 import { ContributorTier, TIER_CONFIG } from "@/types/contribution";
 import { cn } from "@/lib/utils";
-import { Shield, Award, Zap, Crown, Sparkles } from "lucide-react";
+import { Shield, Award, Zap, Crown, Sparkles, Info } from "lucide-react";
+import { ContributorTierInfoModal } from "./contributor-tier-info-modal";
 
 export interface ContributorBadgeProps {
   tier?: ContributorTier | null;
@@ -11,6 +12,8 @@ export interface ContributorBadgeProps {
   size?: "sm" | "md" | "lg";
   showWeightTooltip?: boolean;
   showIcon?: boolean;
+  showInfoIcon?: boolean;
+  interactive?: boolean;
   className?: string;
 }
 
@@ -28,8 +31,11 @@ export function ContributorBadge({
   size = "md",
   showWeightTooltip = true,
   showIcon = true,
+  showInfoIcon = true,
+  interactive = true,
   className,
 }: ContributorBadgeProps) {
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
   const safeTier = (tier !== undefined && tier !== null && tier >= 0 && tier <= 4 ? tier : 0) as ContributorTier;
   const config = TIER_CONFIG[safeTier];
   const IconComponent = TIER_ICONS[safeTier];
@@ -46,6 +52,12 @@ export function ContributorBadge({
     lg: "size-4",
   }[size];
 
+  const infoIconSizes = {
+    sm: "size-2.5",
+    md: "size-3",
+    lg: "size-3.5",
+  }[size];
+
   const tierStyleClasses = {
     0: "border-tier-0/30 bg-tier-0-bg text-tier-0",
     1: "border-tier-1/30 bg-tier-1-bg text-tier-1 font-medium",
@@ -57,24 +69,71 @@ export function ContributorBadge({
   const tooltipText = showWeightTooltip
     ? `${config.name} (Tier ${safeTier}) · ${config.voteMultiplier}x Dynamic Vote Weight${
         points !== undefined ? ` · ${points.toLocaleString()} pts` : ""
-      }`
+      }${interactive ? " · Click to view tier privileges & points guide" : ""}`
     : undefined;
 
+  const handleClick = (e: React.MouseEvent) => {
+    if (!interactive) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setIsModalOpen(true);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!interactive) return;
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsModalOpen(true);
+    }
+  };
+
   return (
-    <span
-      title={tooltipText}
-      className={cn(
-        "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none cursor-default",
-        sizeClasses,
-        tierStyleClasses,
-        className
+    <>
+      <span
+        title={tooltipText}
+        role={interactive ? "button" : undefined}
+        tabIndex={interactive ? 0 : undefined}
+        onClick={interactive ? handleClick : undefined}
+        onKeyDown={interactive ? handleKeyDown : undefined}
+        className={cn(
+          "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none",
+          interactive
+            ? "cursor-pointer hover:shadow-xs hover:brightness-105 active:scale-[0.98] group/contributor-badge"
+            : "cursor-default",
+          sizeClasses,
+          tierStyleClasses,
+          className
+        )}
+      >
+        {showIcon && <IconComponent className={cn(iconSizes, "shrink-0")} />}
+        <span>{config.name}</span>
+        {points !== undefined && size === "lg" && (
+          <span className="opacity-80 font-normal">({points.toLocaleString()} pts)</span>
+        )}
+        {showInfoIcon && (
+          <span
+            className={cn(
+              "inline-flex items-center justify-center transition-all",
+              interactive
+                ? "opacity-70 group-hover/contributor-badge:opacity-100 group-hover/contributor-badge:scale-110"
+                : "opacity-70"
+            )}
+            aria-hidden="true"
+          >
+            <Info className={cn(infoIconSizes, "shrink-0")} />
+          </span>
+        )}
+      </span>
+
+      {interactive && (
+        <ContributorTierInfoModal
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          initialTier={safeTier}
+        />
       )}
-    >
-      {showIcon && <IconComponent className={cn(iconSizes, "shrink-0")} />}
-      <span>{config.name}</span>
-      {points !== undefined && size === "lg" && (
-        <span className="opacity-80 font-normal">({points.toLocaleString()} pts)</span>
-      )}
-    </span>
+    </>
   );
 }
+
