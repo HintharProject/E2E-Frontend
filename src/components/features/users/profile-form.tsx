@@ -90,8 +90,10 @@ export function ProfileForm({
     setIsSubmitting(true);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
+      const token =
+        (await getToken()) ||
+        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      if (!token) throw new Error("Please log in to update your profile.");
 
       // We only send custom_level if "more" is selected
       const isCustomLevel = data.level === "more";
@@ -111,8 +113,14 @@ export function ProfileForm({
       });
 
       queryClient.invalidateQueries({ queryKey: ["currentUser"] });
+      if (user?.id) {
+        queryClient.invalidateQueries({ queryKey: ["user", user.id] });
+      }
       
       if (isOnboarding) {
+        if (typeof window !== "undefined") {
+          localStorage.setItem("onboarding_dismissed", "true");
+        }
         router.push("/forum");
       } else {
         router.push(`/users/${user?.id}`);
@@ -126,6 +134,9 @@ export function ProfileForm({
 
   const onSkip = () => {
     if (isOnboarding) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("onboarding_dismissed", "true");
+      }
       router.push("/forum");
     }
   };

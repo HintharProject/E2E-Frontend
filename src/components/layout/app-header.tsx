@@ -6,7 +6,7 @@ import { FormEvent, useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
-import { Menu, Search, UserCog } from "lucide-react";
+import { Menu, Search, UserCog, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -201,32 +201,41 @@ export function AppHeader() {
                 </Button>
               )}
               {user && (
-                <Link
-                  href={`/users/${user.id}`}
-                  className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:border-primary/40"
-                >
-                  <Avatar size="sm">
-                    {user.image_url && (
-                      <AvatarImage
-                        src={user.image_url}
-                        alt={user.display_name}
-                      />
+                <>
+                  <Link
+                    href={`/users/${user.id}`}
+                    className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:border-primary/40"
+                  >
+                    <Avatar size="sm">
+                      {user.image_url && (
+                        <AvatarImage
+                          src={user.image_url}
+                          alt={user.display_name}
+                        />
+                      )}
+                      <AvatarFallback>
+                        {getInitials(user.display_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden text-sm font-semibold sm:inline">
+                      {user.display_name}
+                    </span>
+                    {isStaffRole(user.role) ? (
+                      <Badge variant="outline">
+                        {user.role}
+                      </Badge>
+                    ) : (
+                      <ContributorBadge tier={user.contributor_tier} size="sm" />
                     )}
-                    <AvatarFallback>
-                      {getInitials(user.display_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden text-sm font-semibold sm:inline">
-                    {user.display_name}
-                  </span>
-                  {isStaffRole(user.role) ? (
-                    <Badge variant="outline">
-                      {user.role}
-                    </Badge>
-                  ) : (
-                    <ContributorBadge tier={user.contributor_tier} size="sm" />
-                  )}
-                </Link>
+                  </Link>
+                  <Link
+                    href="/settings/profile"
+                    title="Edit Profile & Settings"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                </>
               )}
               <ThemeToggle />
               <UserButton

@@ -73,17 +73,30 @@ export function MobileNav({ user }: MobileNavProps) {
             );
           })}
           {user && (
-            <Link
-              href={`/users/${user.id}`}
-              onClick={closeMobileNav}
-              className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                pathname === `/users/${user.id}`
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
-            >
-              Profile
-            </Link>
+            <>
+              <Link
+                href={`/users/${user.id}`}
+                onClick={closeMobileNav}
+                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  pathname === `/users/${user.id}`
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Profile
+              </Link>
+              <Link
+                href="/settings/profile"
+                onClick={closeMobileNav}
+                className={`rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  pathname?.startsWith("/settings")
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                Settings
+              </Link>
+            </>
           )}
         </nav>
       </div>

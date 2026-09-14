@@ -41,9 +41,10 @@ export function UserProfileView({ userId }: { userId: string }) {
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
     queryKey: ["user", userId],
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-      return apiFetch<UserPublic>(`/users/${userId}/`, token);
+      const token =
+        (await getToken()) ||
+        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      return apiFetch<UserPublic>(`/users/${userId}/`, token || undefined);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -58,7 +59,9 @@ export function UserProfileView({ userId }: { userId: string }) {
     );
   }
 
-  const isSelf = clerkUser?.id === profile.clerk_id;
+  const isSelf =
+    Boolean(appCurrentUser?.id && appCurrentUser.id === profile.id) ||
+    Boolean(clerkUser?.id && clerkUser.id === profile.clerk_id);
   const isAdmin = isAdminOrSuperAdmin(appCurrentUser?.role);
 
   const levelName = profile.level ? levels.find((l) => l.id === profile.level)?.name : null;
