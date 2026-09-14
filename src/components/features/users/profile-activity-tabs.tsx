@@ -12,9 +12,11 @@ import { Button } from "@/components/ui/button";
 import { useProblems } from "@/hooks/use-problems";
 import { useUserContributions } from "@/hooks/use-user-contributions";
 import { useContributionStats } from "@/hooks/use-contribution";
+import { useDualStateFilter } from "@/hooks/use-dual-state-filter";
 import { getActivityPoints, formatContributionPoints } from "@/lib/contribution-utils";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { cn } from "@/lib/utils";
+import type { Problem } from "@/types";
 
 type ProfileTab = "posts" | "problems" | "contributions";
 
@@ -34,10 +36,20 @@ function ProblemsTimeline({ userId }: { userId: string }) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
+    isFetching,
     status,
   } = useProblems({ authorId: userId });
 
-  if (status === "pending") {
+  const rawProblems = data?.pages.flatMap((page) => page.data);
+
+  const { displayItems: problems, isEmptyPending, isOptimistic } = useDualStateFilter<Problem>({
+    items: rawProblems,
+    isFetching,
+    filterPredicate: (problem) => problem.author === userId,
+    activeFiltersKey: userId,
+  });
+
+  if (status === "pending" || isEmptyPending) {
     return (
       <div className="space-y-4">
         <PostCardSkeleton />
@@ -54,8 +66,6 @@ function ProblemsTimeline({ userId }: { userId: string }) {
       />
     );
   }
-
-  const problems = data.pages.flatMap((page) => page.data);
 
   if (problems.length === 0) {
     return (
@@ -74,7 +84,12 @@ function ProblemsTimeline({ userId }: { userId: string }) {
           <ProblemCard problem={problem} />
         </div>
       ))}
-      {hasNextPage && (
+      {isOptimistic && (
+        <div className="space-y-4 pt-2">
+          <PostCardSkeleton />
+        </div>
+      )}
+      {!isOptimistic && hasNextPage && (
         <div className="flex justify-center pt-2">
           <Button
             variant="secondary"

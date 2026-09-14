@@ -35,19 +35,24 @@ export function usePaperProblems(resourceId?: string) {
 
 export function useProblems(filters: ProblemFilters = {}) {
   const { getToken } = useAuth();
-  const { authorId, ...apiFilters } = filters;
+  const { authorId, ...otherFilters } = filters;
+  const apiFilters = {
+    ...otherFilters,
+    ...(authorId ? { author: authorId } : {}),
+  };
   
   return useInfiniteQuery({
     queryKey: ["problems", filters, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
-      const token = await getToken();
-      const qs = buildQueryString({ ...apiFilters, page: pageParam, expand: "attachments,author_details,subject_details,level_details,resource" });
-      const page = await apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token);
-      if (!authorId) return page;
-      return {
-        ...page,
-        data: page.data.filter((problem) => problem.author === authorId),
-      };
+      const token =
+        (await getToken()) ||
+        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      const qs = buildQueryString({
+        ...apiFilters,
+        page: pageParam,
+        expand: "attachments,author_details,subject_details,level_details,resource",
+      });
+      return apiFetch<PaginatedResponse<Problem>>(`/problems/${qs}`, token || undefined);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
