@@ -26,18 +26,31 @@ function getInitials(name?: string | null): string {
   return name.trim().split(/\s+/).map((p) => p[0]).join("").toUpperCase().slice(0, 2);
 }
 
-import { useState, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useVoteLesson } from "@/hooks/use-interactions";
+import { useCurrentUser } from "@/hooks/use-current-user";
 
 export function LessonDetailClient({ id }: { id: string }) {
+  const { user: currentUser } = useCurrentUser();
   const { getToken } = useAuth();
   const voteMutation = useVoteLesson();
 
   const { data: lesson, isLoading, isError } = useLesson(id);
 
+  const author = lesson?.author_details;
+  const isAuthor = Boolean(
+    currentUser && (
+      (lesson?.author && currentUser.id === lesson.author) ||
+      (author?.id && currentUser.id === author.id) ||
+      (author?.clerk_id && currentUser.clerk_id === author.clerk_id)
+    )
+  );
+
   const [localVoteCount, setLocalVoteCount] = useState(0);
   const [localUserVote, setLocalUserVote] = useState(0);
+  // Prevents the useEffect prop-sync from overwriting optimistic state while in-flight
+  const isPendingRef = useRef(false);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -45,22 +58,35 @@ export function LessonDetailClient({ id }: { id: string }) {
   };
 
   useEffect(() => {
-    if (lesson) {
+    if (lesson && !isPendingRef.current) {
       setLocalVoteCount(lesson.vote_count ?? 0);
       setLocalUserVote(lesson.user_vote ?? 0);
     }
   }, [lesson]);
 
+  const userWeight =
+    (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
+
   const handleVote = (value: 1 | -1 | 0) => {
+    if (isAuthor) {
+      toast.info("You cannot vote on your own lesson.");
+      return;
+    }
     if (localUserVote === value || !lesson) return;
-    const diff = value - localUserVote;
+    const prevVote = localUserVote;
+    const prevCount = localVoteCount;
+    const diff = (value - prevVote) * userWeight;
     setLocalUserVote(value);
     setLocalVoteCount((prev) => prev + diff);
 
-    voteMutation.mutate({ lessonId: lesson.id, value }, {
+    isPendingRef.current = true;
+    voteMutation.mutate({ lessonId: lesson.id, value, voteWeight: userWeight }, {
+      onSettled: () => {
+        isPendingRef.current = false;
+      },
       onError: () => {
-        setLocalUserVote(localUserVote);
-        setLocalVoteCount((prev) => prev - diff);
+        setLocalUserVote(prevVote);
+        setLocalVoteCount(prevCount);
         toast.error("Failed to register vote.");
       }
     });
@@ -76,7 +102,6 @@ export function LessonDetailClient({ id }: { id: string }) {
     );
   }
 
-  const author = lesson.author_details;
   const subject = lesson.subject_details;
   const level = lesson.level_details;
   const tagNames = lesson.tags ?? [];
@@ -129,12 +154,18 @@ export function LessonDetailClient({ id }: { id: string }) {
           <>
             <Button 
               variant={localUserVote === 1 ? "default" : "secondary"} 
+              disabled={isAuthor}
+              title={isAuthor ? "You cannot vote on your own lesson" : "Upvote"}
+              className={isAuthor ? "opacity-50 cursor-not-allowed" : ""}
               onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
             >
               ▲ Upvote ({localVoteCount})
             </Button>
             <Button 
               variant={localUserVote === -1 ? "default" : "ghost"} 
+              disabled={isAuthor}
+              title={isAuthor ? "You cannot vote on your own lesson" : "Downvote"}
+              className={isAuthor ? "opacity-50 cursor-not-allowed" : ""}
               onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
             >
               ▼ Downvote

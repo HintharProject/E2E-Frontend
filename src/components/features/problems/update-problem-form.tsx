@@ -24,6 +24,9 @@ const errorClass = "border-danger focus:ring-danger/20";
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
 
+/**
+ * @deprecated Mutating problem editing is permanently sunset to preserve mathematical consensus and audit ledger integrity.
+ */
 export function UpdateProblemForm({
   problem,
   subjects,

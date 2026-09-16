@@ -2,87 +2,46 @@
 
 import { use } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useSolution } from "@/hooks/use-problems";
-import { useCurrentUser } from "@/hooks/use-current-user";
-import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
-import { UpdateSolutionForm } from "@/components/features/problems/update-solution-form";
-import { isWriteLocked } from "@/types/user";
+import { ChevronLeft, ShieldAlert } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
 
-export default function EditSolutionPage({ params }: { params: Promise<{ id: string; solutionId: string }> }) {
-  const { id: problemId, solutionId } = use(params);
-  const router = useRouter();
-  const { user } = useCurrentUser();
-  
-  const { data: solution, isLoading, isError } = useSolution(solutionId);
-
-  const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-
-  if (isLoading) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-64 rounded-2xl bg-card border border-line animate-pulse"></div>
-      </div>
-    );
-  }
-
-  if (isError || !solution) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Solution not found</h2>
-        <Button variant="outline" className="mt-4" onClick={() => router.push(`/problems/${problemId}`)}>
-          Back to Problem
-        </Button>
-      </div>
-    );
-  }
-
-  // Only the author can edit, and only if not marked as SOLVED (WORKED)
-  if (user?.clerk_id !== solution.author_details?.clerk_id) {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Unauthorized</h2>
-        <p className="mt-2 text-ink-muted">You can only edit your own solutions.</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push(`/problems/${problemId}`)}>
-          Back to Problem
-        </Button>
-      </div>
-    );
-  }
-
-  if (solution.status === "WORKED") {
-    return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Cannot Edit</h2>
-        <p className="mt-2 text-ink-muted">This solution is marked as correct and can no longer be edited.</p>
-        <Button variant="outline" className="mt-4" onClick={() => router.push(`/problems/${problemId}`)}>
-          Back to Problem
-        </Button>
-      </div>
-    );
-  }
+export default function EditSolutionPage({
+  params,
+}: {
+  params: Promise<{ id: string; solutionId: string }>;
+}) {
+  const { id: problemId } = use(params);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <Link href={`/problems/${problemId}`} className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors">
+    <div className="mx-auto max-w-2xl px-4 py-12 sm:px-6">
+      <Link
+        href={`/problems/${problemId}`}
+        className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors"
+      >
         <ChevronLeft className="mr-1 h-4 w-4" /> Back to problem
       </Link>
 
-      <PageHeader
-        title="Edit Solution"
-        description="Update your solution description and attachments."
-      />
-
-      <div className="mt-8">
-        {writeLocked ? (
-          <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
-            Your account is restricted. You cannot edit solutions at this time.
-          </div>
-        ) : (
-          <UpdateSolutionForm solution={solution} problemId={problemId} writeLocked={writeLocked} />
-        )}
+      <div className="rounded-2xl border border-warning/30 bg-warning/5 p-8 text-center sm:p-10 shadow-xs">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/15 text-warning mb-5">
+          <ShieldAlert className="h-7 w-7" />
+        </div>
+        <h2 className="text-xl font-bold tracking-tight text-ink sm:text-2xl">
+          Solution Editing Has Been Sunset
+        </h2>
+        <p className="mt-3 text-sm leading-relaxed text-ink-muted max-w-lg mx-auto">
+          To maintain verification integrity, prevent retroactive vote manipulation, and guarantee consensus finality, worked solutions cannot be modified after submission.
+        </p>
+        <p className="mt-2 text-xs text-ink-muted/80 max-w-md mx-auto">
+          If you have developed an improved proof, a correction, or an alternative derivation, submit a new candidate solution to the active 7-slot pool.
+        </p>
+        <div className="mt-8 flex justify-center gap-3">
+          <Link
+            href={`/problems/${problemId}`}
+            className={buttonVariants({ variant: "default" })}
+          >
+            Return to Problem
+          </Link>
+        </div>
       </div>
     </div>
   );

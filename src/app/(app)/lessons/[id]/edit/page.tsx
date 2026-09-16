@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
 import { Lesson, PaginatedResponse, Subject, Level, Tag } from "@/types";
-import { isWriteLocked } from "@/types/user";
+import { isWriteLocked, isAdminOrSuperAdmin } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
 import { UpdateLessonForm } from "@/components/features/lessons/update-lesson-form";
 import { getServerAuthToken } from "@/lib/auth-server";
@@ -30,7 +30,7 @@ export default async function EditLessonPage(props: {
   }
 
   // Verify permissions: only author or admin can edit
-  if (user.role !== "ADMIN" && lesson.author !== user.id) {
+  if (!isAdminOrSuperAdmin(user.role) && lesson.author !== user.id) {
     notFound(); // Alternatively, show a permission denied page
   }
 

@@ -208,8 +208,10 @@ export function FilterContent({
               { value: "", label: "All" },
               { value: "OPEN", label: "Open" },
               { value: "SOLVED", label: "Solved" },
+              { value: "FINAL", label: "Verified Consensus" },
               { value: "CLOSED", label: "Closed" },
             ].map((opt) => (
+
               <label
                 key={opt.value}
                 className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"

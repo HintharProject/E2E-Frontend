@@ -3,19 +3,33 @@
 import { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useSolution, useProblem, useMarkSolutionStatus, useVoteSolution } from "@/hooks/use-problems";
+import { useSolution, useProblem, useDeleteSolution } from "@/hooks/use-problems";
 import { useReport } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft } from "lucide-react";
+import {
+  ChevronLeft,
+  CheckCircle2,
+  Star,
+  UserCheck,
+  Archive,
+  Video,
+  Share2,
+  Flag,
+  Edit2,
+  Trash2,
+} from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
-import { formatDate } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { VoteWidget } from "@/components/features/contributions/vote-widget";
+import { AuthorEndorseButton } from "@/components/features/problems/author-endorse-button";
+import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { formatDate } from "@/lib/utils";
+import { toast } from "sonner";
 import {
   Dialog,
   DialogContent,
@@ -23,35 +37,28 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
+import { useState } from "react";
 
-export default function SolutionDetailPage({ params }: { params: Promise<{ id: string; solutionId: string }> }) {
+export default function SolutionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string; solutionId: string }>;
+}) {
   const { id: problemId, solutionId } = use(params);
   const router = useRouter();
   const { user } = useCurrentUser();
-  
-  const { data: solution, isLoading, isError } = useSolution(solutionId);
+
+  const { data: solution, isLoading: isSolLoading, isError: isSolError } = useSolution(solutionId);
   const { data: problem } = useProblem(problemId);
-  
-  const markStatusMutation = useMarkSolutionStatus();
-  const voteMutation = useVoteSolution();
+
   const reportMutation = useReport();
-
-  const [localVoteCount, setLocalVoteCount] = useState(0);
-  const [localUserVote, setLocalUserVote] = useState<number>(0);
-
-  useEffect(() => {
-    if (solution) {
-      setLocalVoteCount(solution.vote_count ?? 0);
-      setLocalUserVote(solution.user_vote ?? 0);
-    }
-  }, [solution]);
+  const deleteMutation = useDeleteSolution();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    toast.success("Link copied to clipboard!");
+    toast.success("Solution link copied to clipboard!");
   };
 
   const handleReport = async () => {
@@ -59,39 +66,41 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
     try {
       await reportMutation.mutateAsync({ targetId: solution.id, targetType: "SOLUTION" });
       toast.success("Solution reported to moderation queue.");
-    } catch (err: any) {
+    } catch {
       toast.error("Failed to report. You may have already reported this solution.");
     }
   };
 
-  const handleVote = (value: 1 | -1 | 0) => {
-    if (localUserVote === value || !solution) return;
-    const diff = value - localUserVote;
-    setLocalUserVote(value);
-    setLocalVoteCount((prev) => prev + diff);
-
-    voteMutation.mutate({ solutionId: solution.id, value }, {
-      onError: () => {
-        setLocalUserVote(localUserVote);
-        setLocalVoteCount((prev) => prev - diff);
-        toast.error("Failed to register vote.");
-      }
+  const handleDelete = async () => {
+    if (!solution) return;
+    setShowDeleteDialog(false);
+    toast.promise(deleteMutation.mutateAsync(solution.id), {
+      loading: "Deleting solution...",
+      success: () => {
+        router.push(`/problems/${problemId}`);
+        return "Solution deleted successfully";
+      },
+      error: (err: any) => err?.message || "Failed to delete solution.",
     });
   };
 
-  if (isLoading) {
+  if (isSolLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-64 rounded-2xl bg-card border border-line animate-pulse"></div>
+        <div className="h-72 rounded-2xl bg-card border border-line animate-pulse" />
       </div>
     );
   }
 
-  if (isError || !solution) {
+  if (isSolError || !solution) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
         <h2 className="text-xl font-bold text-ink">Solution not found</h2>
-        <Button variant="outline" className="mt-4" onClick={() => router.push(`/problems/${problemId}`)}>
+        <Button
+          variant="outline"
+          className="mt-4"
+          onClick={() => router.push(`/problems/${problemId}`)}
+        >
           Back to Problem
         </Button>
       </div>
@@ -99,56 +108,121 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
   }
 
   const author = solution.author_details;
+  const isAuthor =
+    (user?.id && user.id === author?.id) ||
+    (user?.clerk_id && user.clerk_id === author?.clerk_id);
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const canModify = isAuthor || isAdmin;
 
-  const imageAttachments = solution.attachments?.filter(att => {
-    const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
-    const ext = name.split('?')[0].split('.').pop()?.toLowerCase() || '';
-    return ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
-  }) || [];
-  
-  const otherAttachments = solution.attachments?.filter(att => {
-    const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
-    const ext = name.split('?')[0].split('.').pop()?.toLowerCase() || '';
-    return !['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext);
-  }) || [];
-  
+  const isProblemAuthor =
+    Boolean(
+      (user?.id && problem?.author && user.id === problem.author) ||
+      (user?.clerk_id && problem?.author_details?.clerk_id && user.clerk_id === problem.author_details.clerk_id)
+    );
+
+  const isAccepted = solution.is_accepted || solution.status === "WORKED";
+  const isAuthorSolution =
+    solution.is_author_solution ||
+    (author && problem && (author.id === problem.author || author.clerk_id === problem.author_details?.clerk_id));
+  const isEndorsed = solution.is_author_endorsed;
+  const isArchived = solution.is_active_pool === false;
+
+  const imageAttachments =
+    solution.attachments?.filter((att) => {
+      const name =
+        att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
+      return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
+    }) || [];
+
+  const otherAttachments =
+    solution.attachments?.filter((att) => {
+      const name =
+        att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
+      return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
+    }) || [];
+
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-      <Link href={`/problems/${problemId}`} className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors">
-        <ChevronLeft className="mr-1 h-4 w-4" /> Back to original problem
+      {/* Breadcrumb Back Link to Problem */}
+      <Link
+        href={`/problems/${problemId}`}
+        className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors"
+      >
+        <ChevronLeft className="mr-1 h-4 w-4" />
+        <span>Back to Problem{problem?.title ? `: ${problem.title}` : ""}</span>
       </Link>
 
+      {/* Header */}
       <PageHeader
-        title="Solution Detail"
-        description={`Posted ${formatDate(solution.created_at)}`}
+        title={`Worked Solution`}
+        description={`Submitted ${formatDate(solution.created_at)} by ${author?.display_name || "Community Solver"}`}
       />
 
+      {/* Solution Post Card */}
       <BaseDetailedCard
-        author={author ? {
-          id: author.id || "",
-          display_name: author.display_name || "Unknown",
-          profile_image_url: author.profile_image_url,
-        } : undefined}
-        badges={
-          <>
-            {solution.status === "WORKED" && (
-              <Badge variant="default" className="bg-green-500/10 text-green-500 hover:bg-green-500/20 border-green-500/20">
-                Marked as Working Solution
-              </Badge>
-            )}
-            {solution.status === "INCORRECT" && (
-              <Badge variant="secondary" className="bg-red-500/10 text-red-500 hover:bg-red-500/20 border-red-500/20">
-                Marked as Incorrect
-              </Badge>
-            )}
-            {solution.status === "PENDING" && (
-              <Badge variant="outline">
-                Pending Review
-              </Badge>
-            )}
-          </>
+        author={
+          author
+            ? {
+                id: author.id || "",
+                display_name: author.display_name || "Community Solver",
+                profile_image_url: author.profile_image_url,
+              }
+            : undefined
         }
-        body={solution.body}
+        badges={
+          <div className="flex flex-wrap items-center gap-1.5">
+            {author?.contributor_tier !== undefined && (
+              <ContributorBadge tier={author.contributor_tier} size="sm" />
+            )}
+
+            {isAccepted && (
+              <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px]">
+                <CheckCircle2 className="size-3" /> Accepted Solution
+              </Badge>
+            )}
+
+            {isAuthorSolution && (
+              <Badge variant="outline" className="border-brand/40 text-brand text-[10px] h-5 gap-1">
+                <UserCheck className="size-3" /> Problem Author
+              </Badge>
+            )}
+
+            {isEndorsed && (
+              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] h-5 gap-1">
+                <Star className="size-3 fill-amber-500 text-amber-500" /> Author Endorsed ★ (+5)
+              </Badge>
+            )}
+
+            {isArchived && (
+              <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+                <Archive className="size-3" /> Archived Attempt
+              </Badge>
+            )}
+          </div>
+        }
+        body={
+          <div className="space-y-4">
+            <div className="whitespace-pre-line leading-relaxed text-ink break-words">
+              {solution.body}
+            </div>
+
+            {solution.video_url && (
+              <div className="pt-2">
+                <a
+                  href={solution.video_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-muted/30 text-xs font-medium text-brand hover:border-brand/40"
+                >
+                  <Video className="size-4" />
+                  <span>Watch Video Walkthrough ↗</span>
+                </a>
+              </div>
+            )}
+          </div>
+        }
         mediaImages={
           imageAttachments.length > 0 ? (
             <LessonMediaViewer imageAttachments={imageAttachments as any} youtubeUrl={null} />
@@ -157,86 +231,118 @@ export default function SolutionDetailPage({ params }: { params: Promise<{ id: s
         fileAttachments={
           otherAttachments.length > 0 ? (
             <>
-              {otherAttachments.map(att => (
-                <PostAttachment key={att.id} url={att.attachment_url || att.file_url} filename={att.file_name} />
+              {otherAttachments.map((att) => (
+                <PostAttachment
+                  key={att.id}
+                  url={att.attachment_url || att.file_url}
+                  filename={att.file_name}
+                />
               ))}
             </>
           ) : undefined
         }
         interactions={
-          <>
-            <Button 
-              variant={localUserVote === 1 ? "default" : "secondary"} 
-              onClick={() => handleVote(localUserVote === 1 ? 0 : 1)} 
-            >
-              ▲ Upvote ({localVoteCount})
-            </Button>
-            <Button 
-              variant={localUserVote === -1 ? "default" : "ghost"} 
-              onClick={() => handleVote(localUserVote === -1 ? 0 : -1)} 
-            >
-              ▼ Downvote
-            </Button>
-            <Button variant="ghost" onClick={handleShare}>Share</Button>
-            {user?.clerk_id === author?.clerk_id && solution.status !== "WORKED" && (
-              <Button variant="ghost" nativeButton={false} render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}>
-                Edit
+          <div className="flex flex-wrap items-center justify-between gap-3 w-full">
+            {/* Left: VoteWidget & Post Interaction Buttons */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <VoteWidget
+                contentType="solutions"
+                contentId={solution.id}
+                initialScore={solution.vote_score ?? solution.vote_count ?? 0}
+                initialUserVote={solution.user_vote}
+                authorId={author?.id || (typeof solution.author === "string" ? solution.author : undefined)}
+                authorClerkId={author?.clerk_id}
+                problemAuthorId={problem?.author}
+                problemAuthorClerkId={problem?.author_details?.clerk_id}
+                isActivePool={!isArchived}
+                variant="pill"
+              />
+
+              <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs text-ink-muted hover:text-ink">
+                <Share2 className="size-3.5" />
+                <span>Share</span>
               </Button>
-            )}
-            {user?.clerk_id !== author?.clerk_id && (
-              <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
-                {reportMutation.isPending ? "Reporting..." : "Report"}
-              </Button>
-            )}
-            {user?.clerk_id === problem?.author_details?.clerk_id && solution.status === "PENDING" && (
-              <>
+
+              {!isAuthor && (
                 <Button
-                  variant="outline"
-                  className="border-green-500/50 text-green-600 hover:bg-green-500/10"
-                  disabled={markStatusMutation.isPending}
-                  onClick={() => {
-                    markStatusMutation.mutate(
-                      { solutionId: solution.id, status: "WORKED" },
-                      { onSuccess: () => toast.success("Marked as correct solution.") }
-                    );
-                  }}
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleReport}
+                  disabled={reportMutation.isPending}
+                  className="gap-1.5 text-xs text-ink-muted hover:text-destructive"
                 >
-                  Mark as Correct
+                  <Flag className="size-3.5" />
+                  <span>Report</span>
                 </Button>
-                <Dialog>
-                  <DialogTrigger render={<Button variant="outline" className="border-red-500/50 text-red-600 hover:bg-red-500/10" disabled={markStatusMutation.isPending} />}>
-                    Mark as Incorrect
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Mark as Incorrect</DialogTitle>
-                      <DialogDescription>
-                        Are you sure? This will mark it as incorrect and auto-delete it.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <DialogClose render={<Button variant="secondary" />}>Cancel</DialogClose>
-                      <DialogClose render={
-                        <Button
-                          variant="destructive"
-                          onClick={() => {
-                            markStatusMutation.mutate(
-                              { solutionId: solution.id, status: "INCORRECT" },
-                              { onSuccess: () => { toast.success("Marked as incorrect."); router.push(`/problems/${problemId}`); } }
-                            );
-                          }}
-                        />
-                      }>
-                        Confirm
-                      </DialogClose>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </>
+              )}
+
+              {isAuthor && !isAccepted && problem?.status !== "FINAL" && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}
+                  className="gap-1.5 text-xs text-ink-muted hover:text-ink"
+                >
+                  <Edit2 className="size-3.5" />
+                  <span>Edit</span>
+                </Button>
+              )}
+
+              {canModify && (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="gap-1.5 text-xs text-destructive/80 hover:text-destructive"
+                  >
+                    <Trash2 className="size-3.5" />
+                    <span>Delete</span>
+                  </Button>
+
+                  <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Delete Solution</DialogTitle>
+                        <DialogDescription>
+                          Are you sure you want to delete this worked solution? This action cannot be undone.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+                          Cancel
+                        </Button>
+                        <Button variant="destructive" onClick={handleDelete}>
+                          Delete
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </>
+              )}
+            </div>
+
+            {/* Right: Problem Author Endorsement */}
+            {problem && (
+              <div className="shrink-0">
+                <AuthorEndorseButton
+                  solutionId={solution.id}
+                  problemId={problem.id}
+                  isEndorsed={!!isEndorsed}
+                  solutionScore={solution.vote_score ?? solution.vote_count ?? 0}
+                  problemStatus={problem.status}
+                  isAuthor={isProblemAuthor}
+                  isOwnSolution={!!isAuthor}
+                />
+              </div>
             )}
-          </>
+          </div>
         }
       />
+
+      {/* Discussion & 2-Level Comments Underneath the Solution */}
+      <SolutionComments solutionId={solution.id} initialCount={solution.comment_count ?? 0} />
     </div>
   );
 }

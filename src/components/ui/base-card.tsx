@@ -70,7 +70,7 @@ export function BaseFeedCard({
                 </Link>
               ) : null}
             </div>
-            {subtitle && <p className="text-xs text-ink-muted">{subtitle}</p>}
+            {subtitle && <div className="text-xs text-ink-muted">{subtitle}</div>}
           </div>
         </div>
         <div className="flex items-center gap-1">

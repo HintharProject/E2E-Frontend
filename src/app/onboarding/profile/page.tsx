@@ -7,12 +7,14 @@ import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Loader2 } from "lucide-react";
 
+import { isAdminOrSuperAdmin } from "@/types/user";
+
 export default function OnboardingPage() {
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user?.role === "ADMIN") {
+    if (!isLoading && user && isAdminOrSuperAdmin(user.role)) {
       router.push("/forum");
     }
   }, [user, isLoading, router]);
@@ -25,7 +27,7 @@ export default function OnboardingPage() {
     );
   }
 
-  if (!user || user.role === "ADMIN") {
+  if (!user || isAdminOrSuperAdmin(user.role)) {
     return null; // Will redirect or not loaded yet
   }
 

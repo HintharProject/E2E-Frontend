@@ -9,7 +9,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -24,11 +23,19 @@ interface DevUser {
 }
 
 export function DevTools() {
+  // Hide completely in production or whenever dev login is not explicitly enabled
+  if (process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN !== "true") {
+    return null;
+  }
+
+  return <DevToolsModal />;
+}
+
+function DevToolsModal() {
   const [open, setOpen] = useState(false);
   const [activeToken, setActiveToken] = useState<string | null>(null);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setActiveToken(localStorage.getItem("dev_token"));
   }, []);
 
@@ -40,10 +47,8 @@ export function DevTools() {
       const data = await res.json();
       return Array.isArray(data) ? data : (data.data || data.results || []);
     },
-    enabled: open, // Only fetch when modal is open
+    enabled: open,
   });
-
-
 
   const handleLogin = (userId: string) => {
     localStorage.setItem("dev_token", `dev_${userId}`);
@@ -81,23 +86,27 @@ export function DevTools() {
 
         <div className="overflow-y-auto flex-1 pr-2 space-y-2 mt-4">
           {isLoading && <div className="p-4 text-center text-muted-foreground text-sm">Loading users...</div>}
-          {error && <div className="p-4 text-center text-destructive text-sm">Failed to load. Did you set ALLOW_DEV_LOGIN=True in the backend?</div>}
-          
+          {error && (
+            <div className="p-4 text-center text-destructive text-sm">
+              Failed to load dev users. Is ALLOW_DEV_LOGIN=True in the backend?
+            </div>
+          )}
+
           {users?.map((user) => {
             const isActive = activeToken === `dev_${user.id}`;
             return (
               <button
                 key={user.id}
                 onClick={() => handleLogin(user.id)}
-                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left
-                  ${isActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50 hover:bg-muted/50'}
+                className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors text-left cursor-pointer
+                  ${isActive ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border hover:border-primary/50 hover:bg-muted/50"}
                 `}
               >
                 <Avatar className="h-10 w-10 shrink-0">
                   <AvatarImage src={user.profile_image_url} />
                   <AvatarFallback>{user.display_name.slice(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="font-semibold text-sm truncate">{user.display_name}</span>
@@ -106,7 +115,16 @@ export function DevTools() {
                   <span className="text-xs text-muted-foreground truncate block">{user.email}</span>
                 </div>
 
-                <Badge variant={user.role === 'ADMIN' ? 'destructive' : 'secondary'} className="shrink-0 text-[10px]">
+                <Badge
+                  variant={
+                    user.role === "SUPERADMIN" || user.role === "ADMIN"
+                      ? "destructive"
+                      : user.role === "MODERATOR"
+                      ? "default"
+                      : "secondary"
+                  }
+                  className="shrink-0 text-[10px]"
+                >
                   {user.role}
                 </Badge>
               </button>
@@ -117,3 +135,4 @@ export function DevTools() {
     </Dialog>
   );
 }
+
