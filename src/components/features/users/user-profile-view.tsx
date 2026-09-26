@@ -35,8 +35,7 @@ export function UserProfileView({ userId }: { userId: string }) {
   const { data: levels = [] } = useLevels();
   const { data: subjects = [] } = useSubjects();
 
-  // Warm up contribution stats for the profile tabs and lessons rail
-  useContributionStats(userId);
+  const { data: stats } = useContributionStats(userId);
 
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
     queryKey: ["user", userId],
@@ -72,8 +71,13 @@ export function UserProfileView({ userId }: { userId: string }) {
     ? profile.weak_subjects.map((id) => subjects.find((s) => s.id === id)?.name).filter(Boolean).join(", ")
     : null;
 
-  const effectiveTier = profile.contributor_tier ?? profile.reputation?.contributor_tier ?? 0;
+  const effectiveTier =
+    stats?.contributor_tier ??
+    profile.contributor_tier ??
+    profile.reputation?.contributor_tier ??
+    0;
   const effectivePoints =
+    stats?.current_net_points ??
     profile.contribution_points ??
     profile.reputation?.contribution_points ??
     0;
