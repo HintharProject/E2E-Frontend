@@ -13,7 +13,6 @@ import {
   Square,
   MessageSquare,
   PenTool,
-  CheckSquare,
   PanelLeft,
   X,
 } from "lucide-react";
@@ -27,7 +26,6 @@ interface TrainTopBarProps {
   onCloseLeft?: () => void;
   onCloseRight?: () => void;
   timer: ReturnType<typeof useTrainTimer>;
-  onOpenSelfMark: () => void;
   onOpenAskInSolve: () => void;
   onOpenSolveAPaper: () => void;
   isSidebarOpen: boolean;
@@ -41,7 +39,6 @@ export function TrainTopBar({
   onCloseLeft,
   onCloseRight,
   timer,
-  onOpenSelfMark,
   onOpenAskInSolve,
   onOpenSolveAPaper,
   isSidebarOpen,
@@ -160,7 +157,7 @@ export function TrainTopBar({
 
       {/* Center Section: Resilient Timer Engine */}
       <div className="flex items-center justify-center shrink-0">
-        <TimerWidget timer={timer} onOpenSelfMark={onOpenSelfMark} />
+        <TimerWidget timer={timer} />
       </div>
 
       {/* Right Section: Dynamic View State, Active Chips & Contextual Actions */}
@@ -259,18 +256,6 @@ export function TrainTopBar({
             <span className="hidden xl:inline">Solve a Paper</span>
           </Button>
         )}
-
-        {/* Action: Self-Mark */}
-        <Button
-          size="sm"
-          variant="default"
-          className="h-8 px-3 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-2xs"
-          onClick={onOpenSelfMark}
-          title="Open interactive self-assessment drawer"
-        >
-          <CheckSquare className="size-3.5" />
-          <span>Self-Mark</span>
-        </Button>
       </div>
     </header>
   );

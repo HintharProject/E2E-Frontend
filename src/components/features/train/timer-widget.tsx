@@ -2,7 +2,6 @@
 
 import React, { useState } from "react";
 import { useTrainTimer } from "@/hooks/use-train";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,7 +26,6 @@ import { cn } from "@/lib/utils";
 interface TimerWidgetProps {
   timer: ReturnType<typeof useTrainTimer>;
   className?: string;
-  onOpenSelfMark?: () => void;
 }
 
 export function formatTime(totalSeconds: number): string {
@@ -44,7 +42,7 @@ export function formatTime(totalSeconds: number): string {
   return `${pad(mins)}:${pad(secs)}`;
 }
 
-export function TimerWidget({ timer, className, onOpenSelfMark }: TimerWidgetProps) {
+export function TimerWidget({ timer, className }: TimerWidgetProps) {
   const {
     mode,
     targetDurationSeconds,
@@ -229,21 +227,8 @@ export function TimerWidget({ timer, className, onOpenSelfMark }: TimerWidgetPro
             </button>
           </div>
           <p className="mt-1 text-[11px] text-ink-muted leading-relaxed">
-            Your exam practice time has concluded. Switch to Dual View to review against the Mark Scheme and record your score.
+            Your exam practice time has concluded. Review your answers against the Mark Scheme in Dual View.
           </p>
-          {onOpenSelfMark && (
-            <Button
-              size="sm"
-              variant="default"
-              className="mt-2.5 w-full h-7 text-xs font-semibold bg-primary text-primary-foreground"
-              onClick={() => {
-                setShowExpiredBanner(false);
-                onOpenSelfMark();
-              }}
-            >
-              Open Mark Scheme & Self-Mark
-            </Button>
-          )}
         </div>
       )}
     </div>

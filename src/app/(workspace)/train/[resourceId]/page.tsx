@@ -6,7 +6,6 @@ import { Resource, TrainTreePaper } from "@/types";
 import { TrainTopBar } from "@/components/features/train/train-top-bar";
 import { CurriculumTreeSidebar } from "@/components/features/train/curriculum-tree-sidebar";
 import { DualPdfViewer } from "@/components/features/train/dual-pdf-viewer";
-import { SelfMarkingDrawer } from "@/components/features/train/self-marking-drawer";
 import { AskInSolveModal } from "@/components/features/train/ask-in-solve-modal";
 import { SolveAPaperModal } from "@/components/features/train/solve-a-paper-modal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -283,7 +282,6 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   // Interactive drawers & modals state
-  const [isSelfMarkOpen, setIsSelfMarkOpen] = useState(false);
   const [isAskInSolveOpen, setIsAskInSolveOpen] = useState(false);
   const [isSolveAPaperOpen, setIsSolveAPaperOpen] = useState(false);
 
@@ -360,7 +358,6 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
         onCloseLeft={leftPaper ? handleCloseLeft : undefined}
         onCloseRight={rightPaper ? handleCloseRight : undefined}
         timer={timer}
-        onOpenSelfMark={() => setIsSelfMarkOpen(true)}
         onOpenAskInSolve={() => setIsAskInSolveOpen(true)}
         onOpenSolveAPaper={() => setIsSolveAPaperOpen(true)}
         isSidebarOpen={isSidebarOpen}
@@ -396,13 +393,6 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
       </div>
 
       {/* 3. Interactive Drawers & Modals */}
-      <SelfMarkingDrawer
-        isOpen={isSelfMarkOpen}
-        onClose={() => setIsSelfMarkOpen(false)}
-        paper={primaryPaper}
-        timer={timer}
-      />
-
       <AskInSolveModal
         isOpen={isAskInSolveOpen}
         onClose={() => setIsAskInSolveOpen(false)}
