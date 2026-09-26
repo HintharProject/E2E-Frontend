@@ -168,15 +168,12 @@ export default function SolutionDetailPage({
                 id: author.id || "",
                 display_name: author.display_name || "Community Solver",
                 profile_image_url: author.profile_image_url,
+                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
-            {author?.contributor_tier !== undefined && (
-              <ContributorBadge tier={author.contributor_tier} size="sm" />
-            )}
-
             {isAccepted && (
               <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px]">
                 <CheckCircle2 className="size-3" /> Accepted Solution

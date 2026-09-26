@@ -209,9 +209,10 @@ function FlatCommentItem({
               {author?.display_name || "Unknown"}
             </span>
 
-            {author?.contributor_tier !== undefined && (
-              <ContributorBadge tier={author.contributor_tier} size="sm" />
-            )}
+            <ContributorBadge
+              tier={author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+              size="sm"
+            />
 
             <span className="text-xs text-ink-muted">·</span>
             <span className="text-xs text-ink-muted">
@@ -378,9 +379,10 @@ function FlatCommentItem({
                     <span className="text-xs font-semibold text-ink truncate">
                       {replyAuthor?.display_name || "Unknown"}
                     </span>
-                    {replyAuthor?.contributor_tier !== undefined && (
-                      <ContributorBadge tier={replyAuthor.contributor_tier} size="sm" />
-                    )}
+                    <ContributorBadge
+                      tier={replyAuthor?.contributor_tier ?? (replyAuthor as any)?.reputation?.contributor_tier ?? 0}
+                      size="sm"
+                    />
                     <span className="text-[10px] text-ink-muted">·</span>
                     <span className="text-[10px] text-ink-muted">
                       {formatDate(reply.created_at)}

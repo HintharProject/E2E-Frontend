@@ -26,6 +26,7 @@ import {
   Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 
 interface AskInSolveModalProps {
   isOpen: boolean;
@@ -371,11 +372,15 @@ export function AskInSolveModal({
 
                           <div className="flex items-center gap-3 text-[11px] text-ink-muted mt-2 flex-wrap">
                             {prob.author_details && (
-                              <span>
-                                Asked by{" "}
+                              <span className="inline-flex items-center gap-1.5 flex-wrap">
+                                <span>Asked by</span>
                                 <strong className="text-ink font-medium">
                                   {prob.author_details.display_name}
                                 </strong>
+                                <ContributorBadge
+                                  tier={prob.author_details.contributor_tier ?? (prob.author_details as any)?.reputation?.contributor_tier ?? 0}
+                                  size="sm"
+                                />
                               </span>
                             )}
                             <span>•</span>

@@ -86,6 +86,7 @@ export function PostCard({ post }: { post: Post }) {
         id: author?.id || "",
         display_name: author?.display_name || "Unknown",
         profile_image_url: author?.profile_image_url,
+        contributor_tier: author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
       }}
       subtitle={`${formatDateStr(post.created_at)} · expires in ${expiresIn}d`}
       topRight={
@@ -218,6 +219,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         id: author.id || "",
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
+        contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
       } : undefined}
       subtitle={formatDateStr(lesson.created_at)}
       topRight={

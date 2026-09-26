@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
 import { useVoteComment } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -161,6 +162,12 @@ export function ThreadedComment({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-ink">{author?.display_name ?? "Unknown"}</span>
+            {author && (
+              <ContributorBadge
+                tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                size="sm"
+              />
+            )}
             <span className="text-xs text-ink-muted">{formatDate(comment.created_at)}</span>
           </div>
           

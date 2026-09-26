@@ -152,6 +152,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 id: author.id || "",
                 display_name: author.display_name || "Unknown",
                 profile_image_url: author.profile_image_url,
+                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
@@ -176,10 +177,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               <Badge variant="secondary" className="text-xs">
                 Closed
               </Badge>
-            )}
-
-            {author?.contributor_tier !== undefined && (
-              <ContributorBadge tier={author.contributor_tier} size="sm" />
             )}
 
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}

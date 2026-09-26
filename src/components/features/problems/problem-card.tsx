@@ -87,17 +87,11 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               id: author.id || "",
               display_name: author.display_name || "Unknown",
               profile_image_url: author.profile_image_url,
+              contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
             }
           : undefined
       }
-      subtitle={
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {author?.contributor_tier !== undefined && (
-            <ContributorBadge tier={author.contributor_tier} size="sm" />
-          )}
-          <span>· Asked {formatDate(problem.created_at)}</span>
-        </div>
-      }
+      subtitle={`Asked ${formatDate(problem.created_at)}`}
       topRight={
         <div className="flex items-center gap-1.5">
           {problem.status === "FINAL" && (

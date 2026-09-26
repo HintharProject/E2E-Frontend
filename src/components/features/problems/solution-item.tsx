@@ -158,9 +158,10 @@ export function SolutionItem({
                 <span className="text-sm font-semibold text-ink">{author?.display_name || "Community Solver"}</span>
               </Link>
 
-              {author?.contributor_tier !== undefined && (
-                <ContributorBadge tier={author.contributor_tier} size="sm" />
-              )}
+              <ContributorBadge
+                tier={author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                size="sm"
+              />
 
               <span className="text-xs text-ink-muted">· {formatDate(solution.created_at)}</span>
 
