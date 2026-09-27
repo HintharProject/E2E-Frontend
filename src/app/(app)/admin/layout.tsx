@@ -122,7 +122,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const navItems: NavItem[] = [
     { name: "Dashboard", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN" },
     { name: "Users", href: "/admin/users", icon: Users, minRole: "ADMIN" },
-    { name: "Moderation Queue", href: "/admin/reports/posts", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
+    { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
     { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree, minRole: "ADMIN" },
     { name: "Resources", href: "/admin/resources", icon: FolderTree, minRole: "ADMIN" },
     { name: "Announcements", href: "/admin/announcements", icon: Megaphone, minRole: "ADMIN" },

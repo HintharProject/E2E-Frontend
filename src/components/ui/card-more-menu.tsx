@@ -20,7 +20,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { useReport } from "@/hooks/use-interactions";
+import { ReportModal } from "@/components/features/moderation/report-modal";
 
 type ContentType = "POST" | "LESSON" | "PROBLEM" | "SOLUTION";
 
@@ -53,7 +53,7 @@ export function CardMoreMenu({
   onPublish,
   onArchive,
 }: CardMoreMenuProps) {
-  const reportMutation = useReport();
+  const [reportOpen, setReportOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
   const [archiveOpen, setArchiveOpen] = useState(false);
@@ -70,14 +70,7 @@ export function CardMoreMenu({
   function handleReport(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    toast.promise(
-      reportMutation.mutateAsync({ targetId: contentId, targetType: contentType }),
-      {
-        loading: "Submitting report...",
-        success: "Report submitted. Thank you.",
-        error: "Failed to submit report.",
-      }
-    );
+    setReportOpen(true);
   }
 
   async function handleDelete() {
@@ -131,10 +124,7 @@ export function CardMoreMenu({
           </DropdownMenuItem>
 
           {/* Report */}
-          <DropdownMenuItem
-            onClick={handleReport}
-            disabled={reportMutation.isPending}
-          >
+          <DropdownMenuItem onClick={handleReport}>
             <Flag className="h-3.5 w-3.5" />
             Report
           </DropdownMenuItem>
@@ -249,6 +239,15 @@ export function CardMoreMenu({
           </DialogContent>
         </Dialog>
       )}
+
+      {/* Global Report Modal */}
+      <ReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetId={contentId}
+        targetType={contentType}
+        targetTitle={deleteLabel}
+      />
     </>
   );
 }

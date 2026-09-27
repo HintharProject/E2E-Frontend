@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
+import { ReportModal } from "@/components/features/moderation/report-modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { isAdminOrSuperAdmin, isStaffRole } from "@/types/user";
@@ -31,6 +33,7 @@ export function UserProfileView({ userId }: { userId: string }) {
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
   const { user: appCurrentUser } = useCurrentUser();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: levels = [] } = useLevels();
   const { data: subjects = [] } = useSubjects();
@@ -157,7 +160,15 @@ export function UserProfileView({ userId }: { userId: string }) {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {!isSelf && <Button size="sm">Follow</Button>}
-              {!isSelf && <Button variant="ghost" size="sm">Report profile</Button>}
+              {!isSelf && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReportOpen(true)}
+                >
+                  Report profile
+                </Button>
+              )}
               {isSelf && (
                 <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings/profile" />}>
                   Edit Profile
@@ -170,6 +181,15 @@ export function UserProfileView({ userId }: { userId: string }) {
 
       <ProfileLessonsRail userId={userId} />
       <ProfileActivityTabs userId={userId} />
+
+      {/* Global Report Modal for Profile */}
+      <ReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetId={userId}
+        targetType="USER"
+        targetTitle={profile?.display_name || "User Profile"}
+      />
     </div>
   );
 }

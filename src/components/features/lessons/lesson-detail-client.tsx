@@ -1,15 +1,10 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
-import { apiFetch } from "@/services/api-client";
-import { Lesson } from "@/types";
 import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
 import dynamic from "next/dynamic";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
@@ -21,21 +16,15 @@ import { BaseDetailedCard } from "@/components/ui/base-card";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { useLesson } from "@/hooks/use-lessons";
 import { SaveButton } from "@/components/features/collections/save-button";
-
-function getInitials(name?: string | null): string {
-  if (!name) return "?";
-  return name.trim().split(/\s+/).map((p) => p[0]).join("").toUpperCase().slice(0, 2);
-}
-
-import { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useVoteLesson } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { ReportModal } from "@/components/features/moderation/report-modal";
 
 export function LessonDetailClient({ id }: { id: string }) {
   const { user: currentUser } = useCurrentUser();
-  const { getToken } = useAuth();
   const voteMutation = useVoteLesson();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: lesson, isLoading, isError } = useLesson(id);
 
@@ -129,7 +118,7 @@ export function LessonDetailClient({ id }: { id: string }) {
           id: author.id || "",
           display_name: author.display_name || "Unknown",
           profile_image_url: author.profile_image_url,
-          contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
+          contributor_tier: author.contributor_tier ?? 0,
         } : undefined}
         badges={
           <>
@@ -174,9 +163,20 @@ export function LessonDetailClient({ id }: { id: string }) {
             </Button>
             <SaveButton entityType="lesson" entityId={lesson.id} variant="secondary" size="default" showLabel label="Save" />
             <Button variant="ghost" onClick={handleShare}>Share</Button>
-            <Button variant="ghost">Report</Button>
+            <Button variant="ghost" onClick={() => setReportOpen(true)}>
+              Report
+            </Button>
           </>
         }
+      />
+
+      {/* Global Report Modal */}
+      <ReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetId={lesson.id}
+        targetType="LESSON"
+        targetTitle={lesson.title}
       />
     </div>
   );

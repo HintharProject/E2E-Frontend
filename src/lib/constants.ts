@@ -50,7 +50,7 @@ export const PRIMARY_NAV: NavItem[] = [
     match: ["/study-plans", "/saved-sessions"],
   },
   {
-    href: "/admin/reports/posts",
+    href: "/admin/reports",
     label: "Moderation",
     roles: ["MODERATOR", "ADMIN", "SUPERADMIN"],
     match: ["/admin/reports", "/moderation"],

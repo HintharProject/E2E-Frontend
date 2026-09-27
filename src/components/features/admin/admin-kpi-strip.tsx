@@ -152,7 +152,7 @@ export function AdminKpiStrip({ summary }: AdminKpiStripProps) {
         </div>
         <div className="mt-3 pt-2 border-t border-line/60">
           <Link
-            href="/admin/reports/posts"
+            href="/admin/reports"
             className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
           >
             Review Moderation Queue <ArrowUpRight className="size-3.5" />
