@@ -28,6 +28,7 @@ import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "@/components/features/problems/author-endorse-button";
 import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { SaveButton } from "@/components/features/collections/save-button";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -253,6 +254,16 @@ export default function SolutionDetailPage({
                 problemAuthorClerkId={problem?.author_details?.clerk_id}
                 isActivePool={!isArchived}
                 variant="pill"
+              />
+
+              <SaveButton
+                entityType="solution"
+                entityId={solution.id}
+                variant="ghost"
+                size="sm"
+                showLabel
+                label="Save"
+                className="gap-1.5 text-xs text-ink-muted hover:text-ink"
               />
 
               <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs text-ink-muted hover:text-ink">

@@ -21,7 +21,6 @@ import { BaseDetailedCard } from "@/components/ui/base-card";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { useLesson } from "@/hooks/use-lessons";
 import { SaveButton } from "@/components/features/collections/save-button";
-import { SaveToStudyPlanDialog } from "@/components/features/collections/save-to-study-plan-dialog";
 
 function getInitials(name?: string | null): string {
   if (!name) return "?";
@@ -173,8 +172,7 @@ export function LessonDetailClient({ id }: { id: string }) {
             >
               ▼ Downvote
             </Button>
-            <SaveToStudyPlanDialog lessonId={lesson.id} />
-            <SaveButton entityType="lesson" entityId={lesson.id} variant="secondary" size="default" showLabel label="Save to session" />
+            <SaveButton entityType="lesson" entityId={lesson.id} variant="secondary" size="default" showLabel label="Save" />
             <Button variant="ghost" onClick={handleShare}>Share</Button>
             <Button variant="ghost">Report</Button>
           </>

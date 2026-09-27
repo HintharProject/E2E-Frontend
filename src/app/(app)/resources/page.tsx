@@ -23,6 +23,7 @@ import {
   DocumentViewerModal,
   ViewingDocument,
 } from "@/components/features/resources/document-viewer-modal";
+import { SaveButton } from "@/components/features/collections/save-button";
 import type { Resource } from "@/types";
 
 function ResourcesFeed() {
@@ -200,6 +201,15 @@ function ResourcesFeed() {
                         {ext ? `${ext.replace(".", "")} Document` : "Document"}
                       </span>
                       <div className="flex items-center gap-2">
+                        <SaveButton
+                          entityType="resource"
+                          entityId={tb.id}
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
+                          showLabel
+                          label="Save"
+                        />
                         <Button
                           size="sm"
                           variant="outline"

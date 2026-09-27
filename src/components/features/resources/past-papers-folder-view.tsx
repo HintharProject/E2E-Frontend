@@ -18,6 +18,7 @@ import {
   Check,
   Play,
 } from "lucide-react";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 export function formatSession(s?: string): string {
   if (s === "MAY_JUNE") return "May / June";
@@ -244,6 +245,16 @@ export function PastPapersFolderView({
                                   <Play className="size-3 fill-current" />
                                   <span>Train!</span>
                                 </Link>
+
+                                <SaveButton
+                                  entityType="resource"
+                                  entityId={paper.id}
+                                  variant="secondary"
+                                  size="sm"
+                                  className="h-8 px-2.5 gap-1.5 text-xs font-semibold shadow-2xs"
+                                  showLabel
+                                  label="Save"
+                                />
 
                                 {/* Download Link */}
                                 <a

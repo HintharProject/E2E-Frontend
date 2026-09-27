@@ -34,8 +34,15 @@ export interface SavedSession {
 export interface StudyPlanItem {
   id: string;
   study_plan: string;
-  lesson: string;
+  item_type?: SavedItemType;
+  lesson?: string | null;
   lesson_details?: Lesson | null;
+  problem?: string | null;
+  problem_details?: Problem | null;
+  solution?: string | null;
+  solution_details?: Solution | null;
+  resource?: string | null;
+  resource_details?: Resource | null;
   added_at: string;
 }
 

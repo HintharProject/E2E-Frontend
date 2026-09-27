@@ -145,15 +145,16 @@ export async function deleteStudyPlan(
 
 export async function addStudyPlanItem(
   planId: string,
-  lessonId: string,
+  target: SaveTargetPayload | string,
   token: string
 ): Promise<StudyPlanItem> {
+  const payload = typeof target === "string" ? { lesson: target } : target;
   return apiFetch<StudyPlanItem>(
     `/study-plans/${planId}/items/`,
     token,
     {
       method: "POST",
-      body: JSON.stringify({ lesson: lessonId }),
+      body: JSON.stringify(payload),
     }
   );
 }

@@ -254,60 +254,137 @@ export default function StudyPlanDetailPage({
 
       {/* Sequential Playlist */}
       {items.length === 0 ? (
-        <EmptyState
-          title="No lessons in this study plan"
-          description="Browse published lessons across the platform and click 'Add to Study Plan' to curate your sequential learning path."
-        />
+        <div className="rounded-2xl border border-dashed border-line bg-card/40 p-10 text-center sm:p-14">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-3">
+            <BookOpen className="h-6 w-6" />
+          </div>
+          <h3 className="font-display text-lg font-bold text-ink">No lessons in this study plan yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted leading-relaxed">
+            Browse published lessons across the platform and click &quot;Add to Study Plan&quot; to curate your sequential curriculum.
+          </p>
+          <div className="mt-6 flex justify-center">
+            <Button
+              nativeButton={false}
+              render={<Link href="/lessons" />}
+              className="gap-2"
+            >
+              <BookOpen className="h-4 w-4" />
+              Browse Lessons
+            </Button>
+          </div>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div className="flex items-center justify-between pb-1">
-            <h2 className="font-display font-semibold text-sm text-ink">
-              Sequential Learning Progression ({items.length} Lessons)
+            <h2 className="font-display font-semibold text-base text-ink">
+              Sequential Learning Progression ({items.length} {items.length === 1 ? "Item" : "Items"})
             </h2>
             <span className="text-xs text-ink-muted">
               Step-by-step syllabus playlist
             </span>
           </div>
 
-          <div className="space-y-2.5">
+          <div className="space-y-3">
             {items.map((item, index) => {
-              const lesson = item.lesson_details || (typeof item.lesson === "object" ? item.lesson : null);
-              const lessonId = lesson?.id || (typeof item.lesson === "string" ? item.lesson : "");
               const stepNumber = String(index + 1).padStart(2, "0");
               const isRemoving = removingItemId === item.id;
+
+              const isLesson = Boolean(item.lesson || item.item_type === "LESSON" || item.lesson_details);
+              const isProblem = Boolean(item.problem || item.item_type === "PROBLEM" || item.problem_details);
+              const isSolution = Boolean(item.solution || item.item_type === "SOLUTION" || item.solution_details);
+              const isResource = Boolean(item.resource || item.item_type === "RESOURCE" || item.resource_details);
+
+              let itemTitle = "Curriculum Item";
+              let itemHref = "#";
+              let typeBadge = "Lesson";
+              let actionLabel = "Study";
+              let badgeStyle = "border-amber-500/30 text-amber-600 bg-amber-500/5";
+              let subjectName: string | undefined;
+              let levelName: string | undefined;
+              let authorName: string | undefined;
+
+              if (isProblem) {
+                const problem = item.problem_details || (typeof item.problem === "object" ? (item.problem as any) : null);
+                const problemId = problem?.id || (typeof item.problem === "string" ? item.problem : "");
+                itemTitle = problem?.title || `Problem ${problemId.slice(0, 8)}`;
+                itemHref = `/problems/${problemId}`;
+                typeBadge = "Problem";
+                actionLabel = "Solve!";
+                badgeStyle = "border-indigo-500/30 text-indigo-600 bg-indigo-500/5";
+                subjectName = problem?.subject_details?.name;
+                levelName = problem?.level_details?.name;
+                authorName = problem?.author_details?.display_name;
+              } else if (isSolution) {
+                const solution = item.solution_details || (typeof item.solution === "object" ? (item.solution as any) : null);
+                const solutionId = solution?.id || (typeof item.solution === "string" ? item.solution : "");
+                const problemId = solution?.problem || "";
+                itemTitle = solution?.body ? `Solution: ${solution.body.slice(0, 60)}...` : `Solution ${solutionId.slice(0, 8)}`;
+                itemHref = `/problems/${problemId}/solutions/${solutionId}`;
+                typeBadge = "Worked Solution";
+                actionLabel = "Solution";
+                badgeStyle = "border-emerald-500/30 text-emerald-600 bg-emerald-500/5";
+                authorName = solution?.author_details?.display_name;
+              } else if (isResource) {
+                const resource = item.resource_details || (typeof item.resource === "object" ? (item.resource as any) : null);
+                const resourceId = resource?.id || (typeof item.resource === "string" ? item.resource : "");
+                itemTitle = resource?.file_name || `Resource ${resourceId.slice(0, 8)}`;
+                itemHref = resource?.resource_type === "PAST_PAPER" ? `/train/${resourceId}` : (resource?.download_url || resource?.file_url || `/resources`);
+                typeBadge = resource?.resource_type === "PAST_PAPER" ? "Past Paper" : "Textbook";
+                actionLabel = resource?.resource_type === "PAST_PAPER" ? "Train!" : "Open";
+                badgeStyle = "border-blue-500/30 text-blue-600 bg-blue-500/5";
+                subjectName = resource?.subject_details?.name;
+                levelName = resource?.level_details?.name;
+              } else {
+                const lesson = item.lesson_details || (typeof item.lesson === "object" ? (item.lesson as any) : null);
+                const lessonId = lesson?.id || (typeof item.lesson === "string" ? item.lesson : "");
+                itemTitle = lesson?.title || `Lesson ${lessonId.slice(0, 8)}`;
+                itemHref = `/lessons/${lessonId}`;
+                typeBadge = "Lesson";
+                actionLabel = "Study";
+                badgeStyle = "border-amber-500/30 text-amber-600 bg-amber-500/5";
+                subjectName = lesson?.subject_details?.name;
+                levelName = lesson?.level_details?.name;
+                authorName = lesson?.author_details?.display_name;
+              }
 
               return (
                 <div
                   key={item.id}
-                  className="group relative flex items-center justify-between rounded-xl border border-line bg-card p-4 transition hover:border-brand/40 hover:shadow-xs"
+                  className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-line bg-card p-5 transition-all hover:border-brand/40 hover:shadow-xs"
                 >
-                  <div className="flex items-center gap-4 min-w-0 pr-4">
+                  <div className="flex items-start sm:items-center gap-4 min-w-0 pr-2">
                     {/* Step Number Index */}
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 font-display font-bold text-sm text-brand">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 font-display font-bold text-sm text-brand">
                       {stepNumber}
                     </div>
 
-                    <div className="space-y-1 min-w-0">
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className={cn("text-[10px] font-semibold uppercase", badgeStyle)}>
+                          {typeBadge}
+                        </Badge>
+                      </div>
+
                       <Link
-                        href={`/lessons/${lessonId}`}
+                        href={itemHref}
                         className="font-display font-semibold text-base text-ink hover:text-brand hover:underline transition truncate block"
                       >
-                        {lesson?.title || `Lesson ${lessonId.slice(0, 8)}`}
+                        {itemTitle}
                       </Link>
 
                       <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
-                        {lesson?.subject_details && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {lesson.subject_details.name}
+                        {subjectName && (
+                          <Badge variant="outline" className="text-[11px] font-normal">
+                            {subjectName}
                           </Badge>
                         )}
-                        {lesson?.level_details && (
-                          <Badge variant="outline" className="text-[10px]">
-                            {lesson.level_details.name}
+                        {levelName && (
+                          <Badge variant="outline" className="text-[11px] font-normal">
+                            {levelName}
                           </Badge>
                         )}
-                        {lesson?.author_details && (
-                          <span>By {lesson.author_details.display_name}</span>
+                        {authorName && (
+                          <span>By {authorName}</span>
                         )}
                         <span>·</span>
                         <span>Added {formatDate(item.added_at)}</span>
@@ -316,25 +393,25 @@ export default function StudyPlanDetailPage({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                     <Button
                       size="sm"
-                      variant="ghost"
-                      className="text-xs gap-1 text-brand hover:text-brand"
+                      variant="outline"
+                      className="text-xs gap-1.5 text-brand hover:text-brand"
                       nativeButton={false}
-                      render={<Link href={`/lessons/${lessonId}`} />}
+                      render={<Link href={itemHref} />}
                     >
-                      <span>Study</span>
+                      <span>{actionLabel}</span>
                       <ArrowRight className="h-3.5 w-3.5" />
                     </Button>
 
                     {isOwner && (
                       <button
                         type="button"
-                        onClick={() => handleRemoveLesson(item.id, lesson?.title)}
+                        onClick={() => handleRemoveLesson(item.id, itemTitle)}
                         disabled={isRemoving}
-                        className="p-1.5 rounded-lg text-ink-muted hover:text-destructive hover:bg-destructive/10 transition cursor-pointer"
-                        title="Remove lesson from plan"
+                        className="p-2 rounded-lg text-ink-muted hover:text-destructive hover:bg-destructive/10 transition cursor-pointer"
+                        title="Remove item from plan"
                       >
                         {isRemoving ? (
                           <Loader2 className="h-4 w-4 animate-spin" />

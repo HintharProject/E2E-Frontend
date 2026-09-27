@@ -20,6 +20,7 @@ import {
   X,
   Bookmark,
   Check,
+  ArrowRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -455,23 +456,39 @@ export default function SavedSessionDetailPage({
                       </Badge>
                     </div>
 
+                    {/* Solution Text (Clickable to detailed view) */}
                     <Link
-                      href={`/problems/${item.solution_details.problem}#solution-${item.solution_details.id}`}
+                      href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
                       className="block group/solution hover:opacity-95 transition"
                     >
                       <div className="line-clamp-3 text-sm text-ink/90 whitespace-pre-line font-sans">
                         {item.solution_details.body}
                       </div>
-
-                      <div className="mt-3 flex items-center justify-between pt-2 border-t border-line/60 text-xs">
-                        <span className="text-ink-muted font-medium">
-                          By {item.solution_details.author_details?.display_name || "Community Solver"}
-                        </span>
-                        <span className="inline-flex items-center gap-1 font-semibold text-brand group-hover/solution:underline">
-                          View in Problem Workspace <ExternalLink className="h-3 w-3" />
-                        </span>
-                      </div>
                     </Link>
+
+                    {/* Metadata & Actions */}
+                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line/60 text-xs">
+                      <span className="text-ink-muted font-medium">
+                        By {item.solution_details.author_details?.display_name || "Community Solver"}
+                      </span>
+                      <div className="flex items-center gap-3">
+                        <Link
+                          href={`/problems/${item.solution_details.problem}`}
+                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink hover:underline font-medium transition"
+                          title="Open related problem in Solve! workspace"
+                        >
+                          <span>View Problem</span>
+                          <ExternalLink className="h-3 w-3" />
+                        </Link>
+                        <Link
+                          href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
+                          className="inline-flex items-center gap-1 font-semibold text-brand hover:underline transition"
+                        >
+                          <span>View Solution</span>
+                          <ArrowRight className="h-3 w-3" />
+                        </Link>
+                      </div>
+                    </div>
                   </div>
                 )}
 
