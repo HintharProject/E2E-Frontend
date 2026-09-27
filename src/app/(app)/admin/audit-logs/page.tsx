@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { SubNav } from "@/components/ui/sub-nav";
@@ -19,9 +23,20 @@ interface AuditLog {
 
 export default function AdminAuditLogsPage() {
   const { getToken } = useAuth();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   const { data: logs = [], isLoading } = useQuery<AuditLog[]>({
     queryKey: ["adminAuditLogs"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
@@ -29,6 +44,14 @@ export default function AdminAuditLogsPage() {
       return Array.isArray(res) ? res : (res?.data || res?.results || []);
     },
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

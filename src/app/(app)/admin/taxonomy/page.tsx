@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Loader2, Plus, Trash2, Edit2 } from "lucide-react";
@@ -143,6 +146,25 @@ function TagsSection() {
 }
 
 export default function AdminTaxonomyPage() {
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader

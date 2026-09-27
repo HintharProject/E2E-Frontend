@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -41,6 +44,16 @@ import { EditResourceDialog } from "@/components/features/admin/edit-resource-di
 export default function AdminResourcesPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   // Selection Filters
   const [selectedLevel, setSelectedLevel] = useState<string>("");
@@ -70,6 +83,7 @@ export default function AdminResourcesPage() {
   // Fetch Levels & Subjects
   const { data: levels = [] } = useQuery<any[]>({
     queryKey: ["levels"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       const res = await apiFetch<any>("/levels/", token as string);
@@ -79,6 +93,7 @@ export default function AdminResourcesPage() {
 
   const { data: subjects = [] } = useQuery<any[]>({
     queryKey: ["subjects"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       const res = await apiFetch<any>("/subjects/", token as string);
@@ -98,7 +113,7 @@ export default function AdminResourcesPage() {
       );
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
-    enabled: !!selectedLevel && !!selectedSubject,
+    enabled: isAuthorized && !!selectedLevel && !!selectedSubject,
   });
 
   // Delete Mutation
@@ -198,6 +213,14 @@ export default function AdminResourcesPage() {
       item.session?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

@@ -8,9 +8,14 @@ import { SubNav } from "@/components/ui/sub-nav";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
+
 export default function AdminLessonReportsPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useCurrentUser();
+  const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
 
   const { data: reports = [], isLoading } = useQuery<any[]>({
     queryKey: ["adminReports", "LESSON"],
@@ -59,7 +64,7 @@ export default function AdminLessonReportsPage() {
           { href: "/admin/reports/posts", label: "Posts" },
           { href: "/admin/reports/lessons", label: "Lessons", active: true },
           { href: "/admin/reports/profiles", label: "Profiles" },
-          { href: "/admin/audit-logs", label: "Audit logs" },
+          ...(isAdmin ? [{ href: "/admin/audit-logs", label: "Audit logs" }] : []),
         ]}
       />
 

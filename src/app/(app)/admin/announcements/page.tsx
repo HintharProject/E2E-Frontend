@@ -1,7 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { Loader2, Megaphone, Trash2, Plus } from "lucide-react";
@@ -10,9 +14,20 @@ import { Button } from "@/components/ui/button";
 export default function AdminAnnouncementsPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   const { data: announcements = [], isLoading } = useQuery<any[]>({
     queryKey: ["adminAnnouncements"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
@@ -32,6 +47,14 @@ export default function AdminAnnouncementsPage() {
       queryClient.invalidateQueries({ queryKey: ["adminAnnouncements"] });
     },
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

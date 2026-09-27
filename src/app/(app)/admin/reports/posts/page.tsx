@@ -9,9 +9,14 @@ import { Loader2, Trash2, EyeOff, Lock, CheckCircle, XCircle } from "lucide-reac
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
+
 export default function AdminPostReportsPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useCurrentUser();
+  const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
 
   const { data: reports = [], isLoading } = useQuery<any[]>({
     queryKey: ["adminReports", "POST"],
@@ -61,7 +66,7 @@ export default function AdminPostReportsPage() {
           { href: "/admin/reports/posts", label: "Posts", active: true },
           { href: "/admin/reports/lessons", label: "Lessons" },
           { href: "/admin/reports/profiles", label: "Profiles" },
-          { href: "/admin/audit-logs", label: "Audit logs" },
+          ...(isAdmin ? [{ href: "/admin/audit-logs", label: "Audit logs" }] : []),
         ]}
       />
 

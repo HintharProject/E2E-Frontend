@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import Link from "next/link";
@@ -16,7 +17,7 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { isSuperAdmin, RoleEnum, BanState } from "@/types/user";
+import { isSuperAdmin, isAdminOrSuperAdmin, RoleEnum, BanState } from "@/types/user";
 import { ContributorTier } from "@/types/contribution";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { BanCountdownBadge } from "@/components/features/admin/ban-countdown-badge";
@@ -54,7 +55,16 @@ export interface AdminUserItem {
 export default function AdminUsersPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const { user: currentUser } = useCurrentUser();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -69,6 +79,7 @@ export default function AdminUsersPage() {
 
   const { data, isLoading } = useQuery<any>({
     queryKey: ["adminUsers", debouncedSearch],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
@@ -76,6 +87,14 @@ export default function AdminUsersPage() {
       return apiFetch<any>(`/users/${qs}`, token);
     },
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const users: AdminUserItem[] = Array.isArray(data) ? data : (data?.data || data?.results || []);
 

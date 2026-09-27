@@ -9,9 +9,14 @@ import { Loader2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
+
 export default function AdminProfileReportsPage() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useCurrentUser();
+  const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
 
   const { data: reports = [], isLoading } = useQuery<any[]>({
     queryKey: ["adminReports", "USER"],
@@ -47,7 +52,7 @@ export default function AdminProfileReportsPage() {
           { href: "/admin/reports/posts", label: "Posts" },
           { href: "/admin/reports/lessons", label: "Lessons" },
           { href: "/admin/reports/profiles", label: "Profiles", active: true },
-          { href: "/admin/audit-logs", label: "Audit logs" },
+          ...(isAdmin ? [{ href: "/admin/audit-logs", label: "Audit logs" }] : []),
         ]}
       />
 

@@ -1,10 +1,14 @@
 "use client";
 
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Loader2 } from "lucide-react";
 import { AnalyticsResponse } from "@/components/features/admin/admin-analytics-types";
 import { AdminKpiStrip } from "@/components/features/admin/admin-kpi-strip";
 import { AdminContentExplorer } from "@/components/features/admin/admin-content-explorer";
@@ -13,15 +17,34 @@ import { AdminCurriculumHealth } from "@/components/features/admin/admin-curricu
 
 export default function AdminDashboardPage() {
   const { getToken } = useAuth();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   const { data, isLoading, error, refetch, isRefetching } = useQuery<AnalyticsResponse>({
     queryKey: ["adminAnalytics"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return apiFetch<AnalyticsResponse>("/analytics/", token);
     },
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-8 pb-16">
