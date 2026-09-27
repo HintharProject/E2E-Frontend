@@ -19,6 +19,7 @@ import { ProblemAuthorActions } from "@/components/features/problems/problem-aut
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 const LessonMediaViewer = dynamic(
   () => import("@/components/features/lessons/lesson-media-viewer").then((mod) => mod.LessonMediaViewer),
@@ -212,6 +213,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             <Button variant="ghost" size="sm" onClick={handleShare}>
               Share
             </Button>
+            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" showLabel label="Save" />
             {user?.clerk_id !== problem.author_details?.clerk_id && (
               <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}

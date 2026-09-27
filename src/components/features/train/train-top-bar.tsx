@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isAdminOrSuperAdmin } from "@/types/user";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 interface TrainTopBarProps {
   paper: Resource;
@@ -230,6 +231,17 @@ export function TrainTopBar({
             </div>
           )}
         </div>
+
+        {/* Action: Save Paper to Session */}
+        <SaveButton
+          entityType="resource"
+          entityId={paper.id}
+          variant="outline"
+          size="sm"
+          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-line hover:border-primary/40 text-ink shadow-2xs"
+          showLabel
+          label="Save Paper"
+        />
 
         {/* Action: Ask in Solve! */}
         <Button

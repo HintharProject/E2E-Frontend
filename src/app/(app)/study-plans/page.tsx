@@ -14,24 +14,24 @@ export default async function StudyPlansPage() {
   
   let mine: StudyPlan[] = [];
   try {
-    const res = await apiFetch<PaginatedResponse<StudyPlan>>("/study-plans/", token ?? "");
+    const res = await apiFetch<PaginatedResponse<StudyPlan>>("/study-plans/?expand=items", token ?? "");
     mine = res.data;
   } catch (error) {
     console.error("Failed to fetch study plans:", error);
   }
 
-  const hasEmpty = mine.some(plan => plan.items.length === 0);
-  const atCap = mine.length >= 3;
+  const hasEmpty = mine.some(plan => !plan.items || plan.items.length === 0);
+  const atCap = mine.length >= 12;
   const canCreate = !atCap && !hasEmpty;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
       <PageHeader
         title="Study plans"
-        description="Up to 3 plans of lessons only. Cannot create another while one is empty."
+        description="Up to 12 plans of lessons only. Cannot create another while one is empty."
         actions={
           <Button disabled={!canCreate} nativeButton={false} render={canCreate ? <Link href="/study-plans/new" /> : undefined}>
-            {atCap ? "Limit reached (3)" : hasEmpty ? "Empty plan exists" : "New plan"}
+            {atCap ? "Limit reached (12)" : hasEmpty ? "Empty plan exists" : "New plan"}
           </Button>
         }
       />

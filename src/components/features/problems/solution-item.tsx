@@ -14,6 +14,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "./author-endorse-button";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
+import { SaveButton } from "@/components/features/collections/save-button";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -239,6 +240,8 @@ export function SolutionItem({
             isAuthor={isProblemAuthor}
             isOwnSolution={!!isAuthor}
           />
+
+          <SaveButton entityType="solution" entityId={solution.id} variant="icon" />
 
           <CardMoreMenu
             shareUrl={shareUrl}

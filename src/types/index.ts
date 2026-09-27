@@ -123,40 +123,7 @@ export interface PaginatedResponse<T> {
   meta: PaginatedMeta;
 }
 
-export interface StudyPlanItem {
-  id: string;
-  study_plan: string;
-  lesson: string;
-  added_at: string;
-}
-
-export interface StudyPlan {
-  id: string;
-  user: string;
-  title: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  items: StudyPlanItem[];
-}
-
-export interface SavedSessionItem {
-  id: string;
-  saved_session: string;
-  post: string | null;
-  lesson: string | null;
-  added_at: string;
-}
-
-export interface SavedSession {
-  id: string;
-  user: string;
-  title: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  items: SavedSessionItem[];
-}
+export * from "./collections";
 
 export type ProblemStatusEnum = "OPEN" | "SOLVED" | "FINAL" | "CLOSED";
 export type ProblemOriginEnum = "USER_UPLOAD" | "PAST_PAPER";

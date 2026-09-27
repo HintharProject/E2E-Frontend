@@ -16,6 +16,7 @@ import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useDeletePost } from "@/hooks/use-interactions";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
 import { BaseFeedCard } from "@/components/ui/base-card";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 
 function formatDateStr(dateStr: string): string {
@@ -124,9 +125,13 @@ export function PostCard({ post }: { post: Post }) {
               authorClerkId={author?.clerk_id}
             />
             <span>· {post.comment_count ?? 0} comments</span>
+            <SaveButton entityType="post" entityId={post.id} variant="icon" />
           </>
         ) : (
-          <span>{post.comment_count ?? 0} comments</span>
+          <div className="flex items-center gap-1.5">
+            <span>{post.comment_count ?? 0} comments</span>
+            <SaveButton entityType="post" entityId={post.id} variant="icon" />
+          </div>
         )
       }
       moreMenu={
@@ -243,6 +248,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
             authorClerkId={author?.clerk_id}
           />
+          <SaveButton entityType="lesson" entityId={lesson.id} variant="icon" />
         </div>
       }
       title={lesson.title}
