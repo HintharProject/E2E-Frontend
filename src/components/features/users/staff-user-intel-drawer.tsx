@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Shield,
   ShieldAlert,
@@ -12,7 +13,6 @@ import {
   Coins,
   AlertTriangle,
   CheckCircle2,
-  Clock,
   Eye,
   EyeOff,
   Trash2,
@@ -21,13 +21,16 @@ import {
   Layers,
   ExternalLink,
   X,
+  RotateCcw,
 } from "lucide-react";
 import { useModAnalytics } from "@/hooks/use-mod-analytics";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { BanCountdownBadge } from "@/components/features/admin/ban-countdown-badge";
 import { ManageSanctionModal } from "@/components/features/admin/manage-sanction-modal";
 import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
 import { ChangeRoleModal } from "@/components/features/admin/change-role-modal";
 import { formatDate, cn } from "@/lib/utils";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import type { UserPublic } from "@/types";
 import type { RoleEnum, BanState } from "@/types/user";
 import type { ContributorTier } from "@/types/contribution";
@@ -68,17 +71,17 @@ function StatCard({
   accent?: "red" | "amber" | "green" | "blue" | "default";
 }) {
   const accentClass = {
-    red: "border-red-500/30 bg-red-500/5 text-red-500",
-    amber: "border-amber-500/30 bg-amber-500/5 text-amber-500",
-    green: "border-emerald-500/30 bg-emerald-500/5 text-emerald-500",
-    blue: "border-blue-500/30 bg-blue-500/5 text-blue-500",
-    default: "border-line bg-card",
+    red: "border-red-500/30 bg-red-500/5 text-red-600 dark:text-red-400",
+    amber: "border-amber-500/30 bg-amber-500/5 text-amber-600 dark:text-amber-400",
+    green: "border-emerald-500/30 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400",
+    blue: "border-blue-500/30 bg-blue-500/5 text-blue-600 dark:text-blue-400",
+    default: "border-line bg-card text-ink",
   }[accent ?? "default"];
 
   return (
     <div className={`rounded-xl border p-3 ${accentClass}`}>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted mb-0.5">{label}</p>
-      <p className="text-2xl font-black text-ink tabular-nums">{value}</p>
+      <p className="text-2xl font-black tabular-nums">{value}</p>
       {sub && <p className="text-[11px] text-ink-muted mt-0.5">{sub}</p>}
     </div>
   );
@@ -126,6 +129,7 @@ export function StaffUserIntelDrawer({
   onOpenChange: setControlledOpen,
   onActionSuccess,
 }: StaffUserIntelDrawerProps) {
+  const queryClient = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
   const open = isControlled ? controlledOpen : internalOpen;
@@ -133,13 +137,15 @@ export function StaffUserIntelDrawer({
 
   const [activeTab, setActiveTab] = useState<"infractions" | "sanctions" | "provenance" | "footprint">("infractions");
   const [sanctionOpen, setSanctionOpen] = useState(false);
+  const [initialSanctionStatus, setInitialSanctionStatus] = useState<BanState | undefined>(undefined);
   const [pointsOpen, setPointsOpen] = useState(false);
   const [roleOpen, setRoleOpen] = useState(false);
 
   const { user: currentUser } = useCurrentUser();
-  const { data, isLoading } = useModAnalytics(open ? userId : null);
+  const { data, isLoading, isError, refetch } = useModAnalytics(open ? userId : null);
 
   const handleSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["mod-analytics", userId] });
     onActionSuccess?.();
   };
 
@@ -155,7 +161,7 @@ export function StaffUserIntelDrawer({
           <Button
             variant="outline"
             size="sm"
-            className="border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 text-xs font-semibold"
+            className="border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400 text-xs font-semibold"
             onClick={() => setOpen(true)}
             id="staff-intel-trigger"
           >
@@ -255,12 +261,42 @@ export function StaffUserIntelDrawer({
                   <Skeleton key={i} className="h-28 w-full rounded-xl" />
                 ))}
               </div>
+            ) : isError ? (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center space-y-3">
+                <div className="size-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center">
+                  <AlertTriangle className="size-5 text-destructive" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-ink">Failed to load staff intelligence</p>
+                  <p className="text-xs text-ink-muted mt-1 max-w-xs">
+                    Could not retrieve analytical forensic records for this user.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs gap-1.5">
+                  <RotateCcw className="size-3.5" /> Retry
+                </Button>
+              </div>
             ) : data ? (
               <div className="flex-1 overflow-y-auto p-5 space-y-5">
                 {/* ── Tab 1: Infractions & Risk ───────────────────────────── */}
                 {activeTab === "infractions" && (
                   <div className="space-y-5">
                     <SectionHeader icon={BarChart3} title="Infraction & Risk Radar" />
+
+                    {/* Active Ban Banner with Live Countdown */}
+                    {data.ban_status !== "ACTIVE" && (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted mb-0.5">Active Penalty</p>
+                          <p className="text-sm font-bold text-destructive">{data.ban_status.replace(/_/g, " ")}</p>
+                        </div>
+                        <BanCountdownBadge
+                          banStatus={(data.ban_status as BanState) || "ACTIVE"}
+                          banExpiresAt={data.ban_expires_at}
+                          onExpire={() => queryClient.invalidateQueries({ queryKey: ["mod-analytics", userId] })}
+                        />
+                      </div>
+                    )}
 
                     {/* Risk overview stats */}
                     <div className="grid grid-cols-3 gap-2">
@@ -309,20 +345,6 @@ export function StaffUserIntelDrawer({
                         </div>
                       </div>
                     )}
-
-                    {/* Active ban */}
-                    {data.ban_status !== "ACTIVE" && (
-                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-                        <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted mb-1">Active Sanction</p>
-                        <p className="text-sm font-bold text-destructive">{data.ban_status.replace(/_/g, " ")}</p>
-                        {data.ban_seconds_remaining != null && (
-                          <p className="text-xs text-ink-muted mt-1 flex items-center gap-1">
-                            <Clock className="size-3" />
-                            {Math.floor(data.ban_seconds_remaining / 3600)}h {Math.floor((data.ban_seconds_remaining % 3600) / 60)}m remaining
-                          </p>
-                        )}
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -330,6 +352,21 @@ export function StaffUserIntelDrawer({
                 {activeTab === "sanctions" && (
                   <div className="space-y-4">
                     <SectionHeader icon={FileText} title="Sanction Ledger & Disciplinary Trail" />
+
+                    {/* Active Penalty Tracker in Sanctions tab */}
+                    {data.ban_status !== "ACTIVE" && (
+                      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 flex items-center justify-between mb-2">
+                        <div>
+                          <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted mb-0.5">Active Suspension</p>
+                          <p className="text-sm font-bold text-destructive">{data.ban_status.replace(/_/g, " ")}</p>
+                        </div>
+                        <BanCountdownBadge
+                          banStatus={(data.ban_status as BanState) || "ACTIVE"}
+                          banExpiresAt={data.ban_expires_at}
+                          onExpire={() => queryClient.invalidateQueries({ queryKey: ["mod-analytics", userId] })}
+                        />
+                      </div>
+                    )}
 
                     {data.sanctions_history.length === 0 ? (
                       <div className="rounded-xl border border-line bg-card p-6 text-center">
@@ -443,6 +480,7 @@ export function StaffUserIntelDrawer({
                         total={data.content_footprint.posts.total}
                         hidden={data.content_footprint.posts.hidden ?? 0}
                         deleted={data.content_footprint.posts.deleted ?? 0}
+                        jumpUrl={`/forum`}
                       />
                       {/* Problems */}
                       <FootprintRow
@@ -451,6 +489,7 @@ export function StaffUserIntelDrawer({
                         total={data.content_footprint.problems.total}
                         hidden={data.content_footprint.problems.hidden ?? 0}
                         deleted={data.content_footprint.problems.deleted ?? 0}
+                        jumpUrl={`/problems`}
                       />
                       {/* Solutions */}
                       <FootprintRow
@@ -459,6 +498,7 @@ export function StaffUserIntelDrawer({
                         total={data.content_footprint.solutions.total ?? 0}
                         hidden={data.content_footprint.solutions.hidden ?? 0}
                         deleted={data.content_footprint.solutions.deleted ?? 0}
+                        jumpUrl={`/users/${userId}`}
                       />
                       {/* Lessons */}
                       <div className="rounded-xl border border-line bg-card p-3.5">
@@ -469,15 +509,26 @@ export function StaffUserIntelDrawer({
                             {data.content_footprint.lessons.total} total
                           </Badge>
                         </div>
-                        <div className="flex items-center gap-3 text-[11px] text-ink-muted">
-                          <span className="flex items-center gap-1">
-                            <Eye className="size-3 text-emerald-500" />
-                            {data.content_footprint.lessons.published} published
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <EyeOff className="size-3 text-ink-muted" />
-                            {data.content_footprint.lessons.draft} draft
-                          </span>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 text-[11px] text-ink-muted">
+                            <span className="flex items-center gap-1">
+                              <Eye className="size-3 text-emerald-500" />
+                              {data.content_footprint.lessons.published} published
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <EyeOff className="size-3 text-ink-muted" />
+                              {data.content_footprint.lessons.draft} draft
+                            </span>
+                          </div>
+                          <a
+                            href={`/learning`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+                          >
+                            <span>Browse</span>
+                            <ExternalLink className="size-3" />
+                          </a>
                         </div>
                       </div>
                       {/* Comments */}
@@ -487,6 +538,7 @@ export function StaffUserIntelDrawer({
                         total={data.content_footprint.comments.total ?? 0}
                         hidden={data.content_footprint.comments.hidden ?? 0}
                         deleted={data.content_footprint.comments.deleted ?? 0}
+                        jumpUrl={`/users/${userId}`}
                       />
                     </div>
                   </div>
@@ -497,30 +549,55 @@ export function StaffUserIntelDrawer({
             {/* ── Embedded Operations Dock ─────────────────────────────────── */}
             <div className="shrink-0 border-t border-line bg-card/80 backdrop-blur-sm px-5 py-3 flex items-center gap-2 flex-wrap">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-ink-muted mr-1">Actions</p>
+
+              {/* Direct Warn Trigger */}
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-xs border-amber-500/30 text-amber-600 hover:bg-amber-500/10"
+                onClick={() => {
+                  setInitialSanctionStatus("WARNING");
+                  setSanctionOpen(true);
+                }}
+              >
+                <AlertTriangle className="size-3 mr-1" /> Warn
+              </Button>
+
+              {/* Direct Sanction Trigger */}
               <Button
                 size="sm"
                 variant="outline"
                 className="text-xs border-destructive/30 text-destructive hover:bg-destructive/10"
-                onClick={() => setSanctionOpen(true)}
+                onClick={() => {
+                  setInitialSanctionStatus(undefined);
+                  setSanctionOpen(true);
+                }}
               >
                 <ShieldAlert className="size-3 mr-1" /> Sanction
               </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs"
-                onClick={() => setPointsOpen(true)}
-              >
-                <Coins className="size-3 mr-1" /> Points
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                className="text-xs"
-                onClick={() => setRoleOpen(true)}
-              >
-                <Shield className="size-3 mr-1" /> Role
-              </Button>
+
+              {/* Admin/SuperAdmin Operations strictly gated */}
+              {isAdminOrSuperAdmin(currentUser?.role) && (
+                <>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => setPointsOpen(true)}
+                  >
+                    <Coins className="size-3 mr-1 text-amber-500" /> Points
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs"
+                    onClick={() => setRoleOpen(true)}
+                  >
+                    <Shield className="size-3 mr-1 text-primary" /> Role
+                  </Button>
+                </>
+              )}
+
               <a
                 href={`/users/${userId}`}
                 target="_blank"
@@ -547,6 +624,7 @@ export function StaffUserIntelDrawer({
         }}
         open={sanctionOpen}
         onOpenChange={setSanctionOpen}
+        initialStatus={initialSanctionStatus}
         onSuccess={handleSuccess}
       />
       <PointAdjustmentModal
@@ -583,12 +661,14 @@ function FootprintRow({
   total,
   hidden,
   deleted,
+  jumpUrl,
 }: {
   icon: React.ElementType;
   label: string;
   total: number;
   hidden: number;
   deleted: number;
+  jumpUrl?: string;
 }) {
   const active = total - hidden - deleted;
   return (
@@ -600,24 +680,38 @@ function FootprintRow({
           {total} total
         </Badge>
       </div>
-      <div className="flex items-center gap-3 text-[11px] text-ink-muted">
-        <span className="flex items-center gap-1">
-          <Eye className="size-3 text-emerald-500" />
-          {active >= 0 ? active : 0} active
-        </span>
-        {hidden > 0 && (
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3 text-[11px] text-ink-muted">
           <span className="flex items-center gap-1">
-            <EyeOff className="size-3 text-amber-500" />
-            {hidden} hidden
+            <Eye className="size-3 text-emerald-500" />
+            {active >= 0 ? active : 0} active
           </span>
-        )}
-        {deleted > 0 && (
-          <span className="flex items-center gap-1">
-            <Trash2 className="size-3 text-destructive" />
-            {deleted} deleted
-          </span>
+          {hidden > 0 && (
+            <span className="flex items-center gap-1">
+              <EyeOff className="size-3 text-amber-500" />
+              {hidden} hidden
+            </span>
+          )}
+          {deleted > 0 && (
+            <span className="flex items-center gap-1">
+              <Trash2 className="size-3 text-destructive" />
+              {deleted} deleted
+            </span>
+          )}
+        </div>
+        {jumpUrl && (
+          <a
+            href={jumpUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-primary hover:underline"
+          >
+            <span>Browse</span>
+            <ExternalLink className="size-3" />
+          </a>
         )}
       </div>
     </div>
   );
 }
+

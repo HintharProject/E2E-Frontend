@@ -31,6 +31,7 @@ import {
   Quote,
 } from "lucide-react";
 import { StaffUserIntelDrawer } from "@/components/features/users/staff-user-intel-drawer";
+import { StaffUserIntelButton } from "@/components/features/users/staff-user-intel-button";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
@@ -309,15 +310,22 @@ export function ReportedItemInspector({
                 </div>
                 <div className="flex items-center gap-2">
                   {author && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setSanctionModalOpen(true)}
-                      className="h-7 text-xs font-semibold text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1"
-                    >
-                      <ShieldAlert className="size-3.5 text-amber-500" />
-                      Sanction User
-                    </Button>
+                    <>
+                      <StaffUserIntelButton
+                        userId={author.id}
+                        profile={author}
+                        variant="compact"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setSanctionModalOpen(true)}
+                        className="h-7 text-xs font-semibold text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1"
+                      >
+                        <ShieldAlert className="size-3.5 text-amber-500" />
+                        Sanction User
+                      </Button>
+                    </>
                   )}
                   {author?.id && (
                     <Link

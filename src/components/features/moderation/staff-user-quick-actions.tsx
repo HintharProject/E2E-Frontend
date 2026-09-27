@@ -195,35 +195,29 @@ export function StaffUserQuickActions({
                 Role
               </Button>
 
-              <PointAdjustmentModal
-                user={targetForPoints}
-                trigger={
-                  <Button variant="outline" size="sm" className="text-xs">
-                    <Coins className="size-3.5 mr-1 text-amber-500" />
-                    Points
-                  </Button>
-                }
-              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={openPointModal}
+              >
+                <Coins className="size-3.5 mr-1 text-amber-500" />
+                Points
+              </Button>
             </>
           )}
 
-          {/* Staff Intel Drawer */}
-          <StaffUserIntelDrawer
-            userId={user.id}
-            profile={{
-              id: user.id,
-              display_name: user.display_name || "User",
-              email: user.email || "",
-              ban_status: user.ban_status,
-              ban_expires_at: user.ban_expires_at,
-              role: (user.role as RoleEnum) || "USER",
-              contributor_tier: (user.contributor_tier as ContributorTier) ?? 1,
-              contribution_points: user.contribution_points || 0,
-            }}
-            open={intelDrawerOpen}
-            onOpenChange={setIntelDrawerOpen}
-            onActionSuccess={handleActionSuccess}
-          />
+          {/* Staff Intel Trigger Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400 text-xs font-semibold gap-1.5"
+            onClick={() => setIntelDrawerOpen(true)}
+            id="staff-intel-dock-trigger"
+          >
+            <Shield className="size-3.5 text-amber-500" />
+            <span>Staff Intel</span>
+          </Button>
 
           <Button
             variant="ghost"
@@ -299,6 +293,7 @@ export function StaffUserQuickActions({
         open={sanctionModalOpen}
         onOpenChange={setSanctionModalOpen}
         initialStatus={initialSanctionStatus}
+        onSuccess={handleActionSuccess}
       />
 
       {/* Role Modal */}
@@ -312,14 +307,33 @@ export function StaffUserQuickActions({
         />
       )}
 
-      {/* Point Modal (Dropdown variant only, dock uses inline trigger) */}
-      {isAdmin && variant === "dropdown" && (
+      {/* Point Modal */}
+      {isAdmin && (
         <PointAdjustmentModal
           user={targetForPoints}
           open={pointModalOpen}
           onOpenChange={setPointModalOpen}
+          onSuccess={handleActionSuccess}
         />
       )}
+
+      {/* Staff Intel Drawer */}
+      <StaffUserIntelDrawer
+        userId={user.id}
+        profile={{
+          id: user.id,
+          display_name: user.display_name || "User",
+          email: user.email || "",
+          ban_status: user.ban_status,
+          ban_expires_at: user.ban_expires_at,
+          role: (user.role as RoleEnum) || "USER",
+          contributor_tier: (user.contributor_tier as ContributorTier) ?? 1,
+          contribution_points: user.contribution_points || 0,
+        }}
+        open={intelDrawerOpen}
+        onOpenChange={setIntelDrawerOpen}
+        onActionSuccess={handleActionSuccess}
+      />
     </>
   );
 }

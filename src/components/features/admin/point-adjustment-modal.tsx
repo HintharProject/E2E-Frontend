@@ -29,6 +29,7 @@ export interface PointAdjustmentModalProps {
   trigger?: React.ReactNode;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 const PRESET_REASONS = [
@@ -45,6 +46,7 @@ export function PointAdjustmentModal({
   trigger,
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
+  onSuccess,
 }: PointAdjustmentModalProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const isControlled = controlledOpen !== undefined;
@@ -95,6 +97,7 @@ export function PointAdjustmentModal({
           setDelta(0);
           setCustomReason("");
           setNotes("");
+          onSuccess?.();
         },
       }
     );
@@ -103,7 +106,15 @@ export function PointAdjustmentModal({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger ? (
-        <DialogTrigger render={<>{trigger}</>} />
+        <DialogTrigger
+          render={
+            React.isValidElement(trigger) ? (
+              trigger
+            ) : (
+              <button type="button">{trigger}</button>
+            )
+          }
+        />
       ) : !isControlled ? (
         <DialogTrigger
           render={
