@@ -16,6 +16,12 @@ interface UIState {
   initializationMessage: string;
   setAppInitialized: (initialized: boolean) => void;
   setInitializationMessage: (msg: string) => void;
+
+  /** Command Palette state */
+  isCommandPaletteOpen: boolean;
+  openCommandPalette: () => void;
+  closeCommandPalette: () => void;
+  toggleCommandPalette: () => void;
 }
 
 export const useUIStore = create<UIState>((set) => ({
@@ -28,4 +34,10 @@ export const useUIStore = create<UIState>((set) => ({
   initializationMessage: "Starting up the render backend...",
   setAppInitialized: (initialized) => set({ isAppInitialized: initialized }),
   setInitializationMessage: (msg) => set({ initializationMessage: msg }),
+
+  isCommandPaletteOpen: false,
+  openCommandPalette: () => set({ isCommandPaletteOpen: true }),
+  closeCommandPalette: () => set({ isCommandPaletteOpen: false }),
+  toggleCommandPalette: () =>
+    set((state) => ({ isCommandPaletteOpen: !state.isCommandPaletteOpen })),
 }));

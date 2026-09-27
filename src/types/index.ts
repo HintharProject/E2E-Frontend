@@ -1,5 +1,6 @@
 export * from "./contribution";
 export * from "./train";
+export * from "./search";
 import type { ContributorTier, ReputationSummary } from "./contribution";
 
 export type RoleEnum = "USER" | "MODERATOR" | "ADMIN" | "SUPERADMIN";

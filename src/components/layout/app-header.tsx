@@ -60,8 +60,15 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useCurrentUser();
-  const { toggleMobileNav } = useUIStore();
+  const { toggleMobileNav, openCommandPalette } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent));
+    }
+  }, []);
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const { isRefreshing, triggerRefresh } = useRefreshStore();
@@ -174,18 +181,23 @@ export function AppHeader() {
               </span>
             </Link>
 
-            {/* Desktop search */}
-            <form onSubmit={onSearch} className="hidden flex-1 md:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search titles…"
-                  className="h-9 rounded-full pl-9"
-                />
-              </div>
-            </form>
+            {/* Desktop search trigger */}
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="hidden md:flex flex-1 max-w-md items-center justify-between h-9 rounded-full border border-border bg-muted/40 hover:bg-muted/70 px-3.5 text-xs text-muted-foreground transition-colors cursor-pointer group"
+              aria-label="Open command palette"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <Search className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <span className="font-normal text-muted-foreground group-hover:text-foreground transition-colors truncate">
+                  Search discussions, problems, lessons, papers...
+                </span>
+              </span>
+              <kbd className="inline-flex shrink-0 items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground group-hover:text-foreground shadow-2xs">
+                {isMac ? "⌘K" : "Ctrl+K"}
+              </kbd>
+            </button>
 
             {/* User area */}
             <div className="ml-auto flex items-center gap-2">
@@ -312,19 +324,22 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Mobile search & filter */}
+          {/* Mobile search trigger & filter */}
           <div className="flex items-center gap-2 md:hidden">
-            <form onSubmit={onSearch} className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search titles…"
-                  className="h-9 rounded-full pl-9"
-                />
-              </div>
-            </form>
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="flex-1 flex items-center justify-between h-9 rounded-full border border-border bg-muted/40 px-3 text-xs text-muted-foreground cursor-pointer"
+              aria-label="Open search palette"
+            >
+              <span className="flex items-center gap-2">
+                <Search className="size-4 text-muted-foreground" />
+                <span>Search platform...</span>
+              </span>
+              <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold">
+                {isMac ? "⌘K" : "Ctrl+K"}
+              </kbd>
+            </button>
             <AppHeaderMobileFilter pathname={pathname} />
           </div>
 
