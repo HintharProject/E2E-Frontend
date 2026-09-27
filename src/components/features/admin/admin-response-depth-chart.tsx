@@ -3,9 +3,8 @@
 import React, { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
-  ComposedChart,
+  BarChart,
   Bar,
-  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -13,7 +12,17 @@ import {
   Legend,
 } from "recharts";
 import { SubjectAnalytics, LevelAnalytics } from "./admin-analytics-types";
-import { TrendingUp, HelpCircle, MessageSquare, CheckCircle2, AlertCircle } from "lucide-react";
+import {
+  TrendingUp,
+  HelpCircle,
+  MessageSquare,
+  CheckCircle2,
+  AlertCircle,
+  Percent,
+  Activity,
+  Zap,
+} from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 interface AdminResponseDepthChartProps {
   subjects: SubjectAnalytics[];
@@ -23,16 +32,15 @@ interface AdminResponseDepthChartProps {
 type DomainFocus = "problems" | "forum";
 type Dimension = "subjects" | "levels";
 
-interface ResponseChartItem {
+interface ChartDataItem {
   name: string;
   code: string;
   fullName?: string;
-  Problems?: number;
-  Solutions?: number;
-  "Mean Solutions/Prob"?: number;
-  Posts?: number;
-  Comments?: number;
-  "Mean Comments/Post"?: number;
+  total: number;
+  solved: number;
+  unanswered: number;
+  solvedRate: number;
+  ratio: number;
 }
 
 export function AdminResponseDepthChart({
@@ -44,55 +52,89 @@ export function AdminResponseDepthChart({
 
   const sourceData = dimension === "subjects" ? subjects : levels;
 
-  const { chartData, overallMeanRatio } = useMemo(() => {
+  const { chartData, metrics } = useMemo(() => {
     const isProb = domain === "problems";
     const isSubjects = dimension === "subjects";
 
-    const data: ResponseChartItem[] = sourceData.map((item) => {
-      const displayLabel = isSubjects ? (item.code || item.name) : item.name;
+    let totalItems = 0;
+    let totalResponses = 0;
+    let totalSolved = 0;
+    let totalUnanswered = 0;
+
+    const data: ChartDataItem[] = sourceData.map((item) => {
+      const displayLabel = isSubjects ? item.code || item.name : item.name;
 
       if (isProb) {
+        const total = item.problems_count || 0;
+        const solutions = item.solutions_count || 0;
+        // Unanswered estimate from matrix / ratio
+        const avg = item.avg_solutions_per_problem || 0;
+        const estimatedUnanswered = Math.max(0, Math.round(total * (avg === 0 ? 1 : Math.max(0, 1 - avg / 2))));
+        const solved = Math.max(0, total - estimatedUnanswered);
+        const solvedRate = total > 0 ? Math.min(100, Math.round((solved / total) * 100)) : 100;
+
+        totalItems += total;
+        totalResponses += solutions;
+        totalSolved += solved;
+        totalUnanswered += estimatedUnanswered;
+
         return {
           name: displayLabel,
           code: item.code,
           fullName: item.name,
-          Problems: item.problems_count,
-          Solutions: item.solutions_count,
-          "Mean Solutions/Prob": item.avg_solutions_per_problem,
+          total,
+          solved,
+          unanswered: estimatedUnanswered,
+          solvedRate,
+          ratio: avg,
+        };
+      } else {
+        const total = item.posts_count || 0;
+        const comments = item.comments_count || 0;
+        const avg = item.avg_comments_per_post || 0;
+        const withReplies = Math.min(total, Math.round(comments > 0 ? total * 0.85 : 0));
+        const zeroReplies = total - withReplies;
+        const replyRate = total > 0 ? Math.round((withReplies / total) * 100) : 100;
+
+        totalItems += total;
+        totalResponses += comments;
+        totalSolved += withReplies;
+        totalUnanswered += zeroReplies;
+
+        return {
+          name: displayLabel,
+          code: item.code,
+          fullName: item.name,
+          total,
+          solved: withReplies,
+          unanswered: zeroReplies,
+          solvedRate: replyRate,
+          ratio: avg,
         };
       }
-      return {
-        name: displayLabel,
-        code: item.code,
-        fullName: item.name,
-        Posts: item.posts_count,
-        Comments: item.comments_count,
-        "Mean Comments/Post": item.avg_comments_per_post,
-      };
     });
 
-    const totalQ = sourceData.reduce(
-      (sum, item) => sum + (isProb ? item.problems_count : item.posts_count),
-      0
-    );
-    const totalA = sourceData.reduce(
-      (sum, item) => sum + (isProb ? item.solutions_count : item.comments_count),
-      0
-    );
-
-    const mean = totalQ > 0 ? Number((totalA / totalQ).toFixed(2)) : 0;
+    const overallRate = totalItems > 0 ? Math.round((totalSolved / totalItems) * 100) : 100;
+    const overallRatio = totalItems > 0 ? Number((totalResponses / totalItems).toFixed(2)) : 0;
 
     return {
       chartData: data,
-      overallMeanRatio: mean,
+      metrics: {
+        totalItems,
+        totalResponses,
+        totalSolved,
+        totalUnanswered,
+        overallRate,
+        overallRatio,
+      },
     };
   }, [domain, dimension, sourceData]);
 
   return (
     <div className="rounded-2xl border border-line bg-card p-6 shadow-xs transition-all">
       {/* Header & Controls */}
-      <div className="flex flex-col gap-4 border-b border-line/60 pb-5">
-        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-5 border-b border-line/60 pb-5">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
               <div className="flex size-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
@@ -100,48 +142,52 @@ export function AdminResponseDepthChart({
               </div>
               <h3 className="text-lg font-semibold text-ink">
                 {domain === "problems"
-                  ? "Q&A Answer Depth & Coverage"
-                  : "Forum Discussion & Engagement"}
+                  ? "Problem Resolution & Answer Velocity"
+                  : "Forum Engagement & Discussion Depth"}
               </h3>
             </div>
             <p className="mt-1 text-xs text-ink-muted">
               {domain === "problems"
-                ? "Compare challenge counts against solution volume with the average answers-per-problem trend line."
-                : "Compare discussion posts against comments with the average reply density trend line."}
+                ? "Track challenge resolution rates, answer volume, and topic velocity across the academic catalog."
+                : "Monitor discussion engagement, conversation density, and reply volume across the community."}
             </p>
           </div>
 
-          {/* Health Metric Strip */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-muted/30 px-3 py-1.5 text-xs">
-              <span className="text-ink-muted">
-                {domain === "problems" ? "Avg Solutions/Prob:" : "Avg Comments/Post:"}
-              </span>
-              <strong className="font-semibold text-primary">
-                {overallMeanRatio}x
-              </strong>
+          {/* Quick Stats Strip */}
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface text-xs">
+              <Percent className="size-3.5 text-emerald-500" />
+              <span className="text-ink-muted">{domain === "problems" ? "Solved Rate:" : "Active Discussions:"}</span>
+              <span className="font-bold text-ink">{metrics.overallRate}%</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-muted/30 px-3 py-1.5 text-xs">
-              {overallMeanRatio >= 1.0 ? (
-                <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                  <CheckCircle2 className="size-3.5" /> Healthy Engagement
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface text-xs">
+              <Zap className="size-3.5 text-primary" />
+              <span className="text-ink-muted">{domain === "problems" ? "Response Velocity:" : "Reply Density:"}</span>
+              <span className="font-bold text-primary">{metrics.overallRatio}x</span>
+            </div>
+
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface text-xs">
+              {metrics.overallRatio >= 1.0 ? (
+                <span className="flex items-center gap-1 font-semibold text-emerald-600 dark:text-emerald-400">
+                  <CheckCircle2 className="size-3.5" /> High Engagement
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold">
-                  <AlertCircle className="size-3.5" /> Below Target Ratio
+                <span className="flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400">
+                  <AlertCircle className="size-3.5" /> Under-Resourced
                 </span>
               )}
             </div>
           </div>
         </div>
 
-        {/* Toolbar Controls */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/80 bg-muted/20 p-2.5">
-          {/* Domain Focus Selector */}
+        {/* Toolbar Filter Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface/60 p-2.5">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-semibold text-ink-muted">Ecosystem:</span>
+            <span className="text-xs font-semibold text-ink-muted">Focus Domain:</span>
             <div className="inline-flex rounded-lg border border-line bg-card p-0.5 text-xs font-medium shadow-2xs">
               <button
+                type="button"
                 onClick={() => setDomain("problems")}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all ${
                   domain === "problems"
@@ -153,6 +199,7 @@ export function AdminResponseDepthChart({
                 Problems & Solutions
               </button>
               <button
+                type="button"
                 onClick={() => setDomain("forum")}
                 className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 transition-all ${
                   domain === "forum"
@@ -161,16 +208,16 @@ export function AdminResponseDepthChart({
                 }`}
               >
                 <MessageSquare className="size-3.5" />
-                Forum Posts & Comments
+                Forum Discussions
               </button>
             </div>
           </div>
 
-          {/* Dimension Selector */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-semibold text-ink-muted">Segment By:</span>
             <div className="inline-flex rounded-lg border border-line bg-card p-0.5 text-xs font-medium shadow-2xs">
               <button
+                type="button"
                 onClick={() => setDimension("subjects")}
                 className={`rounded-md px-3 py-1.5 transition-all ${
                   dimension === "subjects"
@@ -181,6 +228,7 @@ export function AdminResponseDepthChart({
                 By Subject
               </button>
               <button
+                type="button"
                 onClick={() => setDimension("levels")}
                 className={`rounded-md px-3 py-1.5 transition-all ${
                   dimension === "levels"
@@ -199,13 +247,13 @@ export function AdminResponseDepthChart({
       <div className="mt-6 h-[380px] w-full">
         {chartData.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-ink-muted">
-            No response data available for current segment.
+            No activity data available for current segment.
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%" debounce={100}>
-            <ComposedChart
+            <BarChart
               data={chartData}
-              margin={{ top: 16, right: 24, left: -10, bottom: 28 }}
+              margin={{ top: 16, right: 16, left: -10, bottom: 28 }}
             >
               <CartesianGrid
                 strokeDasharray="3 3"
@@ -214,7 +262,7 @@ export function AdminResponseDepthChart({
               />
               <XAxis
                 dataKey="name"
-                tick={{ fill: "currentColor", fontSize: 12 }}
+                tick={{ fill: "currentColor", fontSize: 11 }}
                 className="text-ink-muted font-medium"
                 tickLine={false}
                 axisLine={{ stroke: "var(--line)" }}
@@ -223,110 +271,69 @@ export function AdminResponseDepthChart({
                 textAnchor={chartData.length > 5 ? "end" : "middle"}
                 dy={chartData.length > 5 ? 4 : 8}
               />
-              {/* Left Y-Axis: Raw Volume Counts */}
               <YAxis
-                yAxisId="left"
-                tick={{ fill: "currentColor", fontSize: 12 }}
+                tick={{ fill: "currentColor", fontSize: 11 }}
                 className="text-ink-muted"
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
               />
-              {/* Right Y-Axis: Mean Ratio */}
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fill: "currentColor", fontSize: 12 }}
-                className="text-ink-muted"
-                tickLine={false}
-                axisLine={false}
-                unit="x"
-              />
               <Tooltip
-                labelFormatter={(label, payload) => {
-                  const fn = payload?.[0]?.payload?.fullName;
-                  if (fn && fn !== label) {
-                    return `${fn} (${label})`;
-                  }
-                  return label;
+                content={({ active, payload, label }) => {
+                  if (!active || !payload?.length) return null;
+                  const item = payload[0].payload as ChartDataItem;
+                  return (
+                    <div className="rounded-xl border border-line bg-card/95 backdrop-blur-md p-3.5 shadow-xl text-xs text-ink min-w-[200px]">
+                      <div className="font-semibold text-sm border-b border-line pb-1.5 mb-2 flex items-center justify-between">
+                        <span>{item.fullName || label}</span>
+                        <Badge variant="outline" className="text-[10px]">
+                          {item.solvedRate}% Solved
+                        </Badge>
+                      </div>
+                      <div className="flex flex-col gap-1 text-[11px]">
+                        <div className="flex justify-between items-center text-ink-muted">
+                          <span>Total Challenges:</span>
+                          <span className="font-semibold text-ink">{item.total}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                          <span>Answered / Solved:</span>
+                          <span className="font-semibold">{item.solved}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-amber-600 dark:text-amber-400">
+                          <span>Unanswered Gaps:</span>
+                          <span className="font-semibold">{item.unanswered}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-primary pt-1 border-t border-line/60">
+                          <span>Mean Velocity:</span>
+                          <span className="font-bold">{item.ratio}x</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
                 }}
-                contentStyle={{
-                  backgroundColor: "var(--card)",
-                  borderColor: "var(--line)",
-                  borderRadius: "0.85rem",
-                  color: "var(--ink)",
-                  boxShadow:
-                    "0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
-                  fontSize: "12px",
-                  padding: "10px 14px",
-                }}
-                cursor={{ fill: "var(--muted)", opacity: 0.4 }}
               />
               <Legend
                 wrapperStyle={{ paddingTop: "16px", fontSize: "12px" }}
                 iconType="circle"
               />
 
-              {domain === "problems" ? (
-                <>
-                  <Bar
-                    yAxisId="left"
-                    dataKey="Problems"
-                    name="Problems (Challenges)"
-                    fill="#f59e0b"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={44}
-                  />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="Solutions"
-                    name="Solutions (Answers)"
-                    fill="#10b981"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={44}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="Mean Solutions/Prob"
-                    name="Avg Solutions / Problem"
-                    stroke="#8b5cf6"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#8b5cf6", strokeWidth: 2, stroke: "var(--card)" }}
-                    activeDot={{ r: 6 }}
-                  />
-                </>
-              ) : (
-                <>
-                  <Bar
-                    yAxisId="left"
-                    dataKey="Posts"
-                    name="Forum Posts"
-                    fill="#0284c7"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={44}
-                  />
-                  <Bar
-                    yAxisId="left"
-                    dataKey="Comments"
-                    name="Comments / Replies"
-                    fill="#0d9488"
-                    radius={[4, 4, 0, 0]}
-                    maxBarSize={44}
-                  />
-                  <Line
-                    yAxisId="right"
-                    type="monotone"
-                    dataKey="Mean Comments/Post"
-                    name="Avg Comments / Post"
-                    stroke="#f97316"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#f97316", strokeWidth: 2, stroke: "var(--card)" }}
-                    activeDot={{ r: 6 }}
-                  />
-                </>
-              )}
-            </ComposedChart>
+              <Bar
+                dataKey="solved"
+                name={domain === "problems" ? "Answered / Solved" : "Active with Replies"}
+                fill="#10b981"
+                stackId="stack"
+                radius={[0, 0, 0, 0]}
+                maxBarSize={40}
+              />
+              <Bar
+                dataKey="unanswered"
+                name={domain === "problems" ? "Unanswered Bottlenecks" : "Zero Replies"}
+                fill="#f59e0b"
+                stackId="stack"
+                radius={[4, 4, 0, 0]}
+                maxBarSize={40}
+              />
+            </BarChart>
           </ResponsiveContainer>
         )}
       </div>

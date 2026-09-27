@@ -188,6 +188,15 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           shareUrl={shareUrl}
           contentType="PROBLEM"
           contentId={problem.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={(problem as any).is_hidden}
+          isLocked={(problem as any).is_locked}
+          isFinal={problem.status === "FINAL"}
           onDelete={canModify ? handleDelete : undefined}
           deleteLabel="this problem"
         />

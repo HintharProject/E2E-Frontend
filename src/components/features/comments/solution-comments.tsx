@@ -23,6 +23,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
   MessageSquare,
   Share2,
@@ -352,6 +353,19 @@ function FlatCommentItem({
             <span>Report</span>
           </button>
         )}
+
+        {/* Staff Action Menu */}
+        <StaffContentActionMenu
+          targetType="COMMENT"
+          targetId={comment.id}
+          targetTitle={`Comment by ${author?.display_name || "User"}`}
+          author={author}
+          isHidden={comment.is_hidden}
+          isLocked={comment.is_locked}
+          isDeleted={comment.is_deleted}
+          variant="icon"
+          className="h-6 w-6 ml-1"
+        />
       </div>
 
       {/* Level 2 Replies directly under this comment */}
@@ -423,6 +437,18 @@ function FlatCommentItem({
                     <CornerDownRight className="h-3 w-3" />
                     <span>Reply</span>
                   </button>
+
+                  <StaffContentActionMenu
+                    targetType="COMMENT"
+                    targetId={reply.id}
+                    targetTitle={`Reply by ${replyAuthor?.display_name || "User"}`}
+                    author={replyAuthor}
+                    isHidden={reply.is_hidden}
+                    isLocked={reply.is_locked}
+                    isDeleted={reply.is_deleted}
+                    variant="icon"
+                    className="h-5 w-5"
+                  />
                 </div>
               </div>
             );

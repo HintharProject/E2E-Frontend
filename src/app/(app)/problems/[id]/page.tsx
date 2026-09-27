@@ -16,6 +16,7 @@ import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
@@ -107,9 +108,20 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           title={problem.title}
           description={`Asked ${formatDate(problem.created_at)}`}
           actions={
-            isAuthor ? (
-              <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />
-            ) : undefined
+            <div className="flex items-center gap-2">
+              {isAuthor && <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />}
+              <StaffContentActionMenu
+                targetType="PROBLEM"
+                targetId={problem.id}
+                targetTitle={problem.title}
+                author={problem.author_details}
+                isHidden={problem.is_hidden}
+                isLocked={problem.is_locked}
+                isDeleted={problem.is_deleted}
+                isFinal={isFinal}
+                variant="button"
+              />
+            </div>
           }
         />
       </div>

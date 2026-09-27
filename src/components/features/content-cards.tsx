@@ -139,6 +139,14 @@ export function PostCard({ post }: { post: Post }) {
           shareUrl={shareUrl}
           contentType="POST"
           contentId={post.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={(post as any).is_hidden}
+          isLocked={(post as any).is_locked}
           editHref={canModify ? `/posts/${post.id}/edit` : undefined}
           onDelete={canModify ? handleDelete : undefined}
           deleteLabel="this post"
@@ -264,6 +272,13 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           shareUrl={shareUrl}
           contentType="LESSON"
           contentId={lesson.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={lesson.state === "DRAFT"}
           editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
           onDelete={canDelete ? handleDelete : undefined}
           deleteLabel="this lesson"

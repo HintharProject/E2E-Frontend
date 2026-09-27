@@ -14,22 +14,26 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { BanState } from "@/types/user";
+import { BanState, isAdminOrSuperAdmin } from "@/types/user";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { AlertTriangle, ShieldCheck, Check, Loader2, Clock, Ban } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
+export interface SanctionTargetUser {
+  id: string;
+  display_name: string;
+  email?: string;
+  ban_status?: BanState;
+  ban_expires_at?: string | null;
+}
+
 interface ManageSanctionModalProps {
-  user: {
-    id: string;
-    display_name: string;
-    email: string;
-    ban_status: BanState;
-    ban_expires_at: string | null;
-  } | null;
+  user: SanctionTargetUser | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  initialStatus?: BanState;
 }
 
 const SANCTION_OPTIONS: {
@@ -76,21 +80,26 @@ export function ManageSanctionModal({
   open,
   onOpenChange,
   onSuccess,
+  initialStatus,
 }: ManageSanctionModalProps) {
   const { getToken } = useAuth();
+  const { user: currentUser } = useCurrentUser();
+  const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
   const queryClient = useQueryClient();
 
   const [selectedStatus, setSelectedStatus] = useState<BanState>("ACTIVE");
   const [reason, setReason] = useState("");
 
   useEffect(() => {
-    if (user?.ban_status) {
+    if (initialStatus) {
+      setSelectedStatus(initialStatus);
+    } else if (user?.ban_status) {
       setSelectedStatus(user.ban_status);
     } else {
       setSelectedStatus("ACTIVE");
     }
     setReason("");
-  }, [user, open]);
+  }, [user, open, initialStatus]);
 
   const updateBanMutation = useMutation({
     mutationFn: async () => {
@@ -109,6 +118,9 @@ export function ManageSanctionModal({
     onSuccess: () => {
       toast.success(`Sanction status updated to ${selectedStatus} for ${user?.display_name}`);
       queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
+      queryClient.invalidateQueries({ queryKey: ["user", user?.id] });
+      queryClient.invalidateQueries({ queryKey: ["user"] });
+      queryClient.invalidateQueries({ queryKey: ["users"] });
       onSuccess?.();
       onOpenChange(false);
     },
@@ -159,9 +171,9 @@ export function ManageSanctionModal({
           {/* User Preview */}
           <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs">
             <div className="font-semibold text-ink">{user.display_name}</div>
-            <div className="text-ink-muted">{user.email}</div>
+            {user.email ? <div className="text-ink-muted">{user.email}</div> : null}
             <div className="mt-1 text-ink-muted">
-              Current Status: <span className="font-semibold text-ink">{user.ban_status}</span>
+              Current Status: <span className="font-semibold text-ink">{user.ban_status || "ACTIVE"}</span>
             </div>
           </div>
 
@@ -169,7 +181,7 @@ export function ManageSanctionModal({
           <div className="space-y-2">
             <label className="text-xs font-semibold text-ink">Sanction Level</label>
             <div className="grid gap-2">
-              {SANCTION_OPTIONS.map((opt) => {
+              {SANCTION_OPTIONS.filter((opt) => isAdmin || opt.status !== "PERMANENT_BAN").map((opt) => {
                 const isSelected = selectedStatus === opt.status;
 
                 return (

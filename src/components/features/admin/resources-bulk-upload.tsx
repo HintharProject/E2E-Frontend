@@ -45,11 +45,15 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
     year: number;
     session: string;
     paperType: string;
+    category: string;
+    edition: string;
   }>({
     resourceType: "PAST_PAPER",
     year: 2024,
     session: "MAY_JUNE",
     paperType: "QP",
+    category: "Core Textbook",
+    edition: "",
   });
 
   const handleBulkFilesSelect = (filesList: FileList | File[]) => {
@@ -76,6 +80,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
         year: parsed.year || batchDefaults.year || 2024,
         session: parsed.session || batchDefaults.session || "MAY_JUNE",
         paperType: parsed.paperType || batchDefaults.paperType || "QP",
+        title: f.name.replace(/\.[^/.]+$/, ""),
+        category: batchDefaults.category || "Core Textbook",
+        edition: batchDefaults.edition || "",
         status: "IDLE",
       });
     });
@@ -99,6 +106,8 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
         year: batchDefaults.year,
         session: batchDefaults.session,
         paperType: batchDefaults.paperType,
+        category: batchDefaults.category,
+        edition: batchDefaults.edition,
       }))
     );
   };
@@ -146,6 +155,10 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
           formData.append("year", String(item.year));
           formData.append("session", item.session);
           formData.append("paper_type", item.paperType);
+        } else {
+          if (item.title) formData.append("title", item.title.trim());
+          if (item.edition) formData.append("edition", item.edition.trim());
+          if (item.category) formData.append("category", item.category.trim());
         }
 
         await apiFetch("/resources/files/", token as string, {
@@ -200,7 +213,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
           </Button>
         </div>
 
-        <div className={`grid ${batchDefaults.resourceType === "PAST_PAPER" ? "grid-cols-3" : "grid-cols-1"} gap-2 text-xs`}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div>
             <label className="text-[10px] text-ink-muted block mb-0.5">Type</label>
             <select
@@ -218,7 +231,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
             </select>
           </div>
 
-          {batchDefaults.resourceType === "PAST_PAPER" && (
+          {batchDefaults.resourceType === "PAST_PAPER" ? (
             <>
               <div>
                 <label className="text-[10px] text-ink-muted block mb-0.5">Default Year</label>
@@ -258,6 +271,40 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </option>
                   ))}
                 </select>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-[10px] text-ink-muted block mb-0.5">Default Category</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Core Textbook, Revision"
+                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
+                  value={batchDefaults.category}
+                  onChange={(e) =>
+                    setBatchDefaults((prev) => ({
+                      ...prev,
+                      category: e.target.value,
+                    }))
+                  }
+                />
+              </div>
+
+              <div>
+                <label className="text-[10px] text-ink-muted block mb-0.5">Default Edition</label>
+                <input
+                  type="text"
+                  placeholder="e.g. 3rd Edition, 2024"
+                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
+                  value={batchDefaults.edition}
+                  onChange={(e) =>
+                    setBatchDefaults((prev) => ({
+                      ...prev,
+                      edition: e.target.value,
+                    }))
+                  }
+                />
               </div>
             </>
           )}
@@ -438,9 +485,37 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </select>
                   </>
                 ) : (
-                  <div className="col-span-3 text-[10px] text-ink-muted flex items-center px-1">
-                    {(item.file.size / 1024 / 1024).toFixed(2)} MB document
-                  </div>
+                  <>
+                    <input
+                      type="text"
+                      placeholder="Title"
+                      title="Document Title"
+                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                      value={item.title || ""}
+                      onChange={(e) => updateQueueItem(item.id, { title: e.target.value })}
+                      disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Category"
+                      title="Category (e.g. Core Textbook, Revision)"
+                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                      value={item.category || ""}
+                      onChange={(e) => updateQueueItem(item.id, { category: e.target.value })}
+                      disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
+                    />
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        placeholder="Edition"
+                        title="Edition"
+                        className="w-full rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                        value={item.edition || ""}
+                        onChange={(e) => updateQueueItem(item.id, { edition: e.target.value })}
+                        disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
+                      />
+                    </div>
+                  </>
                 )}
               </div>
 

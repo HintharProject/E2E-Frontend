@@ -24,6 +24,9 @@ export interface UserPublic {
   contributor_tier?: ContributorTier;
   dynamic_vote_weight?: number;
   reputation?: ReputationSummary;
+  ban_status?: BanStatusEnum;
+  ban_expires_at?: string | null;
+  email?: string;
 }
 
 export interface Subject {
@@ -74,6 +77,9 @@ export interface Post {
   vote_count?: number;
   comment_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface Comment {
@@ -91,6 +97,9 @@ export interface Comment {
   vote_count?: number;
   user_vote?: 1 | -1 | null;
   replies?: Comment[];
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface Lesson {
@@ -111,6 +120,8 @@ export interface Lesson {
   updated_at: string;
   vote_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface PaginatedMeta {
@@ -191,6 +202,9 @@ export interface Problem {
   has_accepted_solution?: boolean;
   milestone_claimed?: boolean;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -228,6 +242,9 @@ export interface Solution {
   vote_score?: number;
   comment_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
   created_at: string;
   updated_at: string;
   problem_title?: string;

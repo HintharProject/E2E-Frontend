@@ -280,11 +280,14 @@ export function useDeleteProblem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (problemId: string) => {
+    mutationFn: async (args: string | { problemId: string; reason?: string }) => {
+      const problemId = typeof args === "string" ? args : args.problemId;
+      const reason = typeof args === "object" ? args.reason : undefined;
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return apiFetch(`/problems/${problemId}/`, token, {
         method: "DELETE",
+        body: reason ? JSON.stringify({ reason }) : undefined,
       });
     },
     onSuccess: () => {

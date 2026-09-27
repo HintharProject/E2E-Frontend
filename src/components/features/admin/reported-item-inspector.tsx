@@ -13,6 +13,7 @@ import { BanState } from "@/types/user";
 import {
   X,
   ExternalLink,
+  Shield,
   ShieldAlert,
   CheckCircle2,
   XCircle,
@@ -29,6 +30,7 @@ import {
   Clock,
   Quote,
 } from "lucide-react";
+import { StaffUserIntelDrawer } from "@/components/features/users/staff-user-intel-drawer";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
@@ -555,6 +557,20 @@ export function ReportedItemInspector({
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
+                      <StaffUserIntelDrawer
+                        userId={author.id}
+                        profile={author}
+                        trigger={
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs font-semibold text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1"
+                          >
+                            <Shield className="size-3.5 text-amber-500" />
+                            Staff Intel
+                          </Button>
+                        }
+                      />
                       <Button
                         size="sm"
                         variant="outline"
@@ -637,14 +653,29 @@ export function ReportedItemInspector({
 
           <div className="flex items-center gap-2">
             {report.target_type === "USER" && author && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSanctionModalOpen(true)}
-                className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1 font-medium"
-              >
-                <ShieldAlert className="size-4 text-amber-500" /> Sanction User
-              </Button>
+              <>
+                <StaffUserIntelDrawer
+                  userId={author.id}
+                  profile={author}
+                  trigger={
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1 font-medium"
+                    >
+                      <Shield className="size-4 text-amber-500" /> Staff Intel
+                    </Button>
+                  }
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setSanctionModalOpen(true)}
+                  className="text-amber-600 border-amber-500/30 hover:bg-amber-500/10 gap-1 font-medium"
+                >
+                  <ShieldAlert className="size-4 text-amber-500" /> Sanction User
+                </Button>
+              </>
             )}
 
             {isPending && (

@@ -29,6 +29,7 @@ import { AuthorEndorseButton } from "@/components/features/problems/author-endor
 import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -329,6 +330,33 @@ export default function SolutionDetailPage({
                   </Dialog>
                 </>
               )}
+
+              <StaffContentActionMenu
+                targetType="SOLUTION"
+                targetId={solution.id}
+                targetTitle={`Solution for ${problem?.title || "Problem"}`}
+                author={author ? {
+                  id: author.id,
+                  display_name: author.display_name,
+                  email: author.email,
+                  role: author.role,
+                  contributor_tier: author.contributor_tier,
+                  contribution_points: author.contribution_points,
+                  ban_status: author.ban_status,
+                  ban_expires_at: author.ban_expires_at,
+                } : null}
+                isHidden={solution.is_hidden}
+                isLocked={solution.is_locked}
+                isDeleted={solution.is_deleted}
+                variant="badge"
+                onSuccess={(action) => {
+                  if (action === "soft_delete") {
+                    router.push(`/problems/${problemId}`);
+                  } else {
+                    router.refresh();
+                  }
+                }}
+              />
             </div>
 
             {/* Right: Problem Author Endorsement */}

@@ -247,6 +247,14 @@ export function SolutionItem({
             shareUrl={shareUrl}
             contentType="SOLUTION"
             contentId={solution.id}
+            author={author ? {
+              id: author.id,
+              display_name: author.display_name,
+              role: author.role,
+              contributor_tier: author.contributor_tier,
+            } : null}
+            isHidden={(solution as any).is_hidden}
+            isLocked={(solution as any).is_locked}
             onDelete={canModify ? handleDelete : undefined}
             deleteLabel="this solution"
           />

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
 import { SaveToSessionDialog } from "@/components/features/collections/save-to-session-dialog";
 import { ReportModal } from "@/components/features/moderation/report-modal";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { toast } from "sonner";
 
 export function PostInteractions({ post }: { post: Post }) {
@@ -123,6 +124,18 @@ export function PostInteractions({ post }: { post: Post }) {
       <Button variant="ghost" onClick={handleReport}>
         Report
       </Button>
+
+      {/* Staff Inline Moderation Menu */}
+      <StaffContentActionMenu
+        targetType="POST"
+        targetId={post.id}
+        targetTitle={post.title}
+        author={post.author_details}
+        isHidden={post.is_hidden}
+        isLocked={post.is_locked}
+        isDeleted={post.is_deleted}
+        variant="button"
+      />
 
       {/* Global Report Modal */}
       <ReportModal

@@ -31,7 +31,7 @@ export const MAX_PAST_PAPER_FILE_SIZE_MB = 50;
 export const MAX_TEXTBOOK_FILE_SIZE_MB = 300;
 
 export type ResourceType = "PAST_PAPER" | "TEXTBOOK";
-export type SessionType = "MAY_JUNE" | "OCT_NOV" | "JANUARY";
+export type SessionType = "MAY_JUNE" | "OCT_NOV" | "JANUARY" | "FEB_MARCH" | string;
 export type PaperType = "QP" | "MS";
 
 export interface BulkQueueItem {
@@ -42,6 +42,10 @@ export interface BulkQueueItem {
   year: number;
   session: string;
   paperType: string;
+  // Textbook metadata
+  title?: string;
+  edition?: string;
+  category?: string;
   status: "IDLE" | "UPLOADING" | "SUCCESS" | "ERROR";
   errorMessage?: string;
 }

@@ -8,6 +8,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
   Dialog,
   DialogContent,
@@ -255,6 +256,18 @@ export function ThreadedComment({
                   {showReplies ? "Hide replies" : `View replies (${comment.reply_count})`}
                 </Button>
               ) : null}
+
+              <StaffContentActionMenu
+                targetType="COMMENT"
+                targetId={comment.id}
+                targetTitle={`Comment by ${author?.display_name || "User"}`}
+                author={author}
+                isHidden={comment.is_hidden}
+                isLocked={comment.is_locked}
+                isDeleted={comment.is_deleted}
+                variant="icon"
+                className="h-6 w-6"
+              />
             </div>
           )}
         </div>

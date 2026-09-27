@@ -23,7 +23,7 @@ interface ChangeRoleModalProps {
   user: {
     id: string;
     display_name: string;
-    email: string;
+    email?: string;
     role: RoleEnum | null;
   } | null;
   open: boolean;
@@ -133,7 +133,7 @@ export function ChangeRoleModal({
           {/* User Preview */}
           <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs">
             <div className="font-semibold text-ink">{user.display_name}</div>
-            <div className="text-ink-muted">{user.email}</div>
+            {user.email ? <div className="text-ink-muted">{user.email}</div> : null}
             <div className="mt-1 text-ink-muted">
               Current Role: <span className="font-semibold text-ink">{user.role || "USER"}</span>
             </div>
