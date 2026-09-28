@@ -1,5 +1,6 @@
 export * from "./contribution";
 export * from "./train";
+export * from "./search";
 import type { ContributorTier, ReputationSummary } from "./contribution";
 
 export type RoleEnum = "USER" | "MODERATOR" | "ADMIN" | "SUPERADMIN";
@@ -23,6 +24,9 @@ export interface UserPublic {
   contributor_tier?: ContributorTier;
   dynamic_vote_weight?: number;
   reputation?: ReputationSummary;
+  ban_status?: BanStatusEnum;
+  ban_expires_at?: string | null;
+  email?: string;
 }
 
 export interface Subject {
@@ -73,6 +77,9 @@ export interface Post {
   vote_count?: number;
   comment_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface Comment {
@@ -90,6 +97,9 @@ export interface Comment {
   vote_count?: number;
   user_vote?: 1 | -1 | null;
   replies?: Comment[];
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface Lesson {
@@ -110,6 +120,8 @@ export interface Lesson {
   updated_at: string;
   vote_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_deleted?: boolean;
 }
 
 export interface PaginatedMeta {
@@ -123,40 +135,7 @@ export interface PaginatedResponse<T> {
   meta: PaginatedMeta;
 }
 
-export interface StudyPlanItem {
-  id: string;
-  study_plan: string;
-  lesson: string;
-  added_at: string;
-}
-
-export interface StudyPlan {
-  id: string;
-  user: string;
-  title: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  items: StudyPlanItem[];
-}
-
-export interface SavedSessionItem {
-  id: string;
-  saved_session: string;
-  post: string | null;
-  lesson: string | null;
-  added_at: string;
-}
-
-export interface SavedSession {
-  id: string;
-  user: string;
-  title: string;
-  is_public: boolean;
-  created_at: string;
-  updated_at: string;
-  items: SavedSessionItem[];
-}
+export * from "./collections";
 
 export type ProblemStatusEnum = "OPEN" | "SOLVED" | "FINAL" | "CLOSED";
 export type ProblemOriginEnum = "USER_UPLOAD" | "PAST_PAPER";
@@ -167,7 +146,7 @@ export interface Resource {
   title?: string;
   file_name?: string;
   resource_type?: string;
-  year?: number;
+  year?: string | number | null;
   session?: string;
   paper_type?: string;
   paper_code?: string | null;
@@ -197,7 +176,7 @@ export interface Problem {
   resource_details?: {
     id: string;
     title: string;
-    year?: number;
+    year?: string | number | null;
     session?: string;
     paper_type?: string;
     file_url?: string;
@@ -223,6 +202,9 @@ export interface Problem {
   has_accepted_solution?: boolean;
   milestone_claimed?: boolean;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -260,6 +242,9 @@ export interface Solution {
   vote_score?: number;
   comment_count?: number;
   user_vote?: 1 | -1 | null;
+  is_hidden?: boolean;
+  is_locked?: boolean;
+  is_deleted?: boolean;
   created_at: string;
   updated_at: string;
   problem_title?: string;

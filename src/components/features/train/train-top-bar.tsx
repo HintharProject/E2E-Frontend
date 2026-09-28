@@ -13,12 +13,12 @@ import {
   Square,
   MessageSquare,
   PenTool,
-  CheckSquare,
   PanelLeft,
   X,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isAdminOrSuperAdmin } from "@/types/user";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 interface TrainTopBarProps {
   paper: Resource;
@@ -27,7 +27,6 @@ interface TrainTopBarProps {
   onCloseLeft?: () => void;
   onCloseRight?: () => void;
   timer: ReturnType<typeof useTrainTimer>;
-  onOpenSelfMark: () => void;
   onOpenAskInSolve: () => void;
   onOpenSolveAPaper: () => void;
   isSidebarOpen: boolean;
@@ -41,7 +40,6 @@ export function TrainTopBar({
   onCloseLeft,
   onCloseRight,
   timer,
-  onOpenSelfMark,
   onOpenAskInSolve,
   onOpenSolveAPaper,
   isSidebarOpen,
@@ -160,7 +158,7 @@ export function TrainTopBar({
 
       {/* Center Section: Resilient Timer Engine */}
       <div className="flex items-center justify-center shrink-0">
-        <TimerWidget timer={timer} onOpenSelfMark={onOpenSelfMark} />
+        <TimerWidget timer={timer} />
       </div>
 
       {/* Right Section: Dynamic View State, Active Chips & Contextual Actions */}
@@ -234,6 +232,17 @@ export function TrainTopBar({
           )}
         </div>
 
+        {/* Action: Save Paper to Session */}
+        <SaveButton
+          entityType="resource"
+          entityId={paper.id}
+          variant="outline"
+          size="sm"
+          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-line hover:border-primary/40 text-ink shadow-2xs"
+          showLabel
+          label="Save Paper"
+        />
+
         {/* Action: Ask in Solve! */}
         <Button
           size="sm"
@@ -259,18 +268,6 @@ export function TrainTopBar({
             <span className="hidden xl:inline">Solve a Paper</span>
           </Button>
         )}
-
-        {/* Action: Self-Mark */}
-        <Button
-          size="sm"
-          variant="default"
-          className="h-8 px-3 text-xs font-semibold gap-1.5 bg-primary text-primary-foreground shadow-2xs"
-          onClick={onOpenSelfMark}
-          title="Open interactive self-assessment drawer"
-        >
-          <CheckSquare className="size-3.5" />
-          <span>Self-Mark</span>
-        </Button>
       </div>
     </header>
   );

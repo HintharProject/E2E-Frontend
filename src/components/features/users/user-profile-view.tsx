@@ -1,6 +1,7 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { apiFetch } from "@/services/api-client";
@@ -9,10 +10,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
-import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
+import { ReportModal } from "@/components/features/moderation/report-modal";
+import { StaffUserQuickActions } from "@/components/features/moderation/staff-user-quick-actions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
-import { isAdminOrSuperAdmin, isStaffRole } from "@/types/user";
+import { isStaffRole } from "@/types/user";
 import { useContributionStats } from "@/hooks/use-contribution";
 import { ProfileSkeleton } from "../skeletons";
 import { ProfileLessonsRail } from "./profile-lessons-rail";
@@ -31,19 +33,21 @@ export function UserProfileView({ userId }: { userId: string }) {
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
   const { user: appCurrentUser } = useCurrentUser();
+  const queryClient = useQueryClient();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const { data: levels = [] } = useLevels();
   const { data: subjects = [] } = useSubjects();
 
-  // Warm up contribution stats for the profile tabs and lessons rail
-  useContributionStats(userId);
+  const { data: stats } = useContributionStats(userId);
 
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
     queryKey: ["user", userId],
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-      return apiFetch<UserPublic>(`/users/${userId}/`, token);
+      const token =
+        (await getToken()) ||
+        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      return apiFetch<UserPublic>(`/users/${userId}/`, token || undefined);
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -58,8 +62,14 @@ export function UserProfileView({ userId }: { userId: string }) {
     );
   }
 
-  const isSelf = clerkUser?.id === profile.clerk_id;
-  const isAdmin = isAdminOrSuperAdmin(appCurrentUser?.role);
+  const isSelf =
+    Boolean(appCurrentUser?.id && appCurrentUser.id === profile.id) ||
+    Boolean(clerkUser?.id && clerkUser.id === profile.clerk_id);
+
+  const handleActionSuccess = () => {
+    queryClient.invalidateQueries({ queryKey: ["user", userId] });
+    queryClient.invalidateQueries({ queryKey: ["contribution-stats", userId] });
+  };
 
   const levelName = profile.level ? levels.find((l) => l.id === profile.level)?.name : null;
   const goodSubjectNames = profile.good_subjects
@@ -69,8 +79,13 @@ export function UserProfileView({ userId }: { userId: string }) {
     ? profile.weak_subjects.map((id) => subjects.find((s) => s.id === id)?.name).filter(Boolean).join(", ")
     : null;
 
-  const effectiveTier = profile.contributor_tier ?? profile.reputation?.contributor_tier ?? 0;
+  const effectiveTier =
+    stats?.contributor_tier ??
+    profile.contributor_tier ??
+    profile.reputation?.contributor_tier ??
+    0;
   const effectivePoints =
+    stats?.current_net_points ??
     profile.contribution_points ??
     profile.reputation?.contribution_points ??
     0;
@@ -94,6 +109,30 @@ export function UserProfileView({ userId }: { userId: string }) {
                   {isStaffRole(profile.role) && (
                     <Badge variant="outline">{profile.role}</Badge>
                   )}
+                  {profile.ban_status && profile.ban_status !== "ACTIVE" && (
+                    <>
+                      {profile.ban_status === "WARNING" && (
+                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 font-semibold text-xs">
+                          ⚠️ Warning Active
+                        </Badge>
+                      )}
+                      {profile.ban_status === "BANNED_24H" && (
+                        <Badge variant="destructive" className="font-semibold text-xs">
+                          ⛔ 24h Suspension
+                        </Badge>
+                      )}
+                      {profile.ban_status === "BANNED_7D" && (
+                        <Badge variant="destructive" className="font-semibold text-xs">
+                          ⛔ 7-Day Suspension
+                        </Badge>
+                      )}
+                      {profile.ban_status === "PERMANENT_BAN" && (
+                        <Badge variant="destructive" className="bg-red-800 text-white font-semibold text-xs">
+                          🚫 Permanently Banned
+                        </Badge>
+                      )}
+                    </>
+                  )}
                   <ContributorBadge tier={effectiveTier} size="md" />
                   <div className="inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-xs font-semibold text-primary">
                     <Sparkles className="size-3.5" />
@@ -108,17 +147,22 @@ export function UserProfileView({ userId }: { userId: string }) {
                 )}
               </div>
 
-              {/* Admin Actions */}
-              {isAdmin && !isSelf && (
-                <PointAdjustmentModal
-                  user={{
-                    id: profile.id,
-                    display_name: profile.display_name,
-                    contributor_tier: effectiveTier,
-                    contribution_points: effectivePoints,
-                  }}
-                />
-              )}
+              {/* Staff Command Dock */}
+              <StaffUserQuickActions
+                user={{
+                  id: profile.id,
+                  display_name: profile.display_name,
+                  email: profile.email,
+                  role: profile.role,
+                  ban_status: profile.ban_status,
+                  ban_expires_at: profile.ban_expires_at,
+                  contributor_tier: effectiveTier,
+                  contribution_points: effectivePoints,
+                  profile_image_url: profile.profile_image_url,
+                }}
+                variant="dock"
+                onSuccess={handleActionSuccess}
+              />
             </div>
 
             {profile.bio ? (
@@ -150,7 +194,15 @@ export function UserProfileView({ userId }: { userId: string }) {
 
             <div className="mt-5 flex flex-wrap gap-2">
               {!isSelf && <Button size="sm">Follow</Button>}
-              {!isSelf && <Button variant="ghost" size="sm">Report profile</Button>}
+              {!isSelf && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setReportOpen(true)}
+                >
+                  Report profile
+                </Button>
+              )}
               {isSelf && (
                 <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/settings/profile" />}>
                   Edit Profile
@@ -163,6 +215,15 @@ export function UserProfileView({ userId }: { userId: string }) {
 
       <ProfileLessonsRail userId={userId} />
       <ProfileActivityTabs userId={userId} />
+
+      {/* Global Report Modal for Profile */}
+      <ReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetId={userId}
+        targetType="USER"
+        targetTitle={profile?.display_name || "User Profile"}
+      />
     </div>
   );
 }

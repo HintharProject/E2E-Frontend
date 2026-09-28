@@ -27,6 +27,9 @@ export interface PointAdjustmentModalProps {
     contribution_points?: number;
   };
   trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  onSuccess?: () => void;
 }
 
 const PRESET_REASONS = [
@@ -38,8 +41,24 @@ const PRESET_REASONS = [
   "Other",
 ];
 
-export function PointAdjustmentModal({ user, trigger }: PointAdjustmentModalProps) {
-  const [open, setOpen] = useState(false);
+export function PointAdjustmentModal({
+  user,
+  trigger,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onSuccess,
+}: PointAdjustmentModalProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = (val: boolean) => {
+    if (isControlled) {
+      controlledOnOpenChange?.(val);
+    } else {
+      setInternalOpen(val);
+    }
+  };
+
   const [delta, setDelta] = useState<number>(0);
   const [reasonCategory, setReasonCategory] = useState(PRESET_REASONS[0]);
   const [customReason, setCustomReason] = useState("");
@@ -78,6 +97,7 @@ export function PointAdjustmentModal({ user, trigger }: PointAdjustmentModalProp
           setDelta(0);
           setCustomReason("");
           setNotes("");
+          onSuccess?.();
         },
       }
     );
@@ -85,17 +105,25 @@ export function PointAdjustmentModal({ user, trigger }: PointAdjustmentModalProp
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger
-        render={
-          trigger ? (
-            <>{trigger}</>
-          ) : (
+      {trigger ? (
+        <DialogTrigger
+          render={
+            React.isValidElement(trigger) ? (
+              trigger
+            ) : (
+              <button type="button">{trigger}</button>
+            )
+          }
+        />
+      ) : !isControlled ? (
+        <DialogTrigger
+          render={
             <Button variant="outline" size="sm" className="gap-1.5 text-xs text-rose-600 border-rose-500/30">
               <ShieldAlert className="size-3.5" /> Adjust Points
             </Button>
-          )
-        }
-      />
+          }
+        />
+      ) : null}
       <DialogContent className="sm:max-w-md">
         <form onSubmit={handleSubmit} className="space-y-4">
           <DialogHeader>

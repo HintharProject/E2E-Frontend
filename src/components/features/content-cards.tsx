@@ -16,6 +16,7 @@ import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useDeletePost } from "@/hooks/use-interactions";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
 import { BaseFeedCard } from "@/components/ui/base-card";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 
 function formatDateStr(dateStr: string): string {
@@ -86,6 +87,7 @@ export function PostCard({ post }: { post: Post }) {
         id: author?.id || "",
         display_name: author?.display_name || "Unknown",
         profile_image_url: author?.profile_image_url,
+        contributor_tier: author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
       }}
       subtitle={`${formatDateStr(post.created_at)} · expires in ${expiresIn}d`}
       topRight={
@@ -123,9 +125,13 @@ export function PostCard({ post }: { post: Post }) {
               authorClerkId={author?.clerk_id}
             />
             <span>· {post.comment_count ?? 0} comments</span>
+            <SaveButton entityType="post" entityId={post.id} variant="icon" />
           </>
         ) : (
-          <span>{post.comment_count ?? 0} comments</span>
+          <div className="flex items-center gap-1.5">
+            <span>{post.comment_count ?? 0} comments</span>
+            <SaveButton entityType="post" entityId={post.id} variant="icon" />
+          </div>
         )
       }
       moreMenu={
@@ -133,6 +139,14 @@ export function PostCard({ post }: { post: Post }) {
           shareUrl={shareUrl}
           contentType="POST"
           contentId={post.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={(post as any).is_hidden}
+          isLocked={(post as any).is_locked}
           editHref={canModify ? `/posts/${post.id}/edit` : undefined}
           onDelete={canModify ? handleDelete : undefined}
           deleteLabel="this post"
@@ -218,6 +232,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         id: author.id || "",
         display_name: author.display_name || "Unknown",
         profile_image_url: author.profile_image_url,
+        contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
       } : undefined}
       subtitle={formatDateStr(lesson.created_at)}
       topRight={
@@ -241,6 +256,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
             authorClerkId={author?.clerk_id}
           />
+          <SaveButton entityType="lesson" entityId={lesson.id} variant="icon" />
         </div>
       }
       title={lesson.title}
@@ -256,6 +272,13 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           shareUrl={shareUrl}
           contentType="LESSON"
           contentId={lesson.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={lesson.state === "DRAFT"}
           editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
           onDelete={canDelete ? handleDelete : undefined}
           deleteLabel="this lesson"

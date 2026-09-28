@@ -4,8 +4,6 @@ import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import {
   useTrainTree,
-  useAttemptedIds,
-  useAttemptSummary,
 } from "@/hooks/use-train";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -15,16 +13,15 @@ import {
   FolderOpen,
   ChevronDown,
   ChevronRight,
-  CheckCircle2,
   FileText,
   BookOpen,
   MessageSquare,
-  Trophy,
   X,
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TrainTreePaper } from "@/types";
+import { formatYear } from "@/lib/resources";
 
 interface CurriculumTreeSidebarProps {
   activePaperId?: string | null;
@@ -50,9 +47,6 @@ export function CurriculumTreeSidebar({
   onClose,
 }: CurriculumTreeSidebarProps) {
   const { data: treeData, isLoading: isTreeLoading } = useTrainTree(subjectId, levelId);
-  const { data: attemptedData } = useAttemptedIds(subjectId, levelId);
-  const targetId = leftPaperId !== undefined ? (leftPaperId || rightPaperId || null) : (activePaperId || null);
-  const { data: summaryData } = useAttemptSummary(targetId || undefined);
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -72,18 +66,16 @@ export function CurriculumTreeSidebar({
     return treeData.years[0]?.year;
   }, [treeData, leftPaperId, activePaperId, rightPaperId]);
 
-  const [toggledYears, setToggledYears] = useState<Record<number, boolean>>({});
+  const [toggledYears, setToggledYears] = useState<Record<string | number, boolean>>({});
 
-  const toggleYear = (year: number) => {
+  const toggleYear = (year: string | number) => {
     setToggledYears((prev) => {
       const current = prev[year] !== undefined ? prev[year] : year === defaultExpandedYear;
       return { ...prev, [year]: !current };
     });
   };
 
-  const attemptedSet = useMemo(() => {
-    return new Set(attemptedData?.attempted_resource_ids || []);
-  }, [attemptedData]);
+
 
   // Filter tree papers by search query
   const filteredYears = useMemo(() => {
@@ -197,7 +189,7 @@ export function CurriculumTreeSidebar({
                       ) : (
                         <Folder className="size-3.5 text-ink-muted" />
                       )}
-                      <span>{yearItem.year}</span>
+                      <span>{formatYear(yearItem.year)}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-ink-muted">
@@ -228,7 +220,6 @@ export function CurriculumTreeSidebar({
                               };
                               const isLeft = leftPaperId !== undefined ? leftPaperId === paper.id : activePaperId === paper.id;
                               const isRight = rightPaperId === paper.id;
-                              const isAttempted = attemptedSet.has(paper.id);
                               const isMS = paper.paper_type === "MS" || paper.file_name.toLowerCase().includes("ms");
 
                               const content = (
@@ -268,15 +259,7 @@ export function CurriculumTreeSidebar({
                                   </div>
 
                                   <div className="flex items-center gap-1 shrink-0">
-                                    {/* Attempted indicator */}
-                                    {isAttempted && (
-                                      <span
-                                        title="Practice Attempt Recorded"
-                                        className="text-emerald-500 flex items-center"
-                                      >
-                                        <CheckCircle2 className="size-3.5 fill-emerald-500/10" />
-                                      </span>
-                                    )}
+
 
                                     {/* Solutions count indicator */}
                                     {paper.solutions_count > 0 && (
@@ -391,38 +374,7 @@ export function CurriculumTreeSidebar({
           )}
         </div>
 
-        {/* Bottom Practice Benchmark Summary Card */}
-        <div className="p-3 border-t border-line bg-surface/80">
-          <div className="flex items-center gap-2 mb-1.5">
-            <Trophy className="size-3.5 text-amber-500" />
-            <span className="text-[11px] font-bold text-ink uppercase tracking-wider">
-              Paper Performance
-            </span>
-          </div>
 
-          {summaryData && summaryData.total_attempts > 0 ? (
-            <div className="space-y-1 text-xs">
-              <div className="flex items-center justify-between text-ink">
-                <span className="text-ink-muted">Personal Best:</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  {summaryData.personal_best?.percentage}% ({summaryData.personal_best?.projected_grade})
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-ink">
-                <span className="text-ink-muted">Historical Avg:</span>
-                <span className="font-medium">{summaryData.average_percentage}%</span>
-              </div>
-              <div className="flex items-center justify-between text-ink">
-                <span className="text-ink-muted">Total Practice Runs:</span>
-                <span className="font-medium">{summaryData.total_attempts}</span>
-              </div>
-            </div>
-          ) : (
-            <p className="text-[11px] text-ink-muted italic leading-relaxed">
-              No practice attempts logged for this paper yet. Complete a timed run and self-mark to benchmark your progress!
-            </p>
-          )}
-        </div>
       </aside>
     </>
   );

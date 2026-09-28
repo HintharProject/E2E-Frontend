@@ -6,7 +6,9 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isModeratorOrAbove } from "@/types/user";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
   Dialog,
   DialogContent,
@@ -26,11 +28,11 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
   const stateMutation = useUpdateLessonState();
 
   const isAuthor = user?.id === lesson.author_details?.id;
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const isStaff = isModeratorOrAbove(user?.role);
 
   const canEdit = isAuthor;
-  const canDelete = isAuthor || isAdmin;
-  const canChangeState = isAuthor || isAdmin;
+  const canDelete = isAuthor || isStaff;
+  const canChangeState = isAuthor || isStaff;
 
   const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
   const canArchive = canChangeState && lesson.state === "PUBLISHED";
@@ -64,7 +66,7 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
     });
   };
 
-  if (!canEdit && !canDelete && !canChangeState) {
+  if (!canEdit && !canDelete && !canChangeState && !isStaff) {
     return null;
   }
 
@@ -147,6 +149,23 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
           </DialogContent>
         </Dialog>
       ) : null}
+
+      <StaffContentActionMenu
+        targetType="LESSON"
+        targetId={lesson.id}
+        targetTitle={lesson.title}
+        author={lesson.author_details}
+        isHidden={lesson.state === "DRAFT"}
+        isDeleted={lesson.is_deleted}
+        variant="button"
+        onSuccess={(action) => {
+          if (action === "soft_delete") {
+            router.push("/lessons");
+          } else {
+            router.refresh();
+          }
+        }}
+      />
     </>
   );
 }

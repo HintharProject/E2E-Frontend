@@ -16,9 +16,11 @@ import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 const LessonMediaViewer = dynamic(
   () => import("@/components/features/lessons/lesson-media-viewer").then((mod) => mod.LessonMediaViewer),
@@ -106,9 +108,20 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           title={problem.title}
           description={`Asked ${formatDate(problem.created_at)}`}
           actions={
-            isAuthor ? (
-              <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />
-            ) : undefined
+            <div className="flex items-center gap-2">
+              {isAuthor && <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />}
+              <StaffContentActionMenu
+                targetType="PROBLEM"
+                targetId={problem.id}
+                targetTitle={problem.title}
+                author={problem.author_details}
+                isHidden={problem.is_hidden}
+                isLocked={problem.is_locked}
+                isDeleted={problem.is_deleted}
+                isFinal={isFinal}
+                variant="button"
+              />
+            </div>
           }
         />
       </div>
@@ -152,6 +165,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 id: author.id || "",
                 display_name: author.display_name || "Unknown",
                 profile_image_url: author.profile_image_url,
+                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
@@ -176,10 +190,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               <Badge variant="secondary" className="text-xs">
                 Closed
               </Badge>
-            )}
-
-            {author?.contributor_tier !== undefined && (
-              <ContributorBadge tier={author.contributor_tier} size="sm" />
             )}
 
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
@@ -215,6 +225,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             <Button variant="ghost" size="sm" onClick={handleShare}>
               Share
             </Button>
+            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" showLabel label="Save" />
             {user?.clerk_id !== problem.author_details?.clerk_id && (
               <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}

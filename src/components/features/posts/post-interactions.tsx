@@ -1,16 +1,18 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import { useVotePost, useReport } from "@/hooks/use-interactions";
+import { useVotePost } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Button } from "@/components/ui/button";
 import { Post } from "@/types";
 import { SaveToSessionDialog } from "@/components/features/collections/save-to-session-dialog";
+import { ReportModal } from "@/components/features/moderation/report-modal";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { toast } from "sonner";
 
 export function PostInteractions({ post }: { post: Post }) {
   const { user: currentUser } = useCurrentUser();
   const voteMutation = useVotePost();
-  const reportMutation = useReport();
+  const [reportOpen, setReportOpen] = useState(false);
 
   const author = post.author_details;
   const isAuthor = Boolean(
@@ -80,13 +82,8 @@ export function PostInteractions({ post }: { post: Post }) {
     }, 1000);
   };
 
-  const handleReport = async () => {
-    try {
-      await reportMutation.mutateAsync({ targetId: post.id, targetType: "POST" });
-      toast.success("Post reported to moderation queue.");
-    } catch (err: any) {
-      toast.error("Failed to report. You may have already reported this post.");
-    }
+  const handleReport = () => {
+    setReportOpen(true);
   };
 
   const handleShare = () => {
@@ -124,9 +121,30 @@ export function PostInteractions({ post }: { post: Post }) {
       )}
       <SaveToSessionDialog postId={post.id} />
       <Button variant="ghost" onClick={handleShare}>Share</Button>
-      <Button variant="ghost" onClick={handleReport} disabled={reportMutation.isPending}>
-        {reportMutation.isPending ? "Reporting..." : "Report"}
+      <Button variant="ghost" onClick={handleReport}>
+        Report
       </Button>
+
+      {/* Staff Inline Moderation Menu */}
+      <StaffContentActionMenu
+        targetType="POST"
+        targetId={post.id}
+        targetTitle={post.title}
+        author={post.author_details}
+        isHidden={post.is_hidden}
+        isLocked={post.is_locked}
+        isDeleted={post.is_deleted}
+        variant="button"
+      />
+
+      {/* Global Report Modal */}
+      <ReportModal
+        open={reportOpen}
+        onOpenChange={setReportOpen}
+        targetId={post.id}
+        targetType="POST"
+        targetTitle={post.title}
+      />
     </div>
   );
 }

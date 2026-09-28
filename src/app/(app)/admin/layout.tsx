@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Loader2,
   LayoutDashboard,
@@ -13,23 +13,57 @@ import {
   UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  Tag,
+  Layers3,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { isAdminOrSuperAdmin } from "@/types/user";
+import { isAdminOrSuperAdmin, isModeratorOrAbove, isSuperAdmin, Role } from "@/types/user";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+
+const ADMIN_ONLY_ROUTES = [
+  "/admin/users",
+  "/admin/taxonomy",
+  "/admin/resources",
+  "/admin/announcements",
+  "/admin/audit-logs",
+];
+
+function isAdminOnlyPath(pathname: string): boolean {
+  const normalized = pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+  if (normalized === "/admin") {
+    return true;
+  }
+  return ADMIN_ONLY_ROUTES.some(
+    (route) => normalized === route || normalized.startsWith(`${route}/`)
+  );
+}
 
 function AdminGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useCurrentUser();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isStaff = isModeratorOrAbove(user?.role);
+  const isAuthorized = isStaff && (!isAdminOnlyPath(pathname) || isAdminOrSuperAdmin(user?.role));
 
   useEffect(() => {
-    if (!isLoading && (!user || !isAdminOrSuperAdmin(user.role))) {
-      router.replace("/");
-    }
-  }, [isLoading, user, router]);
+    if (isLoading) return;
 
-  if (isLoading || !user || !isAdminOrSuperAdmin(user.role)) {
+    // 1. Unauthorized non-staff users bounced to public homepage
+    if (!user || !isStaff) {
+      router.replace("/");
+      return;
+    }
+
+    // 2. Moderators attempting to access dashboard or admin-only routes bounced to moderation queue
+    if (user.role === "MODERATOR" && isAdminOnlyPath(pathname)) {
+      router.replace("/admin/reports");
+      return;
+    }
+  }, [isLoading, user, isStaff, pathname, router]);
+
+  if (isLoading || !isAuthorized) {
     return (
       <div className="flex h-[50vh] items-center justify-center">
         <Loader2 className="size-8 animate-spin text-muted-foreground" />
@@ -40,8 +74,43 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+type RoleRequirement = "MODERATOR" | "ADMIN" | "SUPERADMIN";
+
+interface NavItem {
+  name: string;
+  href: string;
+  icon: any;
+  activeMatch?: string;
+  minRole: RoleRequirement;
+  moderatorOnly?: boolean;
+}
+
+function canAccessNavItem(role: Role | undefined, minRole: RoleRequirement): boolean {
+  if (!role) return false;
+  if (minRole === "MODERATOR") {
+    return isModeratorOrAbove(role);
+  }
+  if (minRole === "ADMIN") {
+    return isAdminOrSuperAdmin(role);
+  }
+  if (minRole === "SUPERADMIN") {
+    return isSuperAdmin(role);
+  }
+  return false;
+}
+
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>}>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </Suspense>
+  );
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { user } = useCurrentUser();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("admin_sidebar_collapsed") === "true";
@@ -59,15 +128,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     });
   };
 
-  const navItems = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
-    { name: "Users", href: "/admin/users", icon: Users },
-    { name: "Moderation Queue", href: "/admin/reports/posts", activeMatch: "/admin/reports", icon: ShieldAlert },
-    { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree },
-    { name: "Resources", href: "/admin/resources", icon: FolderTree },
-    { name: "Announcements", href: "/admin/announcements", icon: Megaphone },
-    { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText },
-  ];
+  const isModeratorOnly = user?.role === "MODERATOR";
+  const portalTitle = isModeratorOnly ? "Moderation Portal" : "Admin Panel";
+
+  const navItems: NavItem[] = isModeratorOnly
+    ? [
+        { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
+        { name: "Tag Merge Studio", href: "/admin/tags", activeMatch: "/admin/tags", icon: Tag, minRole: "MODERATOR" },
+        { name: "Content Triage", href: "/admin/triage", activeMatch: "/admin/triage", icon: Layers3, minRole: "MODERATOR" },
+      ]
+    : [
+        { name: "Dashboard", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN" },
+        { name: "Users", href: "/admin/users", icon: Users, minRole: "ADMIN" },
+        { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
+        { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree, minRole: "ADMIN" },
+        { name: "Resources", href: "/admin/resources", icon: FolderTree, minRole: "ADMIN" },
+        { name: "Announcements", href: "/admin/announcements", icon: Megaphone, minRole: "ADMIN" },
+        { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText, minRole: "ADMIN" },
+      ];
+
+  const visibleNavItems = navItems.filter((item) =>
+    canAccessNavItem(user?.role, item.minRole)
+  );
 
   return (
     <AdminGuard>
@@ -92,11 +174,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                   isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100"
                 )}
               >
-                Admin Panel
+                {portalTitle}
               </h2>
               <button
                 onClick={toggleCollapse}
-                title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={isCollapsed ? `Expand ${portalTitle.toLowerCase()}` : `Collapse ${portalTitle.toLowerCase()}`}
                 className="hidden md:inline-flex size-8 items-center justify-center rounded-lg border border-line bg-card text-ink-muted hover:bg-muted hover:text-ink transition-colors active:scale-95 shrink-0 shadow-2xs"
               >
                 {isCollapsed ? (
@@ -109,8 +191,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             {/* Navigation items */}
             <nav className="flex md:flex-col gap-1 overflow-x-auto pb-4 md:pb-0 hide-scrollbar">
-              {navItems.map((item) => {
-                const isActive = item.activeMatch
+              {visibleNavItems.map((item) => {
+                const currentTab = searchParams.get("tab");
+                const currentFull = currentTab ? `${pathname}?tab=${currentTab}` : pathname;
+                const isActive = item.href.includes("?tab=")
+                  ? currentFull === item.href
+                  : item.activeMatch
                   ? pathname.startsWith(item.activeMatch)
                   : pathname === item.href;
                 const Icon = item.icon;

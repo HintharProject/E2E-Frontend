@@ -1,19 +1,10 @@
-import { PageHeader } from "@/components/ui/page-header";
-import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
-import { ForumFeed } from "@/components/features/forum-feed";
+import { AnnouncementsFeed } from "@/components/features/forum/announcements-feed";
 
 export default function AnnouncementsFeedPage() {
   return (
     <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
-      <div className="mt-6">
-        <ForumFeed 
-          subjects={[]} 
-          levels={[]} 
-          tagIds={[]} 
-          postTypes={["ANNOUNCEMENT"]} 
-          feed="announcement"
-        />
-      </div>
+      {/* Dedicated Announcements Feed */}
+      <AnnouncementsFeed />
     </div>
   );
 }

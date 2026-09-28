@@ -6,7 +6,7 @@ import { FormEvent, useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
-import { Menu, Search, UserCog } from "lucide-react";
+import { Menu, Search, UserCog, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -60,8 +60,15 @@ export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, isLoading } = useCurrentUser();
-  const { toggleMobileNav } = useUIStore();
+  const { toggleMobileNav, openCommandPalette } = useUIStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [isMac, setIsMac] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent));
+    }
+  }, []);
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const { isRefreshing, triggerRefresh } = useRefreshStore();
@@ -174,18 +181,23 @@ export function AppHeader() {
               </span>
             </Link>
 
-            {/* Desktop search */}
-            <form onSubmit={onSearch} className="hidden flex-1 md:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search titles…"
-                  className="h-9 rounded-full pl-9"
-                />
-              </div>
-            </form>
+            {/* Desktop search trigger */}
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="hidden md:flex flex-1 max-w-md items-center justify-between h-9 rounded-full border border-border bg-muted/40 hover:bg-muted/70 px-3.5 text-xs text-muted-foreground transition-colors cursor-pointer group"
+              aria-label="Open command palette"
+            >
+              <span className="flex items-center gap-2 min-w-0">
+                <Search className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <span className="font-normal text-muted-foreground group-hover:text-foreground transition-colors truncate">
+                  Search discussions, problems, lessons, papers...
+                </span>
+              </span>
+              <kbd className="inline-flex shrink-0 items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground group-hover:text-foreground shadow-2xs">
+                {isMac ? "⌘K" : "Ctrl+K"}
+              </kbd>
+            </button>
 
             {/* User area */}
             <div className="ml-auto flex items-center gap-2">
@@ -201,32 +213,41 @@ export function AppHeader() {
                 </Button>
               )}
               {user && (
-                <Link
-                  href={`/users/${user.id}`}
-                  className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:border-primary/40"
-                >
-                  <Avatar size="sm">
-                    {user.image_url && (
-                      <AvatarImage
-                        src={user.image_url}
-                        alt={user.display_name}
-                      />
+                <>
+                  <Link
+                    href={`/users/${user.id}`}
+                    className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:border-primary/40"
+                  >
+                    <Avatar size="sm">
+                      {user.image_url && (
+                        <AvatarImage
+                          src={user.image_url}
+                          alt={user.display_name}
+                        />
+                      )}
+                      <AvatarFallback>
+                        {getInitials(user.display_name)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden text-sm font-semibold sm:inline">
+                      {user.display_name}
+                    </span>
+                    {isStaffRole(user.role) ? (
+                      <Badge variant="outline">
+                        {user.role}
+                      </Badge>
+                    ) : (
+                      <ContributorBadge tier={user.contributor_tier} size="sm" />
                     )}
-                    <AvatarFallback>
-                      {getInitials(user.display_name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="hidden text-sm font-semibold sm:inline">
-                    {user.display_name}
-                  </span>
-                  {isStaffRole(user.role) ? (
-                    <Badge variant="outline">
-                      {user.role}
-                    </Badge>
-                  ) : (
-                    <ContributorBadge tier={user.contributor_tier} size="sm" />
-                  )}
-                </Link>
+                  </Link>
+                  <Link
+                    href="/settings/profile"
+                    title="Edit Profile & Settings"
+                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Link>
+                </>
               )}
               <ThemeToggle />
               <UserButton
@@ -303,19 +324,22 @@ export function AppHeader() {
             </div>
           </div>
 
-          {/* Mobile search & filter */}
+          {/* Mobile search trigger & filter */}
           <div className="flex items-center gap-2 md:hidden">
-            <form onSubmit={onSearch} className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search titles…"
-                  className="h-9 rounded-full pl-9"
-                />
-              </div>
-            </form>
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="flex-1 flex items-center justify-between h-9 rounded-full border border-border bg-muted/40 px-3 text-xs text-muted-foreground cursor-pointer"
+              aria-label="Open search palette"
+            >
+              <span className="flex items-center gap-2">
+                <Search className="size-4 text-muted-foreground" />
+                <span>Search platform...</span>
+              </span>
+              <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold">
+                {isMac ? "⌘K" : "Ctrl+K"}
+              </kbd>
+            </button>
             <AppHeaderMobileFilter pathname={pathname} />
           </div>
 

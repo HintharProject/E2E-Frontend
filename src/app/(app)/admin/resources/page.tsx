@@ -1,8 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
 import {
@@ -23,6 +26,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
   YEARS,
   SESSIONS,
   PAPER_TYPES,
@@ -33,14 +44,42 @@ import {
   ResourceType,
   PaperType,
   SessionType,
+  formatYear,
 } from "@/lib/resources";
+import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { ResourcesBulkUpload } from "@/components/features/admin/resources-bulk-upload";
 import { EditResourceDialog } from "@/components/features/admin/edit-resource-dialog";
 
 export default function AdminResourcesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <AdminResourcesContent />
+    </Suspense>
+  );
+}
+
+function AdminResourcesContent() {
   const { getToken } = useAuth();
+
   const queryClient = useQueryClient();
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
 
   // Selection Filters
   const [selectedLevel, setSelectedLevel] = useState<string>("");
@@ -51,7 +90,7 @@ export default function AdminResourcesPage() {
 
   // Single Upload Form State
   const [resourceType, setResourceType] = useState<ResourceType>("PAST_PAPER");
-  const [year, setYear] = useState<number>(2024);
+  const [year, setYear] = useState<string | number>("2024");
   const [session, setSession] = useState<SessionType>("MAY_JUNE");
   const [paperType, setPaperType] = useState<PaperType>("QP");
   const [customTitle, setCustomTitle] = useState("");
@@ -66,10 +105,20 @@ export default function AdminResourcesPage() {
 
   // Edit Modal State
   const [editingDoc, setEditingDoc] = useState<any | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<any | null>(null);
+
+  // Dynamic Exam Taxonomy
+  const { data: taxonomyData } = useExamTaxonomy();
+  const availableYears = taxonomyData?.years?.length ? taxonomyData.years : YEARS;
+  const availableSessions = taxonomyData?.sessions?.length
+    ? taxonomyData.sessions.map((s) => ({ value: s.code, label: s.name }))
+    : SESSIONS;
+
 
   // Fetch Levels & Subjects
   const { data: levels = [] } = useQuery<any[]>({
     queryKey: ["levels"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       const res = await apiFetch<any>("/levels/", token as string);
@@ -79,12 +128,27 @@ export default function AdminResourcesPage() {
 
   const { data: subjects = [] } = useQuery<any[]>({
     queryKey: ["subjects"],
+    enabled: isAuthorized,
     queryFn: async () => {
       const token = await getToken();
       const res = await apiFetch<any>("/subjects/", token as string);
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
   });
+
+  // Pre-fill level and subject from query parameters (e.g. from curriculum triage shortcut)
+  useEffect(() => {
+    const rawLevel = searchParams.get("level") || searchParams.get("level_id");
+    const rawSubject = searchParams.get("subject") || searchParams.get("subject_id");
+    if (rawLevel && levels.length > 0 && !selectedLevel) {
+      const match = levels.find((l: any) => l.id === rawLevel || l.code?.toLowerCase() === rawLevel.toLowerCase());
+      if (match) setSelectedLevel(match.id);
+    }
+    if (rawSubject && subjects.length > 0 && !selectedSubject) {
+      const match = subjects.find((s: any) => s.id === rawSubject || s.code?.toLowerCase() === rawSubject.toLowerCase());
+      if (match) setSelectedSubject(match.id);
+    }
+  }, [searchParams, levels, subjects, selectedLevel, selectedSubject]);
 
   // Fetch Resources List
   const { data: resources = [], isLoading: loadingResources } = useQuery<any[]>({
@@ -98,7 +162,7 @@ export default function AdminResourcesPage() {
       );
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
-    enabled: !!selectedLevel && !!selectedSubject,
+    enabled: isAuthorized && !!selectedLevel && !!selectedSubject,
   });
 
   // Delete Mutation
@@ -198,6 +262,14 @@ export default function AdminResourcesPage() {
       item.session?.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
+
+  if (isUserLoading || !isAuthorized) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -335,11 +407,11 @@ export default function AdminResourcesPage() {
                         <select
                           className="w-full rounded-lg border border-line px-3 py-2 bg-surface text-sm focus:outline-primary"
                           value={year}
-                          onChange={(e) => setYear(Number(e.target.value))}
+                          onChange={(e) => setYear(e.target.value)}
                         >
-                          {YEARS.map((y) => (
+                          {availableYears.map((y) => (
                             <option key={y} value={y}>
-                              {y}
+                              {formatYear(y)}
                             </option>
                           ))}
                         </select>
@@ -354,7 +426,7 @@ export default function AdminResourcesPage() {
                           value={session}
                           onChange={(e) => setSession(e.target.value as SessionType)}
                         >
-                          {SESSIONS.map((s) => (
+                          {availableSessions.map((s) => (
                             <option key={s.value} value={s.value}>
                               {s.label}
                             </option>
@@ -639,11 +711,7 @@ export default function AdminResourcesPage() {
                               size="icon"
                               variant="ghost"
                               className="size-7 text-danger hover:text-danger hover:bg-danger/10"
-                              onClick={() => {
-                                if (confirm(`Are you sure you want to delete "${item.file_name}"?`)) {
-                                  deleteMutation.mutate(item.id);
-                                }
-                              }}
+                              onClick={() => setItemToDelete(item)}
                               title="Delete Document"
                             >
                               <Trash2 className="size-3.5" />
@@ -667,6 +735,37 @@ export default function AdminResourcesPage() {
         subjects={subjects}
         onClose={() => setEditingDoc(null)}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!itemToDelete} onOpenChange={(open) => !open && setItemToDelete(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold text-ink">Delete Resource Document</DialogTitle>
+            <DialogDescription className="text-xs text-ink-muted leading-relaxed">
+              Are you sure you want to delete &ldquo;{itemToDelete?.file_name}&rdquo;? This will remove the file from storage and any linked curriculum structures.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0 mt-4">
+            <Button variant="outline" size="sm" onClick={() => setItemToDelete(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleteMutation.isPending}
+              onClick={async () => {
+                if (itemToDelete) {
+                  await deleteMutation.mutateAsync(itemToDelete.id);
+                  setItemToDelete(null);
+                }
+              }}
+            >
+              {deleteMutation.isPending ? "Deleting..." : "Delete Document"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
+

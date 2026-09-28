@@ -14,8 +14,12 @@ export default function OnboardingPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (!isLoading && user && isAdminOrSuperAdmin(user.role)) {
-      router.push("/forum");
+    if (!isLoading) {
+      if (!user) {
+        router.push("/sign-in");
+      } else if (isAdminOrSuperAdmin(user.role)) {
+        router.push("/forum");
+      }
     }
   }, [user, isLoading, router]);
 

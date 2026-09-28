@@ -17,6 +17,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { toast } from "sonner";
 import { BaseFeedCard } from "@/components/ui/base-card";
 import { BookOpen, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { SaveButton } from "@/components/features/collections/save-button";
 
 export function ProblemCard({ problem }: { problem: Problem }) {
   const { user } = useCurrentUser();
@@ -87,17 +88,11 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               id: author.id || "",
               display_name: author.display_name || "Unknown",
               profile_image_url: author.profile_image_url,
+              contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
             }
           : undefined
       }
-      subtitle={
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {author?.contributor_tier !== undefined && (
-            <ContributorBadge tier={author.contributor_tier} size="sm" />
-          )}
-          <span>· Asked {formatDate(problem.created_at)}</span>
-        </div>
-      }
+      subtitle={`Asked ${formatDate(problem.created_at)}`}
       topRight={
         <div className="flex items-center gap-1.5">
           {problem.status === "FINAL" && (
@@ -185,6 +180,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             authorClerkId={author?.clerk_id}
           />
           <span>· {problem.solution_count ?? 0} {problem.solution_count === 1 ? "solution" : "solutions"}</span>
+          <SaveButton entityType="problem" entityId={problem.id} variant="icon" />
         </>
       }
       moreMenu={
@@ -192,6 +188,15 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           shareUrl={shareUrl}
           contentType="PROBLEM"
           contentId={problem.id}
+          author={author ? {
+            id: author.id,
+            display_name: author.display_name,
+            role: author.role,
+            contributor_tier: author.contributor_tier,
+          } : null}
+          isHidden={(problem as any).is_hidden}
+          isLocked={(problem as any).is_locked}
+          isFinal={problem.status === "FINAL"}
           onDelete={canModify ? handleDelete : undefined}
           deleteLabel="this problem"
         />

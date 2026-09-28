@@ -14,6 +14,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "./author-endorse-button";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
+import { SaveButton } from "@/components/features/collections/save-button";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -158,9 +159,10 @@ export function SolutionItem({
                 <span className="text-sm font-semibold text-ink">{author?.display_name || "Community Solver"}</span>
               </Link>
 
-              {author?.contributor_tier !== undefined && (
-                <ContributorBadge tier={author.contributor_tier} size="sm" />
-              )}
+              <ContributorBadge
+                tier={author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                size="sm"
+              />
 
               <span className="text-xs text-ink-muted">· {formatDate(solution.created_at)}</span>
 
@@ -239,10 +241,20 @@ export function SolutionItem({
             isOwnSolution={!!isAuthor}
           />
 
+          <SaveButton entityType="solution" entityId={solution.id} variant="icon" />
+
           <CardMoreMenu
             shareUrl={shareUrl}
             contentType="SOLUTION"
             contentId={solution.id}
+            author={author ? {
+              id: author.id,
+              display_name: author.display_name,
+              role: author.role,
+              contributor_tier: author.contributor_tier,
+            } : null}
+            isHidden={(solution as any).is_hidden}
+            isLocked={(solution as any).is_locked}
             onDelete={canModify ? handleDelete : undefined}
             deleteLabel="this solution"
           />

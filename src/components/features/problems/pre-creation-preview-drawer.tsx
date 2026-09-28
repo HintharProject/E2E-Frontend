@@ -127,12 +127,10 @@ export function PreCreationPreviewDrawer({
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-ink">{sol.author.username}</span>
-                    {sol.author.contributor_tier !== undefined && (
-                      <ContributorBadge
-                        tier={sol.author.contributor_tier as ContributorTier}
-                        size="sm"
-                      />
-                    )}
+                    <ContributorBadge
+                      tier={sol.author.contributor_tier ?? 0}
+                      size="sm"
+                    />
                   </div>
                   <div className="flex items-center gap-1.5">
                     {sol.is_accepted && (

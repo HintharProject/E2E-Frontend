@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -102,6 +102,30 @@ export function CreateLessonForm({
       state: "DRAFT",
     },
   });
+
+  const searchParams = useSearchParams();
+
+  // Pre-fill subject and level from URL query parameters (e.g., from curriculum triage shortcuts)
+  useEffect(() => {
+    const rawSubject = searchParams.get("subject") || searchParams.get("subject_id");
+    const rawLevel = searchParams.get("level") || searchParams.get("level_id");
+    if (rawSubject && subjects.length > 0) {
+      const match = subjects.find(
+        (s) => s.id === rawSubject || s.code?.toLowerCase() === rawSubject.toLowerCase()
+      );
+      if (match) {
+        setValue("subject_id", match.id, { shouldValidate: true });
+      }
+    }
+    if (rawLevel && levels.length > 0) {
+      const match = levels.find(
+        (l) => l.id === rawLevel || l.code?.toLowerCase() === rawLevel.toLowerCase()
+      );
+      if (match) {
+        setValue("level_id", match.id, { shouldValidate: true });
+      }
+    }
+  }, [searchParams, subjects, levels, setValue]);
 
   // Recover state and field errors if background creation failed
   useEffect(() => {

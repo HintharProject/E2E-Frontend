@@ -24,6 +24,7 @@ import {
   parseResourceFileName,
   ResourceType,
 } from "@/lib/resources";
+import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
 interface ResourcesBulkUploadProps {
@@ -34,6 +35,12 @@ interface ResourcesBulkUploadProps {
 export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: ResourcesBulkUploadProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { data: taxonomyData } = useExamTaxonomy();
+
+  const availableYears = taxonomyData?.years?.length ? taxonomyData.years : (YEARS as unknown as number[]);
+  const availableSessions = taxonomyData?.sessions?.length
+    ? taxonomyData.sessions.map((s) => ({ value: s.code, label: s.name }))
+    : SESSIONS;
 
   const [bulkQueue, setBulkQueue] = useState<BulkQueueItem[]>([]);
   const [isUploadingBulk, setIsUploadingBulk] = useState(false);
@@ -76,6 +83,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
         year: parsed.year || batchDefaults.year || 2024,
         session: parsed.session || batchDefaults.session || "MAY_JUNE",
         paperType: parsed.paperType || batchDefaults.paperType || "QP",
+        title: f.name.replace(/\.[^/.]+$/, ""),
         status: "IDLE",
       });
     });
@@ -102,6 +110,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
       }))
     );
   };
+
 
   const updateQueueItem = (id: string, updates: Partial<BulkQueueItem>) => {
     setBulkQueue((prev) =>
@@ -146,6 +155,8 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
           formData.append("year", String(item.year));
           formData.append("session", item.session);
           formData.append("paper_type", item.paperType);
+        } else {
+          formData.append("title", (item.title || item.fileName.replace(/\.[^/.]+$/, "")).trim());
         }
 
         await apiFetch("/resources/files/", token as string, {
@@ -200,7 +211,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
           </Button>
         </div>
 
-        <div className={`grid ${batchDefaults.resourceType === "PAST_PAPER" ? "grid-cols-3" : "grid-cols-1"} gap-2 text-xs`}>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div>
             <label className="text-[10px] text-ink-muted block mb-0.5">Type</label>
             <select
@@ -218,7 +229,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
             </select>
           </div>
 
-          {batchDefaults.resourceType === "PAST_PAPER" && (
+          {batchDefaults.resourceType === "PAST_PAPER" ? (
             <>
               <div>
                 <label className="text-[10px] text-ink-muted block mb-0.5">Default Year</label>
@@ -232,9 +243,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     }))
                   }
                 >
-                  {YEARS.map((y) => (
+                  {availableYears.map((y) => (
                     <option key={y} value={y}>
-                      {y}
+                      {y === 0 ? "Others" : y}
                     </option>
                   ))}
                 </select>
@@ -252,7 +263,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     }))
                   }
                 >
-                  {SESSIONS.map((s) => (
+                  {availableSessions.map((s) => (
                     <option key={s.value} value={s.value}>
                       {s.label}
                     </option>
@@ -260,6 +271,10 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                 </select>
               </div>
             </>
+          ) : (
+            <div className="sm:col-span-2 flex items-center text-[11px] text-ink-muted bg-card px-2.5 py-1.5 rounded-md border border-line">
+              Non-paper resources will roll back to the filename as title (customizable below).
+            </div>
           )}
         </div>
       </div>
@@ -407,9 +422,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       onChange={(e) => updateQueueItem(item.id, { year: Number(e.target.value) })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     >
-                      {YEARS.map((y) => (
+                      {availableYears.map((y) => (
                         <option key={y} value={y}>
-                          {y}
+                          {y === 0 ? "Others" : y}
                         </option>
                       ))}
                     </select>
@@ -420,7 +435,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       onChange={(e) => updateQueueItem(item.id, { session: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     >
-                      {SESSIONS.map((s) => (
+                      {availableSessions.map((s) => (
                         <option key={s.value} value={s.value}>
                           {s.label}
                         </option>
@@ -438,10 +453,19 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </select>
                   </>
                 ) : (
-                  <div className="col-span-3 text-[10px] text-ink-muted flex items-center px-1">
-                    {(item.file.size / 1024 / 1024).toFixed(2)} MB document
+                  <div className="col-span-3">
+                    <input
+                      type="text"
+                      placeholder="Title (defaults to filename)"
+                      title="Document Title"
+                      className="w-full rounded border border-line px-2 py-1 bg-card text-[11px]"
+                      value={item.title || ""}
+                      onChange={(e) => updateQueueItem(item.id, { title: e.target.value })}
+                      disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
+                    />
                   </div>
                 )}
+
               </div>
 
               {item.errorMessage && (

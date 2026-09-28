@@ -7,7 +7,7 @@ import { Shield, Award, Zap, Crown, Sparkles, Info } from "lucide-react";
 import { ContributorTierInfoModal } from "./contributor-tier-info-modal";
 
 export interface ContributorBadgeProps {
-  tier?: ContributorTier | null;
+  tier?: ContributorTier | number | null;
   points?: number;
   size?: "sm" | "md" | "lg";
   showWeightTooltip?: boolean;

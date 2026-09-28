@@ -1,6 +1,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { ContributorTier } from "@/types/contribution";
 
 export function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -20,7 +22,9 @@ export interface BaseFeedCardProps {
     id: string;
     display_name: string;
     profile_image_url?: string | null;
+    contributor_tier?: ContributorTier | number | null;
   };
+  authorBadge?: React.ReactNode;
   subtitle?: React.ReactNode;
   topRight?: React.ReactNode;
   title: string;
@@ -35,6 +39,7 @@ export function BaseFeedCard({
   href,
   onMouseEnter,
   author,
+  authorBadge,
   subtitle,
   topRight,
   title,
@@ -59,8 +64,8 @@ export function BaseFeedCard({
               </Avatar>
             </Link>
           ) : null}
-          <div>
-            <div className="flex items-center gap-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
@@ -69,8 +74,15 @@ export function BaseFeedCard({
                   {author.display_name}
                 </Link>
               ) : null}
+              {author ? (
+                <ContributorBadge
+                  tier={author.contributor_tier ?? 0}
+                  size="sm"
+                />
+              ) : null}
+              {authorBadge}
             </div>
-            {subtitle && <div className="text-xs text-ink-muted">{subtitle}</div>}
+            {subtitle && <div className="text-xs text-ink-muted mt-0.5">{subtitle}</div>}
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -103,7 +115,9 @@ export interface BaseDetailedCardProps {
     id: string;
     display_name: string;
     profile_image_url?: string | null;
+    contributor_tier?: ContributorTier | number | null;
   };
+  authorBadge?: React.ReactNode;
   authorSubtext?: React.ReactNode;
   badges?: React.ReactNode;
   topRight?: React.ReactNode;
@@ -116,6 +130,7 @@ export interface BaseDetailedCardProps {
 
 export function BaseDetailedCard({
   author,
+  authorBadge,
   authorSubtext,
   badges,
   topRight,
@@ -130,16 +145,23 @@ export function BaseDetailedCard({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-wrap items-center gap-3">
           {author ? (
-            <Link href={`/users/${author.id}`} className="flex items-center gap-2">
-              <Avatar size="sm">
-                {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-              </Avatar>
-              <div className="flex flex-col">
-                <span className="font-semibold text-ink hover:text-brand-dark">{author.display_name}</span>
-                {authorSubtext && <span className="text-xs text-ink-muted">{authorSubtext}</span>}
-              </div>
-            </Link>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Link href={`/users/${author.id}`} className="flex items-center gap-2 hover:opacity-85">
+                <Avatar size="sm">
+                  {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
+                  <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-ink hover:text-brand-dark">{author.display_name}</span>
+                  {authorSubtext && <span className="text-xs text-ink-muted">{authorSubtext}</span>}
+                </div>
+              </Link>
+              <ContributorBadge
+                tier={author.contributor_tier ?? 0}
+                size="sm"
+              />
+              {authorBadge}
+            </div>
           ) : null}
           {badges && <div className="flex flex-wrap gap-2 items-center">{badges}</div>}
         </div>

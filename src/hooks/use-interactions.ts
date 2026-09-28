@@ -195,7 +195,17 @@ export function useReport() {
   const { getToken } = useAuth();
 
   return useMutation({
-    mutationFn: async ({ targetId, targetType }: { targetId: string; targetType: "POST" | "LESSON" | "USER" | "PROBLEM" | "SOLUTION" | "COMMENT" }) => {
+    mutationFn: async ({
+      targetId,
+      targetType,
+      reason,
+      notes,
+    }: {
+      targetId: string;
+      targetType: "POST" | "LESSON" | "USER" | "PROBLEM" | "SOLUTION" | "COMMENT";
+      reason?: string;
+      notes?: string;
+    }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       
@@ -206,6 +216,9 @@ export function useReport() {
       else if (targetType === "PROBLEM") payload.reported_problem = targetId;
       else if (targetType === "SOLUTION") payload.reported_solution = targetId;
       else if (targetType === "COMMENT") payload.reported_comment = targetId;
+
+      if (reason) payload.reason = reason;
+      if (notes) payload.notes = notes;
 
       await apiFetch(`/reports/`, token, {
         method: "POST",

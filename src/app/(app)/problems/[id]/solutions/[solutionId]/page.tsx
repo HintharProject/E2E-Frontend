@@ -28,6 +28,8 @@ import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "@/components/features/problems/author-endorse-button";
 import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { SaveButton } from "@/components/features/collections/save-button";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -168,15 +170,12 @@ export default function SolutionDetailPage({
                 id: author.id || "",
                 display_name: author.display_name || "Community Solver",
                 profile_image_url: author.profile_image_url,
+                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
-            {author?.contributor_tier !== undefined && (
-              <ContributorBadge tier={author.contributor_tier} size="sm" />
-            )}
-
             {isAccepted && (
               <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px]">
                 <CheckCircle2 className="size-3" /> Accepted Solution
@@ -258,6 +257,16 @@ export default function SolutionDetailPage({
                 variant="pill"
               />
 
+              <SaveButton
+                entityType="solution"
+                entityId={solution.id}
+                variant="ghost"
+                size="sm"
+                showLabel
+                label="Save"
+                className="gap-1.5 text-xs text-ink-muted hover:text-ink"
+              />
+
               <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs text-ink-muted hover:text-ink">
                 <Share2 className="size-3.5" />
                 <span>Share</span>
@@ -321,6 +330,33 @@ export default function SolutionDetailPage({
                   </Dialog>
                 </>
               )}
+
+              <StaffContentActionMenu
+                targetType="SOLUTION"
+                targetId={solution.id}
+                targetTitle={`Solution for ${problem?.title || "Problem"}`}
+                author={author ? {
+                  id: author.id,
+                  display_name: author.display_name,
+                  email: author.email,
+                  role: author.role,
+                  contributor_tier: author.contributor_tier,
+                  contribution_points: author.contribution_points,
+                  ban_status: author.ban_status,
+                  ban_expires_at: author.ban_expires_at,
+                } : null}
+                isHidden={solution.is_hidden}
+                isLocked={solution.is_locked}
+                isDeleted={solution.is_deleted}
+                variant="badge"
+                onSuccess={(action) => {
+                  if (action === "soft_delete") {
+                    router.push(`/problems/${problemId}`);
+                  } else {
+                    router.refresh();
+                  }
+                }}
+              />
             </div>
 
             {/* Right: Problem Author Endorsement */}

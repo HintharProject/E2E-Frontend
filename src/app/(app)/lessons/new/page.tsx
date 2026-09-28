@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, Subject, Level, Tag } from "@/types";
@@ -41,11 +42,13 @@ export default async function NewLessonPage() {
         title="New lesson"
         description="Subject and Level are required. Videos must be YouTube/playlist URLs — no direct video upload."
       />
-      <CreateLessonForm 
-        subjects={subjects} 
-        levels={levels} 
-        tags={tags} 
-      />
+      <Suspense fallback={<div className="h-64 rounded-2xl bg-card border border-line animate-pulse" />}>
+        <CreateLessonForm 
+          subjects={subjects} 
+          levels={levels} 
+          tags={tags} 
+        />
+      </Suspense>
     </div>
   );
 }

@@ -259,6 +259,7 @@ export function useAdminAdjustPoints() {
       queryClient.invalidateQueries({ queryKey: ["contribution-stats", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["contribution-ledger", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["user", variables.user_id] });
+      queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
     onError: (err: any) => {
       toast.error(err?.message || "Failed to adjust user points.");

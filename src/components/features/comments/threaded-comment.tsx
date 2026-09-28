@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
 import { useVoteComment } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
   Dialog,
   DialogContent,
@@ -161,6 +163,12 @@ export function ThreadedComment({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-semibold text-ink">{author?.display_name ?? "Unknown"}</span>
+            {author && (
+              <ContributorBadge
+                tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                size="sm"
+              />
+            )}
             <span className="text-xs text-ink-muted">{formatDate(comment.created_at)}</span>
           </div>
           
@@ -248,6 +256,18 @@ export function ThreadedComment({
                   {showReplies ? "Hide replies" : `View replies (${comment.reply_count})`}
                 </Button>
               ) : null}
+
+              <StaffContentActionMenu
+                targetType="COMMENT"
+                targetId={comment.id}
+                targetTitle={`Comment by ${author?.display_name || "User"}`}
+                author={author}
+                isHidden={comment.is_hidden}
+                isLocked={comment.is_locked}
+                isDeleted={comment.is_deleted}
+                variant="icon"
+                className="h-6 w-6"
+              />
             </div>
           )}
         </div>

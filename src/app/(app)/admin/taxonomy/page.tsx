@@ -1,159 +1,156 @@
 "use client";
 
-import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useAuth } from "@clerk/nextjs";
-import { apiFetch } from "@/services/api-client";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { PageHeader } from "@/components/ui/page-header";
-import { Loader2, Plus, Trash2, Edit2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import {
+  Loader2,
+  Calendar,
+  GraduationCap,
+  Tag as TagIcon,
+  ShieldAlert,
+  Layers3,
+} from "lucide-react";
+import { TagsMergeStudioSection } from "@/components/features/admin/taxonomy/tags-merge-studio-section";
+import { AcademicStructureSection } from "@/components/features/admin/taxonomy/academic-structure-section";
+import { ExamPeriodsSection } from "@/components/features/admin/taxonomy/exam-periods-section";
+import { ModerationReasonsSection } from "@/components/features/admin/taxonomy/moderation-reasons-section";
+import { UnclassifiedTriageSection } from "@/components/features/admin/taxonomy/unclassified-triage-section";
 
-function TaxonomySection({ 
-  title, 
-  endpoint, 
-  queryKey, 
-  onEdit 
-}: { 
-  title: string; 
-  endpoint: string; 
-  queryKey: string;
-  onEdit?: (item: any) => void;
-}) {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-
-  const { data = [], isLoading } = useQuery<any[]>({
-    queryKey: [queryKey],
-    queryFn: async () => {
-      const token = await getToken();
-      const res = await apiFetch<any>(endpoint, token as string);
-      return Array.isArray(res) ? res : (res?.data || res?.results || []);
-    }
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const token = await getToken();
-      return apiFetch(`${endpoint}${id}/`, token as string, { method: "DELETE" });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [queryKey] });
-    }
-  });
-
-  return (
-    <div className="rounded-2xl border border-line bg-card overflow-hidden">
-      <div className="flex items-center justify-between p-4 border-b border-line bg-surface">
-        <h3 className="font-medium text-ink">{title}</h3>
-        <Button size="sm" variant="outline" className="h-8">
-          <Plus className="size-4 mr-1" /> Add New
-        </Button>
-      </div>
-      {isLoading ? (
-        <div className="flex h-32 items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <table className="w-full text-left text-sm text-ink">
-          <tbody className="divide-y divide-line">
-            {data.map((item) => (
-              <tr key={item.id} className="hover:bg-muted/50 transition-colors">
-                <td className="p-4 font-medium">{item.name}</td>
-                <td className="p-4 text-right">
-                  <div className="flex justify-end gap-2">
-                    <Button size="icon" variant="ghost" className="size-8 text-ink-muted hover:text-ink">
-                      <Edit2 className="size-4" />
-                    </Button>
-                    <Button size="icon" variant="ghost" className="size-8 text-danger hover:text-danger hover:bg-danger/10" onClick={() => deleteMutation.mutate(item.id)}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {data.length === 0 && (
-              <tr>
-                <td colSpan={2} className="p-8 text-center text-ink-muted">No {title.toLowerCase()} found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      )}
-    </div>
-  );
-}
-
-function TagsSection() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-  const [search, setSearch] = useState("");
-  
-  const { data = [], isLoading } = useQuery<any[]>({
-    queryKey: ["adminTags", search],
-    queryFn: async () => {
-      const token = await getToken();
-      const qs = search ? `?q=${encodeURIComponent(search)}` : "";
-      const res = await apiFetch<any>(`/tags/${qs}`, token as string);
-      return Array.isArray(res) ? res : (res?.data || res?.results || []);
-    }
-  });
-
-  const mergeMutation = useMutation({
-    mutationFn: async ({ primary_tag_id, merge_tag_ids }: { primary_tag_id: string, merge_tag_ids: string[] }) => {
-      const token = await getToken();
-      return apiFetch(`/tags/merge/`, token as string, {
-        method: "POST",
-        body: JSON.stringify({ primary_tag_id, merge_tag_ids })
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["adminTags"] });
-      alert("Tags merged successfully");
-    }
-  });
-
-  return (
-    <div className="rounded-2xl border border-line bg-card overflow-hidden">
-      <div className="flex flex-col gap-4 p-4 border-b border-line bg-surface">
-        <h3 className="font-medium text-ink">Tags & Merging</h3>
-        <input
-          type="text"
-          placeholder="Search tags to merge..."
-          className="w-full max-w-sm rounded-lg border border-line bg-card py-2 px-3 text-sm focus:border-primary focus:outline-none"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        <p className="text-xs text-ink-muted">To merge tags, you would select multiple tags and pick a primary one. UI implementation simplified for MVP.</p>
-      </div>
-      {isLoading ? (
-        <div className="flex h-32 items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : (
-        <div className="flex flex-wrap gap-2 p-4">
-          {data.map(t => (
-            <div key={t.id} className="rounded-full bg-muted px-3 py-1 text-sm border border-line">
-              {t.name}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+type ActiveTab = "tags" | "academic" | "exams" | "moderation" | "unclassified";
 
 export default function AdminTaxonomyPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Taxonomy Management"
-        description="Manage Subjects, Levels, and Tags."
-      />
-      <div className="grid md:grid-cols-2 gap-6">
-        <TaxonomySection title="Subjects" endpoint="/subjects/" queryKey="adminSubjects" />
-        <TaxonomySection title="Levels" endpoint="/levels/" queryKey="adminLevels" />
+    <Suspense
+      fallback={
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <AdminTaxonomyContent />
+    </Suspense>
+  );
+}
+
+function AdminTaxonomyContent() {
+  const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab") as ActiveTab | null;
+
+  const isAdmin = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
+
+  const initialTab: ActiveTab =
+    tabParam && ["tags", "academic", "exams", "moderation", "unclassified"].includes(tabParam)
+      ? tabParam
+      : "academic";
+
+  const [activeTab, setActiveTab] = useState<ActiveTab>(initialTab);
+
+  useEffect(() => {
+    if (tabParam && ["tags", "academic", "exams", "moderation", "unclassified"].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [tabParam]);
+
+  useEffect(() => {
+    if (!isUserLoading && (!currentUser || !isAdminOrSuperAdmin(currentUser.role))) {
+      router.replace("/admin/reports");
+    }
+  }, [isUserLoading, currentUser, router]);
+
+  if (isUserLoading || !isAdmin) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
       </div>
-      <TagsSection />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6 pb-24">
+      <PageHeader
+        title="Taxonomy & Operations Studio"
+        description="Comprehensive management of academic hierarchy, tag consolidation, exam timelines, and moderation rules."
+      />
+
+      {/* Navigation Tabs */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-line overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab("academic")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            activeTab === "academic"
+              ? "bg-card text-ink shadow-sm border border-line font-semibold"
+              : "text-ink-muted hover:text-ink hover:bg-card/50"
+          }`}
+        >
+          <GraduationCap className="size-3.5 text-blue-500" />
+          Academic Structure (Subjects & Levels)
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("exams")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            activeTab === "exams"
+              ? "bg-card text-ink shadow-sm border border-line font-semibold"
+              : "text-ink-muted hover:text-ink hover:bg-card/50"
+          }`}
+        >
+          <Calendar className="size-3.5 text-emerald-500" />
+          Exam Periods & Sessions
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("moderation")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            activeTab === "moderation"
+              ? "bg-card text-ink shadow-sm border border-line font-semibold"
+              : "text-ink-muted hover:text-ink hover:bg-card/50"
+          }`}
+        >
+          <ShieldAlert className="size-3.5 text-amber-500" />
+          Violation Reasons Taxonomy
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("tags")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            activeTab === "tags"
+              ? "bg-card text-ink shadow-sm border border-line font-semibold"
+              : "text-ink-muted hover:text-ink hover:bg-card/50"
+          }`}
+        >
+          <TagIcon className="size-3.5 text-primary" />
+          Tags & Merge Studio
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab("unclassified")}
+          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
+            activeTab === "unclassified"
+              ? "bg-card text-ink shadow-sm border border-line font-semibold"
+              : "text-ink-muted hover:text-ink hover:bg-card/50"
+          }`}
+        >
+          <Layers3 className="size-3.5 text-purple-500" />
+          Unclassified Content Triage
+        </button>
+      </div>
+
+      {/* Tab Panels */}
+      {activeTab === "academic" && <AcademicStructureSection />}
+      {activeTab === "exams" && <ExamPeriodsSection />}
+      {activeTab === "moderation" && <ModerationReasonsSection />}
+      {activeTab === "tags" && <TagsMergeStudioSection />}
+      {activeTab === "unclassified" && <UnclassifiedTriageSection />}
     </div>
   );
 }

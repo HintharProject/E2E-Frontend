@@ -1,20 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import {
   getPairMs,
   getTrainTree,
-  getAttemptSummary,
-  getAttemptedIds,
-  getPaperAttempts,
-  createPaperAttempt,
   getResourceDetail,
 } from "@/services/train-service";
 import {
   TrainTimerMode,
-  CreateAttemptPayload,
 } from "@/types";
 
 export function usePairMs(resourceId?: string | null) {
@@ -45,68 +40,6 @@ export function useTrainTree(subjectId?: string | null, levelId?: string | null)
   });
 }
 
-export function useAttemptSummary(resourceId?: string | null) {
-  const { getToken } = useAuth();
-  return useQuery({
-    queryKey: ["attempt-summary", resourceId],
-    queryFn: async () => {
-      if (!resourceId) return null;
-      const token = await getToken();
-      if (!token) {
-        return {
-          resource_id: resourceId,
-          total_attempts: 0,
-          personal_best: null,
-          average_percentage: "0.00",
-          latest_attempt: null,
-        };
-      }
-      return getAttemptSummary(resourceId, token);
-    },
-    enabled: !!resourceId,
-    staleTime: 30 * 1000,
-  });
-}
-
-export function useAttemptedIds(subjectId?: string | null, levelId?: string | null) {
-  const { getToken } = useAuth();
-  return useQuery({
-    queryKey: ["attempted-ids", subjectId, levelId],
-    queryFn: async () => {
-      if (!subjectId) return null;
-      const token = await getToken();
-      if (!token) {
-        return {
-          attempted_resource_ids: [],
-        };
-      }
-      return getAttemptedIds(subjectId, levelId, token);
-    },
-    enabled: !!subjectId,
-    staleTime: 60 * 1000,
-  });
-}
-
-export function usePaperAttempts(resourceId?: string | null) {
-  const { getToken } = useAuth();
-  return useQuery({
-    queryKey: ["paper-attempts", resourceId],
-    queryFn: async () => {
-      const token = await getToken();
-      if (!token) {
-        return {
-          count: 0,
-          next: null,
-          previous: null,
-          results: [],
-        };
-      }
-      return getPaperAttempts(resourceId, token);
-    },
-    enabled: !!resourceId,
-  });
-}
-
 export function useTrainResource(resourceId?: string | null) {
   const { getToken } = useAuth();
   return useQuery({
@@ -118,27 +51,6 @@ export function useTrainResource(resourceId?: string | null) {
     },
     enabled: !!resourceId,
     staleTime: 5 * 60 * 1000,
-  });
-}
-
-export function useCreateAttempt() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (payload: CreateAttemptPayload) => {
-      const token = await getToken();
-      if (!token) {
-        throw new Error("Please sign in to save your practice attempt.");
-      }
-      return createPaperAttempt(payload, token);
-    },
-    onSuccess: (data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["attempt-summary", variables.resource_id] });
-      queryClient.invalidateQueries({ queryKey: ["attempted-ids"] });
-      queryClient.invalidateQueries({ queryKey: ["paper-attempts", variables.resource_id] });
-      queryClient.invalidateQueries({ queryKey: ["user-me"] });
-    },
   });
 }
 

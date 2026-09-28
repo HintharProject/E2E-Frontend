@@ -11,17 +11,21 @@ import {
   AlertTriangle,
   BookOpen,
   CheckCircle2,
-  Filter,
   Search,
-  Grid,
-  Table as TableIcon,
   Zap,
   ArrowRight,
   X,
-  MessageSquare,
-  HelpCircle,
-  CheckCheck,
+  FileUp,
+  PlusCircle,
+  Eye,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  GraduationCap,
+  Sparkles,
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 interface AdminCurriculumHealthProps {
   matrix: MatrixItem[];
@@ -29,32 +33,84 @@ interface AdminCurriculumHealthProps {
   levels: LevelAnalytics[];
 }
 
-type HealthTab = "priority" | "heatmap" | "table";
+type FilterView = "all" | "gaps" | "unanswered" | "missing_lessons" | "dormant";
+type SortField = "priority" | "topic" | "unanswered" | "problems" | "lessons" | "posts" | "health";
+type SortDirection = "asc" | "desc";
 
 export function AdminCurriculumHealth({
   matrix,
   subjects,
   levels,
 }: AdminCurriculumHealthProps) {
-  const [activeTab, setActiveTab] = useState<HealthTab>("priority");
+  const [selectedLevelId, setSelectedLevelId] = useState<string>("ALL");
+  const [filterView, setFilterView] = useState<FilterView>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [gapsOnly, setGapsOnly] = useState(false);
   const [selectedCell, setSelectedCell] = useState<MatrixItem | null>(null);
+  const [sortField, setSortField] = useState<SortField>("priority");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
 
-  // 1. Triage Categorization
+  // Extract distinct levels with aggregated stats for the level tabs
+  const levelTabs = useMemo(() => {
+    const list: Array<{ id: string; name: string; code: string; totalTopics: number; unansweredCount: number }> = [];
+    const seen = new Set<string>();
+
+    // First populate from levels prop to preserve taxonomy order
+    levels.forEach((l) => {
+      seen.add(l.id);
+      const lvlTopics = matrix.filter((m) => m.level_id === l.id);
+      const unans = lvlTopics.reduce((acc, m) => acc + (m.unanswered_problems_count || 0), 0);
+      list.push({
+        id: l.id,
+        name: l.name,
+        code: l.code,
+        totalTopics: lvlTopics.length,
+        unansweredCount: unans,
+      });
+    });
+
+    // Catch any remaining matrix items that might not be in levels prop
+    matrix.forEach((m) => {
+      if (!seen.has(m.level_id)) {
+        seen.add(m.level_id);
+        const lvlTopics = matrix.filter((x) => x.level_id === m.level_id);
+        const unans = lvlTopics.reduce((acc, x) => acc + (x.unanswered_problems_count || 0), 0);
+        list.push({
+          id: m.level_id,
+          name: m.level_name,
+          code: m.level_code,
+          totalTopics: lvlTopics.length,
+          unansweredCount: unans,
+        });
+      }
+    });
+
+    return list;
+  }, [levels, matrix]);
+
+  // Overall and current level-scoped KPIs
   const {
+    scopedMatrix,
     unansweredGaps,
     zeroLessonGaps,
     dormantGaps,
     healthyCount,
+    totalUnansweredProblems,
   } = useMemo(() => {
+    // 1. Scope matrix by selected education level
+    const scoped = selectedLevelId === "ALL"
+      ? matrix
+      : matrix.filter((item) => item.level_id === selectedLevelId);
+
     const unanswered: MatrixItem[] = [];
     const zeroLesson: MatrixItem[] = [];
     const dormant: MatrixItem[] = [];
     let healthy = 0;
+    let totalUnans = 0;
 
-    matrix.forEach((item) => {
-      if (item.unanswered_problems_count > 0) {
+    scoped.forEach((item) => {
+      const uCount = item.unanswered_problems_count || 0;
+      totalUnans += uCount;
+      if (uCount > 0) {
         unanswered.push(item);
       } else if (item.lessons_count === 0 && item.total_activity > 0) {
         zeroLesson.push(item);
@@ -65,56 +121,103 @@ export function AdminCurriculumHealth({
       }
     });
 
-    // Sort unanswered by severity (highest unanswered first)
-    unanswered.sort(
-      (a, b) => b.unanswered_problems_count - a.unanswered_problems_count
-    );
-    // Sort zero lessons by student activity (highest activity first)
-    zeroLesson.sort((a, b) => b.total_activity - a.total_activity);
-
     return {
+      scopedMatrix: scoped,
       unansweredGaps: unanswered,
       zeroLessonGaps: zeroLesson,
       dormantGaps: dormant,
       healthyCount: healthy,
+      totalUnansweredProblems: totalUnans,
     };
-  }, [matrix]);
+  }, [matrix, selectedLevelId]);
 
-  // 2. Lookup map for Heatmap Grid: `${subject_id}_${level_id}` -> MatrixItem
-  const matrixLookup = useMemo(() => {
-    const map = new Map<string, MatrixItem>();
-    matrix.forEach((m) => {
-      map.set(`${m.subject_id}_${m.level_id}`, m);
-    });
-    return map;
-  }, [matrix]);
+  // Sorting Handler
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDirection("desc");
+    }
+  };
 
-  // 3. Filtered Matrix for Action Table
-  const filteredMatrix = useMemo(() => {
-    return matrix.filter((item) => {
+  // Filtered and Sorted rows for the operational triage table
+  const filteredAndSortedRows = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+
+    // 1. Filter
+    const filtered = scopedMatrix.filter((item) => {
       const matchesSearch =
-        item.subject_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.level_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.subject_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.level_code.toLowerCase().includes(searchQuery.toLowerCase());
+        !q ||
+        item.subject_name.toLowerCase().includes(q) ||
+        item.level_name.toLowerCase().includes(q) ||
+        item.subject_code.toLowerCase().includes(q) ||
+        item.level_code.toLowerCase().includes(q);
 
       if (!matchesSearch) return false;
 
-      if (gapsOnly) {
+      if (filterView === "gaps") {
         return (
-          item.unanswered_problems_count > 0 ||
-          (item.lessons_count === 0 && item.total_activity > 0) ||
-          item.total_activity === 0
+          (item.unanswered_problems_count || 0) > 0 ||
+          (item.lessons_count === 0 && item.total_activity > 0)
         );
+      }
+      if (filterView === "unanswered") {
+        return (item.unanswered_problems_count || 0) > 0;
+      }
+      if (filterView === "missing_lessons") {
+        return item.lessons_count === 0 && item.total_activity > 0;
+      }
+      if (filterView === "dormant") {
+        return item.total_activity === 0;
       }
 
       return true;
     });
-  }, [matrix, searchQuery, gapsOnly]);
+
+    // 2. Sort
+    return filtered.sort((a, b) => {
+      const dir = sortDirection === "asc" ? 1 : -1;
+
+      if (sortField === "priority") {
+        // High deficit first: unanswered desc -> missing lessons -> active -> dormant
+        const aScore = (a.unanswered_problems_count || 0) * 100 + (a.lessons_count === 0 && a.total_activity > 0 ? 50 : 0) + (a.total_activity > 0 ? 10 : 0);
+        const bScore = (b.unanswered_problems_count || 0) * 100 + (b.lessons_count === 0 && b.total_activity > 0 ? 50 : 0) + (b.total_activity > 0 ? 10 : 0);
+        return (bScore - aScore) * dir;
+      }
+      if (sortField === "topic") {
+        return a.subject_name.localeCompare(b.subject_name) * dir;
+      }
+      if (sortField === "unanswered") {
+        return ((a.unanswered_problems_count || 0) - (b.unanswered_problems_count || 0)) * dir;
+      }
+      if (sortField === "problems") {
+        return ((a.problems_count || 0) - (b.problems_count || 0)) * dir;
+      }
+      if (sortField === "lessons") {
+        return ((a.lessons_count || 0) - (b.lessons_count || 0)) * dir;
+      }
+      if (sortField === "posts") {
+        return ((a.posts_count || 0) - (b.posts_count || 0)) * dir;
+      }
+      if (sortField === "health") {
+        const getHealthRank = (m: MatrixItem) => {
+          if (m.unanswered_problems_count > 0) return 3; // Bottleneck
+          if (m.lessons_count === 0 && m.total_activity > 0) return 2; // Needs lesson
+          if (m.total_activity === 0) return 1; // Dormant
+          return 0; // Balanced
+        };
+        return (getHealthRank(a) - getHealthRank(b)) * dir;
+      }
+      return 0;
+    });
+  }, [scopedMatrix, searchQuery, filterView, sortField, sortDirection]);
+
+  const activeLevelMeta = levelTabs.find((l) => l.id === selectedLevelId);
 
   return (
-    <div className="rounded-2xl border border-line bg-card p-6 shadow-xs transition-all">
-      {/* Header & Tab Selector */}
+    <div className="rounded-2xl border border-line bg-card p-6 shadow-xs transition-all flex flex-col gap-6">
+      {/* Header & Strategic Health KPIs */}
       <div className="flex flex-col gap-4 border-b border-line/60 pb-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -123,31 +226,26 @@ export function AdminCurriculumHealth({
                 <Zap className="size-4" />
               </div>
               <h3 className="text-lg font-semibold text-ink">
-                Curriculum Health & Action Center
+                Curriculum Operational Triage Board
               </h3>
             </div>
             <p className="mt-1 text-xs text-ink-muted">
-              Intelligent triage across Subjects × Levels to identify content blindspots, unanswered bottlenecks, and coverage gaps.
+              Live operational triage across Subject × Level catalog. Select an education level to focus triage, or filter by specific bottlenecks.
             </p>
           </div>
 
-          {/* Quick Health Summary Pills */}
+          {/* Quick Health Summary KPIs */}
           <div className="flex flex-wrap items-center gap-2">
             {unansweredGaps.length > 0 && (
               <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <AlertTriangle className="size-3.5" />
-                {unansweredGaps.length} Unanswered Bottlenecks
+                {totalUnansweredProblems} Unanswered Across {unansweredGaps.length} Topics
               </div>
             )}
             {zeroLessonGaps.length > 0 && (
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-muted/30 px-3 py-1.5 text-xs font-medium text-ink-muted">
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted">
                 <BookOpen className="size-3.5 text-primary" />
                 {zeroLessonGaps.length} Missing Lessons
-              </div>
-            )}
-            {dormantGaps.length > 0 && (
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-muted/20 px-3 py-1.5 text-xs font-medium text-ink-muted/80">
-                <span>{dormantGaps.length} Dormant</span>
               </div>
             )}
             <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
@@ -157,536 +255,471 @@ export function AdminCurriculumHealth({
           </div>
         </div>
 
-        {/* Tab Buttons */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-          <div className="inline-flex rounded-xl border border-line bg-muted/30 p-1 text-xs font-medium shadow-2xs">
+        {/* PRIMARY CONTROLS: Education Level Tabs */}
+        <div className="flex flex-col gap-2 pt-2">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-ink uppercase tracking-wider">
+              <GraduationCap className="size-3.5 text-primary" /> Education Level Scope
+            </span>
+            {selectedLevelId !== "ALL" && (
+              <button
+                type="button"
+                onClick={() => setSelectedLevelId("ALL")}
+                className="text-[11px] font-medium text-primary hover:underline transition-colors"
+              >
+                Reset to All Levels ({matrix.length})
+              </button>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 p-1 rounded-xl border border-line bg-surface/70 overflow-x-auto custom-scrollbar">
             <button
-              onClick={() => setActiveTab("priority")}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
-                activeTab === "priority"
-                  ? "bg-card text-ink font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink"
-              }`}
-            >
-              <Zap className="size-3.5 text-amber-500" />
-              Priority Action Triage
-              {unansweredGaps.length + zeroLessonGaps.length > 0 && (
-                <span className="flex size-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
-                  {unansweredGaps.length + zeroLessonGaps.length}
-                </span>
+              type="button"
+              onClick={() => setSelectedLevelId("ALL")}
+              className={cn(
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                selectedLevelId === "ALL"
+                  ? "bg-card text-ink font-semibold shadow-xs border border-line"
+                  : "text-ink-muted hover:text-ink hover:bg-card/50"
               )}
+            >
+              <span>All Levels</span>
+              <span
+                className={cn(
+                  "px-1.5 py-0.2 rounded-full text-[10px]",
+                  selectedLevelId === "ALL"
+                    ? "bg-muted text-ink font-bold"
+                    : "bg-muted/50 text-ink-muted"
+                )}
+              >
+                {matrix.length}
+              </span>
             </button>
+            {levelTabs.map((lvl) => {
+              const isSelected = selectedLevelId === lvl.id;
+              return (
+                <button
+                  key={lvl.id}
+                  type="button"
+                  onClick={() => setSelectedLevelId(lvl.id)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                    isSelected
+                      ? "bg-card text-ink font-semibold shadow-xs border border-line"
+                      : "text-ink-muted hover:text-ink hover:bg-card/50"
+                  )}
+                >
+                  <span>{lvl.name}</span>
+                  <span className="text-[10px] text-ink-muted font-mono">({lvl.code})</span>
+                  {lvl.unansweredCount > 0 ? (
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30">
+                      <AlertTriangle className="size-2.5" />
+                      {lvl.unansweredCount}
+                    </span>
+                  ) : (
+                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted/60 text-ink-muted">
+                      {lvl.totalTopics}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* SECONDARY CONTROLS: Deficit Filters & Search */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+          {/* Deficit Filter Pills */}
+          <div className="inline-flex rounded-xl border border-line bg-surface/60 p-1 text-xs font-medium overflow-x-auto shrink-0">
             <button
-              onClick={() => setActiveTab("heatmap")}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
-                activeTab === "heatmap"
+              type="button"
+              onClick={() => setFilterView("all")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all",
+                filterView === "all"
                   ? "bg-card text-ink font-semibold shadow-xs"
                   : "text-ink-muted hover:text-ink"
-              }`}
+              )}
             >
-              <Grid className="size-3.5 text-indigo-500" />
-              Coverage Heatmap
+              All Topics ({scopedMatrix.length})
             </button>
             <button
-              onClick={() => setActiveTab("table")}
-              className={`flex items-center gap-2 rounded-lg px-3.5 py-2 transition-all ${
-                activeTab === "table"
-                  ? "bg-card text-ink font-semibold shadow-xs"
+              type="button"
+              onClick={() => setFilterView("gaps")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                filterView === "gaps"
+                  ? "bg-card text-amber-600 dark:text-amber-400 font-semibold shadow-xs"
                   : "text-ink-muted hover:text-ink"
-              }`}
+              )}
             >
-              <TableIcon className="size-3.5 text-sky-500" />
-              Searchable Table
+              <AlertTriangle className="size-3 text-amber-500" />
+              Needs Attention ({unansweredGaps.length + zeroLessonGaps.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterView("unanswered")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                filterView === "unanswered"
+                  ? "bg-card text-amber-600 dark:text-amber-400 font-semibold shadow-xs"
+                  : "text-ink-muted hover:text-ink"
+              )}
+            >
+              Unanswered ({unansweredGaps.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterView("missing_lessons")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                filterView === "missing_lessons"
+                  ? "bg-card text-primary font-semibold shadow-xs"
+                  : "text-ink-muted hover:text-ink"
+              )}
+            >
+              Missing Lessons ({zeroLessonGaps.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilterView("dormant")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                filterView === "dormant"
+                  ? "bg-card text-ink-muted font-semibold shadow-xs"
+                  : "text-ink-muted hover:text-ink"
+              )}
+            >
+              Dormant ({dormantGaps.length})
             </button>
           </div>
 
-          {activeTab === "table" && (
-            <button
-              onClick={() => setGapsOnly(!gapsOnly)}
-              className={`flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-all ${
-                gapsOnly
-                  ? "border-amber-500/40 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold"
-                  : "border-line bg-card text-ink-muted hover:text-ink"
-              }`}
-            >
-              <Filter className="size-3" />
-              {gapsOnly ? "Showing Gaps Only" : "Show Gaps Only"}
-            </button>
-          )}
+          {/* Search Box */}
+          <div className="relative w-full sm:w-64">
+            <Search className="absolute left-3 top-2.5 size-3.5 text-ink-muted" />
+            <input
+              type="text"
+              placeholder={
+                selectedLevelId === "ALL"
+                  ? "Filter subject or level..."
+                  : `Search within ${activeLevelMeta?.code || "level"}...`
+              }
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-line bg-surface text-xs focus:outline-none focus:border-primary"
+            />
+          </div>
         </div>
       </div>
 
-      {/* ========================================================= */}
-      {/* TAB 1: PRIORITY ACTION TRIAGE                             */}
-      {/* ========================================================= */}
-      {activeTab === "priority" && (
-        <div className="mt-6 flex flex-col gap-6">
-          {unansweredGaps.length === 0 && zeroLessonGaps.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-8 text-center">
-              <CheckCircle2 className="size-10 text-emerald-500" />
-              <h4 className="text-base font-semibold text-ink">
-                Outstanding! No Critical Curriculum Gaps
-              </h4>
-              <p className="max-w-md text-xs text-ink-muted">
-                All subject-level topics with activity have published lessons and answered challenges.
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-6 lg:grid-cols-2">
-              {/* Category A: Unanswered Challenge Bottlenecks */}
-              <div className="flex flex-col gap-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <AlertTriangle className="size-4 text-amber-600 dark:text-amber-400" />
-                    <h4 className="text-sm font-semibold text-ink">
-                      Unanswered Problems ({unansweredGaps.length})
-                    </h4>
-                  </div>
-                  <span className="text-[11px] font-medium text-amber-700 dark:text-amber-300">
-                    High Priority
-                  </span>
-                </div>
-                <p className="text-xs text-ink-muted">
-                  Students asked challenges in these topics, but no community or teacher solutions exist yet.
-                </p>
-
-                <div className="mt-2 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                  {unansweredGaps.length === 0 ? (
-                    <div className="rounded-lg border border-line bg-card p-3 text-xs text-ink-muted text-center">
-                      No unanswered challenges!
-                    </div>
-                  ) : (
-                    unansweredGaps.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between rounded-xl border border-line bg-card p-3 shadow-2xs hover:border-amber-500/50 transition-all"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-ink">
-                              {item.subject_name}
-                            </span>
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
-                              {item.level_code}
-                            </span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-3 text-[11px] text-ink-muted">
-                            <span>Total Problems: {item.problems_count}</span>
-                            <span>•</span>
-                            <span className="font-semibold text-amber-600 dark:text-amber-400">
-                              {item.unanswered_problems_count} unanswered
-                            </span>
-                          </div>
-                        </div>
-
-                        <Link
-                          href="/admin/taxonomy"
-                          className="flex items-center gap-1 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition-colors"
-                        >
-                          Taxonomy <ArrowRight className="size-3" />
-                        </Link>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-
-              {/* Category B: Zero-Lesson Blindspots */}
-              <div className="flex flex-col gap-3 rounded-xl border border-line bg-card p-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <BookOpen className="size-4 text-primary" />
-                    <h4 className="text-sm font-semibold text-ink">
-                      Active Topics with 0 Lessons ({zeroLessonGaps.length})
-                    </h4>
-                  </div>
-                  <span className="text-[11px] font-medium text-ink-muted">
-                    Curriculum Need
-                  </span>
-                </div>
-                <p className="text-xs text-ink-muted">
-                  Students are active in forum discussions and questions, but no official published lessons exist.
-                </p>
-
-                <div className="mt-2 flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-1">
-                  {zeroLessonGaps.length === 0 ? (
-                    <div className="rounded-lg border border-line bg-muted/20 p-3 text-xs text-ink-muted text-center">
-                      All active topics have published lessons!
-                    </div>
-                  ) : (
-                    zeroLessonGaps.map((item, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between rounded-xl border border-line bg-muted/10 p-3 shadow-2xs hover:border-primary/50 transition-all"
-                      >
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold text-ink">
-                              {item.subject_name}
-                            </span>
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted">
-                              {item.level_code}
-                            </span>
-                          </div>
-                          <div className="mt-1 flex items-center gap-3 text-[11px] text-ink-muted">
-                            <span>
-                              Student Activity:{" "}
-                              <strong className="text-ink">
-                                {item.total_activity}
-                              </strong>
-                            </span>
-                            <span>•</span>
-                            <span className="text-primary font-medium">
-                              0 Lessons Published
-                            </span>
-                          </div>
-                        </div>
-
-                        <Link
-                          href="/admin/resources"
-                          className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
-                        >
-                          Add Lesson <ArrowRight className="size-3" />
-                        </Link>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* TAB 2: COVERAGE HEATMAP                                   */}
-      {/* ========================================================= */}
-      {activeTab === "heatmap" && (
-        <div className="mt-6 flex flex-col gap-4">
-          <div className="flex items-center justify-between text-xs text-ink-muted">
-            <span>
-              Click any cell to inspect detailed statistics and direct actions.
+      {/* Scope Info Banner (when scoped to a single level) */}
+      {selectedLevelId !== "ALL" && activeLevelMeta && (
+        <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-primary/5 border border-primary/15 text-xs">
+          <div className="flex items-center gap-2">
+            <Sparkles className="size-3.5 text-primary" />
+            <span className="font-semibold text-ink">
+              Showing curriculum for: {activeLevelMeta.name} ({activeLevelMeta.code})
             </span>
-            <div className="flex items-center gap-3">
-              <span className="inline-flex items-center gap-1">
-                <span className="size-2.5 rounded bg-muted/40 border border-line" />{" "}
-                Dormant (0)
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="size-2.5 rounded bg-sky-500/20 border border-sky-500/40" />{" "}
-                Low (1-5)
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="size-2.5 rounded bg-emerald-500/30 border border-emerald-500/50" />{" "}
-                Active (6+)
-              </span>
-              <span className="inline-flex items-center gap-1">
-                <span className="size-2.5 rounded bg-amber-500/40 border border-amber-500/60" />{" "}
-                Unanswered
-              </span>
-            </div>
+            <span className="text-ink-muted">• {scopedMatrix.length} subjects enrolled</span>
           </div>
-
-          <div className="overflow-x-auto rounded-xl border border-line">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead>
-                <tr className="border-b border-line bg-muted/30">
-                  <th className="p-3 font-semibold text-ink sticky left-0 bg-card z-10">
-                    Subject / Level
-                  </th>
-                  {levels.map((l) => (
-                    <th
-                      key={l.id}
-                      className="p-3 text-center font-semibold text-ink min-w-[110px]"
-                    >
-                      <div>{l.name}</div>
-                      <div className="text-[10px] font-normal text-ink-muted">
-                        ({l.code})
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {subjects.map((s) => (
-                  <tr key={s.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="p-3 font-medium text-ink bg-card sticky left-0 z-10 whitespace-nowrap border-r border-line/40">
-                      <div>{s.name}</div>
-                      <div className="text-[10px] text-ink-muted font-normal">
-                        ({s.code})
-                      </div>
-                    </td>
-                    {levels.map((l) => {
-                      const cell = matrixLookup.get(`${s.id}_${l.id}`);
-                      const totalAct = cell?.total_activity ?? 0;
-                      const hasUnanswered =
-                        (cell?.unanswered_problems_count ?? 0) > 0;
-                      const hasZeroLessons =
-                        (cell?.lessons_count ?? 0) === 0 && totalAct > 0;
-
-                      // Heatmap Cell Styling
-                      let bgClass = "bg-muted/20 border-line/40 text-ink-muted";
-                      if (hasUnanswered) {
-                        bgClass =
-                          "bg-amber-500/15 border-amber-500/40 text-amber-700 dark:text-amber-300 font-semibold hover:bg-amber-500/25";
-                      } else if (totalAct >= 15) {
-                        bgClass =
-                          "bg-emerald-500/25 border-emerald-500/40 text-emerald-700 dark:text-emerald-300 font-semibold hover:bg-emerald-500/35";
-                      } else if (totalAct >= 6) {
-                        bgClass =
-                          "bg-emerald-500/15 border-emerald-500/30 text-ink hover:bg-emerald-500/25";
-                      } else if (totalAct > 0) {
-                        bgClass =
-                          "bg-sky-500/10 border-sky-500/20 text-ink hover:bg-sky-500/20";
-                      }
-
-                      return (
-                        <td key={l.id} className="p-2 text-center">
-                          <button
-                            onClick={() => cell && setSelectedCell(cell)}
-                            className={`w-full rounded-xl border p-2.5 text-center transition-all cursor-pointer ${bgClass}`}
-                          >
-                            <div className="flex items-center justify-between gap-1 text-[11px]">
-                              <span className="text-[10px] opacity-75">Act:</span>
-                              <strong>{totalAct}</strong>
-                            </div>
-
-                            {hasUnanswered ? (
-                              <div className="mt-1 flex items-center justify-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400">
-                                <AlertTriangle className="size-2.5" />
-                                {cell?.unanswered_problems_count} Unans
-                              </div>
-                            ) : hasZeroLessons ? (
-                              <div className="mt-1 text-[9px] opacity-80">
-                                0 Lessons
-                              </div>
-                            ) : totalAct > 0 ? (
-                              <div className="mt-1 flex items-center justify-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400">
-                                <CheckCircle2 className="size-2.5" /> Healthy
-                              </div>
-                            ) : (
-                              <div className="mt-1 text-[9px] opacity-40">
-                                Dormant
-                              </div>
-                            )}
-                          </button>
-                        </td>
-                      );
-                    })}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <button
+            type="button"
+            onClick={() => setSelectedLevelId("ALL")}
+            className="text-[11px] font-semibold text-primary hover:underline"
+          >
+            Show All Levels
+          </button>
         </div>
       )}
 
-      {/* ========================================================= */}
-      {/* TAB 3: SEARCHABLE ACTION TABLE                            */}
-      {/* ========================================================= */}
-      {activeTab === "table" && (
-        <div className="mt-6 flex flex-col gap-4">
-          <div className="relative max-w-sm">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
-            <input
-              type="text"
-              placeholder="Search by subject or level..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full rounded-lg border border-line bg-muted/40 pl-9 pr-3 py-1.5 text-xs text-ink placeholder:text-ink-muted focus:border-primary focus:outline-none"
-            />
-          </div>
+      {/* Triage Board Table */}
+      <div className="overflow-x-auto rounded-2xl border border-line bg-surface/30">
+        <table className="w-full text-left text-xs">
+          <thead className="bg-surface border-b border-line text-ink-muted uppercase font-semibold text-[10px] tracking-wider select-none">
+            <tr>
+              <th className="p-3">
+                <button
+                  type="button"
+                  onClick={() => handleSort("topic")}
+                  className="flex items-center gap-1 hover:text-ink transition-colors"
+                >
+                  <span>Academic Topic</span>
+                  {sortField === "topic" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+              <th className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleSort("unanswered")}
+                  className="flex items-center gap-1 mx-auto hover:text-ink transition-colors"
+                >
+                  <span>Unanswered Bottlenecks</span>
+                  {sortField === "unanswered" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+              <th className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleSort("problems")}
+                  className="flex items-center gap-1 mx-auto hover:text-ink transition-colors"
+                >
+                  <span>Challenge Coverage</span>
+                  {sortField === "problems" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+              <th className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleSort("lessons")}
+                  className="flex items-center gap-1 mx-auto hover:text-ink transition-colors"
+                >
+                  <span>Lessons</span>
+                  {sortField === "lessons" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+              <th className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleSort("posts")}
+                  className="flex items-center gap-1 mx-auto hover:text-ink transition-colors"
+                >
+                  <span>Forum Activity</span>
+                  {sortField === "posts" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+              <th className="p-3 text-center">
+                <button
+                  type="button"
+                  onClick={() => handleSort("health")}
+                  className="flex items-center gap-1 mx-auto hover:text-ink transition-colors"
+                >
+                  <span>Health Status</span>
+                  {sortField === "health" ? (
+                    sortDirection === "asc" ? <ArrowUp className="size-3 text-primary" /> : <ArrowDown className="size-3 text-primary" />
+                  ) : (
+                    <ArrowUpDown className="size-3 opacity-40" />
+                  )}
+                </button>
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-line">
+            {filteredAndSortedRows.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="p-8 text-center text-ink-muted">
+                  No topics matching the current filter criteria.
+                </td>
+              </tr>
+            ) : (
+              filteredAndSortedRows.map((item, idx) => {
+                const hasUnanswered = (item.unanswered_problems_count || 0) > 0;
+                const hasZeroLessons = item.lessons_count === 0 && item.total_activity > 0;
+                const isDormant = item.total_activity === 0;
 
-          <div className="overflow-x-auto rounded-xl border border-line">
-            <table className="w-full border-collapse text-left text-xs">
-              <thead className="bg-muted/40 border-b border-line">
-                <tr>
-                  <th className="p-3 font-semibold text-ink">Subject</th>
-                  <th className="p-3 font-semibold text-ink">Level</th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Lessons
-                  </th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Posts
-                  </th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Problems
-                  </th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Solutions
-                  </th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Mean Sols/Prob
-                  </th>
-                  <th className="p-3 text-center font-semibold text-ink">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-line/60">
-                {filteredMatrix.length === 0 ? (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="p-6 text-center text-xs text-ink-muted"
-                    >
-                      No matching records found.
+                return (
+                  <tr
+                    key={`${item.subject_id}-${item.level_id}-${idx}`}
+                    className="hover:bg-muted/30 transition-colors group"
+                  >
+                    {/* Topic Name */}
+                    <td className="p-3">
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedCell(item)}
+                          className="font-semibold text-ink hover:text-primary hover:underline text-left text-xs"
+                        >
+                          {item.subject_name}
+                        </button>
+                        <Badge variant="outline" className="text-[10px] py-0 font-mono">
+                          {item.level_code}
+                        </Badge>
+                      </div>
+                      <div className="text-[10px] text-ink-muted mt-0.5">
+                        {item.level_name} • #{item.subject_code}
+                      </div>
+                    </td>
+
+                    {/* Unanswered Problems */}
+                    <td className="p-3 text-center">
+                      {hasUnanswered ? (
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                          <AlertTriangle className="size-3" />
+                          {item.unanswered_problems_count} Unanswered
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                          <CheckCircle2 className="size-3" /> All Solved
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Problems & Solutions */}
+                    <td className="p-3 text-center">
+                      <div className="flex flex-col items-center">
+                        <span className="font-semibold text-ink">
+                          {item.problems_count} problems / {item.solutions_count} sols
+                        </span>
+                        <span className="text-[10px] text-ink-muted">
+                          {(item.avg_solutions_per_problem || 0).toFixed(1)}x ratio
+                        </span>
+                      </div>
+                    </td>
+
+                    {/* Lessons */}
+                    <td className="p-3 text-center">
+                      {hasZeroLessons ? (
+                        <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-[10px] py-0">
+                          0 Lessons
+                        </Badge>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink">
+                          <BookOpen className="size-3 text-primary" />
+                          {item.lessons_count}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Forum Activity */}
+                    <td className="p-3 text-center">
+                      <span className="text-[11px] text-ink-muted">
+                        {item.posts_count} posts
+                      </span>
+                    </td>
+
+                    {/* Health Status */}
+                    <td className="p-3 text-center">
+                      {hasUnanswered ? (
+                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0">
+                          Bottleneck
+                        </Badge>
+                      ) : hasZeroLessons ? (
+                        <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] py-0">
+                          Needs Lesson
+                        </Badge>
+                      ) : isDormant ? (
+                        <Badge variant="secondary" className="text-[10px] py-0 text-ink-muted">
+                          Dormant
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0">
+                          Balanced
+                        </Badge>
+                      )}
                     </td>
                   </tr>
-                ) : (
-                  filteredMatrix.map((item, idx) => (
-                    <tr
-                      key={idx}
-                      onClick={() => setSelectedCell(item)}
-                      className="hover:bg-muted/20 transition-colors cursor-pointer"
-                    >
-                      <td className="p-3 font-medium text-ink">
-                        {item.subject_name} ({item.subject_code})
-                      </td>
-                      <td className="p-3 text-ink-muted">
-                        {item.level_name} ({item.level_code})
-                      </td>
-                      <td className="p-3 text-center font-medium text-ink">
-                        {item.lessons_count}
-                      </td>
-                      <td className="p-3 text-center font-medium text-ink">
-                        {item.posts_count}
-                      </td>
-                      <td className="p-3 text-center font-medium text-ink">
-                        {item.problems_count}
-                      </td>
-                      <td className="p-3 text-center font-medium text-ink">
-                        {item.solutions_count}
-                      </td>
-                      <td className="p-3 text-center font-semibold text-primary">
-                        {item.avg_solutions_per_problem.toFixed(1)}x
-                      </td>
-                      <td className="p-3 text-center">
-                        {item.unanswered_problems_count > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                            <AlertTriangle className="size-3" />{" "}
-                            {item.unanswered_problems_count} unanswered
-                          </span>
-                        ) : item.lessons_count === 0 && item.total_activity > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-ink-muted">
-                            <BookOpen className="size-3" /> 0 Lessons
-                          </span>
-                        ) : item.total_activity > 0 ? (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 className="size-3" /> Healthy
-                          </span>
-                        ) : (
-                          <span className="inline-flex items-center gap-1 rounded-full bg-muted/40 px-2 py-0.5 text-[11px] text-ink-muted">
-                            Dormant
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* ========================================================= */}
-      {/* INTERACTIVE CELL DRILLDOWN MODAL                          */}
-      {/* ========================================================= */}
+      {/* Drilldown Modal */}
       {selectedCell && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in-50">
-          <div className="relative w-full max-w-md rounded-2xl border border-line bg-card p-6 shadow-2xl">
-            <button
-              onClick={() => setSelectedCell(null)}
-              className="absolute right-4 top-4 rounded-lg p-1 text-ink-muted hover:bg-muted hover:text-ink"
-            >
-              <X className="size-4" />
-            </button>
-
-            <div className="flex items-center gap-2 border-b border-line/60 pb-3">
-              <span className="text-lg font-bold text-ink">
-                {selectedCell.subject_name}
-              </span>
-              <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary">
-                {selectedCell.level_name} ({selectedCell.level_code})
-              </span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-line bg-card shadow-2xl p-6">
+            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
+              <div>
+                <h4 className="font-bold text-base text-ink">{selectedCell.subject_name}</h4>
+                <p className="text-xs text-ink-muted">
+                  {selectedCell.level_name} ({selectedCell.level_code})
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedCell(null)}
+                className="text-ink-muted hover:text-ink p-1 rounded-lg hover:bg-muted"
+              >
+                <X className="size-4" />
+              </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-xl border border-line bg-muted/20 p-3">
-                <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                  <BookOpen className="size-3.5 text-primary" /> Lessons
-                </div>
-                <div className="mt-1 text-xl font-bold text-ink">
-                  {selectedCell.lessons_count}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-muted/20 p-3">
-                <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                  <MessageSquare className="size-3.5 text-sky-500" /> Posts
-                </div>
-                <div className="mt-1 text-xl font-bold text-ink">
-                  {selectedCell.posts_count}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-muted/20 p-3">
-                <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                  <HelpCircle className="size-3.5 text-amber-500" /> Problems
-                </div>
-                <div className="mt-1 text-xl font-bold text-ink">
-                  {selectedCell.problems_count}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-line bg-muted/20 p-3">
-                <div className="flex items-center gap-1.5 text-xs text-ink-muted">
-                  <CheckCheck className="size-3.5 text-emerald-500" /> Solutions
-                </div>
-                <div className="mt-1 text-xl font-bold text-ink">
-                  {selectedCell.solutions_count}
-                </div>
-              </div>
-            </div>
-
-            {/* Health & Gaps Alert */}
-            <div className="mt-4 rounded-xl border border-line bg-muted/30 p-3">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-ink-muted">Mean Solutions/Prob:</span>
-                <span className="font-semibold text-primary">
-                  {selectedCell.avg_solutions_per_problem.toFixed(1)}x
-                </span>
-              </div>
-              <div className="mt-2 flex items-center justify-between text-xs">
-                <span className="text-ink-muted">Unanswered Bottleneck:</span>
+            <div className="grid grid-cols-2 gap-3 text-xs mb-4">
+              <div className="p-3 rounded-xl border border-line bg-surface">
+                <span className="text-[11px] text-ink-muted block mb-1">Unanswered Challenges</span>
                 <span
-                  className={`font-semibold ${
-                    selectedCell.unanswered_problems_count > 0
+                  className={cn(
+                    "text-xl font-bold",
+                    (selectedCell.unanswered_problems_count || 0) > 0
                       ? "text-amber-600 dark:text-amber-400"
                       : "text-emerald-600 dark:text-emerald-400"
-                  }`}
+                  )}
                 >
-                  {selectedCell.unanswered_problems_count > 0
-                    ? `${selectedCell.unanswered_problems_count} Unanswered`
-                    : "All Answered"}
+                  {selectedCell.unanswered_problems_count || 0}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl border border-line bg-surface">
+                <span className="text-[11px] text-ink-muted block mb-1">Published Lessons</span>
+                <span className="text-xl font-bold text-ink">
+                  {selectedCell.lessons_count || 0}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl border border-line bg-surface">
+                <span className="text-[11px] text-ink-muted block mb-1">Total Problems</span>
+                <span className="text-xl font-bold text-ink">
+                  {selectedCell.problems_count || 0}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-xl border border-line bg-surface">
+                <span className="text-[11px] text-ink-muted block mb-1">Total Solutions</span>
+                <span className="text-xl font-bold text-ink">
+                  {selectedCell.solutions_count || 0}
                 </span>
               </div>
             </div>
 
-            {/* Quick Actions */}
-            <div className="mt-5 flex gap-2">
+            <div className="flex flex-col gap-2 pt-2 border-t border-line">
               <Link
-                href="/admin/taxonomy"
-                className="flex-1 rounded-xl bg-primary px-3 py-2 text-center text-xs font-semibold text-primary-foreground hover:opacity-90"
+                href={`/problems?subject=${selectedCell.subject_id}&level=${selectedCell.level_id}&status=OPEN`}
+                className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold text-xs hover:bg-amber-500/20 transition-colors"
               >
-                Taxonomy & Rules
+                <span className="flex items-center gap-2">
+                  <Eye className="size-4" /> View Unanswered Challenges ({selectedCell.unanswered_problems_count || 0})
+                </span>
+                <ArrowRight className="size-3.5" />
               </Link>
+
               <Link
-                href="/admin/resources"
-                className="flex-1 rounded-xl border border-line bg-card px-3 py-2 text-center text-xs font-semibold text-ink hover:bg-muted"
+                href={`/lessons/new?level=${selectedCell.level_id}&subject=${selectedCell.subject_id}`}
+                className="flex items-center justify-between p-2.5 rounded-xl border border-line hover:bg-muted text-ink font-semibold text-xs transition-colors"
               >
-                Manage Lessons
+                <span className="flex items-center gap-2">
+                  <PlusCircle className="size-4 text-primary" /> Create Lesson for this Topic
+                </span>
+                <ArrowRight className="size-3.5" />
+              </Link>
+
+              <Link
+                href={`/admin/resources?level=${selectedCell.level_code}&subject=${selectedCell.subject_code}`}
+                className="flex items-center justify-between p-2.5 rounded-xl border border-line hover:bg-muted text-ink font-semibold text-xs transition-colors"
+              >
+                <span className="flex items-center gap-2">
+                  <FileUp className="size-4 text-blue-500" /> Ingest Past Papers & Textbooks
+                </span>
+                <ArrowRight className="size-3.5" />
               </Link>
             </div>
           </div>
