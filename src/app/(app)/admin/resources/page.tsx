@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -52,11 +52,26 @@ import { ResourcesBulkUpload } from "@/components/features/admin/resources-bulk-
 import { EditResourceDialog } from "@/components/features/admin/edit-resource-dialog";
 
 export default function AdminResourcesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[50vh] items-center justify-center">
+          <Loader2 className="size-8 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <AdminResourcesContent />
+    </Suspense>
+  );
+}
+
+function AdminResourcesContent() {
   const { getToken } = useAuth();
 
   const queryClient = useQueryClient();
   const { user: currentUser, isLoading: isUserLoading } = useCurrentUser();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const isAuthorized = !isUserLoading && !!currentUser && isAdminOrSuperAdmin(currentUser.role);
 
@@ -120,6 +135,20 @@ export default function AdminResourcesPage() {
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
   });
+
+  // Pre-fill level and subject from query parameters (e.g. from curriculum triage shortcut)
+  useEffect(() => {
+    const rawLevel = searchParams.get("level") || searchParams.get("level_id");
+    const rawSubject = searchParams.get("subject") || searchParams.get("subject_id");
+    if (rawLevel && levels.length > 0 && !selectedLevel) {
+      const match = levels.find((l: any) => l.id === rawLevel || l.code?.toLowerCase() === rawLevel.toLowerCase());
+      if (match) setSelectedLevel(match.id);
+    }
+    if (rawSubject && subjects.length > 0 && !selectedSubject) {
+      const match = subjects.find((s: any) => s.id === rawSubject || s.code?.toLowerCase() === rawSubject.toLowerCase());
+      if (match) setSelectedSubject(match.id);
+    }
+  }, [searchParams, levels, subjects, selectedLevel, selectedSubject]);
 
   // Fetch Resources List
   const { data: resources = [], isLoading: loadingResources } = useQuery<any[]>({

@@ -67,16 +67,21 @@ export function AdminResponseDepthChart({
       if (isProb) {
         const total = item.problems_count || 0;
         const solutions = item.solutions_count || 0;
-        // Unanswered estimate from matrix / ratio
-        const avg = item.avg_solutions_per_problem || 0;
-        const estimatedUnanswered = Math.max(0, Math.round(total * (avg === 0 ? 1 : Math.max(0, 1 - avg / 2))));
-        const solved = Math.max(0, total - estimatedUnanswered);
-        const solvedRate = total > 0 ? Math.min(100, Math.round((solved / total) * 100)) : 100;
+        const unanswered = typeof item.unanswered_problems_count === "number"
+          ? item.unanswered_problems_count
+          : Math.max(0, total - (item.solved_problems_count || 0));
+        const solved = typeof item.solved_problems_count === "number"
+          ? item.solved_problems_count
+          : Math.max(0, total - unanswered);
+        const solvedRate = typeof item.solved_rate_pct === "number"
+          ? item.solved_rate_pct
+          : (total > 0 ? Math.min(100, Math.round((solved / total) * 100)) : 100);
+        const avg = item.avg_solutions_per_problem ?? (total > 0 ? Number((solutions / total).toFixed(2)) : 0);
 
         totalItems += total;
         totalResponses += solutions;
         totalSolved += solved;
-        totalUnanswered += estimatedUnanswered;
+        totalUnanswered += unanswered;
 
         return {
           name: displayLabel,
@@ -84,7 +89,7 @@ export function AdminResponseDepthChart({
           fullName: item.name,
           total,
           solved,
-          unanswered: estimatedUnanswered,
+          unanswered,
           solvedRate,
           ratio: avg,
         };
@@ -92,8 +97,8 @@ export function AdminResponseDepthChart({
         const total = item.posts_count || 0;
         const comments = item.comments_count || 0;
         const avg = item.avg_comments_per_post || 0;
-        const withReplies = Math.min(total, Math.round(comments > 0 ? total * 0.85 : 0));
-        const zeroReplies = total - withReplies;
+        const withReplies = Math.min(total, comments > 0 ? Math.min(total, comments) : 0);
+        const zeroReplies = Math.max(0, total - withReplies);
         const replyRate = total > 0 ? Math.round((withReplies / total) * 100) : 100;
 
         totalItems += total;
@@ -282,29 +287,30 @@ export function AdminResponseDepthChart({
                 content={({ active, payload, label }) => {
                   if (!active || !payload?.length) return null;
                   const item = payload[0].payload as ChartDataItem;
+                  const isProb = domain === "problems";
                   return (
-                    <div className="rounded-xl border border-line bg-card/95 backdrop-blur-md p-3.5 shadow-xl text-xs text-ink min-w-[200px]">
-                      <div className="font-semibold text-sm border-b border-line pb-1.5 mb-2 flex items-center justify-between">
-                        <span>{item.fullName || label}</span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {item.solvedRate}% Solved
+                    <div className="rounded-xl border border-line bg-card/95 backdrop-blur-md p-3.5 shadow-xl text-xs text-ink min-w-[210px]">
+                      <div className="font-semibold text-sm border-b border-line pb-1.5 mb-2 flex items-center justify-between gap-2">
+                        <span className="truncate">{item.fullName || label}</span>
+                        <Badge variant="outline" className="text-[10px] shrink-0">
+                          {isProb ? `${item.solvedRate}% Solved` : `${item.solvedRate}% with Replies`}
                         </Badge>
                       </div>
-                      <div className="flex flex-col gap-1 text-[11px]">
+                      <div className="flex flex-col gap-1.5 text-[11px]">
                         <div className="flex justify-between items-center text-ink-muted">
-                          <span>Total Challenges:</span>
+                          <span>{isProb ? "Total Challenges:" : "Total Discussions:"}</span>
                           <span className="font-semibold text-ink">{item.total}</span>
                         </div>
                         <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
-                          <span>Answered / Solved:</span>
+                          <span>{isProb ? "Answered / Solved:" : "Active with Replies:"}</span>
                           <span className="font-semibold">{item.solved}</span>
                         </div>
                         <div className="flex justify-between items-center text-amber-600 dark:text-amber-400">
-                          <span>Unanswered Gaps:</span>
+                          <span>{isProb ? "Unanswered Gaps:" : "Zero-Reply Threads:"}</span>
                           <span className="font-semibold">{item.unanswered}</span>
                         </div>
                         <div className="flex justify-between items-center text-primary pt-1 border-t border-line/60">
-                          <span>Mean Velocity:</span>
+                          <span>{isProb ? "Avg Solutions / Problem:" : "Avg Replies / Post:"}</span>
                           <span className="font-bold">{item.ratio}x</span>
                         </div>
                       </div>
