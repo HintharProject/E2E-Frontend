@@ -2,7 +2,7 @@
 
 import { useAnnouncements, type Announcement } from "@/hooks/use-announcements";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { isModeratorOrAbove } from "@/types/user";
+import { isAdminOrSuperAdmin } from "@/types/user";
 import { MathRenderer } from "@/components/ui/math-renderer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -25,19 +25,23 @@ import { useState } from "react";
 
 function AnnouncementCard({
   announcement,
-  isStaff,
+  isAdmin,
 }: {
   announcement: Announcement;
-  isStaff: boolean;
+  isAdmin: boolean;
 }) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopyLink = () => {
-    const url = `${window.location.origin}/forum/announcements#${announcement.id}`;
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    toast.success("Announcement link copied to clipboard");
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopyLink = async () => {
+    try {
+      const url = `${window.location.origin}/forum/announcements#${announcement.id}`;
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      toast.success("Announcement link copied to clipboard");
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error("Failed to copy link to clipboard");
+    }
   };
 
   const author = announcement.author_details;
@@ -81,7 +85,7 @@ function AnnouncementCard({
         </div>
 
         <div className="flex items-center gap-2">
-          {isStaff && (
+          {isAdmin && (
             <Link href="/admin/announcements">
               <Button
                 variant="ghost"
@@ -131,7 +135,7 @@ function AnnouncementCard({
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
           <span className="font-bold text-ink">{author?.display_name || "Platform Admin"}</span>
-          {author?.contributor_tier && (
+          {author?.contributor_tier !== undefined && author?.contributor_tier !== null && (
             <ContributorBadge tier={author.contributor_tier} size="sm" />
           )}
           <span className="text-ink-muted">•</span>
@@ -149,7 +153,7 @@ function AnnouncementCard({
 
 export function AnnouncementsFeed() {
   const { user: currentUser } = useCurrentUser();
-  const isStaff = !!currentUser && isModeratorOrAbove(currentUser.role);
+  const isAdmin = !!currentUser && isAdminOrSuperAdmin(currentUser.role);
 
   // Fetch active, non-expired announcements for the user feed
   const { data: announcements = [], isLoading, isError, refetch } = useAnnouncements({
@@ -201,7 +205,7 @@ export function AnnouncementsFeed() {
             There are no broadcast announcements active at this time. Scheduled maintenance, exam cycle notices, and platform updates will be pinned here when published by platform staff.
           </p>
         </div>
-        {isStaff && (
+        {isAdmin && (
           <Link href="/admin/announcements">
             <Button size="sm" className="mt-2 font-semibold">
               <Shield className="size-3.5 mr-1.5" />
@@ -219,7 +223,7 @@ export function AnnouncementsFeed() {
         <AnnouncementCard
           key={announcement.id}
           announcement={announcement}
-          isStaff={isStaff}
+          isAdmin={isAdmin}
         />
       ))}
     </div>

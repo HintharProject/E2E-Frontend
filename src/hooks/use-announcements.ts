@@ -37,19 +37,36 @@ export interface UpdateAnnouncementInput {
   expires_at?: string | null;
 }
 
+function getAuthTokenWithDevFallback(token: string | null): string | null {
+  if (process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && typeof window !== "undefined") {
+    const devToken = localStorage.getItem("dev_token");
+    if (devToken) return devToken;
+  }
+  return token;
+}
+
+function isClientAuthenticated(isSignedIn: boolean | undefined): boolean {
+  if (isSignedIn) return true;
+  if (process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && typeof window !== "undefined") {
+    return Boolean(localStorage.getItem("dev_token"));
+  }
+  return false;
+}
+
 export function useAnnouncements(options?: { all?: boolean; active_only?: boolean }) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const queryParam = options?.all ? "?all=true" : options?.active_only ? "?active_only=true" : "";
 
   return useQuery<Announcement[]>({
     queryKey: ["announcements", options?.all ? "all" : options?.active_only ? "active" : "default"],
     queryFn: async () => {
-      const token = await getToken();
+      const token = getAuthTokenWithDevFallback(await getToken());
       if (!token) throw new Error("Unauthorized");
       const res = await apiFetch<any>(`/announcements/${queryParam}`, token);
-      const items = Array.isArray(res) ? res : (res?.results || res?.data || []);
+      const items = Array.isArray(res) ? res : (res?.data || res?.results || []);
       return items;
     },
+    enabled: isClientAuthenticated(isSignedIn),
     staleTime: 60 * 1000,
   });
 }
@@ -60,7 +77,7 @@ export function useCreateAnnouncement() {
 
   return useMutation({
     mutationFn: async (input: CreateAnnouncementInput) => {
-      const token = await getToken();
+      const token = getAuthTokenWithDevFallback(await getToken());
       if (!token) throw new Error("Unauthorized");
       return apiFetch<Announcement>("/announcements/", token, {
         method: "POST",
@@ -85,7 +102,7 @@ export function useUpdateAnnouncement() {
 
   return useMutation({
     mutationFn: async ({ id, data }: { id: string; data: UpdateAnnouncementInput }) => {
-      const token = await getToken();
+      const token = getAuthTokenWithDevFallback(await getToken());
       if (!token) throw new Error("Unauthorized");
       return apiFetch<Announcement>(`/announcements/${id}/`, token, {
         method: "PATCH",
@@ -110,7 +127,7 @@ export function useDeleteAnnouncement() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const token = await getToken();
+      const token = getAuthTokenWithDevFallback(await getToken());
       if (!token) throw new Error("Unauthorized");
       return apiFetch(`/announcements/${id}/`, token, {
         method: "DELETE",

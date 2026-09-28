@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { AnnouncementDialog } from "@/components/features/admin/announcement-dialog";
 import {
   useAnnouncements,
@@ -25,11 +32,7 @@ import {
   Pencil,
   Search,
   Clock,
-  CheckCircle2,
-  AlertCircle,
-  Radio,
-  Eye,
-  Filter,
+  AlertTriangle,
 } from "lucide-react";
 import { formatDate, cn } from "@/lib/utils";
 
@@ -56,15 +59,15 @@ export default function AdminAnnouncementsPage() {
   // Dialog states
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
+  const [deletingAnnouncement, setDeletingAnnouncement] = useState<{ id: string; title: string } | null>(null);
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<FilterStatus>("ALL");
 
-  const now = new Date();
-
   // Filtered announcements
   const filteredAnnouncements = useMemo(() => {
+    const now = new Date();
     return announcements.filter((a) => {
       // Search
       if (searchQuery.trim()) {
@@ -89,10 +92,11 @@ export default function AdminAnnouncementsPage() {
       }
       return true;
     });
-  }, [announcements, searchQuery, statusFilter, now]);
+  }, [announcements, searchQuery, statusFilter]);
 
   // Statistics
   const stats = useMemo(() => {
+    const now = new Date();
     let active = 0;
     let inactive = 0;
     let expired = 0;
@@ -109,7 +113,7 @@ export default function AdminAnnouncementsPage() {
     }
 
     return { total: announcements.length, active, inactive, expired };
-  }, [announcements, now]);
+  }, [announcements]);
 
   const handleOpenCreate = () => {
     setEditingAnnouncement(null);
@@ -128,9 +132,13 @@ export default function AdminAnnouncementsPage() {
     });
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (window.confirm(`Are you sure you want to permanently delete "${title}"?`)) {
-      await deleteMutation.mutateAsync(id);
+  const handleConfirmDelete = async () => {
+    if (!deletingAnnouncement) return;
+    try {
+      await deleteMutation.mutateAsync(deletingAnnouncement.id);
+      setDeletingAnnouncement(null);
+    } catch {
+      // Handled by deleteMutation.onError toast
     }
   };
 
@@ -256,7 +264,7 @@ export default function AdminAnnouncementsPage() {
               </thead>
               <tbody className="divide-y divide-line">
                 {filteredAnnouncements.map((a) => {
-                  const isExpired = a.expires_at ? new Date(a.expires_at) <= now : false;
+                  const isExpired = a.expires_at ? new Date(a.expires_at) <= new Date() : false;
 
                   return (
                     <tr key={a.id} className="hover:bg-muted/30 transition-colors">
@@ -292,25 +300,35 @@ export default function AdminAnnouncementsPage() {
 
                       {/* Status Toggle */}
                       <td className="p-4 whitespace-nowrap">
-                        <button
-                          type="button"
-                          onClick={() => handleToggleActive(a)}
-                          title="Click to toggle active status"
-                          className={cn(
-                            "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer",
-                            a.is_active && !isExpired
-                              ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/25"
-                              : "bg-muted border-line text-ink-muted hover:text-ink"
-                          )}
-                        >
+                        {isExpired ? (
                           <span
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border border-line bg-muted text-ink-muted"
+                            title="This announcement has expired. Edit its expiration date to reactivate."
+                          >
+                            <span className="size-1.5 rounded-full bg-ink-muted" />
+                            Expired
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleActive(a)}
+                            title="Click to toggle active status"
                             className={cn(
-                              "size-1.5 rounded-full",
-                              a.is_active && !isExpired ? "bg-emerald-500 animate-pulse" : "bg-ink-muted"
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold border transition-colors cursor-pointer",
+                              a.is_active
+                                ? "bg-emerald-500/15 border-emerald-500/40 text-emerald-600 hover:bg-emerald-500/25"
+                                : "bg-muted border-line text-ink-muted hover:text-ink"
                             )}
-                          />
-                          {a.is_active ? "Active" : "Inactive"}
-                        </button>
+                          >
+                            <span
+                              className={cn(
+                                "size-1.5 rounded-full",
+                                a.is_active ? "bg-emerald-500 animate-pulse" : "bg-ink-muted"
+                              )}
+                            />
+                            {a.is_active ? "Active" : "Inactive"}
+                          </button>
+                        )}
                       </td>
 
                       {/* Expiration */}
@@ -352,7 +370,7 @@ export default function AdminAnnouncementsPage() {
                             size="icon"
                             variant="ghost"
                             className="size-8 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
-                            onClick={() => handleDelete(a.id, a.title)}
+                            onClick={() => setDeletingAnnouncement({ id: a.id, title: a.title })}
                             disabled={deleteMutation.isPending}
                             title="Delete announcement"
                           >
@@ -376,6 +394,68 @@ export default function AdminAnnouncementsPage() {
         onOpenChange={setDialogOpen}
         onSuccess={() => refetch()}
       />
+
+      {/* Delete Confirmation Modal */}
+      <Dialog
+        open={!!deletingAnnouncement}
+        onOpenChange={(open) => {
+          if (!open) setDeletingAnnouncement(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-md bg-background border-line">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="size-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                <AlertTriangle className="size-5 text-destructive" />
+              </div>
+              <div>
+                <DialogTitle className="text-base font-bold text-ink">
+                  Delete Announcement
+                </DialogTitle>
+                <DialogDescription className="text-xs text-ink-muted mt-0.5">
+                  Are you sure you want to permanently delete this announcement? This action cannot be undone.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          {deletingAnnouncement && (
+            <div className="my-2 p-3 rounded-xl border border-line bg-muted/30 text-xs font-medium text-ink">
+              <span className="text-ink-muted font-normal block mb-0.5">Notice Title:</span>
+              &ldquo;{deletingAnnouncement.title}&rdquo;
+            </div>
+          )}
+
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setDeletingAnnouncement(null)}
+              disabled={deleteMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              size="sm"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+              className="font-semibold"
+            >
+              {deleteMutation.isPending ? (
+                <>
+                  <Loader2 className="size-4 mr-2 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Notice"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

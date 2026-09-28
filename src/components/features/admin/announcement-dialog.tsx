@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { MathRenderer } from "@/components/ui/math-renderer";
 import {
   useCreateAnnouncement,
@@ -25,7 +24,6 @@ import {
   Edit3,
   Calendar,
   Loader2,
-  CheckCircle2,
   AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -147,15 +145,29 @@ export function AnnouncementDialog({
       return;
     }
 
-    const expiresAt = calculateExpiresAt();
-
-    if (expiryOption === "custom" && customDateTime) {
+    if (expiryOption === "custom") {
+      if (!customDateTime) {
+        setValidationError("Please select a custom expiry date and time.");
+        return;
+      }
       const parsed = new Date(customDateTime);
-      if (parsed.getTime() <= Date.now()) {
+      if (isNaN(parsed.getTime())) {
+        setValidationError("Please enter a valid date and time.");
+        return;
+      }
+      // If creating new announcement or if customDateTime was modified from original
+      const originalIso = announcement?.expires_at
+        ? new Date(new Date(announcement.expires_at).getTime() - new Date(announcement.expires_at).getTimezoneOffset() * 60000)
+            .toISOString()
+            .slice(0, 16)
+        : "";
+      if ((!isEditing || customDateTime !== originalIso) && parsed.getTime() <= Date.now()) {
         setValidationError("Custom expiry date must be in the future.");
         return;
       }
     }
+
+    const expiresAt = calculateExpiresAt();
 
     try {
       if (isEditing && announcement) {
