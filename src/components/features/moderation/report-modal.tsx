@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useReport } from "@/hooks/use-interactions";
+import { useModerationReasons } from "@/hooks/use-exam-taxonomy";
 import { Flag, ShieldAlert, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -69,9 +70,25 @@ export function ReportModal({
   targetTitle,
   onSuccess,
 }: ReportModalProps) {
+  const { data: dbReasons } = useModerationReasons();
+  const activeReasons = useMemo(() => {
+    if (dbReasons && dbReasons.length > 0) {
+      const active = dbReasons.filter((r) => r.is_active);
+      if (active.length > 0) {
+        return active.map((r) => ({
+          value: r.code,
+          label: r.label,
+          description: r.description,
+        }));
+      }
+    }
+    return REPORT_REASONS;
+  }, [dbReasons]);
+
   const [selectedReason, setSelectedReason] = useState<string>("SPAM");
   const [otherDescription, setOtherDescription] = useState<string>("");
   const reportMutation = useReport();
+
 
   const handleClose = () => {
     setSelectedReason("SPAM");
@@ -122,8 +139,9 @@ export function ReportModal({
 
         <div className="space-y-3 py-2">
           <div className="space-y-2">
-            {REPORT_REASONS.map((r) => {
+            {activeReasons.map((r) => {
               const isSelected = selectedReason === r.value;
+
               return (
                 <div
                   key={r.value}

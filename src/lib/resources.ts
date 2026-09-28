@@ -1,10 +1,14 @@
-export const YEARS = [2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019] as const;
+export const YEARS = ["2027", "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "others"] as const;
+export type ExamYear = (typeof YEARS)[number];
 
 export const SESSIONS = [
   { value: "MAY_JUNE", label: "May / June" },
   { value: "OCT_NOV", label: "Oct / Nov" },
   { value: "JANUARY", label: "January" },
+  { value: "FEB_MARCH", label: "Feb / March" },
+  { value: "OTHERS", label: "Others" },
 ] as const;
+
 
 export const PAPER_TYPES = [
   { value: "QP", label: "Question Paper (QP)" },
@@ -39,7 +43,7 @@ export interface BulkQueueItem {
   file: File;
   fileName: string;
   resourceType: ResourceType;
-  year: number;
+  year: string | number;
   session: string;
   paperType: string;
   // Textbook metadata
@@ -97,7 +101,7 @@ export function isValidDocumentFile(
  * e.g., "0580_s23_qp_21.pdf" -> Year: 2023, Session: MAY_JUNE, Paper: QP
  */
 export function parseResourceFileName(rawName: string): {
-  year?: number;
+  year?: string | number;
   session?: SessionType;
   paperType?: PaperType;
   resourceType?: ResourceType;
@@ -112,9 +116,10 @@ export function parseResourceFileName(rawName: string): {
     };
   }
 
-  // Detect Year (2019-2026 or shorthand like s23, w24, m22, _23_)
-  let year: number | undefined;
+  // Detect Year (2019-2027 or shorthand like s23, w24, m22, _23_)
+  let year: string | number | undefined;
   for (const y of YEARS) {
+    if (y === "others") continue;
     const shortY = String(y).slice(-2);
     if (
       lower.includes(String(y)) ||
@@ -169,5 +174,15 @@ export function formatSession(s?: string): string {
   if (s === "MAY_JUNE") return "May / June";
   if (s === "OCT_NOV") return "Oct / Nov";
   if (s === "JANUARY") return "January";
+  if (s === "FEB_MARCH") return "Feb / March";
+  if (s === "OTHERS") return "Others";
   return s || "";
 }
+
+export function formatYear(y?: number | string): string {
+  if (y === undefined || y === null || y === "") return "";
+  const s = String(y).trim();
+  if (s === "0" || s.toLowerCase() === "others") return "Others";
+  return s;
+}
+

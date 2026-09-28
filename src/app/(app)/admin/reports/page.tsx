@@ -286,6 +286,8 @@ function AdminReportsContent() {
       <SubNav
         items={[
           { href: "/admin/reports", label: "Moderation Queue", active: true },
+          { href: "/admin/taxonomy?tab=tags", label: "Tag Merge Studio" },
+          { href: "/admin/taxonomy?tab=unclassified", label: "Content Triage" },
           ...(isAdmin ? [{ href: "/admin/audit-logs", label: "Audit Logs" }] : []),
         ]}
       />

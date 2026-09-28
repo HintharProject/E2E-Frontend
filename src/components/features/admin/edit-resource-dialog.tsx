@@ -19,9 +19,12 @@ import {
   ACCEPT_STRING,
   isValidDocumentFile,
   ResourceType,
+  formatYear,
 } from "@/lib/resources";
+import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 
 interface EditResourceDialogProps {
+
   resource: any | null;
   levels: any[];
   subjects: any[];
@@ -36,12 +39,19 @@ export function EditResourceDialog({
 }: EditResourceDialogProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { data: taxonomyData } = useExamTaxonomy();
+
+  const availableYears = taxonomyData?.years?.length ? taxonomyData.years : YEARS;
+  const availableSessions = taxonomyData?.sessions?.length
+    ? taxonomyData.sessions.map((s) => ({ value: s.code, label: s.name }))
+    : SESSIONS;
 
   const [editFileName, setEditFileName] = useState("");
+
   const [editResourceType, setEditResourceType] = useState<ResourceType>("PAST_PAPER");
   const [editLevel, setEditLevel] = useState("");
   const [editSubject, setEditSubject] = useState("");
-  const [editYear, setEditYear] = useState<number>(2024);
+  const [editYear, setEditYear] = useState<string | number>("2024");
   const [editSession, setEditSession] = useState("MAY_JUNE");
   const [editPaperType, setEditPaperType] = useState("QP");
   const [editReplacementFile, setEditReplacementFile] = useState<File | null>(null);
@@ -53,7 +63,7 @@ export function EditResourceDialog({
       setEditResourceType(resource.resource_type || "PAST_PAPER");
       setEditLevel(resource.level || "");
       setEditSubject(resource.subject || "");
-      setEditYear(resource.year || 2024);
+      setEditYear(resource.year || "2024");
       setEditSession(resource.session || "MAY_JUNE");
       setEditPaperType(resource.paper_type || "QP");
       setEditReplacementFile(null);
@@ -219,11 +229,11 @@ export function EditResourceDialog({
                   <select
                     className="w-full rounded-lg border border-line px-2 py-1.5 bg-card text-xs focus:outline-primary"
                     value={editYear}
-                    onChange={(e) => setEditYear(Number(e.target.value))}
+                    onChange={(e) => setEditYear(e.target.value)}
                   >
-                    {YEARS.map((y) => (
+                    {availableYears.map((y) => (
                       <option key={y} value={y}>
-                        {y}
+                        {formatYear(y)}
                       </option>
                     ))}
                   </select>
@@ -238,13 +248,14 @@ export function EditResourceDialog({
                     value={editSession}
                     onChange={(e) => setEditSession(e.target.value)}
                   >
-                    {SESSIONS.map((s) => (
+                    {availableSessions.map((s) => (
                       <option key={s.value} value={s.value}>
                         {s.label}
                       </option>
                     ))}
                   </select>
                 </div>
+
 
                 <div>
                   <label className="block text-[11px] font-medium text-ink-muted mb-1">

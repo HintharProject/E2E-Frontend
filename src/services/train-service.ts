@@ -2,7 +2,6 @@ import { apiFetch } from "./api-client";
 import {
   PairMsResponse,
   TrainTreeResponse,
-  GradeBoundary,
   Resource,
 } from "@/types";
 
@@ -38,22 +37,6 @@ export async function getTrainTree(
   const query = new URLSearchParams({ subject: subjectId, level: levelId }).toString();
   const res = await apiFetch<unknown>(`/resources/files/train-tree/?${query}`, token);
   return unwrapData<TrainTreeResponse>(res);
-}
-
-/**
- * Retrieves grade boundaries for a subject/level syllabus.
- */
-export async function getGradeBoundaries(
-  subjectId?: string | null,
-  levelId?: string | null,
-  token?: string | null
-): Promise<GradeBoundary[]> {
-  const params = new URLSearchParams();
-  if (subjectId) params.set("subject", subjectId);
-  if (levelId) params.set("level", levelId);
-  const qs = params.toString() ? `?${params.toString()}` : "";
-  const res = await apiFetch<unknown>(`/resources/grade-boundaries/${qs}`, token);
-  return unwrapData<GradeBoundary[]>(res);
 }
 
 /**

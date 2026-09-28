@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   Loader2,
   LayoutDashboard,
@@ -13,6 +13,8 @@ import {
   UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
+  Tag,
+  Layers3,
 } from "lucide-react";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isAdminOrSuperAdmin, isModeratorOrAbove, isSuperAdmin, Role } from "@/types/user";
@@ -21,7 +23,6 @@ import { cn } from "@/lib/utils";
 
 const ADMIN_ONLY_ROUTES = [
   "/admin/users",
-  "/admin/taxonomy",
   "/admin/resources",
   "/admin/announcements",
   "/admin/audit-logs",
@@ -80,6 +81,7 @@ interface NavItem {
   icon: any;
   activeMatch?: string;
   minRole: RoleRequirement;
+  moderatorOnly?: boolean;
 }
 
 function canAccessNavItem(role: Role | undefined, minRole: RoleRequirement): boolean {
@@ -97,7 +99,16 @@ function canAccessNavItem(role: Role | undefined, minRole: RoleRequirement): boo
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <Suspense fallback={<div className="flex h-[50vh] items-center justify-center"><Loader2 className="size-8 animate-spin text-muted-foreground" /></div>}>
+      <AdminLayoutContent>{children}</AdminLayoutContent>
+    </Suspense>
+  );
+}
+
+function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useCurrentUser();
   const [isCollapsed, setIsCollapsed] = useState(() => {
     if (typeof window !== "undefined") {
@@ -119,15 +130,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isModeratorOnly = user?.role === "MODERATOR";
   const portalTitle = isModeratorOnly ? "Moderation Portal" : "Admin Panel";
 
-  const navItems: NavItem[] = [
-    { name: "Dashboard", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN" },
-    { name: "Users", href: "/admin/users", icon: Users, minRole: "ADMIN" },
-    { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
-    { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree, minRole: "ADMIN" },
-    { name: "Resources", href: "/admin/resources", icon: FolderTree, minRole: "ADMIN" },
-    { name: "Announcements", href: "/admin/announcements", icon: Megaphone, minRole: "ADMIN" },
-    { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText, minRole: "ADMIN" },
-  ];
+  const navItems: NavItem[] = isModeratorOnly
+    ? [
+        { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
+        { name: "Tag Merge Studio", href: "/admin/taxonomy?tab=tags", icon: Tag, minRole: "MODERATOR" },
+        { name: "Content Triage", href: "/admin/taxonomy?tab=unclassified", icon: Layers3, minRole: "MODERATOR" },
+      ]
+    : [
+        { name: "Dashboard", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN" },
+        { name: "Users", href: "/admin/users", icon: Users, minRole: "ADMIN" },
+        { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
+        { name: "Taxonomy", href: "/admin/taxonomy", icon: FolderTree, minRole: "ADMIN" },
+        { name: "Resources", href: "/admin/resources", icon: FolderTree, minRole: "ADMIN" },
+        { name: "Announcements", href: "/admin/announcements", icon: Megaphone, minRole: "ADMIN" },
+        { name: "Audit Logs", href: "/admin/audit-logs", icon: FileText, minRole: "ADMIN" },
+      ];
 
   const visibleNavItems = navItems.filter((item) =>
     canAccessNavItem(user?.role, item.minRole)
@@ -174,7 +191,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             {/* Navigation items */}
             <nav className="flex md:flex-col gap-1 overflow-x-auto pb-4 md:pb-0 hide-scrollbar">
               {visibleNavItems.map((item) => {
-                const isActive = item.activeMatch
+                const currentTab = searchParams.get("tab");
+                const currentFull = currentTab ? `${pathname}?tab=${currentTab}` : pathname;
+                const isActive = item.href.includes("?tab=")
+                  ? currentFull === item.href
+                  : item.activeMatch
                   ? pathname.startsWith(item.activeMatch)
                   : pathname === item.href;
                 const Icon = item.icon;

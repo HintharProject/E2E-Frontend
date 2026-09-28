@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { TrainTreePaper } from "@/types";
+import { formatYear } from "@/lib/resources";
 
 interface CurriculumTreeSidebarProps {
   activePaperId?: string | null;
@@ -65,9 +66,9 @@ export function CurriculumTreeSidebar({
     return treeData.years[0]?.year;
   }, [treeData, leftPaperId, activePaperId, rightPaperId]);
 
-  const [toggledYears, setToggledYears] = useState<Record<number, boolean>>({});
+  const [toggledYears, setToggledYears] = useState<Record<string | number, boolean>>({});
 
-  const toggleYear = (year: number) => {
+  const toggleYear = (year: string | number) => {
     setToggledYears((prev) => {
       const current = prev[year] !== undefined ? prev[year] : year === defaultExpandedYear;
       return { ...prev, [year]: !current };
@@ -188,7 +189,7 @@ export function CurriculumTreeSidebar({
                       ) : (
                         <Folder className="size-3.5 text-ink-muted" />
                       )}
-                      <span>{yearItem.year}</span>
+                      <span>{formatYear(yearItem.year)}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-ink-muted">

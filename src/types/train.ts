@@ -5,7 +5,7 @@ export interface SiblingResource {
   download_url?: string;
   paper_code?: string | null;
   paper_type: "MS" | "QP";
-  year?: number | null;
+  year?: string | number | null;
   session?: string | null;
 }
 
@@ -17,7 +17,7 @@ export interface PairMsResponse {
 
 export interface TrainTreePaper {
   id: string;
-  year?: number | null;
+  year?: string | number | null;
   session?: string | null;
   paper_code: string | null;
   paper_type?: "QP" | "MS" | string;
@@ -36,7 +36,7 @@ export interface TrainTreeSession {
 }
 
 export interface TrainTreeYear {
-  year: number;
+  year: string | number;
   sessions: TrainTreeSession[];
 }
 
@@ -51,20 +51,6 @@ export interface TrainTreeResponse {
     name: string;
   };
   years: TrainTreeYear[];
-}
-
-
-export interface GradeBoundary {
-  id: string;
-  subject: string;
-  subject_code?: string;
-  level: string;
-  level_name?: string;
-  year: number;
-  session: string;
-  paper_code: string;
-  max_mark: number;
-  thresholds: Record<string, number>;
 }
 
 export type TrainTimerMode = "COUNTDOWN_EXAM" | "STOPWATCH_PRACTICE" | "UNTIMED_REVISION";

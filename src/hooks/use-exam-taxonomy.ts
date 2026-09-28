@@ -11,13 +11,13 @@ export interface ExamTaxonomySession {
 }
 
 export interface ExamTaxonomyData {
-  years: number[];
+  years: (string | number)[];
   sessions: ExamTaxonomySession[];
 }
 
 export interface ExamYearItem {
   id: string;
-  year: number;
+  year: string | number;
   is_active: boolean;
   created_at: string;
 }
@@ -40,12 +40,13 @@ export interface ModerationReasonItem {
   created_at: string;
 }
 
-const FALLBACK_YEARS = [2027, 2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019];
+const FALLBACK_YEARS: (string | number)[] = ["2027", "2026", "2025", "2024", "2023", "2022", "2021", "2020", "2019", "others"];
 const FALLBACK_SESSIONS: ExamTaxonomySession[] = [
   { code: "MAY_JUNE", name: "May / June", is_active: true },
   { code: "OCT_NOV", name: "Oct / Nov", is_active: true },
   { code: "JANUARY", name: "January", is_active: true },
-  { code: "FEB_MARCH", name: "Feb / March (India)", is_active: true },
+  { code: "FEB_MARCH", name: "Feb / March", is_active: true },
+  { code: "OTHERS", name: "Others", is_active: true },
 ];
 
 export function useExamTaxonomy() {
@@ -55,8 +56,7 @@ export function useExamTaxonomy() {
     queryKey: ["examTaxonomy"],
     queryFn: async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error("Unauthorized");
+        const token = await getToken().catch(() => null);
         const res = await apiFetch<any>("/exam-taxonomy/", token);
         return {
           years: res?.years?.length ? res.years : FALLBACK_YEARS,
@@ -92,7 +92,7 @@ export function useCreateExamYear() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ year, is_active }: { year: number; is_active?: boolean }) => {
+    mutationFn: async ({ year, is_active }: { year: string | number; is_active?: boolean }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       return apiFetch("/exam-years/", token, {
@@ -633,3 +633,106 @@ export function useDeleteLevel() {
     },
   });
 }
+
+// ── Unclassified & Fallback Content Triage ──────────────────────────────────
+export interface UnclassifiedContentItem {
+  id: string;
+  content_type: "post" | "problem" | "lesson" | "resource";
+  title: string;
+  file_url?: string;
+  subject: { id: string; code: string; name: string } | null;
+  level: { id: string; code: string; name: string } | null;
+  year: string | number | null;
+  session: string | null;
+  tags: { id: string; name: string }[];
+  issues: ("undefined_subject" | "undefined_level" | "other_year" | "other_session")[];
+  author?: string | null;
+  created_at: string | null;
+}
+
+export interface UnclassifiedContentResponse {
+  counts: {
+    total: number;
+    posts: number;
+    problems: number;
+    lessons: number;
+    resources: number;
+    undefined_subjects: number;
+    undefined_levels: number;
+    other_years: number;
+    other_sessions: number;
+  };
+  results: UnclassifiedContentItem[];
+}
+
+export function useUnclassifiedContents(filters?: {
+  contentType?: string;
+  issueType?: string;
+  search?: string;
+}) {
+  const { getToken } = useAuth();
+
+  return useQuery<UnclassifiedContentResponse>({
+    queryKey: ["unclassifiedContents", filters],
+    queryFn: async () => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+
+      const params = new URLSearchParams();
+      if (filters?.contentType && filters.contentType !== "all") {
+        params.set("content_type", filters.contentType);
+      }
+      if (filters?.issueType && filters.issueType !== "all") {
+        params.set("issue_type", filters.issueType);
+      }
+      if (filters?.search) {
+        params.set("search", filters.search);
+      }
+
+      const queryString = params.toString() ? `?${params.toString()}` : "";
+      return apiFetch<UnclassifiedContentResponse>(`/unclassified-contents/${queryString}`, token);
+    },
+  });
+}
+
+export function useReassignUnclassifiedContent() {
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      contentType,
+      id,
+      data,
+    }: {
+      contentType: string;
+      id: string;
+      data: {
+        subject_id?: string;
+        level_id?: string;
+        year?: string | number;
+        session?: string;
+        tag_ids?: string[];
+      };
+    }) => {
+      const token = await getToken();
+      if (!token) throw new Error("Unauthorized");
+
+      return apiFetch(`/unclassified-contents/${contentType}/${id}/`, token, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (_, variables) => {
+      toast.success("Content reclassified successfully");
+      queryClient.invalidateQueries({ queryKey: ["unclassifiedContents"] });
+      queryClient.invalidateQueries({ queryKey: ["adminResourcesList"] });
+      queryClient.invalidateQueries({ queryKey: ["examTaxonomy"] });
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Failed to reclassify content";
+      toast.error(msg);
+    },
+  });
+}
+

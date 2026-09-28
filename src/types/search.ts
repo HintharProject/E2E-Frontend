@@ -45,7 +45,7 @@ export interface SearchResourceItem {
   id: string;
   file_name: string;
   file_url: string;
-  year: number | null;
+  year: string | number | null;
   session: string | null;
   paper_type: string | null;
   paper_code: string | null;

@@ -7,7 +7,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { ViewingDocument } from "@/components/features/resources/document-viewer-modal";
-import { YEARS as ALL_YEARS, getFileExtension } from "@/lib/resources";
+import { YEARS as ALL_YEARS, getFileExtension, formatYear } from "@/lib/resources";
 import {
   Folder,
   FolderOpen,
@@ -24,6 +24,8 @@ export function formatSession(s?: string): string {
   if (s === "MAY_JUNE") return "May / June";
   if (s === "OCT_NOV") return "Oct / Nov";
   if (s === "JANUARY") return "January";
+  if (s === "FEB_MARCH") return "Feb / March";
+  if (s === "OTHERS") return "Others";
   return s || "";
 }
 
@@ -46,38 +48,49 @@ export function PastPapersFolderView({
   emptyMessage = "No past papers available.",
   className = "",
 }: PastPapersFolderViewProps) {
-  // Discover all unique years present, sorted descending
+  // Discover all unique years present, sorted descending with 0 ("Others") at the end
   const allYears = useMemo(() => {
-    const yearsSet = new Set<number>(ALL_YEARS);
+    const yearsSet = new Set<string | number>(ALL_YEARS.filter((y) => y !== "others"));
     papers.forEach((p) => {
-      if (p.year) yearsSet.add(p.year);
+      if (p.year !== undefined && p.year !== null) {
+        yearsSet.add(p.year);
+      }
     });
-    return Array.from(yearsSet).sort((a, b) => b - a);
+    return Array.from(yearsSet).sort((a, b) => {
+      const aLower = String(a).toLowerCase();
+      const bLower = String(b).toLowerCase();
+      if (aLower === "others" || a === 0) return 1;
+      if (bLower === "others" || b === 0) return -1;
+      return Number(b) - Number(a);
+    });
   }, [papers]);
 
   // Group papers by Year
   const papersByYear = useMemo(() => {
-    const map: Record<number, Resource[]> = {};
+    const map: Record<string | number, Resource[]> = {};
     for (const y of allYears) {
       map[y] = [];
     }
     for (const p of papers) {
-      if (p.year && map[p.year]) {
-        map[p.year].push(p);
-      } else if (p.year) {
-        map[p.year] = [p];
+      const yr = p.year !== undefined && p.year !== null ? p.year : "others";
+      if (map[yr]) {
+        map[yr].push(p);
+      } else {
+        map[yr] = [p];
       }
     }
     return map;
   }, [papers, allYears]);
 
+
   // Expanded Year folders state: default expand years with papers (or recent years)
-  const [expandedYears, setExpandedYears] = useState<Record<number, boolean>>(() => {
-    const initial: Record<number, boolean> = {
-      2026: true,
-      2025: true,
-      2024: true,
-      2023: true,
+  const [expandedYears, setExpandedYears] = useState<Record<string | number, boolean>>(() => {
+    const initial: Record<string | number, boolean> = {
+      "2027": true,
+      "2026": true,
+      "2025": true,
+      "2024": true,
+      "2023": true,
     };
     for (const p of papers) {
       if (p.year) initial[p.year] = true;
@@ -101,7 +114,7 @@ export function PastPapersFolderView({
     }
   }, [papers]);
 
-  const toggleYear = (year: number) => {
+  const toggleYear = (year: string | number) => {
     setExpandedYears((prev) => ({ ...prev, [year]: !prev[year] }));
   };
 
@@ -139,7 +152,7 @@ export function PastPapersFolderView({
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="font-semibold text-ink text-base">{y}</span>
+                <span className="font-semibold text-ink text-base">{formatYear(y)}</span>
                 <span className="text-xs text-ink-muted">Past Papers</span>
               </div>
 
@@ -163,7 +176,7 @@ export function PastPapersFolderView({
               <div className="border-t border-line bg-surface/30 p-3 flex flex-col gap-2">
                 {yearPapers.length === 0 ? (
                   <p className="text-xs text-ink-muted text-center py-4 italic">
-                    No past papers uploaded for {y} yet.
+                    No past papers uploaded for {y === 0 ? "Others" : y} yet.
                   </p>
                 ) : (
                   <div className="divide-y divide-line border border-line rounded-xl bg-card overflow-hidden">

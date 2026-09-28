@@ -27,6 +27,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Resource, Level, Subject, TrainTreePaper } from "@/types";
 import { AskInSolveModal } from "@/components/features/train/ask-in-solve-modal";
+import { formatYear } from "@/lib/resources";
 
 export default function TrainPage() {
   const { getToken } = useAuth();
@@ -59,9 +60,9 @@ export default function TrainPage() {
   const [rightPaperId, setRightPaperId] = useState<string | null>(null);
 
   // 4. Year folders expand/collapse state
-  const [expandedYears, setExpandedYears] = useState<Record<number, boolean>>({});
+  const [expandedYears, setExpandedYears] = useState<Record<string | number, boolean>>({});
 
-  const toggleYear = (year: number) => {
+  const toggleYear = (year: string | number) => {
     setExpandedYears((prev) => ({
       ...prev,
       [year]: prev[year] === undefined ? false : !prev[year],
@@ -332,7 +333,7 @@ export default function TrainPage() {
                               <Folder className="size-4 text-primary" />
                             )}
                             <span className="text-xs font-bold text-ink">
-                              {yearGroup.year} Past Papers
+                              {formatYear(yearGroup.year)} Past Papers
                             </span>
                           </div>
                           {isYearExpanded ? (

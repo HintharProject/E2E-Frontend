@@ -146,7 +146,7 @@ export interface Resource {
   title?: string;
   file_name?: string;
   resource_type?: string;
-  year?: number;
+  year?: string | number | null;
   session?: string;
   paper_type?: string;
   paper_code?: string | null;
@@ -176,7 +176,7 @@ export interface Problem {
   resource_details?: {
     id: string;
     title: string;
-    year?: number;
+    year?: string | number | null;
     session?: string;
     paper_type?: string;
     file_url?: string;

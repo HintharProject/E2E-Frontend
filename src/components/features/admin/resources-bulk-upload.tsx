@@ -24,6 +24,7 @@ import {
   parseResourceFileName,
   ResourceType,
 } from "@/lib/resources";
+import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
 interface ResourcesBulkUploadProps {
@@ -34,6 +35,12 @@ interface ResourcesBulkUploadProps {
 export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: ResourcesBulkUploadProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { data: taxonomyData } = useExamTaxonomy();
+
+  const availableYears = taxonomyData?.years?.length ? taxonomyData.years : (YEARS as unknown as number[]);
+  const availableSessions = taxonomyData?.sessions?.length
+    ? taxonomyData.sessions.map((s) => ({ value: s.code, label: s.name }))
+    : SESSIONS;
 
   const [bulkQueue, setBulkQueue] = useState<BulkQueueItem[]>([]);
   const [isUploadingBulk, setIsUploadingBulk] = useState(false);
@@ -45,15 +52,11 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
     year: number;
     session: string;
     paperType: string;
-    category: string;
-    edition: string;
   }>({
     resourceType: "PAST_PAPER",
     year: 2024,
     session: "MAY_JUNE",
     paperType: "QP",
-    category: "Core Textbook",
-    edition: "",
   });
 
   const handleBulkFilesSelect = (filesList: FileList | File[]) => {
@@ -81,8 +84,6 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
         session: parsed.session || batchDefaults.session || "MAY_JUNE",
         paperType: parsed.paperType || batchDefaults.paperType || "QP",
         title: f.name.replace(/\.[^/.]+$/, ""),
-        category: batchDefaults.category || "Core Textbook",
-        edition: batchDefaults.edition || "",
         status: "IDLE",
       });
     });
@@ -106,11 +107,10 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
         year: batchDefaults.year,
         session: batchDefaults.session,
         paperType: batchDefaults.paperType,
-        category: batchDefaults.category,
-        edition: batchDefaults.edition,
       }))
     );
   };
+
 
   const updateQueueItem = (id: string, updates: Partial<BulkQueueItem>) => {
     setBulkQueue((prev) =>
@@ -156,9 +156,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
           formData.append("session", item.session);
           formData.append("paper_type", item.paperType);
         } else {
-          if (item.title) formData.append("title", item.title.trim());
-          if (item.edition) formData.append("edition", item.edition.trim());
-          if (item.category) formData.append("category", item.category.trim());
+          formData.append("title", (item.title || item.fileName.replace(/\.[^/.]+$/, "")).trim());
         }
 
         await apiFetch("/resources/files/", token as string, {
@@ -245,9 +243,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     }))
                   }
                 >
-                  {YEARS.map((y) => (
+                  {availableYears.map((y) => (
                     <option key={y} value={y}>
-                      {y}
+                      {y === 0 ? "Others" : y}
                     </option>
                   ))}
                 </select>
@@ -265,7 +263,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     }))
                   }
                 >
-                  {SESSIONS.map((s) => (
+                  {availableSessions.map((s) => (
                     <option key={s.value} value={s.value}>
                       {s.label}
                     </option>
@@ -274,39 +272,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
               </div>
             </>
           ) : (
-            <>
-              <div>
-                <label className="text-[10px] text-ink-muted block mb-0.5">Default Category</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Core Textbook, Revision"
-                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
-                  value={batchDefaults.category}
-                  onChange={(e) =>
-                    setBatchDefaults((prev) => ({
-                      ...prev,
-                      category: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-
-              <div>
-                <label className="text-[10px] text-ink-muted block mb-0.5">Default Edition</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 3rd Edition, 2024"
-                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
-                  value={batchDefaults.edition}
-                  onChange={(e) =>
-                    setBatchDefaults((prev) => ({
-                      ...prev,
-                      edition: e.target.value,
-                    }))
-                  }
-                />
-              </div>
-            </>
+            <div className="sm:col-span-2 flex items-center text-[11px] text-ink-muted bg-card px-2.5 py-1.5 rounded-md border border-line">
+              Non-paper resources will roll back to the filename as title (customizable below).
+            </div>
           )}
         </div>
       </div>
@@ -454,9 +422,9 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       onChange={(e) => updateQueueItem(item.id, { year: Number(e.target.value) })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     >
-                      {YEARS.map((y) => (
+                      {availableYears.map((y) => (
                         <option key={y} value={y}>
-                          {y}
+                          {y === 0 ? "Others" : y}
                         </option>
                       ))}
                     </select>
@@ -467,7 +435,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       onChange={(e) => updateQueueItem(item.id, { session: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     >
-                      {SESSIONS.map((s) => (
+                      {availableSessions.map((s) => (
                         <option key={s.value} value={s.value}>
                           {s.label}
                         </option>
@@ -485,38 +453,19 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </select>
                   </>
                 ) : (
-                  <>
+                  <div className="col-span-3">
                     <input
                       type="text"
-                      placeholder="Title"
+                      placeholder="Title (defaults to filename)"
                       title="Document Title"
-                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                      className="w-full rounded border border-line px-2 py-1 bg-card text-[11px]"
                       value={item.title || ""}
                       onChange={(e) => updateQueueItem(item.id, { title: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     />
-                    <input
-                      type="text"
-                      placeholder="Category"
-                      title="Category (e.g. Core Textbook, Revision)"
-                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
-                      value={item.category || ""}
-                      onChange={(e) => updateQueueItem(item.id, { category: e.target.value })}
-                      disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
-                    />
-                    <div className="flex items-center gap-1">
-                      <input
-                        type="text"
-                        placeholder="Edition"
-                        title="Edition"
-                        className="w-full rounded border border-line px-1.5 py-1 bg-card text-[11px]"
-                        value={item.edition || ""}
-                        onChange={(e) => updateQueueItem(item.id, { edition: e.target.value })}
-                        disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
-                      />
-                    </div>
-                  </>
+                  </div>
                 )}
+
               </div>
 
               {item.errorMessage && (
