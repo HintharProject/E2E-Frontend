@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 
 const ADMIN_ONLY_ROUTES = [
   "/admin/users",
+  "/admin/taxonomy",
   "/admin/resources",
   "/admin/announcements",
   "/admin/audit-logs",
@@ -133,8 +134,8 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const navItems: NavItem[] = isModeratorOnly
     ? [
         { name: "Moderation Queue", href: "/admin/reports", activeMatch: "/admin/reports", icon: ShieldAlert, minRole: "MODERATOR" },
-        { name: "Tag Merge Studio", href: "/admin/taxonomy?tab=tags", icon: Tag, minRole: "MODERATOR" },
-        { name: "Content Triage", href: "/admin/taxonomy?tab=unclassified", icon: Layers3, minRole: "MODERATOR" },
+        { name: "Tag Merge Studio", href: "/admin/tags", activeMatch: "/admin/tags", icon: Tag, minRole: "MODERATOR" },
+        { name: "Content Triage", href: "/admin/triage", activeMatch: "/admin/triage", icon: Layers3, minRole: "MODERATOR" },
       ]
     : [
         { name: "Dashboard", href: "/admin", icon: LayoutDashboard, minRole: "ADMIN" },

@@ -6,7 +6,6 @@ import { useAuth } from "@clerk/nextjs";
 import { useSearchParams } from "next/navigation";
 import { apiFetch } from "@/services/api-client";
 import { PageHeader } from "@/components/ui/page-header";
-import { SubNav } from "@/components/ui/sub-nav";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -282,15 +281,6 @@ function AdminReportsContent() {
         description="Unified command center for content integrity, community safety, and academic triage."
       />
 
-      {/* Sub navigation bar */}
-      <SubNav
-        items={[
-          { href: "/admin/reports", label: "Moderation Queue", active: true },
-          { href: "/admin/taxonomy?tab=tags", label: "Tag Merge Studio" },
-          { href: "/admin/taxonomy?tab=unclassified", label: "Content Triage" },
-          ...(isAdmin ? [{ href: "/admin/audit-logs", label: "Audit Logs" }] : []),
-        ]}
-      />
 
       {/* 1. Content Type Tabs */}
       <div className="border-b border-line">

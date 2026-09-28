@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { ViewingDocument } from "@/components/features/resources/document-viewer-modal";
 import { YEARS as ALL_YEARS, getFileExtension, formatYear } from "@/lib/resources";
+import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import {
   Folder,
   FolderOpen,
@@ -48,9 +49,22 @@ export function PastPapersFolderView({
   emptyMessage = "No past papers available.",
   className = "",
 }: PastPapersFolderViewProps) {
+  const { data: taxonomyData } = useExamTaxonomy();
+  const availableYears = taxonomyData?.years?.length ? taxonomyData.years : ALL_YEARS;
+
+  const sessionsMap = useMemo(() => {
+    const map = new Map<string, string>();
+    taxonomyData?.sessions?.forEach((s) => {
+      map.set(s.code, s.name);
+    });
+    return map;
+  }, [taxonomyData]);
+
   // Discover all unique years present, sorted descending with 0 ("Others") at the end
   const allYears = useMemo(() => {
-    const yearsSet = new Set<string | number>(ALL_YEARS.filter((y) => y !== "others"));
+    const yearsSet = new Set<string | number>(
+      availableYears.filter((y) => String(y).toLowerCase() !== "others")
+    );
     papers.forEach((p) => {
       if (p.year !== undefined && p.year !== null) {
         yearsSet.add(p.year);
@@ -63,7 +77,7 @@ export function PastPapersFolderView({
       if (bLower === "others" || b === 0) return -1;
       return Number(b) - Number(a);
     });
-  }, [papers]);
+  }, [papers, availableYears]);
 
   // Group papers by Year
   const papersByYear = useMemo(() => {
@@ -211,7 +225,7 @@ export function PastPapersFolderView({
                               <div className="flex flex-wrap items-center gap-2 mt-1">
                                 {paper.session && (
                                   <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
-                                    {formatSession(paper.session)}
+                                    {sessionsMap.get(paper.session) || formatSession(paper.session)}
                                   </span>
                                 )}
                                 {paper.paper_type && (
