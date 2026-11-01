@@ -46,6 +46,7 @@ import {
   SessionType,
   formatYear,
 } from "@/lib/resources";
+import { uploadDirectlyToB2 } from "@/lib/storage";
 import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { ResourcesBulkUpload } from "@/components/features/admin/resources-bulk-upload";
@@ -222,22 +223,26 @@ function AdminResourcesContent() {
 
     try {
       const token = await getToken();
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("file_name", customTitle.trim() || file.name);
-      formData.append("level", selectedLevel);
-      formData.append("subject", selectedSubject);
-      formData.append("resource_type", resourceType);
+      const scope = resourceType === "PAST_PAPER" ? "past_paper" : "textbook";
+      const uploaded = await uploadDirectlyToB2(file, scope, token);
+
+      const payload: Record<string, any> = {
+        file_key: uploaded.file_key,
+        file_name: customTitle.trim() || file.name,
+        level: selectedLevel,
+        subject: selectedSubject,
+        resource_type: resourceType,
+      };
 
       if (resourceType === "PAST_PAPER") {
-        formData.append("year", String(year));
-        formData.append("session", session);
-        formData.append("paper_type", paperType);
+        payload.year = String(year);
+        payload.session = session;
+        payload.paper_type = paperType;
       }
 
       await apiFetch("/resources/files/", token as string, {
         method: "POST",
-        body: formData,
+        body: JSON.stringify(payload),
       });
 
       setUploadSuccess(true);

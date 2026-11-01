@@ -21,6 +21,7 @@ import {
   ResourceType,
   formatYear,
 } from "@/lib/resources";
+import { uploadDirectlyToB2 } from "@/lib/storage";
 import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 
 interface EditResourceDialogProps {
@@ -72,11 +73,11 @@ export function EditResourceDialog({
   }, [resource]);
 
   const editMutation = useMutation({
-    mutationFn: async (payload: { id: string; formData: FormData }) => {
+    mutationFn: async (payload: { id: string; body: Record<string, any> }) => {
       const token = await getToken();
       return apiFetch(`/resources/files/${payload.id}/`, token as string, {
         method: "PATCH",
-        body: payload.formData,
+        body: JSON.stringify(payload.body),
       });
     },
     onSuccess: () => {
@@ -89,7 +90,7 @@ export function EditResourceDialog({
     },
   });
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!resource) return;
     if (!editFileName.trim()) {
@@ -101,28 +102,42 @@ export function EditResourceDialog({
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file_name", editFileName.trim());
-    formData.append("level", editLevel);
-    formData.append("subject", editSubject);
-    formData.append("resource_type", editResourceType);
+    try {
+      const token = await getToken();
+      let fileKey: string | undefined = undefined;
 
-    if (editResourceType === "PAST_PAPER") {
-      formData.append("year", String(editYear));
-      formData.append("session", editSession);
-      formData.append("paper_type", editPaperType);
-    }
-
-    if (editReplacementFile) {
-      const val = isValidDocumentFile(editReplacementFile, editResourceType);
-      if (!val.valid) {
-        setEditError(val.error || "Invalid replacement file format.");
-        return;
+      if (editReplacementFile) {
+        const val = isValidDocumentFile(editReplacementFile, editResourceType);
+        if (!val.valid) {
+          setEditError(val.error || "Invalid replacement file format.");
+          return;
+        }
+        const scope = editResourceType === "PAST_PAPER" ? "past_paper" : "textbook";
+        const uploaded = await uploadDirectlyToB2(editReplacementFile, scope, token);
+        fileKey = uploaded.file_key;
       }
-      formData.append("file", editReplacementFile);
-    }
 
-    editMutation.mutate({ id: resource.id, formData });
+      const body: Record<string, any> = {
+        file_name: editFileName.trim(),
+        level: editLevel,
+        subject: editSubject,
+        resource_type: editResourceType,
+      };
+
+      if (fileKey) {
+        body.file_key = fileKey;
+      }
+
+      if (editResourceType === "PAST_PAPER") {
+        body.year = String(editYear);
+        body.session = editSession;
+        body.paper_type = editPaperType;
+      }
+
+      editMutation.mutate({ id: resource.id, body });
+    } catch (err: any) {
+      setEditError(err.message || "Failed to upload replacement file.");
+    }
   };
 
   return (

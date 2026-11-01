@@ -18,6 +18,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm } from "@/lib/form-errors";
+import { uploadDirectlyToB2 } from "@/lib/storage";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -188,11 +189,10 @@ export function UpdateLessonForm({
 
         if (data.attachments && data.attachments.length > 0) {
           for (let i = 0; i < data.attachments.length; i++) {
-            const formData = new FormData();
-            formData.append("file", data.attachments[i]);
+            const uploaded = await uploadDirectlyToB2(data.attachments[i], "lesson_attachment", token);
             await apiFetch(`/lessons/${lesson.id}/attachments/`, token, {
               method: "POST",
-              body: formData,
+              body: JSON.stringify(uploaded),
             });
           }
         }
