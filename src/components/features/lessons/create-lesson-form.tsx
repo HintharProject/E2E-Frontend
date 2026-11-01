@@ -15,6 +15,7 @@ import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm } from "@/lib/form-errors";
+import { uploadDirectlyToB2 } from "@/lib/storage";
 
 const inputClass =
   "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
@@ -192,11 +193,10 @@ export function CreateLessonForm({
 
         if (data.resources && data.resources.length > 0) {
           for (let i = 0; i < data.resources.length; i++) {
-            const formData = new FormData();
-            formData.append("file", data.resources[i]);
+            const uploaded = await uploadDirectlyToB2(data.resources[i], "lesson_attachment", token);
             await apiFetch(`/lessons/${res.id}/attachments/`, token, {
               method: "POST",
-              body: formData,
+              body: JSON.stringify(uploaded),
             });
           }
         }

@@ -24,6 +24,7 @@ import {
   parseResourceFileName,
   ResourceType,
 } from "@/lib/resources";
+import { uploadDirectlyToB2 } from "@/lib/storage";
 import { useExamTaxonomy } from "@/hooks/use-exam-taxonomy";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
@@ -142,29 +143,35 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
     const token = await getToken();
 
     for (const item of pendingItems) {
-      updateQueueItem(item.id, { status: "UPLOADING", errorMessage: undefined });
+      updateQueueItem(item.id, { status: "UPLOADING", progress: 0, errorMessage: undefined });
       try {
-        const formData = new FormData();
-        formData.append("file", item.file);
-        formData.append("file_name", item.fileName.trim() || item.file.name);
-        formData.append("level", selectedLevel);
-        formData.append("subject", selectedSubject);
-        formData.append("resource_type", item.resourceType);
+        const scope = item.resourceType === "PAST_PAPER" ? "past_paper" : "textbook";
+        const uploaded = await uploadDirectlyToB2(item.file, scope, token, (percent) => {
+          updateQueueItem(item.id, { progress: percent });
+        });
+
+        const payload: Record<string, any> = {
+          file_key: uploaded.file_key,
+          file_name: item.fileName.trim() || item.file.name,
+          level: selectedLevel,
+          subject: selectedSubject,
+          resource_type: item.resourceType,
+        };
 
         if (item.resourceType === "PAST_PAPER") {
-          formData.append("year", String(item.year));
-          formData.append("session", item.session);
-          formData.append("paper_type", item.paperType);
+          payload.year = String(item.year);
+          payload.session = item.session;
+          payload.paper_type = item.paperType;
         } else {
-          formData.append("title", (item.title || item.fileName.replace(/\.[^/.]+$/, "")).trim());
+          payload.title = (item.title || item.fileName.replace(/\.[^/.]+$/, "")).trim();
         }
 
         await apiFetch("/resources/files/", token as string, {
           method: "POST",
-          body: formData,
+          body: JSON.stringify(payload),
         });
 
-        updateQueueItem(item.id, { status: "SUCCESS" });
+        updateQueueItem(item.id, { status: "SUCCESS", progress: 100 });
         successCount++;
       } catch (err: any) {
         updateQueueItem(item.id, {
@@ -376,8 +383,8 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </Badge>
                   )}
                   {item.status === "UPLOADING" && (
-                    <Badge variant="secondary" className="text-[10px] py-0 text-primary flex items-center gap-1">
-                      <Loader2 className="size-3 animate-spin" /> Uploading
+                    <Badge variant="secondary" className="text-[10px] py-0 text-primary flex items-center gap-1 font-mono">
+                      <Loader2 className="size-3 animate-spin" /> {item.progress !== undefined ? `${item.progress}%` : "Uploading"}
                     </Badge>
                   )}
                   {item.status === "SUCCESS" && (

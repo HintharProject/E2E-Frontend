@@ -51,6 +51,7 @@ export interface BulkQueueItem {
   edition?: string;
   category?: string;
   status: "IDLE" | "UPLOADING" | "SUCCESS" | "ERROR";
+  progress?: number;
   errorMessage?: string;
 }
 
