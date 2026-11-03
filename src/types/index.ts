@@ -116,6 +116,7 @@ export interface Lesson {
   embedded_video_url: string | null;
   attachments: LessonAttachment[];
   tags?: string[];
+  tags_data?: Tag[];
   created_at: string;
   updated_at: string;
   vote_count?: number;
@@ -194,6 +195,8 @@ export interface Problem {
   is_feed_visible?: boolean;
   solved_at?: string | null;
   attachments: ProblemAttachment[];
+  tags?: string[];
+  tags_data?: Tag[];
   vote_count?: number;
   vote_score?: number;
   solution_count?: number;
