@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
@@ -39,7 +40,7 @@ const formSchema = z.object({
   body: z.string().min(1, "Body is required").max(5000, "Max 5000 characters"),
   subject_id: z.string().min(1, "Subject is required"),
   level_id: z.string().min(1, "Level is required"),
-  tag_id: z.string().optional(),
+  tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
   embedded_video_url: z.string().url("Must be a valid URL").optional().or(z.literal("")),
   state: z.enum(["DRAFT", "PUBLISHED"]),
   resources: z
@@ -90,6 +91,7 @@ export function CreateLessonForm({
     setValue,
     setError,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -98,7 +100,7 @@ export function CreateLessonForm({
       body: "",
       subject_id: "",
       level_id: "",
-      tag_id: "",
+      tags: [],
       embedded_video_url: "",
       state: "DRAFT",
     },
@@ -166,7 +168,7 @@ export function CreateLessonForm({
       fieldMapping: {
         subject: "subject_id",
         level: "level_id",
-        tags: "tag_id",
+        tags: "tags",
         embedded_video_url: "embedded_video_url",
         file: "resources",
         attachments: "resources",
@@ -183,7 +185,7 @@ export function CreateLessonForm({
           level: data.level_id,
           state: data.state,
           ...(data.embedded_video_url && { embedded_video_url: data.embedded_video_url }),
-          ...(data.tag_id && { tags: [data.tag_id] }),
+          tags: data.tags,
         };
 
         const res = await apiFetch<Lesson>("/lessons/", token, {
@@ -261,14 +263,18 @@ export function CreateLessonForm({
         </Field>
       </div>
 
-      <Field label="Tags">
-        <select {...register("tag_id")} className={inputClass}>
-          <option value="">Optional…</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-      </Field>
+      <Controller
+        control={control}
+        name="tags"
+        render={({ field }) => (
+          <TagInput
+            value={field.value || []}
+            onChange={field.onChange}
+            maxTags={3}
+            error={errors.tags?.message}
+          />
+        )}
+      />
 
       <Field label="Embedded video URL (YouTube / playlist)">
         <input

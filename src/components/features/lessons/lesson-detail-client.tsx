@@ -94,7 +94,7 @@ export function LessonDetailClient({ id }: { id: string }) {
 
   const subject = lesson.subject_details;
   const level = lesson.level_details;
-  const tagNames = lesson.tags ?? [];
+  const tagNames = (lesson.tags_data || []).map((t) => t.name).length > 0 ? (lesson.tags_data || []).map((t) => t.name) : (lesson.tags ?? []);
 
   const imageAttachments = lesson.attachments?.filter(att => {
     const ext = att?.file_name?.split('.').pop()?.toLowerCase() || '';

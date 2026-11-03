@@ -161,6 +161,9 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           <div className="flex flex-wrap items-center gap-1.5">
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
+            {problem.tags_data?.map((t) => (
+              <Badge key={t.id || t.name} variant="outline">#{t.name}</Badge>
+            ))}
 
             {primaryThumbnailUrl && (
               <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted border border-line rounded px-1.5 py-0.5">
