@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { Problem } from "@/types";
 import { apiFetch } from "@/services/api-client";
 import { formatDate } from "@/lib/utils";
@@ -161,7 +162,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {problem.tags_data?.map((t) => (
-              <Badge key={t.id || t.name} variant="outline">#{t.name}</Badge>
+              <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
             ))}
 
             {primaryThumbnailUrl && (

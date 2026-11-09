@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import type { Post, Lesson } from "@/types";
 import { PostCardVote } from "./posts/post-card-vote";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -109,7 +110,7 @@ export function PostCard({ post }: { post: Post }) {
           {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
           {level ? <Badge variant="outline">{level.name}</Badge> : null}
           {tags.map((t) => (
-            <Badge key={t.id} variant="outline">#{t.name}</Badge>
+            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
           ))}
         </>
       }
@@ -166,6 +167,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const author = lesson.author_details;
   const subject = lesson.subject_details;
   const level = lesson.level_details;
+  const tags = lesson.tags_data || [];
 
   const isAuthor = isContentAuthor(user, author, lesson.author);
   const canEdit = isAuthor;
@@ -262,6 +264,9 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         <>
           {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
           {level ? <Badge variant="outline">{level.name}</Badge> : null}
+          {tags.map((t) => (
+            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+          ))}
         </>
       }
       moreMenu={

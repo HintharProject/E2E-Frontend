@@ -4,6 +4,7 @@ import { usePost } from "@/hooks/use-posts";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
 import { PostInteractions } from "@/components/features/posts/post-interactions";
@@ -92,7 +93,7 @@ export function PostDetailView({ postId }: { postId: string }) {
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {tagNames.map((t) => (
-              <Badge key={t} variant="outline">#{t}</Badge>
+              <TagBadge key={t} name={t} />
             ))}
           </>
         }
