@@ -64,3 +64,32 @@ export function isSuperAdmin(role?: Role): boolean {
   return role === "SUPERADMIN";
 }
 
+/**
+ * Robustly checks if the current user is the author of a content item,
+ * safely handling both internal database UUIDs and Clerk string IDs.
+ */
+export function isContentAuthor(
+  currentUser: { id?: string; clerk_id?: string } | null | undefined,
+  authorDetails?: { id?: string; clerk_id?: string } | null,
+  authorRawId?: string | null
+): boolean {
+  if (!currentUser) return false;
+
+  const matchesId = Boolean(
+    currentUser.id && (
+      (authorRawId && currentUser.id === authorRawId) ||
+      (authorDetails?.id && currentUser.id === authorDetails.id)
+    )
+  );
+
+  const matchesClerkId = Boolean(
+    currentUser.clerk_id && (
+      (authorRawId && currentUser.clerk_id === authorRawId) ||
+      (authorDetails?.clerk_id && currentUser.clerk_id === authorDetails.clerk_id)
+    )
+  );
+
+  return matchesId || matchesClerkId;
+}
+
+
