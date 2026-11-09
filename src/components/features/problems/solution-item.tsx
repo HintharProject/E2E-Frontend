@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Solution, Problem } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { useDeleteSolution } from "@/hooks/use-problems";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
@@ -58,9 +59,7 @@ export function SolutionItem({
   const deleteMutation = useDeleteSolution();
 
   const author = solution.author_details;
-  const isAuthor = (user?.id && user.id === author?.id) || (user?.clerk_id && user.clerk_id === author?.clerk_id);
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
-  const canModify = isAuthor || isAdmin;
+  const isAuthor = isContentAuthor(user, author, solution.author);
 
   const isAccepted = solution.is_accepted || solution.status === "WORKED";
   const isAuthorSolution = solution.is_author_solution || (author && (author.id === problem.author || author.clerk_id === problem.author_details?.clerk_id));
@@ -255,7 +254,7 @@ export function SolutionItem({
             } : null}
             isHidden={(solution as any).is_hidden}
             isLocked={(solution as any).is_locked}
-            onDelete={canModify ? handleDelete : undefined}
+            onDelete={isAuthor ? handleDelete : undefined}
             deleteLabel="this solution"
           />
         </div>

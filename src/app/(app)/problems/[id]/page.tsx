@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProblem } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
@@ -73,10 +74,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const author = problem.author_details;
-  const isAuthor = Boolean(
-    (user?.id && author?.id && user.id === author.id) ||
-    (user?.clerk_id && author?.clerk_id && user.clerk_id === author.clerk_id)
-  );
+  const isAuthor = isContentAuthor(user, author, problem.author);
   const isFinal = problem.status === "FINAL";
   const pastPaperDetails = problem.resource_details;
 

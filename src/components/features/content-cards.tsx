@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import type { Post, Lesson } from "@/types";
 import { PostCardVote } from "./posts/post-card-vote";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { apiFetch } from "@/services/api-client";
 import { LessonCardVote } from "./lessons/lesson-card-vote";
 import { toast } from "sonner";
@@ -41,9 +42,7 @@ export function PostCard({ post }: { post: Post }) {
   const deleteMutation = useDeletePost();
 
   const author = post.author_details;
-  const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
-  const canModify = isAuthor || isAdmin;
+  const isAuthor = isContentAuthor(user, author, post.author);
   const subject = post.subject_details;
   const level = post.level_details;
   const tags = post.tags_data || [];
@@ -147,8 +146,8 @@ export function PostCard({ post }: { post: Post }) {
           } : null}
           isHidden={(post as any).is_hidden}
           isLocked={(post as any).is_locked}
-          editHref={canModify ? `/posts/${post.id}/edit` : undefined}
-          onDelete={canModify ? handleDelete : undefined}
+          editHref={isAuthor ? `/posts/${post.id}/edit` : undefined}
+          onDelete={isAuthor ? handleDelete : undefined}
           deleteLabel="this post"
         />
       }
@@ -168,13 +167,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   const subject = lesson.subject_details;
   const level = lesson.level_details;
 
-  const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const isAuthor = isContentAuthor(user, author, lesson.author);
   const canEdit = isAuthor;
-  const canDelete = isAuthor || isAdmin;
-  const canChangeState = isAuthor || isAdmin;
-  const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
-  const canArchive = canChangeState && lesson.state === "PUBLISHED";
+  const canDelete = isAuthor;
+  const canPublish = isAuthor && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
+  const canArchive = isAuthor && lesson.state === "PUBLISHED";
 
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/lessons/${lesson.id}`

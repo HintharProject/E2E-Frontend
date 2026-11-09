@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/utils";
 import { ProblemCardVote } from "./problem-card-vote";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { useDeleteProblem } from "@/hooks/use-problems";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { toast } from "sonner";
@@ -30,9 +31,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const author = problem.author_details;
   const subject = problem.subject_details;
   const level = problem.level_details;
-  const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
-  const canModify = isAuthor || isAdmin;
+  const isAuthor = isContentAuthor(user, author, problem.author);
   const isFinal = problem.status === "FINAL";
 
   const shareUrl = typeof window !== "undefined"
@@ -200,7 +199,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           isHidden={(problem as any).is_hidden}
           isLocked={(problem as any).is_locked}
           isFinal={problem.status === "FINAL"}
-          onDelete={canModify ? handleDelete : undefined}
+          onDelete={isAuthor ? handleDelete : undefined}
           deleteLabel="this problem"
         />
       }
