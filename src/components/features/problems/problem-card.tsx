@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { Problem } from "@/types";
 import { apiFetch } from "@/services/api-client";
 import { formatDate } from "@/lib/utils";
 import { ProblemCardVote } from "./problem-card-vote";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { useDeleteProblem } from "@/hooks/use-problems";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { toast } from "sonner";
@@ -30,9 +32,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const author = problem.author_details;
   const subject = problem.subject_details;
   const level = problem.level_details;
-  const isAuthor = user?.id === author?.id;
-  const isAdmin = user?.role === "ADMIN";
-  const canModify = isAuthor || isAdmin;
+  const isAuthor = isContentAuthor(user, author, problem.author);
   const isFinal = problem.status === "FINAL";
 
   const shareUrl = typeof window !== "undefined"
@@ -161,6 +161,9 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           <div className="flex flex-wrap items-center gap-1.5">
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
+            {problem.tags_data?.map((t) => (
+              <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+            ))}
 
             {primaryThumbnailUrl && (
               <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted border border-line rounded px-1.5 py-0.5">
@@ -197,7 +200,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           isHidden={(problem as any).is_hidden}
           isLocked={(problem as any).is_locked}
           isFinal={problem.status === "FINAL"}
-          onDelete={canModify ? handleDelete : undefined}
+          onDelete={isAuthor ? handleDelete : undefined}
           deleteLabel="this problem"
         />
       }

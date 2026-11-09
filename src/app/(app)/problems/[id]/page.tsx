@@ -5,7 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProblem } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -73,10 +75,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const author = problem.author_details;
-  const isAuthor = Boolean(
-    (user?.id && author?.id && user.id === author.id) ||
-    (user?.clerk_id && author?.clerk_id && user.clerk_id === author.clerk_id)
-  );
+  const isAuthor = isContentAuthor(user, author, problem.author);
   const isFinal = problem.status === "FINAL";
   const pastPaperDetails = problem.resource_details;
 
@@ -194,6 +193,9 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
             {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
+            {problem.tags_data?.map((t) => (
+              <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+            ))}
           </div>
         }
         body={problem.body}

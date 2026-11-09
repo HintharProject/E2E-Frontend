@@ -6,7 +6,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { isModeratorOrAbove } from "@/types/user";
+import { isModeratorOrAbove, isContentAuthor } from "@/types/user";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
@@ -27,15 +27,13 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
   const deleteMutation = useDeleteLesson();
   const stateMutation = useUpdateLessonState();
 
-  const isAuthor = user?.id === lesson.author_details?.id;
+  const isAuthor = isContentAuthor(user, lesson.author_details, lesson.author);
   const isStaff = isModeratorOrAbove(user?.role);
 
   const canEdit = isAuthor;
-  const canDelete = isAuthor || isStaff;
-  const canChangeState = isAuthor || isStaff;
-
-  const canPublish = canChangeState && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
-  const canArchive = canChangeState && lesson.state === "PUBLISHED";
+  const canDelete = isAuthor;
+  const canPublish = isAuthor && (lesson.state === "DRAFT" || lesson.state === "ARCHIVED");
+  const canArchive = isAuthor && lesson.state === "PUBLISHED";
 
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [confirmState, setConfirmState] = useState<null | "PUBLISHED" | "ARCHIVED">(null);
@@ -66,7 +64,7 @@ export function LessonDetailActions({ lesson }: { lesson: Lesson }) {
     });
   };
 
-  if (!canEdit && !canDelete && !canChangeState && !isStaff) {
+  if (!canEdit && !canDelete && !canPublish && !canArchive && !isStaff) {
     return null;
   }
 

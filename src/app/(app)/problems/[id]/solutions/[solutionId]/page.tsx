@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useSolution, useProblem, useDeleteSolution } from "@/hooks/use-problems";
 import { useReport } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,11 +111,7 @@ export default function SolutionDetailPage({
   }
 
   const author = solution.author_details;
-  const isAuthor =
-    (user?.id && user.id === author?.id) ||
-    (user?.clerk_id && user.clerk_id === author?.clerk_id);
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
-  const canModify = isAuthor || isAdmin;
+  const isAuthor = isContentAuthor(user, author, solution.author);
 
   const isProblemAuthor =
     Boolean(
@@ -298,7 +295,7 @@ export default function SolutionDetailPage({
                 </Button>
               )}
 
-              {canModify && (
+              {isAuthor && (
                 <>
                   <Button
                     variant="ghost"

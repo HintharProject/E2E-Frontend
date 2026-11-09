@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
 
 import { FileDropzone } from "@/components/ui/file-dropzone";
@@ -36,6 +37,7 @@ const PathASchema = z.object({
   body: z.string().min(10, "Problem description must be at least 10 characters").max(3000, "Max 3000 characters"),
   subject_id: z.string().min(1, "Please select a subject"),
   level_id: z.string().min(1, "Please select an education level"),
+  tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
   source: z.string().max(100).optional(),
   attachments: z
     .any()
@@ -51,6 +53,7 @@ const PathBSchema = z.object({
   question_number: z.string().min(1, "Question number is required").max(50, "Max 50 characters"),
   title: z.string().max(150, "Max 150 characters").optional(),
   body: z.string().max(3000, "Max 3000 characters").optional(),
+  tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
 });
 
 const formSchema = z.discriminatedUnion("origin", [PathASchema, PathBSchema]);
@@ -123,6 +126,7 @@ export function CreateProblemForm({
     clearErrors,
     watch,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -135,6 +139,7 @@ export function CreateProblemForm({
       source: "",
       resource_id: urlResource,
       question_number: urlQuestionNumber,
+      tags: [],
     } as any,
   });
 
@@ -346,6 +351,7 @@ export function CreateProblemForm({
         level: "level_id",
         resource: "resource_id",
         question: "question_number",
+        tags: "tags",
         uploaded_attachments: "attachments",
         file: "attachments",
         attachments: "attachments",
@@ -395,6 +401,7 @@ export function CreateProblemForm({
             level: data.level_id,
             source: data.source?.trim() || "others",
             uploaded_attachments: uploadedAttachments,
+            tags: data.tags || [],
           };
 
           const res = await apiFetch<Problem>("/problems/", token, {
@@ -414,6 +421,7 @@ export function CreateProblemForm({
             body: data.body?.trim() || "",
             is_feed_visible: true,
             uploaded_attachments: [],
+            tags: data.tags || [],
           };
 
           const res = await apiFetch<Problem>("/problems/", token, {
@@ -530,6 +538,19 @@ export function CreateProblemForm({
                 )}
               </Field>
             </div>
+
+            <Controller
+              control={control}
+              name="tags"
+              render={({ field }) => (
+                <TagInput
+                  value={field.value || []}
+                  onChange={field.onChange}
+                  maxTags={3}
+                  error={(errors as any).tags?.message}
+                />
+              )}
+            />
 
             <Field label="Source / Reference (Optional)">
               <input

@@ -5,6 +5,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
 import { useVoteComment } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -32,13 +33,7 @@ export function ThreadedComment({
   postId: string;
 }) {
   const { user: currentUser } = useCurrentUser();
-  const isAuthor = Boolean(
-    currentUser && (
-      (comment.author && currentUser.id === comment.author) ||
-      (comment.author_details?.id && currentUser.id === comment.author_details.id) ||
-      (comment.author_details?.clerk_id && currentUser.clerk_id === comment.author_details.clerk_id)
-    )
-  );
+  const isAuthor = isContentAuthor(currentUser, comment.author_details, comment.author);
 
   const [showReplyForm, setShowReplyForm] = useState(false);
   const hasReplies = Boolean(comment.reply_count && comment.reply_count > 0);

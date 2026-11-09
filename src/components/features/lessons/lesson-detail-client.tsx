@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
@@ -94,7 +95,7 @@ export function LessonDetailClient({ id }: { id: string }) {
 
   const subject = lesson.subject_details;
   const level = lesson.level_details;
-  const tagNames = lesson.tags ?? [];
+  const tagNames = (lesson.tags_data || []).map((t) => t.name).length > 0 ? (lesson.tags_data || []).map((t) => t.name) : (lesson.tags ?? []);
 
   const imageAttachments = lesson.attachments?.filter(att => {
     const ext = att?.file_name?.split('.').pop()?.toLowerCase() || '';
@@ -126,7 +127,7 @@ export function LessonDetailClient({ id }: { id: string }) {
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {tagNames.map((t) => (
-              <Badge key={t} variant="outline">#{t}</Badge>
+              <TagBadge key={t} name={t} />
             ))}
           </>
         }

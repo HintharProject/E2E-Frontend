@@ -1,6 +1,5 @@
 "use client";
 
-import { useCurrentUser } from "@/hooks/use-current-user";
 import { LessonsFeed } from "@/components/features/lessons-feed";
 
 export function ManageLessonsClient({
@@ -14,15 +13,12 @@ export function ManageLessonsClient({
   tagIds: string[];
   state: string;
 }) {
-  const { user } = useCurrentUser();
-  const isAdmin = user?.role === "ADMIN";
-
   return (
     <LessonsFeed 
       subjects={subjects} 
       levels={levels} 
       tagIds={tagIds} 
-      onlyMine={!isAdmin} 
+      onlyMine={true} 
       state={state} 
     />
   );

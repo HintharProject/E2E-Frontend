@@ -9,6 +9,7 @@ import {
 } from "@/hooks/use-comments";
 import { useVoteComment, useReport } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -82,14 +83,7 @@ function FlatCommentItem({
   const voteMutation = useVoteComment();
   const reportMutation = useReport();
 
-  const isAuthor = Boolean(
-    currentUser && (
-      (comment.author && currentUser.id === comment.author) ||
-      (comment.author_details?.id && currentUser.id === comment.author_details.id) ||
-      (comment.author_details?.clerk_id && currentUser.clerk_id === comment.author_details.clerk_id)
-    )
-  );
-  const isAdmin = currentUser?.role === "ADMIN" || currentUser?.role === "SUPERADMIN";
+  const isAuthor = isContentAuthor(currentUser, comment.author_details, comment.author);
 
   const [isEditing, setIsEditing] = useState(false);
   const [editBody, setEditBody] = useState(comment.body);
@@ -222,8 +216,8 @@ function FlatCommentItem({
           </div>
         </div>
 
-        {/* Edit / Delete menu for author/admin */}
-        {(isAuthor || isAdmin) && (
+        {/* Edit / Delete menu for author */}
+        {isAuthor && (
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             {isAuthor && (
               <Button
@@ -373,9 +367,7 @@ function FlatCommentItem({
         <div className="mt-3 ml-6 pl-3 border-l-2 border-line space-y-2 pt-1">
           {replies.map((reply) => {
             const replyAuthor = reply.author_details;
-            const isReplyAuthor =
-              (currentUser?.id && currentUser.id === replyAuthor?.id) ||
-              (currentUser?.clerk_id && currentUser.clerk_id === replyAuthor?.clerk_id);
+            const isReplyAuthor = isContentAuthor(currentUser, replyAuthor, reply.author);
 
             return (
               <div
@@ -403,8 +395,8 @@ function FlatCommentItem({
                     </span>
                   </div>
 
-                  {/* Actions for reply author / admin */}
-                  {(isReplyAuthor || isAdmin) && (
+                  {/* Actions for reply author */}
+                  {isReplyAuthor && (
                     <button
                       type="button"
                       onClick={() => {

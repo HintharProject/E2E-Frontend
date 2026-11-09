@@ -3,7 +3,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
 import { Post, PaginatedResponse, Subject, Level, Tag } from "@/types";
-import { isWriteLocked, isAdminOrSuperAdmin } from "@/types/user";
+import { isWriteLocked, isContentAuthor } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
 import { UpdatePostForm } from "@/components/features/posts/update-post-form";
 import { getServerAuthToken } from "@/lib/auth-server";
@@ -29,9 +29,9 @@ export default async function EditPostPage(props: {
     notFound();
   }
 
-  // Verify permissions: only author or admin can edit
-  if (!isAdminOrSuperAdmin(user.role) && post.author !== user.id) {
-    notFound(); // Alternatively, show a permission denied page
+  // Verify permissions: strictly author can edit
+  if (!isContentAuthor(user, post.author_details, post.author)) {
+    notFound();
   }
 
   const writeLocked = isWriteLocked(user.ban_state);

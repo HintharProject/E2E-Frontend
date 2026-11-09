@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
@@ -77,7 +78,7 @@ export function UpdatePostForm({
     body: z.string().min(1, "Body is required").max(3000, "Max 3000 characters"),
     subject_id: subjectRequired ? z.string().min(1, "Subject is required") : z.string().optional().or(z.literal("")),
     level_id: subjectRequired ? z.string().min(1, "Level is required") : z.string().optional().or(z.literal("")),
-    tag_id: z.string().optional(),
+    tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
     attachment: z
       .any()
       .optional()
@@ -96,6 +97,7 @@ export function UpdatePostForm({
     setValue,
     setError,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -105,7 +107,7 @@ export function UpdatePostForm({
       body: post.body,
       subject_id: post.subject ?? "",
       level_id: post.level ?? "",
-      tag_id: post.tags_data?.[0]?.id ?? "",
+      tags: (post.tags_data || []).map((t) => t.name),
     },
   });
 
@@ -147,7 +149,7 @@ export function UpdatePostForm({
       fieldMapping: {
         subject: "subject_id",
         level: "level_id",
-        tags: "tag_id",
+        tags: "tags",
         file: "attachment",
         attachment: "attachment",
       },
@@ -162,7 +164,7 @@ export function UpdatePostForm({
           body: data.body,
           ...(data.subject_id && { subject: data.subject_id }),
           ...(data.level_id && { level: data.level_id }),
-          ...(data.tag_id && { tags: [data.tag_id] }),
+          tags: data.tags,
         };
 
         const res = await apiFetch<Post>(`/posts/${post.id}/`, token, {
@@ -238,14 +240,18 @@ export function UpdatePostForm({
         </Field>
       </div>
 
-      <Field label="Custom tag (optional)">
-        <select {...register("tag_id")} className={inputClass}>
-          <option value="">Select tag...</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-      </Field>
+      <Controller
+        control={control}
+        name="tags"
+        render={({ field }) => (
+          <TagInput
+            value={field.value || []}
+            onChange={field.onChange}
+            maxTags={3}
+            error={errors.tags?.message}
+          />
+        )}
+      />
 
       <Field label="New attachment (optional · max 1 · 5MB · jpg/png/pdf)">
         {existingAttachment && (

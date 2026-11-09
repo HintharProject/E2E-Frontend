@@ -4,11 +4,14 @@ import { usePost } from "@/hooks/use-posts";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { TagBadge } from "@/components/ui/tag-badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { formatDate } from "@/lib/utils";
 import { PostInteractions } from "@/components/features/posts/post-interactions";
 import { PostComments } from "@/components/features/comments/post-comments";
 import { PostAuthorActions } from "@/components/features/posts/post-author-actions";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { isContentAuthor } from "@/types/user";
 import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import dynamic from "next/dynamic";
@@ -50,6 +53,7 @@ function PostDetailSkeleton() {
 export function PostDetailView({ postId }: { postId: string }) {
   const { data: post, isLoading, isError } = usePost(postId);
   const { user: clerkUser } = useUser();
+  const { user } = useCurrentUser();
 
   if (isLoading) return <PostDetailSkeleton />;
 
@@ -65,7 +69,7 @@ export function PostDetailView({ postId }: { postId: string }) {
   const subject = post.subject_details;
   const level = post.level_details;
   const tagNames = post.tags_data?.map(t => t.name) ?? [];
-  const isAuthor = clerkUser?.id === author?.clerk_id;
+  const isAuthor = isContentAuthor(user || (clerkUser ? { clerk_id: clerkUser.id } : null), author, post.author);
 
   const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
 
@@ -89,7 +93,7 @@ export function PostDetailView({ postId }: { postId: string }) {
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {tagNames.map((t) => (
-              <Badge key={t} variant="outline">#{t}</Badge>
+              <TagBadge key={t} name={t} />
             ))}
           </>
         }

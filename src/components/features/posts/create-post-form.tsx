@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
@@ -13,7 +14,7 @@ import { Post } from "@/types";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
-import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
+import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm } from "@/lib/form-errors";
 import { uploadDirectlyToB2 } from "@/lib/storage";
@@ -42,7 +43,6 @@ export function CreatePostForm({
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
-  const { data: tags = [] } = useTags();
 
   const canAnnounce = userRole === "ADMIN" || userRole === "SUPERADMIN";
   const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
@@ -53,7 +53,7 @@ export function CreatePostForm({
     body: z.string().min(1, "Body is required").max(3000, "Max 3000 characters"),
     subject_id: subjectRequired ? z.string().min(1, "Subject is required") : z.string().optional().or(z.literal("")),
     level_id: subjectRequired ? z.string().min(1, "Level is required") : z.string().optional().or(z.literal("")),
-    tag_id: z.string().optional(),
+    tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
     attachment: z
       .any()
       .optional()
@@ -72,6 +72,7 @@ export function CreatePostForm({
     setValue,
     setError,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -81,7 +82,7 @@ export function CreatePostForm({
       body: "",
       subject_id: "",
       level_id: "",
-      tag_id: "",
+      tags: [],
     },
   });
 
@@ -123,7 +124,7 @@ export function CreatePostForm({
       fieldMapping: {
         subject: "subject_id",
         level: "level_id",
-        tags: "tag_id",
+        tags: "tags",
         file: "attachment",
         attachment: "attachment",
       },
@@ -138,7 +139,7 @@ export function CreatePostForm({
           body: data.body,
           ...(data.subject_id && { subject: data.subject_id }),
           ...(data.level_id && { level: data.level_id }),
-          ...(data.tag_id && { tags: [data.tag_id] }),
+          tags: data.tags,
         };
 
         const res = await apiFetch<Post>("/posts/", token, {
@@ -224,15 +225,18 @@ export function CreatePostForm({
         </Field>
       </div>
 
-      <Field label="Custom tag (optional)">
-        <select {...register("tag_id")} className={`${inputClass} ${errors.tag_id ? errorClass : ""}`}>
-          <option value="">Select tag...</option>
-          {tags.map((t) => (
-            <option key={t.id} value={t.id}>{t.name}</option>
-          ))}
-        </select>
-        {errors.tag_id && <p className="mt-1 text-xs text-danger">{errors.tag_id.message}</p>}
-      </Field>
+      <Controller
+        control={control}
+        name="tags"
+        render={({ field }) => (
+          <TagInput
+            value={field.value || []}
+            onChange={field.onChange}
+            maxTags={3}
+            error={errors.tags?.message}
+          />
+        )}
+      />
 
       <Field label="Attachment (optional · max 1 · 5MB · jpg/png/pdf)">
         <FileDropzone 

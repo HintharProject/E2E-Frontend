@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
+import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
@@ -69,6 +70,7 @@ export function UpdateProblemForm({
     body: z.string().min(1, "Problem description is required").max(3000, "Max 3000 characters"),
     subject_id: z.string().min(1, "Subject is required"),
     level_id: z.string().min(1, "Level is required"),
+    tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
     attachment: z
       .any()
       .optional()
@@ -91,6 +93,7 @@ export function UpdateProblemForm({
     setValue,
     setError,
     reset,
+    control,
     formState: { errors },
   } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -99,6 +102,7 @@ export function UpdateProblemForm({
       body: problem.body,
       subject_id: problem.subject ?? "",
       level_id: problem.level ?? "",
+      tags: (problem.tags_data || []).map((t) => t.name),
     },
   });
 
@@ -140,6 +144,7 @@ export function UpdateProblemForm({
       fieldMapping: {
         subject: "subject_id",
         level: "level_id",
+        tags: "tags",
         uploaded_attachments: "attachment",
         file: "attachment",
         attachment: "attachment",
@@ -154,6 +159,7 @@ export function UpdateProblemForm({
           body: data.body,
           subject: data.subject_id,
           level: data.level_id,
+          tags: data.tags,
         };
 
         const res = await apiFetch<Problem>(`/problems/${problem.id}/`, token, {
