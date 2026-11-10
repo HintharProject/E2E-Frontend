@@ -25,6 +25,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
+import { CommentSortProvider, useCommentSort } from "./comment-sort-context";
+import { CommentSortToggle } from "./comment-sort-toggle";
 import {
   MessageSquare,
   Share2,
@@ -481,7 +483,7 @@ function FlatCommentItem({
 // =============================================================================
 // Main Solution Comments Component
 // =============================================================================
-export function SolutionComments({
+function SolutionCommentsContent({
   solutionId,
   totalCount,
   initialCount,
@@ -492,6 +494,7 @@ export function SolutionComments({
 }) {
   const { user: currentUser } = useCurrentUser();
   const createComment = useCreateComment();
+  const { sort: commentSort } = useCommentSort();
 
   const [body, setBody] = useState("");
   const [replyTarget, setReplyTarget] = useState<{
@@ -507,7 +510,7 @@ export function SolutionComments({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-  } = useSolutionComments(solutionId);
+  } = useSolutionComments(solutionId, commentSort);
 
   const comments = data?.pages.flatMap((p) => p.data) ?? [];
   const count = totalCount ?? initialCount ?? comments.length;
@@ -567,9 +570,7 @@ export function SolutionComments({
             Comments {count > 0 && <span className="text-ink-muted">({count})</span>}
           </h3>
         </div>
-        <span className="text-xs text-ink-muted">
-          Ask questions or leave feedback for the solver
-        </span>
+        <CommentSortToggle />
       </div>
 
       {/* Comment / Reply Input Box */}
@@ -667,5 +668,17 @@ export function SolutionComments({
         )}
       </div>
     </div>
+  );
+}
+
+export function SolutionComments(props: {
+  solutionId: string;
+  totalCount?: number;
+  initialCount?: number;
+}) {
+  return (
+    <CommentSortProvider initialSort="popular">
+      <SolutionCommentsContent {...props} />
+    </CommentSortProvider>
   );
 }

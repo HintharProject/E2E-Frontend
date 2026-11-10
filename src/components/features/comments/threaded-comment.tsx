@@ -5,6 +5,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
 import { useVoteComment } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
+import { useCommentSort } from "./comment-sort-context";
 import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -57,9 +58,11 @@ export function ThreadedComment({
   const preloadedReplies = comment.replies;
   const isPreloaded = Array.isArray(preloadedReplies);
 
+  const { sort: commentSort } = useCommentSort();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(
     comment.id,
-    hasReplies && !isPreloaded
+    hasReplies && !isPreloaded,
+    commentSort
   );
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();

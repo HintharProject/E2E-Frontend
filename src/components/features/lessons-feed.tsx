@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useTransition } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
@@ -11,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { LessonCardSkeleton } from "./skeletons";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
+import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
+import type { ContentSortMode, TimeframeFilter } from "@/types";
 
 export function LessonsFeed({
   subjects = [],
@@ -32,6 +35,38 @@ export function LessonsFeed({
   const { getToken } = useAuth();
 
   const effectiveAuthorId = onlyMine ? user?.id : authorId;
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
+
+  const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
+  const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
+
+  const handleSortChange = (newSort: ContentSortMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newSort === "default") {
+      params.delete("sort");
+    } else {
+      params.set("sort", newSort);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
+
+  const handleTimeframeChange = (newTf: TimeframeFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newTf === "all") {
+      params.delete("timeframe");
+    } else {
+      params.set("timeframe", newTf);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
 
   // Prefetch Draft and Archived if we are looking at My Lessons (Published)
   useEffect(() => {
@@ -89,6 +124,8 @@ export function LessonsFeed({
       tags: tagIds.join(","),
       authorId: effectiveAuthorId,
       state,
+      sort: currentSort,
+      timeframe: currentTimeframe,
     });
 
   const hasActiveFilters =
@@ -135,12 +172,21 @@ export function LessonsFeed({
       isRefreshing={isRefetching}
       label="lessons"
     >
+      <div className="mb-4 flex items-center justify-between pb-1">
+        <ContentSortToggle
+          sort={currentSort}
+          timeframe={currentTimeframe}
+          onSortChange={handleSortChange}
+          onTimeframeChange={handleTimeframeChange}
+        />
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2">
         {lessons.map((lesson) => (
           <LessonCard key={lesson.id} lesson={lesson} />
         ))}
       </div>
-      
+
       {hasNextPage && (
         <div className="mt-8 flex justify-center">
           <Button

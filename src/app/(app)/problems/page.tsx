@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { Suspense, useTransition } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { ProblemCard } from "@/components/features/problems/problem-card";
@@ -9,13 +9,46 @@ import { useProblems } from "@/hooks/use-problems";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
 import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
+import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import { parseFilterList } from "@/lib/filter-params";
+import type { ContentSortMode, TimeframeFilter } from "@/types";
 
 function ProblemsFeed() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
+
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
   const status = searchParams.get("status") || "";
+  const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
+  const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
+
+  const handleSortChange = (newSort: ContentSortMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newSort === "default") {
+      params.delete("sort");
+    } else {
+      params.set("sort", newSort);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
+
+  const handleTimeframeChange = (newTf: TimeframeFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newTf === "all") {
+      params.delete("timeframe");
+    } else {
+      params.set("timeframe", newTf);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
 
   const {
     data,
@@ -27,9 +60,11 @@ function ProblemsFeed() {
     refetch,
     isRefetching,
   } = useProblems({
-    subject: subjects.length > 0 ? subjects[0] : "", // useProblems hook might need updating if it supports multiple, assuming single for now
+    subject: subjects.length > 0 ? subjects[0] : "",
     level: levels.length > 0 ? levels[0] : "",
     status: status,
+    sort: currentSort,
+    timeframe: currentTimeframe,
   });
 
   const problems = data?.pages.flatMap((p) => p.data) ?? [];
@@ -40,6 +75,14 @@ function ProblemsFeed() {
       isRefreshing={isRefetching}
       label="problems"
     >
+      <div className="mb-4 flex items-center justify-between pb-1">
+        <ContentSortToggle
+          sort={currentSort}
+          timeframe={currentTimeframe}
+          onSortChange={handleSortChange}
+          onTimeframeChange={handleTimeframeChange}
+        />
+      </div>
       {isLoading ? (
         <div className="space-y-4">
           <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>

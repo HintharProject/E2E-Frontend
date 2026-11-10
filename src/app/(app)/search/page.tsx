@@ -31,7 +31,10 @@ import {
   SearchProblemItem,
   SearchLessonItem,
   SearchResourceItem,
+  ContentSortMode,
+  TimeframeFilter,
 } from "@/types";
+import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import { cn } from "@/lib/utils";
 
 const POPULAR_TOPICS = [
@@ -55,13 +58,15 @@ export default function SearchPage(props: {
   const initialType = (resolvedParams?.type as SearchCategoryFilter) || "all";
   const initialSubject = (resolvedParams?.subject as string) || "";
   const initialLevel = (resolvedParams?.level as string) || "";
-  const initialSort = (resolvedParams?.sort as "relevance" | "popular" | "newest") || "relevance";
+  const initialSort = (resolvedParams?.sort as ContentSortMode) || "default";
+  const initialTimeframe = (resolvedParams?.timeframe as TimeframeFilter) || "all";
 
   const [query, setQuery] = useState(initialQ);
   const [category, setCategory] = useState<SearchCategoryFilter>(initialType);
   const [subject, setSubject] = useState(initialSubject);
   const [level, setLevel] = useState(initialLevel);
-  const [sort, setSort] = useState<"relevance" | "popular" | "newest">(initialSort);
+  const [sort, setSort] = useState<ContentSortMode>(initialSort);
+  const [timeframe, setTimeframe] = useState<TimeframeFilter>(initialTimeframe);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
   const { data: subjects = [] } = useSubjects();
@@ -75,6 +80,7 @@ export default function SearchPage(props: {
     subject: subject || undefined,
     level: level || undefined,
     sort,
+    timeframe,
     debounceMs: 300,
   });
 
@@ -85,7 +91,8 @@ export default function SearchPage(props: {
     if (category !== "all") params.set("type", category);
     if (subject) params.set("subject", subject);
     if (level) params.set("level", level);
-    if (sort !== "relevance") params.set("sort", sort);
+    if (sort !== "default") params.set("sort", sort);
+    if (sort === "popular" && timeframe !== "all") params.set("timeframe", timeframe);
 
     const queryString = params.toString();
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
@@ -93,7 +100,7 @@ export default function SearchPage(props: {
     startTransition(() => {
       window.history.replaceState(null, "", newUrl);
     });
-  }, [query, category, subject, level, sort, pathname]);
+  }, [query, category, subject, level, sort, timeframe, pathname]);
 
   const posts = data?.results.posts || [];
   const problems = data?.results.problems || [];
@@ -101,12 +108,13 @@ export default function SearchPage(props: {
   const resources = data?.results.resources || [];
   const counts = data?.counts || { posts: 0, problems: 0, lessons: 0, resources: 0, total: 0 };
 
-  const hasActiveFacets = Boolean(subject || level || sort !== "relevance");
+  const hasActiveFacets = Boolean(subject || level || sort !== "default" || timeframe !== "all");
 
   const clearFacets = () => {
     setSubject("");
     setLevel("");
-    setSort("relevance");
+    setSort("default");
+    setTimeframe("all");
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -276,15 +284,12 @@ export default function SearchPage(props: {
           {/* Sort By Filter */}
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-ink">Sort Order</label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as "relevance" | "popular" | "newest")}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="relevance">Best Match (Relevance)</option>
-              <option value="popular">Most Popular (Votes)</option>
-              <option value="newest">Newest First</option>
-            </select>
+            <ContentSortToggle
+              sort={sort}
+              timeframe={timeframe}
+              onSortChange={setSort}
+              onTimeframeChange={setTimeframe}
+            />
           </div>
 
           {/* Quick Help Tip */}
