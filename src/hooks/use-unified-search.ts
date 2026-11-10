@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { unifiedSearch } from "@/services/search-service";
-import { SearchCategoryFilter, UnifiedSearchResponse } from "@/types";
+import { SearchCategoryFilter, UnifiedSearchResponse, ContentSortMode, TimeframeFilter } from "@/types";
 
 export interface UseUnifiedSearchOptions {
   query: string;
@@ -12,7 +12,8 @@ export interface UseUnifiedSearchOptions {
   type?: SearchCategoryFilter;
   subject?: string;
   level?: string;
-  sort?: "relevance" | "popular" | "newest";
+  sort?: ContentSortMode | "relevance";
+  timeframe?: TimeframeFilter;
   debounceMs?: number;
   enabled?: boolean;
 }
@@ -46,7 +47,8 @@ export function useUnifiedSearch({
   type = "all",
   subject,
   level,
-  sort = "relevance",
+  sort = "default",
+  timeframe = "all",
   debounceMs = 250,
   enabled = true,
 }: UseUnifiedSearchOptions) {
@@ -56,7 +58,7 @@ export function useUnifiedSearch({
   const isQueryValid = trimmed.length >= 2;
 
   const queryResult = useQuery<UnifiedSearchResponse>({
-    queryKey: ["unified-search", { q: trimmed, limit, type, subject, level, sort }],
+    queryKey: ["unified-search", { q: trimmed, limit, type, subject, level, sort, timeframe }],
     queryFn: async () => {
       const token = await getToken();
       return unifiedSearch(
@@ -67,6 +69,7 @@ export function useUnifiedSearch({
           subject,
           level,
           sort,
+          timeframe,
         },
         token
       );

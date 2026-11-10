@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
-import { PaginatedResponse, Lesson } from "@/types";
+import { PaginatedResponse, Lesson, ContentSortMode, TimeframeFilter } from "@/types";
 
 interface LessonQueryParams {
   subject?: string;
@@ -12,6 +12,8 @@ interface LessonQueryParams {
   authorId?: string;
   state?: string;
   tags?: string;
+  sort?: ContentSortMode;
+  timeframe?: TimeframeFilter;
 }
 
 export function useInfiniteLessons(params: LessonQueryParams = {}) {
@@ -30,6 +32,8 @@ export function useInfiniteLessons(params: LessonQueryParams = {}) {
         state: params.state,
         tags: params.tags,
         author_id: params.authorId,
+        sort: params.sort,
+        timeframe: params.timeframe,
         page: pageParam,
         expand: "author_details,attachments",
       };
