@@ -260,20 +260,18 @@ function ResourcesFeed() {
 
 export default function ResourcesPage() {
   return (
-    <div className="mx-auto max-w-6xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
-      <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-start">
-        <Suspense fallback={null}>
-          <FilterSidebar hideTags />
+    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      <Suspense fallback={<div className="hidden lg:block lg:w-64 shrink-0" />}>
+        <FilterSidebar hideTags />
+      </Suspense>
+      <div className="min-w-0 flex-1">
+        <Suspense
+          fallback={
+            <div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />
+          }
+        >
+          <ResourcesFeed />
         </Suspense>
-        <div className="min-w-0 flex-1 lg:h-[calc(100vh-160px)] lg:overflow-y-auto lg:custom-scrollbar lg:pr-2">
-          <Suspense
-            fallback={
-              <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-            }
-          >
-            <ResourcesFeed />
-          </Suspense>
-        </div>
       </div>
     </div>
   );

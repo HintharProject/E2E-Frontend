@@ -190,7 +190,7 @@ export default function TrainPage() {
   const activeSubjectName = subjects.find((s) => s.id === selectedSubject)?.name;
 
   return (
-    <div className="mx-auto max-w-7xl px-4 pb-8 pt-0 -mt-3 sm:px-6">
+    <div className="w-full space-y-6">
       {/* Informative Banner when selecting a paper for Solve! */}
       {isSelectForProblem && (
         <div className="mt-3 mb-2 p-3.5 rounded-2xl border border-brand/30 bg-brand/5 flex flex-wrap items-center justify-between gap-3 animate-in fade-in-50">
