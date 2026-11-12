@@ -9,9 +9,9 @@ import { Toaster } from "@/components/ui/sonner";
 import { DevTools } from "@/components/dev/dev-tools";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 
-const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", preload: false });
-const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
+const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", display: "swap", preload: false });
+const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap", preload: false });
 
 export const metadata: Metadata = {
   title: "E2E — Creator-led learning",
