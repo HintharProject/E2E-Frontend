@@ -2,11 +2,21 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { UserButton, useAuth } from "@clerk/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/services/api-client";
-import { Menu, Search, UserCog, Settings } from "lucide-react";
+import {
+  Menu,
+  Search,
+  UserCog,
+  Settings,
+  ChevronDown,
+  Shield,
+  RefreshCw,
+  Loader2,
+  Check,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -14,9 +24,14 @@ import {
   AvatarImage,
   AvatarFallback,
 } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { PRIMARY_NAV, isNavActive } from "@/lib/constants";
+import { isNavActive } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
 import { isWriteLocked, isStaffRole } from "@/types/user";
 import { AppHeaderSkeleton } from "./app-header-skeleton";
@@ -28,23 +43,24 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { ForumSubNav } from "@/components/features/forum/forum-sub-nav";
 import { LessonsTabs } from "@/components/features/lessons/lessons-tabs";
 import { useRefreshStore } from "@/lib/store/refresh-store";
-import { RefreshCw, Loader2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// AppHeader — Main sticky navigation
-// Migrated from E2E-Proto/src/components/app-header.tsx
-//
-// Differences from prototype:
-// - No mock mode logic (no role-switch select, no useAuthSource)
-// - Uses useCurrentUser() TanStack Query hook instead of prototype's context
-// - Uses Clerk's UserButton for account menu
-// - Skeleton fallback during user data loading (cold start resilience)
-// ---------------------------------------------------------------------------
+/** Primary public learner tabs rendered in AppHeader. */
+interface PrimaryTab {
+  href: string;
+  label: string;
+  match: string;
+  exclude?: string[];
+}
 
-/**
- * Returns the user's initials for the avatar fallback.
- */
+const PRIMARY_TABS: PrimaryTab[] = [
+  { href: "/forum", label: "Forum", match: "/forum" },
+  { href: "/lessons", label: "Lessons", match: "/lessons", exclude: ["/lessons/new"] },
+  { href: "/problems", label: "Solve!", match: "/problems" },
+  { href: "/train", label: "Train!", match: "/train" },
+  { href: "/resources", label: "Resources", match: "/resources" },
+];
+
 function getInitials(name?: string | null): string {
   if (!name) return "?";
   return name
@@ -61,14 +77,10 @@ export function AppHeader() {
   const router = useRouter();
   const { user, isLoading } = useCurrentUser();
   const { toggleMobileNav, openCommandPalette } = useUIStore();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isMac, setIsMac] = useState(false);
+  const isMac =
+    typeof navigator !== "undefined" &&
+    /(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent);
 
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      setIsMac(/(Mac|iPhone|iPod|iPad)/i.test(navigator.platform || navigator.userAgent));
-    }
-  }, []);
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const { isRefreshing, triggerRefresh } = useRefreshStore();
@@ -131,18 +143,10 @@ export function AppHeader() {
   }
 
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-
-  const visibleNav = PRIMARY_NAV.filter((item) => {
-    if (!item.roles) return true;
-    if (!user) return false;
-    return item.roles.includes(user.role);
-  });
-
-  function onSearch(e: FormEvent) {
-    e.preventDefault();
-    const q = searchQuery.trim();
-    router.push(q ? `/search?q=${encodeURIComponent(q)}` : "/search");
-  }
+  const isCollectionsActive = pathname.startsWith("/study-plans") || pathname.startsWith("/saved-sessions");
+  const isStaff = user ? isStaffRole(user.role) : false;
+  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
+  const isStaffActive = pathname.startsWith("/admin");
 
   return (
     <>
@@ -160,14 +164,15 @@ export function AppHeader() {
           </div>
         )}
 
-        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6">
-          {/* Top row: Logo + Search + User */}
-          <div className="flex items-center gap-4">
-            {/* Mobile hamburger */}
+        {/* Primary 64px Header Bar */}
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-2 px-4 sm:px-6">
+          {/* Left section: Brand + Primary Navigation */}
+          <div className="flex items-center gap-3 lg:gap-4 min-w-0">
+            {/* Mobile hamburger (min 44px touch) */}
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden"
+              className="md:hidden size-11 rounded-lg shrink-0"
               onClick={toggleMobileNav}
               aria-label="Open navigation menu"
             >
@@ -175,178 +180,216 @@ export function AppHeader() {
             </Button>
 
             {/* Logo */}
-            <Link href="/forum" className="shrink-0">
-              <span className="font-heading text-2xl font-semibold tracking-tight text-primary">
+            <Link href="/forum" className="flex items-center gap-2 shrink-0">
+              <span className="font-heading text-2xl font-bold tracking-tight text-primary">
                 E2E
               </span>
             </Link>
 
-            {/* Desktop search trigger */}
-            <button
-              type="button"
-              onClick={openCommandPalette}
-              className="hidden md:flex flex-1 max-w-md items-center justify-between h-9 rounded-full border border-border bg-muted/40 hover:bg-muted/70 px-3.5 text-xs text-muted-foreground transition-colors cursor-pointer group"
-              aria-label="Open command palette"
-            >
-              <span className="flex items-center gap-2 min-w-0">
-                <Search className="size-4 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
-                <span className="font-normal text-muted-foreground group-hover:text-foreground transition-colors truncate">
-                  Search discussions, problems, lessons, papers...
-                </span>
-              </span>
-              <kbd className="inline-flex shrink-0 items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground group-hover:text-foreground shadow-2xs">
-                {isMac ? "⌘K" : "Ctrl+K"}
-              </kbd>
-            </button>
-
-            {/* User area */}
-            <div className="ml-auto flex items-center gap-2">
-              {!user && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
-                  className="h-8 gap-1.5 text-xs font-semibold border-dashed border-primary/50 text-primary hover:bg-primary/10 cursor-pointer"
-                >
-                  <UserCog className="h-3.5 w-3.5" />
-                  <span>Switch Account</span>
-                </Button>
-              )}
-              {user && (
-                <>
-                  <Link
-                    href={`/users/${user.id}`}
-                    className="flex items-center gap-2 rounded-full border border-border bg-background py-1 pl-1 pr-3 transition-colors hover:border-primary/40"
-                  >
-                    <Avatar size="sm">
-                      {user.image_url && (
-                        <AvatarImage
-                          src={user.image_url}
-                          alt={user.display_name}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {getInitials(user.display_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="hidden text-sm font-semibold sm:inline">
-                      {user.display_name}
-                    </span>
-                    {isStaffRole(user.role) ? (
-                      <Badge variant="outline">
-                        {user.role}
-                      </Badge>
-                    ) : (
-                      <ContributorBadge tier={user.contributor_tier} size="sm" />
-                    )}
-                  </Link>
-                  <Link
-                    href="/settings/profile"
-                    title="Edit Profile & Settings"
-                    className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Link>
-                </>
-              )}
-              <ThemeToggle />
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "h-9 w-9",
-                  },
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Navigation Pills and Refresh Block */}
-          <div className="flex items-center justify-between gap-4 w-full">
-            {/* Desktop navigation pills */}
-            <nav className="hidden gap-2 overflow-x-auto md:flex">
-              {visibleNav.map((item) => {
+            {/* Desktop Navigation Pills */}
+            <nav className="hidden md:flex items-center gap-1 min-w-0">
+              {PRIMARY_TABS.map((item) => {
                 const active = isNavActive(pathname, item.match, item.exclude);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
+                    className={cn(
+                      "rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none",
                       active
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-                    }`}
+                        ? "bg-primary/15 text-primary border border-primary/25 font-semibold shadow-2xs"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    )}
                   >
                     {item.label}
                   </Link>
                 );
               })}
-              {user && (
-                <Link
-                  href={`/users/${user.id}`}
-                  className={`whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-semibold transition ${
-                    pathname === `/users/${user.id}`
-                      ? "border-primary text-primary"
-                      : "border-transparent text-muted-foreground hover:border-border hover:text-foreground"
-                  }`}
+
+              {/* Collections Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none",
+                    isCollectionsActive
+                      ? "bg-primary/15 text-primary border border-primary/25 font-semibold shadow-2xs"
+                      : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                  )}
                 >
-                  Profile
-                </Link>
+                  <span>Collections</span>
+                  <ChevronDown className="size-3.5 opacity-70" />
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-44">
+                  <DropdownMenuItem
+                    onClick={() => router.push("/study-plans")}
+                    className="cursor-pointer"
+                  >
+                    Study Plans
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => router.push("/saved-sessions")}
+                    className="cursor-pointer"
+                  >
+                    Saved Sessions
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Staff Navigation Separator & Dropdown */}
+              {isStaff && (
+                <>
+                  <div className="h-4 w-px bg-border mx-1 shrink-0" />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold border transition-colors whitespace-nowrap cursor-pointer select-none",
+                        isStaffActive
+                          ? "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 font-semibold shadow-2xs"
+                          : "border-border text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      )}
+                    >
+                      <Shield className="size-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>Staff</span>
+                      <ChevronDown className="size-3 opacity-70" />
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="w-44">
+                      <DropdownMenuItem
+                        onClick={() => router.push("/admin/reports")}
+                        className="cursor-pointer"
+                      >
+                        Moderation Reports
+                      </DropdownMenuItem>
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          onClick={() => router.push("/admin")}
+                          className="cursor-pointer"
+                        >
+                          Admin Dashboard
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
               )}
             </nav>
-
-            <div className="flex items-center gap-3 shrink-0 ml-auto">
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                {isRefreshing ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin text-primary" />
-                    <span className="font-medium animate-pulse">Updating...</span>
-                  </>
-                ) : showSuccess ? (
-                  <>
-                    <Check className="size-3.5 text-green-500" />
-                    <span className="font-medium text-green-600 dark:text-green-400">Refreshed</span>
-                  </>
-                ) : (
-                  <span className="hidden sm:inline-block">Up to date</span>
-                )}
-              </div>
-              
-              <button
-                type="button"
-                onClick={() => triggerRefresh()}
-                disabled={isRefreshing}
-                className="flex items-center gap-2 rounded-full border border-line bg-card px-3 py-1.5 text-xs font-semibold text-ink transition-colors hover:bg-muted focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-50 cursor-pointer"
-                title="Refresh feed"
-              >
-                <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
-                <span className="hidden sm:inline">Refresh</span>
-              </button>
-            </div>
           </div>
 
-          {/* Mobile search trigger & filter */}
-          <div className="flex items-center gap-2 md:hidden">
+          {/* Center/Right Section: Search Trigger + User Utilities */}
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+            {/* Desktop global search trigger button with ⌘K badge */}
             <button
               type="button"
               onClick={openCommandPalette}
-              className="flex-1 flex items-center justify-between h-9 rounded-full border border-border bg-muted/40 px-3 text-xs text-muted-foreground cursor-pointer"
-              aria-label="Open search palette"
+              className="hidden md:flex items-center justify-between h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 px-3 text-xs text-muted-foreground transition-colors cursor-pointer group min-w-[140px] max-w-[200px] lg:max-w-[240px]"
+              aria-label="Open search command palette"
             >
-              <span className="flex items-center gap-2">
-                <Search className="size-4 text-muted-foreground" />
-                <span>Search platform...</span>
+              <span className="flex items-center gap-2 min-w-0">
+                <Search className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <span className="font-normal truncate">
+                  Search platform...
+                </span>
               </span>
-              <kbd className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-semibold">
+              <kbd suppressHydrationWarning className="inline-flex shrink-0 items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono font-semibold text-muted-foreground group-hover:text-foreground shadow-2xs">
                 {isMac ? "⌘K" : "Ctrl+K"}
               </kbd>
             </button>
-            <AppHeaderMobileFilter pathname={pathname} />
-          </div>
 
-          {/* Sub Nav Row */}
-          {(pathname.startsWith("/forum") || pathname.startsWith("/lessons")) && (
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex-1 overflow-x-auto min-w-0">
+            {/* Mobile search trigger icon button */}
+            <button
+              type="button"
+              onClick={openCommandPalette}
+              className="md:hidden flex size-10 items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              aria-label="Open search"
+            >
+              <Search className="size-4" />
+            </button>
+
+            {/* Cold Start Refresh Button */}
+            <div className="flex items-center">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => triggerRefresh()}
+                disabled={isRefreshing}
+                className="size-9 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer relative"
+                title={isRefreshing ? "Refreshing feed..." : showSuccess ? "Refreshed!" : "Refresh feed"}
+                aria-label="Refresh feed"
+              >
+                {isRefreshing ? (
+                  <Loader2 className="size-4 animate-spin text-primary" />
+                ) : showSuccess ? (
+                  <Check className="size-4 text-emerald-600 dark:text-emerald-400" />
+                ) : (
+                  <RefreshCw className="size-4" />
+                )}
+              </Button>
+            </div>
+
+            {/* Theme Toggle */}
+            <ThemeToggle />
+
+            {/* User Profile / Dev switch / Avatar */}
+            {!user ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
+                className="h-8 gap-1.5 text-xs font-semibold border-dashed border-primary/50 text-primary hover:bg-primary/10 cursor-pointer"
+              >
+                <UserCog className="size-3.5" />
+                <span className="hidden sm:inline">Switch Account</span>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  href={`/users/${user.id}`}
+                  className="hidden sm:flex items-center gap-2 rounded-full border border-border bg-background py-0.5 pl-0.5 pr-2.5 transition-colors hover:border-primary/40 shadow-2xs"
+                >
+                  <Avatar size="sm">
+                    {user.image_url && (
+                      <AvatarImage src={user.image_url} alt={user.display_name} />
+                    )}
+                    <AvatarFallback>{getInitials(user.display_name)}</AvatarFallback>
+                  </Avatar>
+                  <span className="text-xs font-semibold text-foreground max-w-[120px] truncate">
+                    {user.display_name}
+                  </span>
+                  {isStaffRole(user.role) ? (
+                    <Badge variant="outline" className="text-[10px] py-0 px-1.5 h-4">
+                      {user.role}
+                    </Badge>
+                  ) : (
+                    <ContributorBadge tier={user.contributor_tier} size="sm" />
+                  )}
+                </Link>
+
+                <Link
+                  href="/settings/profile"
+                  title="Profile Settings"
+                  aria-label="Profile Settings"
+                  className="hidden sm:flex size-9 items-center justify-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  <Settings className="size-4" />
+                </Link>
+              </>
+            )}
+
+            {/* Clerk User Button */}
+            <UserButton
+              appearance={{
+                elements: {
+                  avatarBox: "size-8 sm:size-9",
+                },
+              }}
+            />
+          </div>
+        </div>
+
+        {/* Secondary SubNav Row — For routes that have sub-sections (Forum, Lessons) */}
+        {(pathname.startsWith("/forum") || pathname.startsWith("/lessons")) && (
+          <div className="border-t border-border/60 bg-muted/20">
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 sm:px-6">
+              <div className="flex-1 overflow-x-auto min-w-0 scrollbar-none">
                 {pathname.startsWith("/forum") && (
                   <ForumSubNav activeHref={pathname} />
                 )}
@@ -354,9 +397,24 @@ export function AppHeader() {
                   <LessonsTabs />
                 )}
               </div>
+              <div className="ml-3 shrink-0 lg:hidden">
+                <AppHeaderMobileFilter pathname={pathname} />
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Mobile Filter Row — For pages with filters outside of Forum/Lessons (Problems, Resources, Train) */}
+        {(!pathname.startsWith("/forum") && !pathname.startsWith("/lessons") && (pathname.startsWith("/problems") || pathname.startsWith("/resources") || pathname === "/train")) && (
+          <div className="border-t border-border/60 bg-muted/20 lg:hidden">
+            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1.5 sm:px-6">
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                {pathname.startsWith("/problems") ? "Solve! Filters" : pathname.startsWith("/resources") ? "Resources Filters" : "Paper Filters"}
+              </span>
+              <AppHeaderMobileFilter pathname={pathname} />
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Mobile navigation overlay */}

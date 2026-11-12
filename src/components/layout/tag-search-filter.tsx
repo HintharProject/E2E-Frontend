@@ -21,7 +21,7 @@ export function TagSearchFilter({ selectedTags, onToggle }: TagSearchFilterProps
 
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+      <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Tags
       </legend>
       <div className="relative">
@@ -42,18 +42,18 @@ export function TagSearchFilter({ selectedTags, onToggle }: TagSearchFilterProps
       </div>
 
       {isExpanded && (
-        <div className="mt-1 flex max-h-48 flex-col gap-2 overflow-y-auto rounded-md border border-line bg-background p-2 shadow-sm custom-scrollbar">
+        <div className="mt-1 flex max-h-48 flex-col gap-1 overflow-y-auto rounded-lg border border-border bg-card p-2 shadow-card custom-scrollbar">
           {filteredTags.length === 0 ? (
-            <p className="p-2 text-center text-xs text-ink-muted">No tags found.</p>
+            <p className="p-2 text-center text-xs text-muted-foreground">No tags found.</p>
           ) : (
             filteredTags.map((tag) => (
               <label
                 key={tag.id}
-                className="flex cursor-pointer items-center gap-2.5 rounded-sm p-1 text-sm text-ink hover:bg-muted/50"
+                className="flex cursor-pointer items-center gap-2.5 rounded-md p-1.5 text-sm text-foreground hover:bg-muted/70 hover:text-primary transition-colors"
               >
                 <input
                   type="checkbox"
-                  className="h-4 w-4 shrink-0 rounded-sm border-line accent-brand"
+                  className="h-4 w-4 shrink-0 rounded border-border accent-primary cursor-pointer"
                   checked={selectedTags.includes(tag.id)}
                   onChange={() => onToggle(tag.id)}
                 />

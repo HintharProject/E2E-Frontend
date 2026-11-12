@@ -1,22 +1,19 @@
 "use client";
 
 import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
-import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
 import type { FilterSidebarProps } from "@/components/layout/filter-sidebar";
 
 const FORUM_ITEMS = [
-  { href: "/forum", label: "Main" },
+  { href: "/forum", label: "Main Feed" },
   { href: "/forum/announcements", label: "Announcements" },
-  { href: "/forum/creators", label: "Following" },
+  { href: "/forum/creators", label: "Followed Creators" },
 ] as const;
 
 /**
- * Forum sub-nav with sticky tabs + mobile filter toggle.
- * Pass the same filter props as FilterSidebar.
+ * Forum sub-nav with segmented tabs.
  */
 export function ForumSubNav({
   activeHref,
-  filterProps,
 }: {
   activeHref: string;
   filterProps?: FilterSidebarProps;
