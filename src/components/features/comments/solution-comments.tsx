@@ -13,6 +13,7 @@ import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import {
@@ -51,16 +52,13 @@ function getInitials(name?: string | null): string {
     .slice(0, 2);
 }
 
-const inputClass =
-  "w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm font-normal text-ink outline-none transition-all placeholder:text-ink-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none";
-
 // Format comment body to highlight @mentions
 function renderFormattedBody(text: string) {
   const parts = text.split(/(@\w[\w\s]{0,24}?\b(?=\s|$)|\s+)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("@")) {
       return (
-        <span key={idx} className="font-semibold text-brand bg-brand/10 px-1 py-0.5 rounded text-xs">
+        <span key={idx} className="font-semibold text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">
           {part}
         </span>
       );
@@ -248,10 +246,10 @@ function FlatCommentItem({
       {/* Body / Inline Edit Form */}
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="space-y-2 mt-2">
-          <textarea
+          <Textarea
             value={editBody}
             onChange={(e) => setEditBody(e.target.value)}
-            className={inputClass}
+            className="resize-none"
             rows={3}
             autoFocus
           />
@@ -592,7 +590,7 @@ function SolutionCommentsContent({
         )}
 
         <div className="relative">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -605,7 +603,7 @@ function SolutionCommentsContent({
             }
             disabled={!currentUser || createComment.isPending}
             rows={3}
-            className={inputClass}
+            className="resize-none"
           />
         </div>
 

@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
@@ -18,9 +19,7 @@ import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm } from "@/lib/form-errors";
 import { uploadDirectlyToB2 } from "@/lib/storage";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf", "application/zip", "application/x-zip-compressed"];
@@ -167,15 +166,15 @@ export function UpdateSolutionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
       <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
-      <Field label="Solution">
-        <textarea
+      <Field label="Solution" error={errors.body?.message}>
+        <Textarea
           {...register("body")}
-          className={`${inputClass} min-h-32 ${errors.body ? errorClass : ""}`}
+          className="min-h-32"
+          aria-invalid={!!errors.body}
         />
-        {errors.body && <p className="mt-1 text-xs text-danger">{errors.body.message}</p>}
       </Field>
 
       <Field label="New attachment (optional · max 1 · 5MB · jpg/png/pdf/zip)">
@@ -184,11 +183,11 @@ export function UpdateSolutionForm({
             <p className="text-sm font-medium mb-2">Existing attachments:</p>
             <ul className="flex flex-col gap-2">
               {existingAttachments.map(att => (
-                <li key={att.id} className="flex items-center justify-between p-2 text-sm border border-line rounded-md bg-secondary">
+                <li key={att.id} className="flex items-center justify-between p-2 text-sm border border-border rounded-lg bg-secondary">
                   <div className="flex items-center gap-3 overflow-hidden">
                     <span className="truncate flex-1 min-w-0 font-medium">{att.file_name || (att as any).attachment_name || "Attachment"}</span>
                   </div>
-                  <Button type="button" variant="ghost" size="xs" onClick={() => handleRemoveExistingAttachment(att.id)} className="shrink-0 text-ink-muted hover:text-danger">
+                  <Button type="button" variant="ghost" size="xs" onClick={() => handleRemoveExistingAttachment(att.id)} className="shrink-0 text-muted-foreground hover:text-destructive">
                     Remove
                   </Button>
                 </li>

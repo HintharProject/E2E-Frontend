@@ -56,7 +56,7 @@ export function SolutionFAB({ problem }: SolutionFABProps) {
       <div className="fixed bottom-24 right-6 z-50 pointer-events-none flex items-center">
         <div className="relative group flex items-center pointer-events-auto">
           {/* Tooltip badge on hover */}
-          <span className="mr-3 hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-ink bg-card/95 border border-line shadow-lg backdrop-blur-xs opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 pointer-events-none select-none whitespace-nowrap">
+          <span className="mr-3 hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-foreground bg-card/95 border border-border shadow-card backdrop-blur-xs opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 pointer-events-none select-none whitespace-nowrap">
             <Sparkles className="size-3 text-amber-500" />
             <span>Submit Solution</span>
           </span>
@@ -66,7 +66,7 @@ export function SolutionFAB({ problem }: SolutionFABProps) {
             type="button"
             onClick={() => setOpen(true)}
             aria-label="Submit a worked solution"
-            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-brand text-white shadow-[0_8px_30px_-6px_oklch(0.508_0.118_165.612_/_0.7)] transition-all duration-200 hover:scale-105 hover:bg-brand/90 hover:shadow-[0_12px_36px_-6px_oklch(0.508_0.118_165.612_/_0.85)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 cursor-pointer"
+            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-card-hover transition-all duration-200 hover:scale-105 hover:bg-primary/90 hover:shadow-modal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
           >
             <Lightbulb className="h-6 w-6 stroke-[2.2]" />
 
@@ -81,7 +81,7 @@ export function SolutionFAB({ problem }: SolutionFABProps) {
 
       {/* Solution Submission Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-line bg-card">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-border bg-card">
           <div className="p-6 pb-2">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl font-display font-semibold text-ink">

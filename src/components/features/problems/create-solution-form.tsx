@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { useAuth } from "@clerk/nextjs";
@@ -18,9 +20,7 @@ import { applyFieldErrorsToForm, extractApiFieldErrors } from "@/lib/form-errors
 import { generateProblemUploadUrl } from "@/hooks/use-problems";
 import { AlertCircle, Info, Sparkles, Video } from "lucide-react";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -253,36 +253,36 @@ export function CreateSolutionForm({
       <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
 
       {activePoolCount >= 7 && canEvict && (
-        <div className="rounded-xl border border-brand/20 bg-brand/5 p-3 text-xs text-ink flex items-start gap-2">
-          <Info className="size-4 shrink-0 text-brand mt-0.5" />
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground flex items-start gap-2">
+          <Info className="size-4 shrink-0 text-primary mt-0.5" />
           <span>
             The active pool is at capacity (7/7). Submitting your solution will automatically archive the lowest-scoring unendorsed attempt (S &le; 0).
           </span>
         </div>
       )}
 
-      <Field label="Your Worked Steps & Reasoning">
-        <textarea
+      <Field label="Your Worked Steps & Reasoning" error={errors.body?.message}>
+        <Textarea
           {...register("body")}
-          className={`${inputClass} min-h-36 resize-none ${errors.body ? errorClass : ""}`}
+          className="min-h-36 resize-none"
           placeholder="Explain your step-by-step mathematical working clearly..."
+          aria-invalid={!!errors.body}
         />
-        {errors.body && <p className="mt-1 text-xs text-danger font-normal">{errors.body.message}</p>}
       </Field>
 
-      <Field label="Video Walkthrough URL (Optional)">
+      <Field label="Video Walkthrough URL (Optional)" error={errors.video_url?.message}>
         <div className="relative">
-          <input
+          <Input
             {...register("video_url")}
             placeholder="e.g. https://www.youtube.com/watch?v=..."
-            className={`${inputClass} pl-8 ${errors.video_url ? errorClass : ""}`}
+            className="pl-8"
+            aria-invalid={!!errors.video_url}
           />
-          <Video className="size-4 text-ink-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Video className="size-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
-        {errors.video_url && <p className="mt-1 text-xs text-danger font-normal">{errors.video_url.message}</p>}
       </Field>
 
-      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)">
+      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)" error={(errors as any).attachments?.message}>
         <FileDropzone
           onFilesSelected={(files) => {
             setValue("attachments", files, { shouldValidate: true });
@@ -292,9 +292,6 @@ export function CreateSolutionForm({
           acceptedTypes={ACCEPTED_FILE_TYPES}
           error={errors.attachments?.message as string}
         />
-        {(errors as any).attachments && (
-          <p className="mt-1 text-xs text-danger font-normal">{(errors as any).attachments.message}</p>
-        )}
       </Field>
 
       <div className="flex items-center justify-end gap-2.5 pt-2">

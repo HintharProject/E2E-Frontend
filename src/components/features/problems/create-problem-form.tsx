@@ -8,7 +8,9 @@ import * as z from "zod";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
-
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +29,7 @@ import { Camera, FileText, BookOpen, AlertCircle, Check, FolderOpen, X } from "l
 import { toast } from "sonner";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 const PathASchema = z.object({
   origin: z.literal("USER_UPLOAD"),
@@ -486,24 +486,23 @@ export function CreateProblemForm({
         {/* Path A Workflow */}
         {selectedOrigin === "USER_UPLOAD" && (
           <>
-            <Field label="Problem Title">
-              <input
+            <Field label="Problem Title" error={errors.title?.message}>
+              <Input
                 {...register("title")}
                 placeholder="e.g. Stuck on trigonometric identity verification"
-                className={`${inputClass} ${errors.title ? errorClass : ""}`}
+                aria-invalid={!!errors.title}
               />
-              {errors.title && <p className="mt-1 text-xs text-danger font-normal">{errors.title.message}</p>}
             </Field>
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Subject">
-                <select
+              <Field label="Subject" error={(errors as any).subject_id?.message}>
+                <Select
                   {...register("subject_id" as any)}
                   value={watchedSubjectId || ""}
                   onChange={(e) => {
                     setValue("subject_id" as any, e.target.value, { shouldValidate: true });
                   }}
-                  className={`${inputClass} ${(errors as any).subject_id ? errorClass : ""}`}
+                  aria-invalid={!!(errors as any).subject_id}
                 >
                   <option value="">Select subject...</option>
                   {subjects.map((sub) => (
@@ -511,20 +510,17 @@ export function CreateProblemForm({
                       {sub.name}
                     </option>
                   ))}
-                </select>
-                {(errors as any).subject_id && (
-                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).subject_id.message}</p>
-                )}
+                </Select>
               </Field>
 
-              <Field label="Education Level">
-                <select
+              <Field label="Education Level" error={(errors as any).level_id?.message}>
+                <Select
                   {...register("level_id" as any)}
                   value={watchedLevelId || ""}
                   onChange={(e) => {
                     setValue("level_id" as any, e.target.value, { shouldValidate: true });
                   }}
-                  className={`${inputClass} ${(errors as any).level_id ? errorClass : ""}`}
+                  aria-invalid={!!(errors as any).level_id}
                 >
                   <option value="">Select level...</option>
                   {levels.map((lvl) => (
@@ -532,10 +528,7 @@ export function CreateProblemForm({
                       {lvl.name}
                     </option>
                   ))}
-                </select>
-                {(errors as any).level_id && (
-                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).level_id.message}</p>
-                )}
+                </Select>
               </Field>
             </div>
 
@@ -552,28 +545,25 @@ export function CreateProblemForm({
               )}
             />
 
-            <Field label="Source / Reference (Optional)">
-              <input
+            <Field label="Source / Reference (Optional)" error={(errors as any).source?.message}>
+              <Input
                 {...register("source" as any)}
                 placeholder="e.g. Oxford Pure Maths Ex 7B or Cambridge 9709 Homework"
-                className={inputClass}
+                aria-invalid={!!(errors as any).source}
               />
-              {(errors as any).source && (
-                <p className="mt-1 text-xs text-danger font-normal">{(errors as any).source.message}</p>
-              )}
             </Field>
 
-            <Field label="Problem Description / Working">
-              <textarea
+            <Field label="Problem Description / Working" error={errors.body?.message}>
+              <Textarea
                 {...register("body")}
                 rows={5}
                 placeholder="Describe your current steps, where you are stuck, or what you've tried so far..."
-                className={`${inputClass} resize-none ${errors.body ? errorClass : ""}`}
+                aria-invalid={!!errors.body}
+                className="resize-none"
               />
-              {errors.body && <p className="mt-1 text-xs text-danger font-normal">{errors.body.message}</p>}
             </Field>
 
-            <Field label="Question Photos (1 to 3 images)">
+            <Field label="Question Photos (1 to 3 images)" error={(errors as any).attachments?.message}>
               <FileDropzone
                 onFilesSelected={handleFilesSelected}
                 maxFiles={3}
@@ -581,10 +571,7 @@ export function CreateProblemForm({
                 acceptedTypes={["image/jpeg", "image/png", "image/webp"]}
                 error={(errors as any).attachments?.message as string}
               />
-              {(errors as any).attachments && (
-                <p className="mt-1 text-xs text-danger font-normal">{(errors as any).attachments.message}</p>
-              )}
-              <p className="mt-1.5 text-xs text-ink-muted font-normal lowercase first-letter:uppercase">
+              <p className="mt-1.5 text-xs text-muted-foreground font-normal lowercase first-letter:uppercase">
                 Images are inspected for minimum 200px resolution and aspect ratio before upload. High-resolution phone photos will be automatically optimized to WebP.
               </p>
             </Field>
@@ -595,14 +582,14 @@ export function CreateProblemForm({
         {selectedOrigin === "PAST_PAPER" && (
           <>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Education Level">
-                <select
+              <Field label="Education Level" error={(errors as any).level_id?.message}>
+                <Select
                   {...register("level_id" as any)}
                   value={watchedLevelId || ""}
                   onChange={(e) => {
                     setValue("level_id" as any, e.target.value, { shouldValidate: true });
                   }}
-                  className={`${inputClass} ${(errors as any).level_id ? errorClass : ""}`}
+                  aria-invalid={!!(errors as any).level_id}
                 >
                   <option value="">Select level...</option>
                   {levels.map((lvl) => (
@@ -610,20 +597,17 @@ export function CreateProblemForm({
                       {lvl.name}
                     </option>
                   ))}
-                </select>
-                {(errors as any).level_id && (
-                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).level_id.message}</p>
-                )}
+                </Select>
               </Field>
 
-              <Field label="Subject">
-                <select
+              <Field label="Subject" error={(errors as any).subject_id?.message}>
+                <Select
                   {...register("subject_id" as any)}
                   value={watchedSubjectId || ""}
                   onChange={(e) => {
                     setValue("subject_id" as any, e.target.value, { shouldValidate: true });
                   }}
-                  className={`${inputClass} ${(errors as any).subject_id ? errorClass : ""}`}
+                  aria-invalid={!!(errors as any).subject_id}
                 >
                   <option value="">Select subject...</option>
                   {subjects.map((sub) => (
@@ -631,38 +615,32 @@ export function CreateProblemForm({
                       {sub.name}
                     </option>
                   ))}
-                </select>
-                {(errors as any).subject_id && (
-                  <p className="mt-1 text-xs text-danger font-normal">{(errors as any).subject_id.message}</p>
-                )}
+                </Select>
               </Field>
             </div>
 
-            <Field label="Curated Exam Paper">
+            <Field label="Curated Exam Paper" error={(errors as any).resource_id?.message}>
               <input type="hidden" {...register("resource_id" as any)} />
 
               {!selectedResource ? (
                 <div className="space-y-2">
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-line bg-surface/40">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-border bg-muted/40">
                     <Button
                       type="button"
                       variant="outline"
                       onClick={handleOpenTrainToSelectPaper}
-                      className="h-9 px-4 gap-2 font-semibold text-xs border-line hover:border-brand hover:text-brand transition-colors shrink-0"
+                      className="h-9 px-4 gap-2 font-semibold text-xs shrink-0"
                     >
-                      <FolderOpen className="size-4 text-brand" />
+                      <FolderOpen className="size-4 text-primary" />
                       <span>Select a Paper in Train</span>
                     </Button>
-                    <span className="text-xs text-ink-muted">
+                    <span className="text-xs text-muted-foreground">
                       Opens Train curriculum folders to choose and preview papers.
                     </span>
                   </div>
-                  {(errors as any).resource_id && (
-                    <p className="text-xs text-danger font-normal">{(errors as any).resource_id.message}</p>
-                  )}
                 </div>
               ) : (
-                <div className="rounded-xl border border-line bg-card p-3.5 shadow-2xs space-y-2.5">
+                <div className="rounded-xl border border-border bg-card p-3.5 shadow-xs space-y-2.5">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div className="flex items-start gap-3 min-w-0">
                       <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
@@ -673,14 +651,14 @@ export function CreateProblemForm({
                       </div>
                       <div className="flex flex-col min-w-0">
                         <span
-                          className="font-semibold text-ink text-xs sm:text-sm truncate"
+                          className="font-semibold text-foreground text-xs sm:text-sm truncate"
                           title={selectedResource.title || selectedResource.file_name}
                         >
                           {selectedResource.title || selectedResource.file_name || "Past Paper"}
                         </span>
                         <div className="flex flex-wrap items-center gap-1.5 mt-1">
                           {selectedResource.session && (
-                            <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
+                            <span className="inline-flex items-center text-[11px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">
                               {formatSession(selectedResource.session)}
                             </span>
                           )}
@@ -724,7 +702,7 @@ export function CreateProblemForm({
                           setValue("resource_id" as any, "", { shouldValidate: true });
                           setSelectedPaper(null);
                         }}
-                        className="h-8 px-2 text-xs text-ink-muted hover:text-danger hover:bg-danger/10"
+                        className="h-8 px-2 text-xs text-muted-foreground hover:text-destructive hover:bg-destructive/10"
                         title="Remove paper"
                       >
                         <X className="size-3.5" />
@@ -735,42 +713,38 @@ export function CreateProblemForm({
               )}
             </Field>
 
-            <Field label="Question Number">
-              <input
+            <Field label="Question Number" error={(errors as any).question_number?.message}>
+              <Input
                 {...register("question_number" as any)}
                 placeholder="e.g. Q4(b) or Question 3"
-                className={`${inputClass} ${(errors as any).question_number ? errorClass : ""}`}
+                aria-invalid={!!(errors as any).question_number}
               />
-              {(errors as any).question_number && (
-                <p className="mt-1 text-xs text-danger font-normal">{(errors as any).question_number.message}</p>
-              )}
             </Field>
 
-            <Field label="Custom Title (Optional)">
-              <input
+            <Field label="Custom Title (Optional)" error={errors.title?.message}>
+              <Input
                 {...register("title")}
                 placeholder={
                   selectedResource
                     ? `${selectedResource.title || selectedResource.file_name} — ${watchedQuestionNumber || "Question"}`
                     : "Auto-derived canonical title"
                 }
-                className={inputClass}
+                aria-invalid={!!errors.title}
               />
-              {errors.title && <p className="mt-1 text-xs text-danger font-normal">{errors.title.message}</p>}
             </Field>
 
-            <Field label="Question / Working Notes (Optional)">
-              <textarea
+            <Field label="Question / Working Notes (Optional)" error={errors.body?.message}>
+              <Textarea
                 {...register("body")}
                 rows={4}
                 placeholder="Add any specific context or question about this past-paper problem..."
-                className={`${inputClass} resize-none`}
+                aria-invalid={!!errors.body}
+                className="resize-none"
               />
-              {errors.body && <p className="mt-1 text-xs text-danger font-normal">{errors.body.message}</p>}
             </Field>
 
             {/* Informational Banner replacing Image Dropzone */}
-            <div className="rounded-xl border border-dashed border-line bg-muted/30 p-4 text-center text-xs text-ink-muted flex items-center justify-center gap-2">
+            <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
               <Check className="size-4 text-emerald-500" />
               <span>
                 This question references the platform-curated exam paper directly. No image upload is needed.

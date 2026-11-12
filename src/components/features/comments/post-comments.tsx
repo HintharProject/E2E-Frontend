@@ -6,10 +6,8 @@ import { ThreadedComment } from "./threaded-comment";
 import { CommentSortProvider, useCommentSort } from "./comment-sort-context";
 import { CommentSortToggle } from "./comment-sort-toggle";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
 
 function PostCommentsContent({ postId, initialCount }: { postId: string; initialCount: number }) {
   const { sort: commentSort } = useCommentSort();
@@ -40,15 +38,15 @@ function PostCommentsContent({ postId, initialCount }: { postId: string; initial
   return (
     <section className="mt-10">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="font-display text-2xl text-ink">
+        <h2 className="font-heading font-semibold text-xl text-foreground">
           Comments ({displayCount})
         </h2>
         <CommentSortToggle />
       </div>
       
-      <form onSubmit={handleSubmit} className="mt-4 mb-8 space-y-3 rounded-xl border border-line bg-card p-4">
-        <textarea
-          className={`${inputClass} min-h-24`}
+      <form onSubmit={handleSubmit} className="mt-4 mb-8 space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
+        <Textarea
+          className="min-h-24"
           maxLength={1000}
           placeholder="Write a comment..."
           value={body}
@@ -59,7 +57,7 @@ function PostCommentsContent({ postId, initialCount }: { postId: string; initial
         </Button>
       </form>
 
-      {isLoading && <div className="text-ink-muted">Loading comments...</div>}
+      {isLoading && <div className="text-muted-foreground text-sm">Loading comments...</div>}
       
       {comments.length > 0 && (
         <Virtuoso
