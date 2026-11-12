@@ -1,20 +1,32 @@
-import * as React from "react"
-import { Input as InputPrimitive } from "@base-ui/react/input"
+import * as React from "react";
+import { Input as InputPrimitive } from "@base-ui/react/input";
+import { cn } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+export interface InputProps extends React.ComponentProps<"input"> {
+  sizeVariant?: "default" | "sm" | "lg";
+}
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+export function Input({
+  className,
+  type,
+  sizeVariant = "default",
+  ...props
+}: InputProps) {
   return (
     <InputPrimitive
       type={type}
       data-slot="input"
       className={cn(
-        "h-7 w-full min-w-0 rounded-md border border-input bg-input/20 px-2 py-0.5 text-sm transition-colors outline-none file:inline-flex file:h-6 file:border-0 file:bg-transparent file:text-xs/relaxed file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20 md:text-xs/relaxed dark:bg-input/30 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40",
+        "w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground transition-colors placeholder:text-muted-foreground outline-none",
+        "focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+        "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
+        "aria-invalid:border-destructive aria-invalid:ring-2 aria-invalid:ring-destructive/20",
+        sizeVariant === "sm" && "h-8 px-2.5 text-xs",
+        sizeVariant === "default" && "h-10 px-3 text-sm",
+        sizeVariant === "lg" && "h-12 px-4 text-base",
         className
       )}
       {...props}
     />
-  )
+  );
 }
-
-export { Input }
