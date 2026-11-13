@@ -7,9 +7,10 @@ import { apiFetch, buildQueryString } from "@/services/api-client";
 
 interface PrefetchingSubNavProps {
   items: { href: string; label: string; active?: boolean }[];
+  variant?: "pill" | "underline";
 }
 
-export function PrefetchingSubNav({ items }: PrefetchingSubNavProps) {
+export function PrefetchingSubNav({ items, variant = "pill" }: PrefetchingSubNavProps) {
   const queryClient = useQueryClient();
   const { getToken, isSignedIn } = useAuth();
 
@@ -61,5 +62,5 @@ export function PrefetchingSubNav({ items }: PrefetchingSubNavProps) {
     onPrefetch: () => handlePrefetch(item.href),
   }));
 
-  return <SubNav items={itemsWithPrefetch} />;
+  return <SubNav items={itemsWithPrefetch} variant={variant} />;
 }

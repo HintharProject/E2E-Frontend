@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
 import type { FilterSidebarProps } from "@/components/layout/filter-sidebar";
 
@@ -15,17 +16,20 @@ const FORUM_ITEMS = [
 export function ForumSubNav({
   activeHref,
 }: {
-  activeHref: string;
+  activeHref?: string;
   filterProps?: FilterSidebarProps;
 }) {
+  const pathname = usePathname();
+  const current = activeHref ?? pathname;
+
   const items = FORUM_ITEMS.map((item) => ({
     ...item,
-    active: item.href === activeHref,
+    active: item.href === current,
   }));
 
   return (
-    <div className="relative">
-      <SubNav items={items} />
+    <div className="relative w-full">
+      <SubNav items={items} variant="underline" />
     </div>
   );
 }

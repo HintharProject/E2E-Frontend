@@ -14,6 +14,7 @@ export default async function LessonsBoardPage(props: {
       subjects={subjects} 
       levels={levels} 
       tagIds={tagIds} 
+      hideSort
     />
   );
 }

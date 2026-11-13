@@ -10,6 +10,10 @@ import {
 } from "@/lib/filter-params";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { TagSearchFilter } from "./tag-search-filter";
+import { HorizontalFilterBar, type HorizontalFilterBarProps } from "./horizontal-filter-bar";
+
+export { HorizontalFilterBar };
+export type { HorizontalFilterBarProps };
 
 export type FilterSidebarProps = {
   showPostType?: boolean;
@@ -246,14 +250,16 @@ export function FilterContent({
   );
 }
 
-/** Desktop sidebar — hidden on mobile (use MobileFilterToggle instead) */
+/** Compatibility wrapper delegating to HorizontalFilterBar. */
 export function FilterSidebar(props: FilterSidebarProps) {
   return (
-    <aside className="hidden w-full shrink-0 lg:block lg:w-64 sticky top-20 self-start">
-      <div className="rounded-xl border border-border bg-card p-4 max-h-[calc(100vh-6rem)] overflow-y-auto custom-scrollbar shadow-card">
-        <FilterContent {...props} />
-      </div>
-    </aside>
+    <HorizontalFilterBar
+      showPostType={props.showPostType}
+      showStateFilter={props.showStateFilter}
+      hideTags={props.hideTags}
+      showProblemStatus={props.showProblemStatus}
+      postTypeOptions={props.postTypeOptions}
+    />
   );
 }
 

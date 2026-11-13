@@ -1,57 +1,26 @@
 "use client";
 
-import { Suspense, useTransition } from "react";
-import { useSearchParams, usePathname } from "next/navigation";
-import { PageHeader } from "@/components/ui/page-header";
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ProblemCardSkeleton } from "@/components/features/skeletons";
 import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { useProblems } from "@/hooks/use-problems";
-import { FilterSidebar } from "@/components/layout/filter-sidebar";
-import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
+import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
-import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import { parseFilterList } from "@/lib/filter-params";
 import type { ContentSortMode, TimeframeFilter } from "@/types";
 
 function ProblemsFeed() {
   const searchParams = useSearchParams();
-  const pathname = usePathname();
-  const [, startTransition] = useTransition();
 
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
   const status = searchParams.get("status") || "";
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
   const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
-
-  const handleSortChange = (newSort: ContentSortMode) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newSort === "default") {
-      params.delete("sort");
-    } else {
-      params.set("sort", newSort);
-    }
-    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    startTransition(() => {
-      window.history.replaceState(null, "", newUrl);
-    });
-  };
-
-  const handleTimeframeChange = (newTf: TimeframeFilter) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (newTf === "all") {
-      params.delete("timeframe");
-    } else {
-      params.set("timeframe", newTf);
-    }
-    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
-    startTransition(() => {
-      window.history.replaceState(null, "", newUrl);
-    });
-  };
 
   const {
     data,
@@ -78,14 +47,6 @@ function ProblemsFeed() {
       isRefreshing={isRefetching}
       label="problems"
     >
-      <div className="mb-4 flex items-center justify-between pb-1">
-        <ContentSortToggle
-          sort={currentSort}
-          timeframe={currentTimeframe}
-          onSortChange={handleSortChange}
-          onTimeframeChange={handleTimeframeChange}
-        />
-      </div>
       {isLoading ? (
         <div className="space-y-4">
           <ColdStartNotice delayMs={3000} />
@@ -129,9 +90,9 @@ function ProblemsFeed() {
 
 export default function ProblemsPage() {
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <Suspense fallback={<div className="hidden lg:block lg:w-64 shrink-0" />}>
-        <FilterSidebar hideTags showProblemStatus />
+    <div className="flex flex-col gap-5">
+      <Suspense fallback={<div className="h-12 rounded-xl bg-card border border-border animate-pulse" />}>
+        <HorizontalFilterBar hideTags showProblemStatus showSort />
       </Suspense>
       <div className="min-w-0 flex-1">
         <Suspense

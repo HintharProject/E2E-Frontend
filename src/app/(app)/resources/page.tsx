@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
-import { FilterSidebar } from "@/components/layout/filter-sidebar";
+import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { EmptyState } from "@/components/ui/empty-state";
 import { 
   Loader2, 
@@ -260,9 +260,9 @@ function ResourcesFeed() {
 
 export default function ResourcesPage() {
   return (
-    <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-      <Suspense fallback={<div className="hidden lg:block lg:w-64 shrink-0" />}>
-        <FilterSidebar hideTags />
+    <div className="flex flex-col gap-5">
+      <Suspense fallback={<div className="h-12 rounded-xl bg-card border border-border animate-pulse" />}>
+        <HorizontalFilterBar hideTags />
       </Suspense>
       <div className="min-w-0 flex-1">
         <Suspense

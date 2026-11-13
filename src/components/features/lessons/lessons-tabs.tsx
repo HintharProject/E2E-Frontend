@@ -16,8 +16,8 @@ export function LessonsTabs() {
   }
 
   return (
-    <div className="relative">
-      <SubNav items={items} />
+    <div className="relative w-full">
+      <SubNav items={items} variant="underline" />
     </div>
   );
 }

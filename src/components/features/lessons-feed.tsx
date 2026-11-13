@@ -23,6 +23,7 @@ export function LessonsFeed({
   authorId,
   state,
   onlyMine = false,
+  hideSort = false,
 }: {
   subjects?: string[];
   levels?: string[];
@@ -30,6 +31,7 @@ export function LessonsFeed({
   authorId?: string;
   state?: string;
   onlyMine?: boolean;
+  hideSort?: boolean;
 }) {
   const { user, isLoading: userLoading } = useCurrentUser();
   const queryClient = useQueryClient();
@@ -176,14 +178,16 @@ export function LessonsFeed({
       isRefreshing={isRefetching}
       label="lessons"
     >
-      <div className="mb-4 flex items-center justify-between pb-1">
-        <ContentSortToggle
-          sort={currentSort}
-          timeframe={currentTimeframe}
-          onSortChange={handleSortChange}
-          onTimeframeChange={handleTimeframeChange}
-        />
-      </div>
+      {!hideSort && (
+        <div className="mb-4 flex items-center justify-between pb-1">
+          <ContentSortToggle
+            sort={currentSort}
+            timeframe={currentTimeframe}
+            onSortChange={handleSortChange}
+            onTimeframeChange={handleTimeframeChange}
+          />
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         {lessons.map((lesson) => (

@@ -20,6 +20,7 @@ export function ForumFeed({
   tagIds = [],
   feed,
   authorId,
+  hideSort = false,
 }: {
   subjects?: string[];
   levels?: string[];
@@ -27,6 +28,7 @@ export function ForumFeed({
   tagIds?: string[];
   feed?: 'main' | 'announcement' | 'creator';
   authorId?: string;
+  hideSort?: boolean;
 }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -168,14 +170,16 @@ export function ForumFeed({
       label="posts"
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between pb-1">
-          <ContentSortToggle
-            sort={currentSort}
-            timeframe={currentTimeframe}
-            onSortChange={handleSortChange}
-            onTimeframeChange={handleTimeframeChange}
-          />
-        </div>
+        {!hideSort && (
+          <div className="flex items-center justify-between pb-1">
+            <ContentSortToggle
+              sort={currentSort}
+              timeframe={currentTimeframe}
+              onSortChange={handleSortChange}
+              onTimeframeChange={handleTimeframeChange}
+            />
+          </div>
+        )}
 
         {posts.map((post) => (
           <PostCard key={post.id} post={post} />
