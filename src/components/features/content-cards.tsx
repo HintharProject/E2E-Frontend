@@ -268,109 +268,156 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
   const hasVideo = Boolean(lesson.embedded_video_url);
   const attachmentCount = lesson.attachments?.length ?? 0;
+  const syllabusParts = [
+    level?.name,
+    subject ? (subject.code ? `${subject.name} (${subject.code})` : subject.name) : null,
+  ].filter(Boolean);
+  const visibleTags = tags.slice(0, 3);
 
   return (
     <Card
-      className="group relative transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
+      className="group relative flex h-full flex-col justify-between transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       onMouseEnter={handleMouseEnter}
     >
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-        <div className="flex items-center gap-3 min-w-0">
+      <div>
+        {/* Top Syllabus & State Strip */}
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2.5 border-b border-border/50">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-mono text-xs font-medium text-muted-foreground">
+              {syllabusParts.length > 0 ? syllabusParts.join(" · ") : "General Courseware"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Badge
+              variant={
+                lesson.state === "PUBLISHED"
+                  ? "secondary"
+                  : lesson.state === "DRAFT"
+                    ? "warning"
+                    : "outline"
+              }
+              className="text-xs px-2 py-0 h-5"
+            >
+              {lesson.state === "PUBLISHED"
+                ? "Published"
+                : lesson.state === "DRAFT"
+                  ? "Draft"
+                  : "Archived"}
+            </Badge>
+            <CardMoreMenu
+              shareUrl={shareUrl}
+              contentType="LESSON"
+              contentId={lesson.id}
+              author={author ? {
+                id: author.id,
+                display_name: author.display_name,
+                role: author.role,
+                contributor_tier: author.contributor_tier,
+              } : null}
+              isHidden={lesson.state === "DRAFT"}
+              editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
+              onDelete={canDelete ? handleDelete : undefined}
+              deleteLabel="this lesson"
+              onPublish={canPublish ? handlePublish : undefined}
+              onArchive={canArchive ? handleArchive : undefined}
+            />
+          </div>
+        </CardHeader>
+
+        {/* Title, Excerpt, Media Strip & Tags */}
+        <CardContent className="pt-3.5 space-y-3">
+          <Link
+            href={`/lessons/${lesson.id}`}
+            className="block group/link rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <CardTitle className="font-heading text-base font-semibold leading-snug text-foreground group-hover/link:text-primary transition-colors line-clamp-2">
+              {lesson.title}
+            </CardTitle>
+            <CardDescription className="line-clamp-2 mt-1.5 text-sm leading-relaxed">
+              {stripHtml(lesson.body)}
+            </CardDescription>
+          </Link>
+
+          {/* Media & Resource Indicators Strip */}
+          {(hasVideo || attachmentCount > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {hasVideo && (
+                <Badge
+                  variant="default"
+                  className="text-xs font-medium gap-1 px-2 py-0.5 h-5"
+                >
+                  <Video className="size-3" aria-hidden="true" />
+                  <span>Video Lecture</span>
+                </Badge>
+              )}
+              {attachmentCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium gap-1 px-2 py-0.5 h-5 bg-muted/40"
+                >
+                  <Paperclip className="size-3" aria-hidden="true" />
+                  <span>
+                    {attachmentCount} {attachmentCount === 1 ? "Resource" : "Resources"}
+                  </span>
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Tag Row (max 3) */}
+          {visibleTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {visibleTags.map((t) => (
+                <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </div>
+
+      {/* Footer: Author + Vote + Save */}
+      <CardFooter className="justify-between gap-2 pt-3.5 mt-4 border-t border-border/50 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 min-w-0">
           {author ? (
-            <Link href={`/users/${author.id}`}>
+            <Link
+              href={`/users/${author.id}`}
+              className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
               <Avatar size="sm">
                 {author.profile_image_url && (
-                  <AvatarImage src={author.profile_image_url} />
+                  <AvatarImage src={author.profile_image_url} alt={author.display_name} />
                 )}
                 <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
               </Avatar>
             </Link>
           ) : null}
           <div className="min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
-                  className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                  className="truncate text-xs font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   {author.display_name}
                 </Link>
               ) : (
-                <span className="text-sm font-semibold text-foreground">Unknown</span>
+                <span className="truncate text-xs font-semibold text-foreground">Unknown</span>
               )}
               {author ? (
                 <ContributorBadge
                   tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
                   size="sm"
+                  showInfoIcon={false}
                 />
               ) : null}
             </div>
-            <div className="text-xs text-muted-foreground mt-0.5">
+            <div className="text-xs text-muted-foreground leading-tight">
               {formatDateStr(lesson.created_at)}
             </div>
           </div>
         </div>
+
         <div className="flex items-center gap-1.5 shrink-0">
-          <Badge
-            variant={
-              lesson.state === "PUBLISHED"
-                ? "default"
-                : lesson.state === "DRAFT"
-                  ? "secondary"
-                  : "outline"
-            }
-            className={lesson.state === "DRAFT" ? "bg-warning/15 text-warning border-warning/30 hover:bg-warning/20" : ""}
-          >
-            {lesson.state === "PUBLISHED" ? "Published" : lesson.state === "DRAFT" ? "Draft" : lesson.state}
-          </Badge>
-          <CardMoreMenu
-            shareUrl={shareUrl}
-            contentType="LESSON"
-            contentId={lesson.id}
-            author={author ? {
-              id: author.id,
-              display_name: author.display_name,
-              role: author.role,
-              contributor_tier: author.contributor_tier,
-            } : null}
-            isHidden={lesson.state === "DRAFT"}
-            editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
-            onDelete={canDelete ? handleDelete : undefined}
-            deleteLabel="this lesson"
-            onPublish={canPublish ? handlePublish : undefined}
-            onArchive={canArchive ? handleArchive : undefined}
-          />
-        </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <Link href={`/lessons/${lesson.id}`} className="block group">
-          <CardTitle className="group-hover:text-primary transition-colors">
-            {lesson.title}
-          </CardTitle>
-          <CardDescription className="line-clamp-2 mt-2">
-            {stripHtml(lesson.body)}
-          </CardDescription>
-        </Link>
-        <div className="flex flex-wrap items-center gap-1.5 mt-4">
-          {hasVideo && (
-            <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary text-[10px] gap-1">
-              <Video className="size-3" /> Video
-            </Badge>
-          )}
-          {attachmentCount > 0 && (
-            <Badge variant="outline" className="text-[10px] gap-1">
-              <Paperclip className="size-3" /> {attachmentCount} {attachmentCount === 1 ? "file" : "files"}
-            </Badge>
-          )}
-          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {tags.map((t) => (
-            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
-          ))}
-        </div>
-      </CardContent>
-      <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50 text-xs font-semibold text-muted-foreground">
-        <div className="flex items-center gap-2">
           <LessonCardVote
             lessonId={lesson.id}
             initialVoteCount={lesson.vote_count ?? 0}
@@ -378,8 +425,6 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
             authorClerkId={author?.clerk_id}
           />
-        </div>
-        <div className="flex items-center gap-1">
           <SaveButton entityType="lesson" entityId={lesson.id} variant="icon" />
         </div>
       </CardFooter>

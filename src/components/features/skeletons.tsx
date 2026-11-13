@@ -91,38 +91,39 @@ export function ProblemCardSkeleton() {
 
 export function LessonCardSkeleton() {
   return (
-    <Card aria-hidden="true">
-      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-        <div className="flex items-center gap-3 min-w-0">
-          <Skeleton className="size-6 shrink-0 rounded-full" />
+    <Card aria-hidden="true" className="flex h-full flex-col justify-between">
+      <div>
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2.5 border-b border-border/50">
+          <Skeleton className="h-3.5 w-36" />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Skeleton className="h-5 w-16 rounded-full" />
+            <Skeleton className="size-7 rounded-full" />
+          </div>
+        </CardHeader>
+        <CardContent className="pt-3.5 space-y-3">
+          <Skeleton className="h-5 w-4/5" />
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-[18px] w-16 rounded-full" />
-            </div>
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+          </div>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Skeleton className="h-5 w-24 rounded-full" />
+            <Skeleton className="h-5 w-20 rounded-full" />
+          </div>
+        </CardContent>
+      </div>
+      <CardFooter className="justify-between gap-2 pt-3.5 mt-4 border-t border-border/50">
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-6 shrink-0 rounded-full" />
+          <div className="space-y-1">
             <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-3 w-16" />
           </div>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <Skeleton className="h-5 w-20 rounded-full" />
-          <Skeleton className="size-8 rounded-full" />
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-6 w-12 rounded-md" />
+          <Skeleton className="size-8 rounded-lg" />
         </div>
-      </CardHeader>
-      <CardContent className="pt-2">
-        <Skeleton className="h-6 w-3/4" />
-        <div className="mt-2 space-y-2">
-          <Skeleton className="h-4 w-full" />
-          <Skeleton className="h-4 w-4/5" />
-        </div>
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-5 w-20 rounded-full" />
-          <Skeleton className="h-5 w-16 rounded-md" />
-        </div>
-      </CardContent>
-      <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50">
-        <Skeleton className="h-7 w-20 rounded-full" />
-        <Skeleton className="size-9 rounded-lg" />
       </CardFooter>
     </Card>
   );

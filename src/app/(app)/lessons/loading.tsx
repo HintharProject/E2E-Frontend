@@ -3,22 +3,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 export default function LessonsBoardLoading() {
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-      <div className="space-y-2 mb-8">
-        <Skeleton className="h-8 w-48" />
-        <Skeleton className="h-4 w-96" />
+    <div className="space-y-6" aria-hidden="true">
+      <div className="flex gap-4 border-b border-border pb-2">
+        <Skeleton className="h-8 w-24" />
+        <Skeleton className="h-8 w-32" />
       </div>
-      <div className="mb-6 flex gap-4 border-b border-line pb-2">
-        <Skeleton className="h-8 w-16" />
-        <Skeleton className="h-8 w-20" />
+      <Skeleton className="h-12 w-full rounded-xl" />
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-8 w-24 rounded-full" />
+        <Skeleton className="h-8 w-20 rounded-full" />
+        <Skeleton className="h-8 w-28 rounded-full" />
       </div>
-      <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
-        <div className="w-full lg:w-64 space-y-4">
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-40 w-full rounded-xl" />
+      <div className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
+          <Skeleton className="h-7 w-44" />
+          <Skeleton className="h-4 w-32" />
         </div>
-        <div className="min-w-0 flex-1 grid gap-4 md:grid-cols-2">
-          <LessonCardSkeleton />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           <LessonCardSkeleton />
           <LessonCardSkeleton />
           <LessonCardSkeleton />
