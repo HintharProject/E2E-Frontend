@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 export interface PageHeaderProps {
   title: string;
   description?: string;
+  eyebrow?: string;
   actions?: React.ReactNode;
   className?: string;
 }
@@ -11,6 +12,7 @@ export interface PageHeaderProps {
 export function PageHeader({
   title,
   description,
+  eyebrow,
   actions,
   className,
 }: PageHeaderProps) {
@@ -22,8 +24,13 @@ export function PageHeader({
         className
       )}
     >
-      <div>
-        <h1 className="font-heading font-bold text-3xl sm:text-4xl text-foreground tracking-tight">
+      <div className="min-w-0">
+        {eyebrow ? (
+          <p className="mb-1.5 text-[11px] font-mono font-medium uppercase tracking-wider text-muted-foreground">
+            {eyebrow}
+          </p>
+        ) : null}
+        <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-foreground text-balance">
           {title}
         </h1>
         {description ? (
