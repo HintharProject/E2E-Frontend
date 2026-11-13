@@ -7,7 +7,8 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { SolutionItem } from "./solution-item";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Layers, Sparkles } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, Sparkles, Info } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export interface SolutionPoolContainerProps {
   problem: Problem;
@@ -71,35 +72,76 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
 
   return (
     <div className="space-y-8">
-      {/* Pool Header & Slot Counter */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-line">
-        <div className="flex items-center gap-2.5">
-          <Layers className="size-5 text-brand" />
-          <h2 className="font-display text-2xl font-semibold text-ink">
-            Solutions &amp; Peer Consensus
-          </h2>
+      {/* Pool Header & Visual Capacity Meter */}
+      <div className="space-y-3 pb-4 border-b border-border">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <Layers className="size-5 text-primary" />
+            <h2 className="font-heading text-2xl font-semibold text-foreground tracking-tight">
+              Solutions &amp; Peer Consensus
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Badge
+              variant={activeCount >= 7 ? "default" : "outline"}
+              className={`text-xs px-2.5 py-1 ${
+                activeCount >= 7 ? "bg-amber-600 hover:bg-amber-600 text-white" : "border-border text-muted-foreground"
+              }`}
+            >
+              Active Pool: {activeCount} / 7
+            </Badge>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={activeCount >= 7 ? "default" : "outline"}
-            className={`text-xs px-2.5 py-1 ${
-              activeCount >= 7 ? "bg-amber-600 hover:bg-amber-600 text-white" : "border-line text-ink-muted"
-            }`}
-          >
-            Active Pool: {activeCount} / 7
-          </Badge>
+        {/* 7-Slot Visual Capacity Bar */}
+        <div className="space-y-1.5 pt-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-medium text-foreground">
+              Capacity Pool: {activeCount} / 7 slots filled
+            </span>
+            <span className="text-muted-foreground">
+              {7 - activeCount > 0 ? `${7 - activeCount} slots remaining` : "Pool at maximum capacity"}
+            </span>
+          </div>
+          <div className="grid grid-cols-7 gap-1.5 h-2 w-full">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  "h-full rounded-sm transition-all duration-300",
+                  i < activeCount
+                    ? activeCount >= 7
+                      ? "bg-amber-500"
+                      : "bg-primary"
+                    : "bg-muted"
+                )}
+              />
+            ))}
+          </div>
+
+          {activeCount >= 7 && (
+            <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 rounded-lg mt-2">
+              <Info className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+              <div className="space-y-0.5">
+                <span className="font-semibold">Tier 2+ Eviction Engine Active:</span>
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  The solution pool is currently full. Submissions by Tier 2+ contributors will automatically evict the lowest unendorsed attempt with score ≤ 0 to make room.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Loading Skeletons */}
       {isActiveLoading ? (
         <div className="space-y-4">
-          <div className="h-28 rounded-2xl bg-card border border-line animate-pulse" />
-          <div className="h-28 rounded-2xl bg-card border border-line animate-pulse" />
+          <div className="h-28 rounded-xl bg-card border border-border animate-pulse" />
+          <div className="h-28 rounded-xl bg-card border border-border animate-pulse" />
         </div>
       ) : activeSolutions.length === 0 && archivedSolutions.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-card/40 p-10 text-center text-sm text-ink-muted">
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
           No solutions posted yet. Be the first to provide step-by-step working!
         </div>
       ) : (
@@ -120,7 +162,7 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
           {competingSolutions.length > 0 && (
             <div className="space-y-4">
               {acceptedSolution && (
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-muted pt-2">
+                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2">
                   Active Solution Pool ({competingSolutions.length})
                 </h3>
               )}
@@ -150,11 +192,11 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
 
           {/* 3. Collapsible Archived Attempts Accordion */}
           {archivedSolutions.length > 0 && (
-            <div className="pt-4 border-t border-line">
+            <div className="pt-4 border-t border-border">
               <button
                 type="button"
                 onClick={() => setShowArchived((prev) => !prev)}
-                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-muted hover:text-ink transition-colors cursor-pointer"
+                className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
               >
                 {showArchived ? (
                   <ChevronDown className="size-4" />
@@ -164,7 +206,7 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
                 <span>
                   Archived Attempts ({archivedSolutions.length})
                 </span>
-                <span className="text-[10px] lowercase font-normal text-ink-muted opacity-80">
+                <span className="text-[10px] lowercase font-normal text-muted-foreground opacity-80">
                   (demoted to clear pool capacity)
                 </span>
               </button>

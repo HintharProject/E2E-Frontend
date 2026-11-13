@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Solution, Problem } from "@/types";
-import { formatDate } from "@/lib/utils";
+import { formatDate, cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { useDeleteSolution } from "@/hooks/use-problems";
@@ -98,32 +98,51 @@ export function SolutionItem({
   return (
     <div
       onClick={handleCardClick}
-      className={`group relative flex flex-col gap-4 rounded-2xl border p-5 transition-all cursor-pointer ${
+      className={cn(
+        "group relative flex flex-col gap-4 rounded-xl border p-5 transition-all cursor-pointer",
         isAcceptedHero
-          ? "border-emerald-500/60 bg-emerald-500/5 shadow-xs hover:border-emerald-500 hover:shadow-md"
+          ? "border-primary ring-2 ring-primary/20 bg-primary/5 shadow-card hover:border-primary hover:shadow-card-hover"
           : isArchived
-            ? "border-dashed border-line bg-muted/20 opacity-80 hover:opacity-95 hover:border-line"
-            : "border-line bg-card hover:border-brand/60 hover:shadow-md"
-      }`}
+            ? "border-dashed border-border bg-muted/20 opacity-80 hover:opacity-95 hover:border-border"
+            : "border-border bg-card hover:border-primary/40 hover:shadow-card-hover shadow-card"
+      )}
     >
-      {/* Top Banner for Accepted Hero Solution */}
+      {/* Top Banner for Accepted Hero Solution with Consensus Checklist */}
       {isAcceptedHero && (
-        <div className="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-emerald-500/20 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-400">
-            <CheckCircle2 className="size-4" />
-            <span>Accepted Community Solution</span>
+        <div className="flex flex-col gap-2.5 pb-3 border-b border-primary/20 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <CheckCircle2 className="size-4" />
+              <span>Accepted Community Consensus (+10 pts)</span>
+            </div>
+
+            <div>
+              {problem.status === "FINAL" ? (
+                <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-[11px] gap-1">
+                  <Lock className="size-3" /> Final Consensus Verified (Locked)
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-primary/40 text-primary bg-primary/10 text-[11px]">
+                  Provisional Consensus Verified
+                </Badge>
+              )}
+            </div>
           </div>
 
-          <div>
-            {problem.status === "FINAL" ? (
-              <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-[11px] gap-1">
-                <Lock className="size-3" /> Verified Consensus Finality (Locked)
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="border-emerald-500/50 text-emerald-600 dark:text-emerald-400 text-[11px]">
-                Provisional Acceptance — Peer Review Maturing
-              </Badge>
-            )}
+          {/* Consensus Verification Checklist */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1 text-[11px]">
+            <div className="flex items-center gap-1.5 text-foreground/80 bg-background/60 rounded px-2.5 py-1.5 border border-primary/20">
+              <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+              <span>Score: <strong>{(solution.vote_score ?? solution.vote_count ?? 0)} pts</strong> (≥10)</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-foreground/80 bg-background/60 rounded px-2.5 py-1.5 border border-primary/20">
+              <CheckCircle2 className="size-3.5 text-primary shrink-0" />
+              <span>Peer Review: <strong>≥2 Upvoters</strong></span>
+            </div>
+            <div className="flex items-center gap-1.5 text-foreground/80 bg-background/60 rounded px-2.5 py-1.5 border border-primary/20">
+              <CheckCircle2 className={cn("size-3.5 shrink-0", isEndorsed ? "text-primary" : "text-muted-foreground")} />
+              <span>{isEndorsed ? "Author Endorsed ★" : "Community Verified"}</span>
+            </div>
           </div>
         </div>
       )}
@@ -155,7 +174,7 @@ export function SolutionItem({
                   {author?.profile_image_url && <AvatarImage src={author.profile_image_url} />}
                   <AvatarFallback>{getInitials(author?.display_name)}</AvatarFallback>
                 </Avatar>
-                <span className="text-sm font-semibold text-ink">{author?.display_name || "Community Solver"}</span>
+                <span className="text-sm font-semibold text-foreground">{author?.display_name || "Community Solver"}</span>
               </Link>
 
               <ContributorBadge
@@ -163,11 +182,11 @@ export function SolutionItem({
                 size="sm"
               />
 
-              <span className="text-xs text-ink-muted">· {formatDate(solution.created_at)}</span>
+              <span className="text-xs text-muted-foreground">· {formatDate(solution.created_at)}</span>
 
               {/* Status & Role Badges */}
               {isAuthorSolution && (
-                <Badge variant="outline" className="border-brand/40 text-brand text-[10px] h-5 gap-1" title="Self-solution by problem author">
+                <Badge variant="outline" className="border-primary/40 text-primary text-[10px] h-5 gap-1" title="Self-solution by problem author">
                   <UserCheck className="size-3" /> Problem Author
                 </Badge>
               )}
@@ -186,7 +205,7 @@ export function SolutionItem({
             </div>
 
             {/* Solution Working Content */}
-            <div className="text-sm leading-relaxed text-ink whitespace-pre-line break-words pt-1">
+            <div className="text-sm leading-relaxed text-foreground whitespace-pre-line break-words pt-1">
               {solution.body}
             </div>
 
@@ -197,7 +216,7 @@ export function SolutionItem({
                   href={solution.video_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-brand hover:underline"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
                 >
                   <Video className="size-3.5" />
                   <span>Watch Video Walkthrough ↗</span>
@@ -216,9 +235,9 @@ export function SolutionItem({
                       href={url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-line bg-muted/40 text-xs text-ink hover:border-brand/40"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-border bg-muted/40 text-xs text-foreground hover:border-primary/40 transition-colors"
                     >
-                      <ImageIcon className="size-3.5 text-brand" />
+                      <ImageIcon className="size-3.5 text-primary" />
                       <span className="truncate max-w-[150px]">{att.file_name}</span>
                     </a>
                   );
@@ -261,13 +280,13 @@ export function SolutionItem({
       </div>
 
       {/* Footer: Comment count and View Discussion indicator */}
-      <div className="flex items-center justify-between pt-3 border-t border-line/60 text-xs text-ink-muted">
-        <div className="flex items-center gap-1.5 font-medium text-ink-muted group-hover:text-ink transition-colors">
-          <MessageSquare className="size-3.5 text-brand" />
+      <div className="flex items-center justify-between pt-3 border-t border-border/60 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+          <MessageSquare className="size-3.5 text-primary" />
           <span>{solution.comment_count ?? 0} {solution.comment_count === 1 ? "comment" : "comments"}</span>
         </div>
 
-        <span className="inline-flex items-center gap-1 font-semibold text-brand opacity-90 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
+        <span className="inline-flex items-center gap-1 font-semibold text-primary opacity-90 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all">
           <span>View Discussion</span>
           <ArrowRight className="size-3.5" />
         </span>

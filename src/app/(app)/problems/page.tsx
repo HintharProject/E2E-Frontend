@@ -4,6 +4,7 @@ import { Suspense, useTransition } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Button } from "@/components/ui/button";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { useProblems } from "@/hooks/use-problems";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
@@ -85,9 +86,9 @@ function ProblemsFeed() {
       </div>
       {isLoading ? (
         <div className="space-y-4">
-          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
-          <div className="h-40 rounded-2xl bg-card border border-line animate-pulse"></div>
+          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
+          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
+          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
         </div>
       ) : isError ? (
         <EmptyState
@@ -107,13 +108,13 @@ function ProblemsFeed() {
 
           {hasNextPage && (
             <div className="mt-4 flex justify-center">
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className="inline-flex items-center justify-center rounded-md bg-secondary px-4 py-2 text-sm font-medium text-secondary-foreground hover:bg-secondary/80 disabled:opacity-50"
               >
                 {isFetchingNextPage ? "Loading more..." : "Load more"}
-              </button>
+              </Button>
             </div>
           )}
         </div>

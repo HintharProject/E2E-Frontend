@@ -57,16 +57,16 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
   if (isProblemLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-64 rounded-2xl bg-card border border-line animate-pulse" />
+      <div className="mx-auto max-w-3xl space-y-6">
+        <div className="h-64 rounded-xl bg-card border border-border animate-pulse" />
       </div>
     );
   }
 
   if (isProblemError || !problem) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Problem not found</h2>
+      <div className="mx-auto max-w-3xl py-12 text-center">
+        <h2 className="text-xl font-heading font-semibold text-foreground">Problem not found</h2>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/problems")}>
           Back to Problems
         </Button>
@@ -94,11 +94,11 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 space-y-10">
+    <div className="mx-auto max-w-3xl space-y-8">
       <div>
         <Link
           href="/problems"
-          className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to problems
         </Link>
@@ -127,17 +127,17 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Path B Past Paper Sourced Ribbon */}
       {problem.origin === "PAST_PAPER" && (
-        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-muted/30">
-          <div className="flex items-center gap-2 text-sm text-ink font-medium">
-            <BookOpen className="size-4 text-brand shrink-0" />
+        <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted/30">
+          <div className="flex items-center gap-2 text-sm text-foreground font-medium">
+            <BookOpen className="size-4 text-primary shrink-0" />
             <span className="font-semibold">{pastPaperDetails?.title || "Curated Exam Paper"}</span>
             {pastPaperDetails?.year && (
-              <span className="text-ink-muted">
+              <span className="text-muted-foreground">
                 · {pastPaperDetails.year} {pastPaperDetails.session} {pastPaperDetails.paper_type}
               </span>
             )}
             {problem.question_number && (
-              <Badge variant="outline" className="text-xs font-bold text-ink ml-1">
+              <Badge variant="outline" className="text-xs font-bold text-foreground ml-1">
                 {problem.question_number}
               </Badge>
             )}
@@ -172,17 +172,17 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           <div className="flex flex-wrap items-center gap-1.5">
             {problem.status === "FINAL" && (
               <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-xs gap-1">
-                <Lock className="size-3" /> Verified Consensus ✓
+                <Lock className="size-3" /> Final Consensus
               </Badge>
             )}
             {problem.status === "SOLVED" && (
-              <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-medium text-xs">
-                Solved ✓
+              <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs">
+                Solved (+10 pts)
               </Badge>
             )}
             {problem.status === "OPEN" && (
-              <Badge variant="outline" className="border-brand/50 text-brand bg-brand/10 text-xs">
-                Open
+              <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 text-xs">
+                Active Pool
               </Badge>
             )}
             {problem.status === "CLOSED" && (

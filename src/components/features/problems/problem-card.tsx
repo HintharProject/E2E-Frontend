@@ -18,7 +18,7 @@ import { useDeleteProblem } from "@/hooks/use-problems";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { toast } from "sonner";
 import { BaseFeedCard } from "@/components/ui/base-card";
-import { BookOpen, ExternalLink, Image as ImageIcon } from "lucide-react";
+import { BookOpen, ExternalLink, Image as ImageIcon, Lock } from "lucide-react";
 import { SaveButton } from "@/components/features/collections/save-button";
 
 export function ProblemCard({ problem }: { problem: Problem }) {
@@ -96,18 +96,18 @@ export function ProblemCard({ problem }: { problem: Problem }) {
       topRight={
         <div className="flex items-center gap-1.5">
           {problem.status === "FINAL" && (
-            <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-xs">
-              Verified Consensus ✓
+            <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-xs gap-1">
+              <Lock className="size-3" /> Final Consensus
             </Badge>
           )}
           {problem.status === "SOLVED" && (
-            <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white font-medium text-xs">
-              Solved ✓
+            <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs">
+              Solved (+10 pts)
             </Badge>
           )}
           {problem.status === "OPEN" && (
-            <Badge variant="outline" className="border-brand/50 text-brand bg-brand/10 text-xs">
-              Open
+            <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 text-xs">
+              Active Pool
             </Badge>
           )}
           {problem.status === "CLOSED" && (
@@ -123,9 +123,9 @@ export function ProblemCard({ problem }: { problem: Problem }) {
         <div className="flex flex-col gap-2 w-full">
           {/* Path B Curated Past Paper Reference Ribbon */}
           {problem.origin === "PAST_PAPER" && (
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted bg-muted/40 px-2.5 py-1.5 rounded-lg border border-line">
-              <BookOpen className="size-3.5 text-brand shrink-0" />
-              <span className="font-semibold text-ink">
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-2.5 py-1.5 rounded-lg border border-border">
+              <BookOpen className="size-3.5 text-primary shrink-0" />
+              <span className="font-semibold text-foreground">
                 {pastPaperDetails?.title || "Cambridge Past Paper"}
               </span>
               {pastPaperDetails?.year && (
@@ -134,7 +134,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
                 </span>
               )}
               {problem.question_number && (
-                <span className="font-bold text-ink">
+                <span className="font-bold text-foreground">
                   · {problem.question_number}
                 </span>
               )}
@@ -166,7 +166,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             ))}
 
             {primaryThumbnailUrl && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-ink-muted border border-line rounded px-1.5 py-0.5">
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground border border-border rounded px-1.5 py-0.5">
                 <ImageIcon className="size-3" /> Photo Attached
               </span>
             )}
