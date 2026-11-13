@@ -26,25 +26,33 @@ function getInitials(name?: string | null): string {
   return name.trim().split(/\s+/).map((p) => p[0]).join("").toUpperCase().slice(0, 2);
 }
 
+function daysUntilExpiration(createdAt: string): number {
+  const createdDate = new Date(createdAt);
+  const expirationDate = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const diffTime = expirationDate.getTime() - new Date().getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(0, diffDays);
+}
+
 function PostDetailSkeleton() {
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 animate-pulse">
-      <div className="h-8 w-3/4 rounded-lg bg-card border border-line mb-2" />
-      <div className="h-4 w-1/4 rounded bg-card border border-line mb-8" />
-      <div className="rounded-2xl border border-line bg-card p-6 space-y-4">
+    <div className="mx-auto max-w-3xl space-y-6 animate-pulse">
+      <div className="h-8 w-3/4 rounded-lg bg-card border border-border mb-2" />
+      <div className="h-4 w-1/4 rounded bg-card border border-border mb-8" />
+      <div className="rounded-xl border border-border bg-card p-6 space-y-4">
         <div className="flex gap-3">
-          <div className="h-8 w-8 rounded-full bg-line" />
-          <div className="h-4 w-32 rounded bg-line mt-2" />
+          <div className="h-8 w-8 rounded-full bg-muted" />
+          <div className="h-4 w-32 rounded bg-muted mt-2" />
         </div>
         <div className="space-y-2 mt-4">
-          <div className="h-4 w-full rounded bg-line" />
-          <div className="h-4 w-full rounded bg-line" />
-          <div className="h-4 w-2/3 rounded bg-line" />
+          <div className="h-4 w-full rounded bg-muted" />
+          <div className="h-4 w-full rounded bg-muted" />
+          <div className="h-4 w-2/3 rounded bg-muted" />
         </div>
       </div>
       <div className="mt-10 space-y-4">
-        <div className="h-6 w-32 rounded bg-card border border-line" />
-        <div className="h-24 w-full rounded-xl bg-card border border-line" />
+        <div className="h-6 w-32 rounded bg-card border border-border" />
+        <div className="h-24 w-full rounded-xl bg-card border border-border" />
       </div>
     </div>
   );
@@ -59,8 +67,8 @@ export function PostDetailView({ postId }: { postId: string }) {
 
   if (isError || !post) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <p className="text-ink-muted">Could not load this post. It may have been deleted or you may not have access.</p>
+      <div className="mx-auto max-w-3xl py-12 text-center">
+        <p className="text-muted-foreground">Could not load this post. It may have been deleted or you may not have access.</p>
       </div>
     );
   }
@@ -70,11 +78,12 @@ export function PostDetailView({ postId }: { postId: string }) {
   const level = post.level_details;
   const tagNames = post.tags_data?.map(t => t.name) ?? [];
   const isAuthor = isContentAuthor(user || (clerkUser ? { clerk_id: clerkUser.id } : null), author, post.author);
+  const expiresIn = daysUntilExpiration(post.created_at);
 
   const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-8">
       <PageHeader
         title={post.title}
         description={`Posted ${formatDate(post.created_at)}`}
@@ -90,6 +99,15 @@ export function PostDetailView({ postId }: { postId: string }) {
         badges={
           <>
             <Badge variant="default">{post.post_type}</Badge>
+            {expiresIn <= 3 ? (
+              <Badge variant="warning" className="border-warning/30 bg-warning/10 text-warning">
+                Expires in {expiresIn}d
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-muted-foreground">
+                Expires in {expiresIn}d
+              </Badge>
+            )}
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {tagNames.map((t) => (

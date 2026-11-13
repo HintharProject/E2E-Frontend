@@ -17,8 +17,12 @@ import { toast } from "sonner";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useDeletePost } from "@/hooks/use-interactions";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
-import { BaseFeedCard } from "@/components/ui/base-card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { getInitials, stripHtml } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { Video, Paperclip } from "lucide-react";
 
 
 function formatDateStr(dateStr: string): string {
@@ -80,43 +84,103 @@ export function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <BaseFeedCard
-      href={`/posts/${post.id}`}
+    <Card
+      className="group relative transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       onMouseEnter={handleMouseEnter}
-      author={{
-        id: author?.id || "",
-        display_name: author?.display_name || "Unknown",
-        profile_image_url: author?.profile_image_url,
-        contributor_tier: author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
-      }}
-      subtitle={`${formatDateStr(post.created_at)} · expires in ${expiresIn}d`}
-      topRight={
-        <Badge
-          variant={
-            post.post_type === "ANNOUNCEMENT"
-              ? "default"
-              : post.post_type === "QUESTION"
-                ? "outline"
-                : "secondary"
-          }
-        >
-          {post.post_type}
-        </Badge>
-      }
-      title={post.title}
-      body={post.body}
-      bottomLeft={
-        <>
+    >
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {author ? (
+            <Link href={`/users/${author.id}`}>
+              <Avatar size="sm">
+                {author.profile_image_url && (
+                  <AvatarImage src={author.profile_image_url} />
+                )}
+                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {author ? (
+                <Link
+                  href={`/users/${author.id}`}
+                  className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  {author.display_name}
+                </Link>
+              ) : (
+                <span className="text-sm font-semibold text-foreground">Unknown</span>
+              )}
+              {author ? (
+                <ContributorBadge
+                  tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                  size="sm"
+                />
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              <span>{formatDateStr(post.created_at)}</span>
+              {expiresIn <= 3 ? (
+                <Badge variant="warning" className="text-[10px] px-1.5 py-0 leading-tight">
+                  Expires in {expiresIn}d
+                </Badge>
+              ) : (
+                <span>· expires in {expiresIn}d</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Badge
+            variant={
+              post.post_type === "ANNOUNCEMENT"
+                ? "default"
+                : post.post_type === "QUESTION"
+                  ? "outline"
+                  : "secondary"
+            }
+          >
+            {post.post_type}
+          </Badge>
+          <CardMoreMenu
+            shareUrl={shareUrl}
+            contentType="POST"
+            contentId={post.id}
+            author={author ? {
+              id: author.id,
+              display_name: author.display_name,
+              role: author.role,
+              contributor_tier: author.contributor_tier,
+            } : null}
+            isHidden={(post as any).is_hidden}
+            isLocked={(post as any).is_locked}
+            editHref={isAuthor ? `/posts/${post.id}/edit` : undefined}
+            onDelete={isAuthor ? handleDelete : undefined}
+            deleteLabel="this post"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <Link href={`/posts/${post.id}`} className="block group">
+          <CardTitle className="group-hover:text-primary transition-colors">
+            {post.title}
+          </CardTitle>
+          <CardDescription className="line-clamp-2 mt-2">
+            {stripHtml(post.body)}
+          </CardDescription>
+        </Link>
+        <div className="flex flex-wrap items-center gap-1.5 mt-4">
           {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
           {level ? <Badge variant="outline">{level.name}</Badge> : null}
           {tags.map((t) => (
             <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
           ))}
-        </>
-      }
-      bottomRight={
-        post.post_type !== "ANNOUNCEMENT" ? (
-          <>
+        </div>
+      </CardContent>
+      <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50 text-xs font-semibold text-muted-foreground">
+        <div className="flex items-center gap-2">
+          {post.post_type !== "ANNOUNCEMENT" ? (
             <PostCardVote
               postId={post.id}
               initialVoteCount={post.vote_count ?? 0}
@@ -124,35 +188,14 @@ export function PostCard({ post }: { post: Post }) {
               authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
               authorClerkId={author?.clerk_id}
             />
-            <span>· {post.comment_count ?? 0} comments</span>
-            <SaveButton entityType="post" entityId={post.id} variant="icon" />
-          </>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <span>{post.comment_count ?? 0} comments</span>
-            <SaveButton entityType="post" entityId={post.id} variant="icon" />
-          </div>
-        )
-      }
-      moreMenu={
-        <CardMoreMenu
-          shareUrl={shareUrl}
-          contentType="POST"
-          contentId={post.id}
-          author={author ? {
-            id: author.id,
-            display_name: author.display_name,
-            role: author.role,
-            contributor_tier: author.contributor_tier,
-          } : null}
-          isHidden={(post as any).is_hidden}
-          isLocked={(post as any).is_locked}
-          editHref={isAuthor ? `/posts/${post.id}/edit` : undefined}
-          onDelete={isAuthor ? handleDelete : undefined}
-          deleteLabel="this post"
-        />
-      }
-    />
+          ) : null}
+          <span>· {post.comment_count ?? 0} comments</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <SaveButton entityType="post" entityId={post.id} variant="icon" />
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -223,19 +266,51 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     );
   };
 
+  const hasVideo = Boolean(lesson.embedded_video_url);
+  const attachmentCount = lesson.attachments?.length ?? 0;
+
   return (
-    <BaseFeedCard
-      href={`/lessons/${lesson.id}`}
+    <Card
+      className="group relative transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       onMouseEnter={handleMouseEnter}
-      author={author ? {
-        id: author.id || "",
-        display_name: author.display_name || "Unknown",
-        profile_image_url: author.profile_image_url,
-        contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
-      } : undefined}
-      subtitle={formatDateStr(lesson.created_at)}
-      topRight={
-        <div className="flex items-center gap-2">
+    >
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {author ? (
+            <Link href={`/users/${author.id}`}>
+              <Avatar size="sm">
+                {author.profile_image_url && (
+                  <AvatarImage src={author.profile_image_url} />
+                )}
+                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {author ? (
+                <Link
+                  href={`/users/${author.id}`}
+                  className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  {author.display_name}
+                </Link>
+              ) : (
+                <span className="text-sm font-semibold text-foreground">Unknown</span>
+              )}
+              {author ? (
+                <ContributorBadge
+                  tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                  size="sm"
+                />
+              ) : null}
+            </div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {formatDateStr(lesson.created_at)}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
           <Badge
             variant={
               lesson.state === "PUBLISHED"
@@ -244,10 +319,58 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
                   ? "secondary"
                   : "outline"
             }
-            className={lesson.state === "DRAFT" ? "bg-warning/20 text-warning hover:bg-warning/30" : ""}
+            className={lesson.state === "DRAFT" ? "bg-warning/15 text-warning border-warning/30 hover:bg-warning/20" : ""}
           >
-            {lesson.state}
+            {lesson.state === "PUBLISHED" ? "Published" : lesson.state === "DRAFT" ? "Draft" : lesson.state}
           </Badge>
+          <CardMoreMenu
+            shareUrl={shareUrl}
+            contentType="LESSON"
+            contentId={lesson.id}
+            author={author ? {
+              id: author.id,
+              display_name: author.display_name,
+              role: author.role,
+              contributor_tier: author.contributor_tier,
+            } : null}
+            isHidden={lesson.state === "DRAFT"}
+            editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
+            onDelete={canDelete ? handleDelete : undefined}
+            deleteLabel="this lesson"
+            onPublish={canPublish ? handlePublish : undefined}
+            onArchive={canArchive ? handleArchive : undefined}
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <Link href={`/lessons/${lesson.id}`} className="block group">
+          <CardTitle className="group-hover:text-primary transition-colors">
+            {lesson.title}
+          </CardTitle>
+          <CardDescription className="line-clamp-2 mt-2">
+            {stripHtml(lesson.body)}
+          </CardDescription>
+        </Link>
+        <div className="flex flex-wrap items-center gap-1.5 mt-4">
+          {hasVideo && (
+            <Badge variant="outline" className="border-primary/40 bg-primary/5 text-primary text-[10px] gap-1">
+              <Video className="size-3" /> Video
+            </Badge>
+          )}
+          {attachmentCount > 0 && (
+            <Badge variant="outline" className="text-[10px] gap-1">
+              <Paperclip className="size-3" /> {attachmentCount} {attachmentCount === 1 ? "file" : "files"}
+            </Badge>
+          )}
+          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
+          {level ? <Badge variant="outline">{level.name}</Badge> : null}
+          {tags.map((t) => (
+            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+          ))}
+        </div>
+      </CardContent>
+      <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50 text-xs font-semibold text-muted-foreground">
+        <div className="flex items-center gap-2">
           <LessonCardVote
             lessonId={lesson.id}
             initialVoteCount={lesson.vote_count ?? 0}
@@ -255,39 +378,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             authorId={author?.id || (typeof lesson.author === "string" ? lesson.author : undefined)}
             authorClerkId={author?.clerk_id}
           />
+        </div>
+        <div className="flex items-center gap-1">
           <SaveButton entityType="lesson" entityId={lesson.id} variant="icon" />
         </div>
-      }
-      title={lesson.title}
-      body={lesson.body}
-      bottomLeft={
-        <>
-          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {tags.map((t) => (
-            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
-          ))}
-        </>
-      }
-      moreMenu={
-        <CardMoreMenu
-          shareUrl={shareUrl}
-          contentType="LESSON"
-          contentId={lesson.id}
-          author={author ? {
-            id: author.id,
-            display_name: author.display_name,
-            role: author.role,
-            contributor_tier: author.contributor_tier,
-          } : null}
-          isHidden={lesson.state === "DRAFT"}
-          editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
-          onDelete={canDelete ? handleDelete : undefined}
-          deleteLabel="this lesson"
-          onPublish={canPublish ? handlePublish : undefined}
-          onArchive={canArchive ? handleArchive : undefined}
-        />
-      }
-    />
+      </CardFooter>
+    </Card>
   );
 }

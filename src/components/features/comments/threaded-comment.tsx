@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { useReplies, useCreateComment, useUpdateComment, useDeleteComment } from "@/hooks/use-comments";
@@ -10,6 +11,7 @@ import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import {
   Dialog,
@@ -160,20 +162,20 @@ export function ThreadedComment({
         </Avatar>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-ink">{author?.display_name ?? "Unknown"}</span>
+            <span className="text-sm font-semibold text-foreground">{author?.display_name ?? "Unknown"}</span>
             {author && (
               <ContributorBadge
                 tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
                 size="sm"
               />
             )}
-            <span className="text-xs text-ink-muted">{formatDate(comment.created_at)}</span>
+            <span className="text-xs text-muted-foreground">{formatDate(comment.created_at)}</span>
           </div>
           
           {isEditing ? (
             <form onSubmit={handleEditSubmit} className="mt-2 flex flex-col gap-2">
-              <textarea
-                className="w-full rounded-md border border-line bg-card px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand min-h-16"
+              <Textarea
+                className="min-h-16 text-sm"
                 value={editBody}
                 onChange={(e) => setEditBody(e.target.value)}
               />
@@ -187,32 +189,36 @@ export function ThreadedComment({
               </div>
             </form>
             ) : (
-            <p className="mt-1 text-sm text-ink-muted leading-relaxed break-words">{comment.body}</p>
+            <p className="mt-1 text-sm text-foreground/90 leading-relaxed break-words">{comment.body}</p>
           )}
 
           {!isEditing && (
             <div className="mt-2 flex items-center gap-2 flex-wrap">
-              <div className="flex items-center gap-1 mr-2">
+              <div className="flex items-center gap-0.5 mr-2">
                 <button
+                  type="button"
                   onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
                   disabled={isAuthor}
+                  aria-label={isAuthor ? "You cannot vote on your own comment" : "Upvote comment"}
                   title={isAuthor ? "You cannot vote on your own comment" : "Upvote comment"}
-                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${
-                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                  } ${localUserVote === 1 ? "text-brand font-bold" : "text-ink-muted hover:text-brand"}`}
+                  className={`p-1 rounded transition-colors disabled:opacity-50 ${
+                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-muted"
+                  } ${localUserVote === 1 ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"}`}
                 >
-                  ▲
+                  <ChevronUp className="size-4" />
                 </button>
-                <span className="text-xs font-semibold text-ink-muted">{localVoteCount}</span>
+                <span className="text-xs font-semibold text-muted-foreground min-w-[1rem] text-center">{localVoteCount}</span>
                 <button
+                  type="button"
                   onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
                   disabled={isAuthor}
+                  aria-label={isAuthor ? "You cannot vote on your own comment" : "Downvote comment"}
                   title={isAuthor ? "You cannot vote on your own comment" : "Downvote comment"}
-                  className={`text-xs font-semibold transition-colors disabled:opacity-50 ${
-                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-                  } ${localUserVote === -1 ? "text-destructive font-bold" : "text-ink-muted hover:text-destructive"}`}
+                  className={`p-1 rounded transition-colors disabled:opacity-50 ${
+                    isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer hover:bg-muted"
+                  } ${localUserVote === -1 ? "text-destructive font-bold" : "text-muted-foreground hover:text-destructive"}`}
                 >
-                  ▼
+                  <ChevronDown className="size-4" />
                 </button>
               </div>
 
@@ -250,7 +256,12 @@ export function ThreadedComment({
               )}
               
               {comment.reply_count && comment.reply_count > 0 ? (
-                <Button variant="ghost" size="xs" onClick={() => setShowReplies(!showReplies)}>
+                <Button
+                  variant="ghost"
+                  size="xs"
+                  className="text-xs text-primary font-medium hover:underline h-7 px-2"
+                  onClick={() => setShowReplies(!showReplies)}
+                >
                   {showReplies ? "Hide replies" : `View replies (${comment.reply_count})`}
                 </Button>
               ) : null}
@@ -273,8 +284,8 @@ export function ThreadedComment({
       
       {showReplyForm && (
         <form onSubmit={handleReplySubmit} className="ml-10 flex flex-col gap-2">
-          <textarea
-            className="w-full rounded-md border border-line bg-card px-3 py-2 text-sm outline-none focus:border-brand focus:ring-1 focus:ring-brand min-h-16"
+          <Textarea
+            className="min-h-16 text-sm"
             placeholder="Write a reply..."
             value={replyBody}
             onChange={(e) => setReplyBody(e.target.value)}
@@ -291,8 +302,8 @@ export function ThreadedComment({
       )}
 
       {showReplies && (
-        <div className="ml-4 pl-4 border-l-2 border-line flex flex-col gap-2">
-          {isLoading && <div className="text-sm text-ink-muted">Loading replies...</div>}
+        <div className="ml-4 pl-4 border-l-2 border-border/60 flex flex-col gap-2 mt-2">
+          {isLoading && <div className="text-sm text-muted-foreground">Loading replies...</div>}
           {replies.map((reply) => (
             <ThreadedComment key={reply.id} comment={reply} postId={postId} />
           ))}
@@ -302,7 +313,7 @@ export function ThreadedComment({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-sm font-medium"
+                className="text-xs text-primary font-medium hover:underline h-7 px-2"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
               >

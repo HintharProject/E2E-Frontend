@@ -56,10 +56,10 @@ function AnnouncementCard({
   return (
     <article
       id={announcement.id}
-      className="group relative rounded-2xl border border-line bg-card p-6 shadow-xs hover:border-primary/40 hover:shadow-md transition-all duration-200"
+      className="group relative rounded-xl border border-border bg-card p-6 shadow-card hover:border-primary/40 hover:shadow-card-hover transition-all duration-200"
     >
       {/* Top Meta Bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-line/60">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4 pb-3 border-b border-border/60">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge className="bg-primary/10 border-primary/25 text-primary font-bold text-xs px-2.5 py-0.5 gap-1.5 shadow-none">
             <Pin className="size-3 text-primary rotate-45" />
@@ -69,15 +69,15 @@ function AnnouncementCard({
           {expiresAt && isExpiringSoon && (
             <Badge
               variant="outline"
-              className="border-amber-500/40 bg-amber-500/10 text-amber-600 text-xs gap-1 font-medium"
+              className="border-warning/40 bg-warning/10 text-warning text-xs gap-1 font-medium"
             >
-              <Clock className="size-3 text-amber-500" />
+              <Clock className="size-3 text-warning" />
               Expires Soon
             </Badge>
           )}
 
           {expiresAt && !isExpiringSoon && (
-            <span className="text-[11px] text-ink-muted flex items-center gap-1">
+            <span className="text-[11px] text-muted-foreground flex items-center gap-1">
               <Clock className="size-3" />
               Valid until {formatDate(announcement.expires_at!)}
             </span>
@@ -90,7 +90,7 @@ function AnnouncementCard({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 px-2 text-xs text-ink-muted hover:text-ink hover:bg-muted"
+                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
                 title="Manage announcements in admin panel"
               >
                 <Shield className="size-3 text-primary mr-1" />
@@ -103,7 +103,7 @@ function AnnouncementCard({
             variant="ghost"
             size="sm"
             onClick={handleCopyLink}
-            className="h-7 px-2 text-xs text-ink-muted hover:text-ink hover:bg-muted"
+            className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted"
             title="Share announcement link"
           >
             {copied ? (
@@ -120,31 +120,31 @@ function AnnouncementCard({
       </div>
 
       {/* Announcement Title */}
-      <h2 className="text-xl font-black text-ink tracking-tight mb-3 leading-snug group-hover:text-primary transition-colors">
+      <h2 className="text-xl font-heading font-semibold text-foreground tracking-tight mb-3 leading-snug group-hover:text-primary transition-colors">
         {announcement.title}
       </h2>
 
       {/* Author Attribution */}
       <div className="flex items-center gap-3 mb-5">
-        <Avatar className="size-8 border border-line">
+        <Avatar className="size-8 border border-border">
           {author?.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-          <AvatarFallback className="text-xs font-bold bg-muted text-ink">
+          <AvatarFallback className="text-xs font-bold bg-muted text-foreground">
             {author?.display_name?.slice(0, 2).toUpperCase() || "AD"}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-          <span className="font-bold text-ink">{author?.display_name || "Platform Admin"}</span>
+          <span className="font-semibold text-foreground">{author?.display_name || "Platform Admin"}</span>
           {author?.contributor_tier !== undefined && author?.contributor_tier !== null && (
             <ContributorBadge tier={author.contributor_tier} size="sm" />
           )}
-          <span className="text-ink-muted">•</span>
-          <span className="text-ink-muted">Published {formatDate(announcement.created_at)}</span>
+          <span className="text-muted-foreground">•</span>
+          <span className="text-muted-foreground">Published {formatDate(announcement.created_at)}</span>
         </div>
       </div>
 
       {/* Announcement Body Content */}
-      <div className="rounded-xl border border-line/60 bg-muted/15 p-5 text-sm text-ink leading-relaxed font-sans">
+      <div className="rounded-xl border border-border/60 bg-muted/20 p-5 text-sm text-foreground leading-relaxed font-sans">
         <MathRenderer content={announcement.body} />
       </div>
     </article>
@@ -164,7 +164,7 @@ export function AnnouncementsFeed() {
     return (
       <div className="space-y-4">
         {[...Array(3)].map((_, i) => (
-          <div key={i} className="rounded-2xl border border-line bg-card p-6 space-y-4 animate-pulse">
+          <div key={i} className="rounded-xl border border-border bg-card p-6 space-y-4 animate-pulse">
             <div className="flex items-center justify-between">
               <div className="h-5 w-32 bg-muted rounded-md" />
               <div className="h-5 w-20 bg-muted rounded-md" />
@@ -183,9 +183,9 @@ export function AnnouncementsFeed() {
 
   if (isError) {
     return (
-      <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-8 text-center space-y-3">
+      <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-8 text-center space-y-3">
         <p className="text-sm font-bold text-destructive">Failed to load platform announcements</p>
-        <p className="text-xs text-ink-muted">Please check your internet connection or try again.</p>
+        <p className="text-xs text-muted-foreground">Please check your internet connection or try again.</p>
         <Button size="sm" variant="outline" onClick={() => refetch()} className="text-xs">
           Try Again
         </Button>
@@ -195,13 +195,13 @@ export function AnnouncementsFeed() {
 
   if (announcements.length === 0) {
     return (
-      <div className="rounded-2xl border border-line bg-card p-12 text-center space-y-4 shadow-xs">
+      <div className="rounded-xl border border-border bg-card p-12 text-center space-y-4 shadow-card">
         <div className="size-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto text-primary">
           <Megaphone className="size-7" />
         </div>
         <div className="max-w-md mx-auto space-y-1.5">
-          <h3 className="text-base font-bold text-ink">No Active Announcements</h3>
-          <p className="text-xs text-ink-muted leading-relaxed">
+          <h3 className="text-base font-semibold text-foreground">No Active Announcements</h3>
+          <p className="text-xs text-muted-foreground leading-relaxed">
             There are no broadcast announcements active at this time. Scheduled maintenance, exam cycle notices, and platform updates will be pinned here when published by platform staff.
           </p>
         </div>
