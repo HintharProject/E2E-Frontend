@@ -105,7 +105,7 @@
   /* Destructive & Warning */
   --destructive: oklch(0.58 0.22 25);
   --destructive-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.72 0.16 70);
+  --warning: oklch(0.51 0.15 62);
 
   /* Charts & Radius */
   --chart-1: oklch(0.855 0.138 181.071);
@@ -136,17 +136,19 @@
   --line: var(--border);
   --danger: var(--destructive);
 
-  /* Contributor Tier Tokens (Light) */
-  --tier-0: oklch(0.55 0.015 220);
+  /* Contributor Tier Tokens (Light - Calibrated for WCAG 2.2 AA >= 4.5:1) */
+  --tier-0: oklch(0.49 0.015 220);
   --tier-0-bg: oklch(0.96 0.005 220);
-  --tier-1: oklch(0.62 0.16 65);
+  --tier-1: oklch(0.52 0.15 60);
   --tier-1-bg: oklch(0.96 0.04 65);
-  --tier-2: oklch(0.58 0.15 230);
+  --tier-2: oklch(0.50 0.14 230);
   --tier-2-bg: oklch(0.95 0.04 230);
-  --tier-3: oklch(0.55 0.18 150);
+  --tier-3: oklch(0.49 0.16 150);
   --tier-3-bg: oklch(0.95 0.04 150);
-  --tier-4: oklch(0.52 0.22 300);
+  --tier-4: oklch(0.48 0.22 300);
   --tier-4-bg: oklch(0.95 0.05 300);
+  --tier-4-shimmer-base: oklch(0.48 0.22 300);
+  --tier-4-shimmer-peak: oklch(0.55 0.23 315);
 }
 
 .dark {
@@ -157,7 +159,7 @@
   --popover: oklch(0.20 0.008 225);
   --popover-foreground: oklch(0.97 0.005 220);
 
-  --primary: oklch(0.58 0.125 165);
+  --primary: oklch(0.64 0.13 165);
   --primary-foreground: oklch(0.12 0.01 165);
 
   --secondary: oklch(0.25 0.008 225);
@@ -214,11 +216,17 @@
   --tier-3-bg: oklch(0.24 0.05 150);
   --tier-4: oklch(0.70 0.22 300);
   --tier-4-bg: oklch(0.26 0.06 300);
+  --tier-4-shimmer-base: oklch(0.48 0.22 300);
+  --tier-4-shimmer-peak: oklch(0.55 0.23 315);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  html,
+  body {
+    overflow-x: clip;
   }
   body {
     @apply bg-background text-foreground;
@@ -229,6 +237,19 @@
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
     letter-spacing: -0.02em;
+  }
+  a,
+  button,
+  [role="button"],
+  summary {
+    touch-action: manipulation;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
   ::selection {
     background-color: var(--primary);
@@ -304,10 +325,26 @@
 .animate-scholar-shimmer {
   background: linear-gradient(
     110deg,
-    var(--tier-4) 0%,
-    oklch(0.70 0.25 320) 50%,
-    var(--tier-4) 100%
+    var(--tier-4-shimmer-base) 0%,
+    var(--tier-4-shimmer-peak) 50%,
+    var(--tier-4-shimmer-base) 100%
   );
   background-size: 200% 100%;
   animation: scholar-shimmer 3s linear infinite;
+}
+
+@keyframes cold-start-bar {
+  0% {
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-cold-start-bar {
+  animation: cold-start-bar 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }

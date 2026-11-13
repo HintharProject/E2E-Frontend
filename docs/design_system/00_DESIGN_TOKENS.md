@@ -51,7 +51,7 @@ These tokens represent the primary surfaces, text layers, and functional accents
 | `--ring` | `oklch(0.508 0.118 165.612)` | `#027a60` | Accessible keyboard focus ring |
 | `--destructive` | `oklch(0.58 0.22 25)` | `#d92635` | Error alerts, ban banners, deletions |
 | `--destructive-foreground`| `oklch(0.99 0 0)` | `#ffffff` | Text on destructive elements |
-| `--warning` | `oklch(0.72 0.16 70)` | `#d97706` | Expiration badges (30d TTL), warnings |
+| `--warning` | `oklch(0.51 0.15 62)` | `#a04c00` | Expiration badges (30d TTL), warnings |
 
 #### Dark Mode (`.dark`) Token Definitions
 
@@ -63,7 +63,7 @@ These tokens represent the primary surfaces, text layers, and functional accents
 | `--card-foreground` | `oklch(0.97 0.005 220)` | `#f4f6f8` | Text inside cards |
 | `--popover` | `oklch(0.20 0.008 225)` | `#19222c` | Elevated menus and modal dialogs |
 | `--popover-foreground`| `oklch(0.97 0.005 220)` | `#f4f6f8` | Text inside popover elements |
-| `--primary` | `oklch(0.58 0.125 165)` | `#169b7c` | Luminous academic emerald for dark theme |
+| `--primary` | `oklch(0.64 0.13 165)` | `#17a478` | Luminous academic emerald for dark theme |
 | `--primary-foreground`| `oklch(0.12 0.01 165)` | `#0b1a15` | Dark contrasting text on primary |
 | `--secondary` | `oklch(0.25 0.008 225)` | `#232d39` | Secondary button surfaces in dark mode |
 | `--secondary-foreground`| `oklch(0.95 0.005 220)` | `#eef1f4` | Text on dark secondary surfaces |

@@ -40,9 +40,9 @@ const CONTENT_TYPE_CONFIG: Record<
   ContentTypeKey,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  lessons: { label: "Lessons", color: "#0d9488", icon: BookOpen }, // Teal
-  posts: { label: "Posts", color: "#0284c7", icon: MessageSquare }, // Sky
-  problems: { label: "Problems", color: "#f59e0b", icon: HelpCircle }, // Amber
+  lessons: { label: "Lessons", color: "var(--primary)", icon: BookOpen },
+  posts: { label: "Posts", color: "var(--chart-2)", icon: MessageSquare },
+  problems: { label: "Problems", color: "var(--warning)", icon: HelpCircle },
 };
 
 const CATEGORICAL_PALETTE = [
@@ -736,9 +736,9 @@ export function AdminContentExplorer({
               <XAxis
                 dataKey="name"
                 tick={{ fill: "currentColor", fontSize: 12 }}
-                className="text-ink-muted font-medium"
+                className="text-muted-foreground font-medium"
                 tickLine={false}
-                axisLine={{ stroke: "var(--line)" }}
+                axisLine={{ stroke: "var(--border)" }}
                 interval={0}
                 angle={chartData.length > 5 ? -20 : 0}
                 textAnchor={chartData.length > 5 ? "end" : "middle"}
@@ -746,7 +746,7 @@ export function AdminContentExplorer({
               />
               <YAxis
                 tick={{ fill: "currentColor", fontSize: 12 }}
-                className="text-ink-muted"
+                className="text-muted-foreground"
                 tickLine={false}
                 axisLine={false}
                 allowDecimals={false}
@@ -761,9 +761,9 @@ export function AdminContentExplorer({
                 }}
                 contentStyle={{
                   backgroundColor: "var(--card)",
-                  borderColor: "var(--line)",
-                  borderRadius: "0.85rem",
-                  color: "var(--ink)",
+                  borderColor: "var(--border)",
+                  borderRadius: "0.75rem",
+                  color: "var(--foreground)",
                   boxShadow:
                     "0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                   fontSize: "12px",

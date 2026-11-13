@@ -16,9 +16,15 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     <AppProviders>
       <AppInitializer>
         <RoleGuard>
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-primary-foreground focus:shadow-modal focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+          >
+            Skip to main content
+          </a>
           <AppHeader />
           <CommandPalette />
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6">
+          <main id="main-content" className="mx-auto w-full max-w-6xl flex-1 overflow-x-clip px-4 py-6 sm:px-6">
             <Suspense fallback={<PageSkeleton />}>
               {children}
             </Suspense>

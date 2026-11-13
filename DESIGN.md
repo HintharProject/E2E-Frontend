@@ -19,7 +19,7 @@ modes:
     focus: Calm rhythm, optimal reading measure (65-75ch), distraction-free focus
 colors:
   primary: "oklch(0.508 0.118 165.612)"
-  primary-dark: "oklch(0.58 0.125 165)"
+  primary-dark: "oklch(0.64 0.13 165)"
   primary-foreground: "oklch(0.99 0.005 166)"
   background-light: "oklch(0.99 0.002 220)"
   background-dark: "oklch(0.148 0.004 228.8)"
@@ -34,12 +34,12 @@ colors:
   muted-foreground-light: "oklch(0.50 0.015 220)"
   muted-foreground-dark: "oklch(0.68 0.012 220)"
   destructive: "oklch(0.58 0.22 25)"
-  warning: "oklch(0.72 0.16 70)"
-  tier-0: "oklch(0.55 0.015 220)"
-  tier-1: "oklch(0.62 0.16 65)"
-  tier-2: "oklch(0.58 0.15 230)"
-  tier-3: "oklch(0.55 0.18 150)"
-  tier-4: "oklch(0.52 0.22 300)"
+  warning: "oklch(0.51 0.15 62)"
+  tier-0: "oklch(0.49 0.015 220)"
+  tier-1: "oklch(0.52 0.15 60)"
+  tier-2: "oklch(0.50 0.14 230)"
+  tier-3: "oklch(0.49 0.16 150)"
+  tier-4: "oklch(0.48 0.22 300)"
 typography:
   display:
     fontFamily: "var(--font-heading), Manrope, sans-serif"
@@ -111,7 +111,7 @@ All colors are defined in the modern **OKLCH** color space to guarantee perceptu
 | `foreground` | `oklch(0.18 0.015 230)` | `oklch(0.97 0.005 220)` | Primary high-contrast text |
 | `card` | `oklch(1 0 0)` | `oklch(0.20 0.008 225)` | Elevated surface for content items |
 | `card-foreground` | `oklch(0.18 0.015 230)` | `oklch(0.97 0.005 220)` | Text inside cards |
-| `primary` | `oklch(0.508 0.118 165.612)` | `oklch(0.58 0.125 165)` | Brand academic emerald/teal |
+| `primary` | `oklch(0.508 0.118 165.612)` | `oklch(0.64 0.13 165)` | Brand academic emerald/teal |
 | `primary-foreground` | `oklch(0.99 0.005 166)` | `oklch(0.12 0.01 165)` | High-contrast text on primary |
 | `secondary` | `oklch(0.96 0.005 220)` | `oklch(0.25 0.008 225)` | Secondary buttons, subtle fills |
 | `secondary-foreground`| `oklch(0.22 0.015 230)` | `oklch(0.95 0.005 220)` | Text on secondary elements |
@@ -120,7 +120,7 @@ All colors are defined in the modern **OKLCH** color space to guarantee perceptu
 | `border` | `oklch(0.91 0.005 220)` | `oklch(0.28 0.008 225)` | Structural dividers, card borders |
 | `ring` | `oklch(0.508 0.118 165.612)` | `oklch(0.58 0.125 165)` | Accessible keyboard focus indicator |
 | `destructive` | `oklch(0.58 0.22 25)` | `oklch(0.65 0.20 25)` | Errors, bans, destructive deletions |
-| `warning` | `oklch(0.72 0.16 70)` | `oklch(0.75 0.16 70)` | Expiration badges (30d TTL), warnings |
+| `warning` | `oklch(0.51 0.15 62)` | `oklch(0.75 0.16 70)` | Expiration badges (30d TTL), warnings |
 
 ### 2.2 Contributor Tier Progression Palette
 
