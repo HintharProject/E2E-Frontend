@@ -169,17 +169,17 @@ export function ManageSanctionModal({
           </DialogHeader>
 
           {/* User Preview */}
-          <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs">
-            <div className="font-semibold text-ink">{user.display_name}</div>
-            {user.email ? <div className="text-ink-muted">{user.email}</div> : null}
-            <div className="mt-1 text-ink-muted">
-              Current Status: <span className="font-semibold text-ink">{user.ban_status || "ACTIVE"}</span>
+          <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs">
+            <div className="font-semibold text-foreground">{user.display_name}</div>
+            {user.email ? <div className="text-muted-foreground">{user.email}</div> : null}
+            <div className="mt-1 text-muted-foreground">
+              Current Status: <span className="font-semibold text-foreground">{user.ban_status || "ACTIVE"}</span>
             </div>
           </div>
 
           {/* Sanction Options */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-ink">Sanction Level</label>
+            <label className="text-xs font-semibold text-foreground">Sanction Level</label>
             <div className="grid gap-2">
               {SANCTION_OPTIONS.filter((opt) => isAdmin || opt.status !== "PERMANENT_BAN").map((opt) => {
                 const isSelected = selectedStatus === opt.status;
@@ -193,9 +193,9 @@ export function ManageSanctionModal({
                       "flex items-start gap-3 rounded-xl border p-3 text-left transition-all",
                       isSelected
                         ? opt.isDestructive
-                          ? "border-destructive bg-destructive/5 text-ink ring-1 ring-destructive/20"
-                          : "border-primary bg-primary/5 text-ink ring-1 ring-primary/20"
-                        : "border-line bg-card hover:bg-muted/40 text-ink-muted"
+                          ? "border-destructive bg-destructive/5 text-foreground ring-1 ring-destructive/20"
+                          : "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20"
+                        : "border-border bg-card hover:bg-muted/40 text-muted-foreground"
                     )}
                   >
                     <div
@@ -205,13 +205,13 @@ export function ManageSanctionModal({
                           ? opt.isDestructive
                             ? "border-destructive bg-destructive text-destructive-foreground"
                             : "border-primary bg-primary text-primary-foreground"
-                          : "border-line bg-surface"
+                          : "border-border bg-background"
                       )}
                     >
                       {isSelected && <Check className="size-2.5" />}
                     </div>
                     <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                         {opt.label}
                         {opt.durationInfo && (
                           <span className="flex items-center gap-1 text-[10px] text-amber-500 font-normal">
@@ -220,7 +220,7 @@ export function ManageSanctionModal({
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] leading-relaxed text-ink-muted">
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
                         {opt.description}
                       </p>
                     </div>
@@ -232,9 +232,9 @@ export function ManageSanctionModal({
 
           {/* Audit Reason (Mandatory) */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink flex items-center justify-between">
+            <label className="text-xs font-semibold text-foreground flex items-center justify-between">
               <span>Audit Reason <span className="text-destructive">*</span></span>
-              <span className="text-[10px] text-ink-muted">Required for compliance</span>
+              <span className="text-[10px] text-muted-foreground">Required for compliance</span>
             </label>
             <Input
               required

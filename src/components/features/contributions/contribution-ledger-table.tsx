@@ -71,7 +71,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
       {/* Table Filter Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <label htmlFor="event-filter" className="text-xs font-medium text-ink-muted">
+          <label htmlFor="event-filter" className="text-xs font-medium text-muted-foreground">
             Filter Event:
           </label>
           <select
@@ -81,7 +81,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
               setEventTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-line bg-card px-2.5 py-1 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
           >
             {EVENT_TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -104,10 +104,10 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
       </div>
 
       {/* Table Container */}
-      <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-2xs">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="border-b border-line bg-muted/50 text-ink-muted">
+            <thead className="border-b border-border bg-muted/50 text-muted-foreground">
               <tr>
                 <th className="px-4 py-3 font-semibold">Date & Time</th>
                 <th className="px-4 py-3 font-semibold">Event</th>
@@ -117,7 +117,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                 <th className="px-4 py-3 font-semibold">Peer / Actor</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {isLoading ? (
                 Array.from({ length: 5 }).map((_, i) => (
                   <tr key={i} className="animate-pulse">
@@ -128,13 +128,13 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                 ))
               ) : isError ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     Unable to load contribution transaction history.
                   </td>
                 </tr>
               ) : transactions.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-ink-muted">
+                  <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                     No contribution transactions recorded for this filter.
                   </td>
                 </tr>
@@ -147,7 +147,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                   return (
                     <tr key={tx.id} className="hover:bg-muted/30 transition-colors">
                       {/* Date */}
-                      <td className="px-4 py-3 text-ink-muted whitespace-nowrap">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         {formatDate(tx.created_at)}
                       </td>
 
@@ -165,7 +165,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                             "inline-flex items-center gap-1",
                             isPositive && "text-emerald-600 dark:text-emerald-400",
                             isNegative && "text-rose-600 dark:text-rose-400",
-                            !isPositive && !isNegative && "text-ink-muted"
+                            !isPositive && !isNegative && "text-muted-foreground"
                           )}
                         >
                           {isPositive && <ArrowUpRight className="size-3.5" />}
@@ -177,7 +177,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                       </td>
 
                       {/* Resulting Balance */}
-                      <td className="px-4 py-3 font-mono font-medium text-ink tabular-nums whitespace-nowrap">
+                      <td className="px-4 py-3 font-mono font-medium text-foreground tabular-nums whitespace-nowrap">
                         {tx.resulting_balance.toLocaleString()} pts
                       </td>
 
@@ -187,7 +187,7 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                           targetUrl ? (
                             <Link
                               href={targetUrl}
-                              className="text-brand hover:underline inline-flex items-center gap-1 font-medium truncate"
+                              className="text-primary hover:underline inline-flex items-center gap-1 font-medium truncate"
                               title={tx.target_preview.title || tx.target_preview.body_snippet}
                             >
                               <FileText className="size-3 shrink-0" />
@@ -196,12 +196,12 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                               </span>
                             </Link>
                           ) : (
-                            <span className="text-ink-muted truncate">
+                            <span className="text-muted-foreground truncate">
                               {tx.target_preview.title || tx.target_preview.body_snippet || tx.target_preview.content_type}
                             </span>
                           )
                         ) : (
-                          <span className="text-ink-muted">—</span>
+                          <span className="text-muted-foreground">—</span>
                         )}
                       </td>
 
@@ -209,11 +209,11 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
                       <td className="px-4 py-3 whitespace-nowrap">
                         {tx.actor ? (
                           <div className="flex items-center gap-1.5">
-                            <span className="font-medium text-ink">{tx.actor.display_name}</span>
+                            <span className="font-medium text-foreground">{tx.actor.display_name}</span>
                             <ContributorBadge tier={tx.actor.contributor_tier} size="sm" showIcon={false} />
                           </div>
                         ) : (
-                          <span className="text-ink-muted">System</span>
+                          <span className="text-muted-foreground">System</span>
                         )}
                       </td>
                     </tr>
@@ -226,8 +226,8 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
 
         {/* Pagination Footer */}
         {meta && meta.total_count > pageSize && (
-          <div className="flex items-center justify-between px-4 py-3 border-t border-line bg-muted/30">
-            <span className="text-xs text-ink-muted">
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/30">
+            <span className="text-xs text-muted-foreground">
               Page <strong>{page}</strong> of <strong>{totalPages}</strong> ({meta.total_count} total records)
             </span>
             <div className="flex items-center gap-2">

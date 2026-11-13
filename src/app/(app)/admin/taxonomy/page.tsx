@@ -78,14 +78,14 @@ function AdminTaxonomyContent() {
       />
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-surface border border-line overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-muted/40 border border-border overflow-x-auto">
         <button
           type="button"
           onClick={() => setActiveTab("academic")}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
             activeTab === "academic"
-              ? "bg-card text-ink shadow-sm border border-line font-semibold"
-              : "text-ink-muted hover:text-ink hover:bg-card/50"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           }`}
         >
           <GraduationCap className="size-3.5 text-blue-500" />
@@ -97,8 +97,8 @@ function AdminTaxonomyContent() {
           onClick={() => setActiveTab("exams")}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
             activeTab === "exams"
-              ? "bg-card text-ink shadow-sm border border-line font-semibold"
-              : "text-ink-muted hover:text-ink hover:bg-card/50"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           }`}
         >
           <Calendar className="size-3.5 text-emerald-500" />
@@ -110,8 +110,8 @@ function AdminTaxonomyContent() {
           onClick={() => setActiveTab("moderation")}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
             activeTab === "moderation"
-              ? "bg-card text-ink shadow-sm border border-line font-semibold"
-              : "text-ink-muted hover:text-ink hover:bg-card/50"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           }`}
         >
           <ShieldAlert className="size-3.5 text-amber-500" />
@@ -123,8 +123,8 @@ function AdminTaxonomyContent() {
           onClick={() => setActiveTab("tags")}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
             activeTab === "tags"
-              ? "bg-card text-ink shadow-sm border border-line font-semibold"
-              : "text-ink-muted hover:text-ink hover:bg-card/50"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           }`}
         >
           <TagIcon className="size-3.5 text-primary" />
@@ -136,8 +136,8 @@ function AdminTaxonomyContent() {
           onClick={() => setActiveTab("unclassified")}
           className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-medium transition-all shrink-0 ${
             activeTab === "unclassified"
-              ? "bg-card text-ink shadow-sm border border-line font-semibold"
-              : "text-ink-muted hover:text-ink hover:bg-card/50"
+              ? "bg-card text-foreground shadow-xs border border-border font-semibold"
+              : "text-muted-foreground hover:text-foreground hover:bg-card/50"
           }`}
         >
           <Layers3 className="size-3.5 text-purple-500" />

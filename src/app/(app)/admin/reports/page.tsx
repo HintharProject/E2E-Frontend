@@ -283,7 +283,7 @@ function AdminReportsContent() {
 
 
       {/* 1. Content Type Tabs */}
-      <div className="border-b border-line">
+      <div className="border-b border-border">
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
           {CONTENT_TABS.map((tab) => {
             const count = getCountForTab(tab.id);
@@ -298,7 +298,7 @@ function AdminReportsContent() {
                 className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? "bg-primary text-primary-foreground shadow-sm"
-                    : "bg-muted/40 hover:bg-muted text-ink-muted hover:text-ink"
+                    : "bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <span>{tab.label}</span>
@@ -307,7 +307,7 @@ function AdminReportsContent() {
                     className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
                       isActive
                         ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-brand/15 text-brand"
+                        : "bg-primary/15 text-primary"
                     }`}
                   >
                     {count}
@@ -320,7 +320,7 @@ function AdminReportsContent() {
       </div>
 
       {/* 2. Faceted Filter Bar & Workflow Status Pills */}
-      <div className="rounded-2xl border border-line bg-card p-4 space-y-3.5">
+      <div className="rounded-xl border border-border bg-card p-4 space-y-3.5 shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3">
           {/* Status Pills */}
           <div className="flex items-center gap-1.5 bg-muted/40 p-1 rounded-xl">
@@ -330,8 +330,8 @@ function AdminReportsContent() {
                 onClick={() => setStatusFilter(st)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
                   statusFilter === st
-                    ? "bg-card text-ink font-semibold shadow-xs"
-                    : "text-ink-muted hover:text-ink"
+                    ? "bg-card text-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 {st === "PENDING"
@@ -351,7 +351,7 @@ function AdminReportsContent() {
               variant="ghost"
               size="sm"
               onClick={handleResetFilters}
-              className="text-xs text-ink-muted hover:text-ink h-8 px-2.5"
+              className="text-xs text-muted-foreground hover:text-foreground h-8 px-2.5"
             >
               <RotateCcw className="size-3.5 mr-1" /> Reset Filters
             </Button>
@@ -362,7 +362,7 @@ function AdminReportsContent() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
           {/* Search Query */}
           <div className="relative">
-            <Search className="absolute left-3 top-2.5 size-4 text-ink-muted" />
+            <Search className="absolute left-3 top-2.5 size-4 text-muted-foreground" />
             <Input
               placeholder="Search targets or notes..."
               value={searchQuery}
@@ -375,7 +375,7 @@ function AdminReportsContent() {
           <select
             value={subjectFilter}
             onChange={(e) => setSubjectFilter(e.target.value)}
-            className="h-9 rounded-xl border border-line bg-background px-3 text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
           >
             <option value="">All Subjects</option>
             {subjects.map((s) => (
@@ -389,7 +389,7 @@ function AdminReportsContent() {
           <select
             value={levelFilter}
             onChange={(e) => setLevelFilter(e.target.value)}
-            className="h-9 rounded-xl border border-line bg-background px-3 text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
           >
             <option value="">All Levels</option>
             {levels.map((l) => (
@@ -403,7 +403,7 @@ function AdminReportsContent() {
           <select
             value={reasonFilter}
             onChange={(e) => setReasonFilter(e.target.value)}
-            className="h-9 rounded-xl border border-line bg-background px-3 text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
           >
             {REASON_OPTIONS.map((r) => (
               <option key={r.value} value={r.value}>
@@ -416,7 +416,7 @@ function AdminReportsContent() {
           <select
             value={severityFilter}
             onChange={(e) => setSeverityFilter(e.target.value)}
-            className="h-9 rounded-xl border border-line bg-background px-3 text-xs text-ink focus:outline-hidden focus:ring-1 focus:ring-ring"
+            className="h-9 rounded-xl border border-border bg-background px-3 text-xs text-foreground focus:outline-hidden focus:ring-1 focus:ring-ring"
           >
             {SEVERITY_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>
@@ -428,33 +428,33 @@ function AdminReportsContent() {
       </div>
 
       {/* 3. Reports Queue Table */}
-      <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-xs">
+      <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
             <Loader2 className="size-8 animate-spin text-muted-foreground" />
           </div>
         ) : reports.length === 0 ? (
           <div className="p-12 text-center space-y-2">
-            <div className="flex size-12 items-center justify-center rounded-full bg-muted mx-auto text-ink-muted">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted mx-auto text-muted-foreground">
               <CheckCircle2 className="size-6 text-emerald-500" />
             </div>
-            <h3 className="text-base font-semibold text-ink">Queue is Clear!</h3>
-            <p className="text-xs text-ink-muted max-w-sm mx-auto">
+            <h3 className="text-base font-semibold text-foreground">Queue is Clear!</h3>
+            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
               No reports match your selected criteria. Platform content is clean and adhering to
               community guidelines.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-ink">
-              <thead className="bg-muted/60 border-b border-line text-xs font-semibold text-ink-muted uppercase tracking-wider">
+            <table className="w-full text-left text-sm text-foreground">
+              <thead className="bg-muted/60 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 <tr>
                   <th className="p-4 w-10">
                     <input
                       type="checkbox"
                       checked={isAllSelected}
                       onChange={toggleSelectAll}
-                      className="size-4 rounded border-line text-primary focus:ring-primary/20 cursor-pointer"
+                      className="size-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
                       aria-label="Select all reports"
                     />
                   </th>
@@ -465,7 +465,7 @@ function AdminReportsContent() {
                   <th className="p-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-border">
                 {reports.map((r) => {
                   const target = r.target_details;
                   const author = target?.author || (r.target_type === "USER" && target ? {
@@ -495,7 +495,7 @@ function AdminReportsContent() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSelectRow(r.id)}
-                          className="size-4 rounded border-line text-primary focus:ring-primary/20 cursor-pointer"
+                          className="size-4 rounded border-border text-primary focus:ring-primary/20 cursor-pointer"
                           aria-label={`Select report ${r.id}`}
                         />
                       </td>
@@ -504,7 +504,7 @@ function AdminReportsContent() {
                       <td className="p-4 max-w-xs">
                         <div className="space-y-1">
                           <div className="flex items-center gap-1.5 flex-wrap">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-[11px] font-bold text-ink">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted text-[11px] font-bold text-foreground">
                               {renderTargetIcon(r.target_type)}
                               <span>{r.target_type}</span>
                             </span>
@@ -521,11 +521,11 @@ function AdminReportsContent() {
                           </div>
                           <div
                             onClick={() => setInspectingReport(r)}
-                            className="font-semibold text-ink hover:text-primary cursor-pointer line-clamp-1 transition-colors"
+                            className="font-semibold text-foreground hover:text-primary cursor-pointer line-clamp-1 transition-colors"
                           >
                             {target?.title || `Item #${r.target_id.substring(0, 8)}`}
                           </div>
-                          <p className="text-xs text-ink-muted line-clamp-2">
+                          <p className="text-xs text-muted-foreground line-clamp-2">
                             {target?.snippet || "No text preview"}
                           </p>
                         </div>
@@ -559,7 +559,7 @@ function AdminReportsContent() {
                               </Badge>
                             )}
                           </div>
-                          <div className="text-xs font-medium text-ink">
+                          <div className="text-xs font-medium text-foreground">
                             {r.reason === "SPAM"
                               ? "Spam / Promotion"
                               : r.reason === "HARASSMENT"
@@ -573,7 +573,7 @@ function AdminReportsContent() {
                               : r.reason}
                           </div>
                           {r.reason === "OTHER" && r.notes && (
-                            <p className="text-[11px] text-ink-muted italic line-clamp-1" title={r.notes}>
+                            <p className="text-[11px] text-muted-foreground italic line-clamp-1" title={r.notes}>
                               &ldquo;{r.notes}&rdquo;
                             </p>
                           )}
@@ -588,13 +588,13 @@ function AdminReportsContent() {
                               <Link
                                 href={`/users/${reporter.id}`}
                                 target="_blank"
-                                className="text-xs font-semibold text-ink hover:text-primary hover:underline inline-flex items-center gap-1"
+                                className="text-xs font-semibold text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
                               >
                                 <span>{reporter.display_name || "Unknown"}</span>
-                                <ExternalLink className="size-2.5 text-ink-muted" />
+                                <ExternalLink className="size-2.5 text-muted-foreground" />
                               </Link>
                             ) : (
-                              <span className="text-xs font-semibold text-ink">
+                              <span className="text-xs font-semibold text-foreground">
                                 {reporter?.display_name || "Unknown"}
                               </span>
                             )}
@@ -605,7 +605,7 @@ function AdminReportsContent() {
                               />
                             )}
                           </div>
-                          <div className="text-[11px] text-ink-muted">
+                          <div className="text-[11px] text-muted-foreground">
                             {new Date(r.created_at).toLocaleDateString()}
                           </div>
                         </div>
@@ -623,7 +623,7 @@ function AdminReportsContent() {
                                 Account Target
                               </Badge>
                               {author?.role && (
-                                <span className="text-[11px] text-ink-muted capitalize">
+                                <span className="text-[11px] text-muted-foreground capitalize">
                                   {author.role.toLowerCase()}
                                 </span>
                               )}
@@ -638,7 +638,7 @@ function AdminReportsContent() {
                                   Active
                                 </span>
                               )}
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 ({author?.lifetime_reports_received ?? 0} flags)
                               </span>
                             </div>
@@ -650,13 +650,13 @@ function AdminReportsContent() {
                                 <Link
                                   href={`/users/${author.id}`}
                                   target="_blank"
-                                  className="text-xs font-semibold text-ink hover:text-primary hover:underline inline-flex items-center gap-1"
+                                  className="text-xs font-semibold text-foreground hover:text-primary hover:underline inline-flex items-center gap-1"
                                 >
                                   <span>{author.display_name}</span>
-                                  <ExternalLink className="size-2.5 text-ink-muted" />
+                                  <ExternalLink className="size-2.5 text-muted-foreground" />
                                 </Link>
                               ) : (
-                                <span className="text-xs font-semibold text-ink">
+                                <span className="text-xs font-semibold text-foreground">
                                   {author.display_name}
                                 </span>
                               )}
@@ -672,13 +672,13 @@ function AdminReportsContent() {
                                   Active
                                 </span>
                               )}
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 ({author.lifetime_reports_received ?? 0} flags)
                               </span>
                             </div>
                           </div>
                         ) : (
-                          <span className="text-xs text-ink-muted">—</span>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </td>
 
@@ -726,7 +726,7 @@ function AdminReportsContent() {
                                   updateStatusMutation.mutate({ id: r.id, status: "DISMISSED" })
                                 }
                                 disabled={updateStatusMutation.isPending}
-                                className="h-8 px-2 text-xs text-ink-muted hover:text-ink"
+                                className="h-8 px-2 text-xs text-muted-foreground hover:text-foreground"
                                 title="Dismiss Report (No Violation)"
                               >
                                 <XCircle className="size-4" />

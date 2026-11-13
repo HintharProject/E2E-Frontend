@@ -6,6 +6,7 @@ import { useAuth } from "@clerk/nextjs";
 import { ForumFeed } from "@/components/features/forum-feed";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ContributionCard } from "@/components/features/users/contribution-card";
+import { ContributionLedgerTable } from "@/components/features/contributions/contribution-ledger-table";
 import { PostCardSkeleton } from "@/components/features/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -18,16 +19,17 @@ import { apiFetch, buildQueryString } from "@/services/api-client";
 import { cn } from "@/lib/utils";
 import type { Problem } from "@/types";
 
-type ProfileTab = "posts" | "problems" | "contributions";
+type ProfileTab = "posts" | "problems" | "contributions" | "reputation";
 
 const TABS: { id: ProfileTab; label: string }[] = [
   { id: "posts", label: "Posts" },
   { id: "problems", label: "Solve!" },
   { id: "contributions", label: "Solutions" },
+  { id: "reputation", label: "Ledger" },
 ];
 
 function Timeline({ children }: { children: React.ReactNode }) {
-  return <div className="relative space-y-4 border-l border-line pl-0">{children}</div>;
+  return <div className="relative space-y-4 border-l border-border pl-0">{children}</div>;
 }
 
 function ProblemsTimeline({ userId }: { userId: string }) {
@@ -154,6 +156,7 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
     posts: activityPoints.posts,
     problems: activityPoints.problems,
     contributions: activityPoints.solutions,
+    reputation: stats?.current_net_points ?? 0,
   };
 
   const prefetch = async (next: ProfileTab) => {
@@ -186,7 +189,7 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
 
   return (
     <section className="mt-10">
-      <nav className="flex items-center gap-1.5 overflow-x-auto border-b border-line pb-2">
+      <nav className="flex items-center gap-1.5 overflow-x-auto border-b border-border pb-2">
         {TABS.map((item) => {
           const pts = pointsMap[item.id] ?? 0;
           const isActive = tab === item.id;
@@ -201,7 +204,7 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
                 "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors cursor-pointer",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-2xs"
-                  : "text-ink-muted hover:bg-muted hover:text-ink"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )}
             >
               <span>{item.label}</span>
@@ -210,7 +213,7 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
                   "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold transition-colors",
                   isActive
                     ? "bg-primary-foreground/20 text-primary-foreground"
-                    : "bg-muted text-ink-muted group-hover:text-ink"
+                    : "bg-muted text-muted-foreground group-hover:text-foreground"
                 )}
               >
                 {formatContributionPoints(pts)}
@@ -222,12 +225,13 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
 
       <div className="mt-6">
         {tab === "posts" && (
-          <div className="relative border-l border-line pl-6">
+          <div className="relative border-l border-border pl-6">
             <ForumFeed authorId={userId} />
           </div>
         )}
         {tab === "problems" && <ProblemsTimeline userId={userId} />}
         {tab === "contributions" && <ContributionsTimeline userId={userId} />}
+        {tab === "reputation" && <ContributionLedgerTable userId={userId} />}
       </div>
     </section>
   );
