@@ -21,7 +21,7 @@ export function Field({
   children,
 }: FieldProps) {
   const labelElement = (
-    <span className="flex items-center gap-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+    <span className="flex items-center gap-1 text-sm font-medium text-foreground">
       {label}
       {required && (
         <span className="text-destructive text-sm leading-none" aria-hidden="true">
@@ -47,11 +47,15 @@ export function Field({
       {htmlFor && children}
 
       {description && !error && (
-        <p className="text-xs text-muted-foreground leading-normal">{description}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">{description}</p>
       )}
 
       {error && (
-        <p className="text-xs font-medium text-destructive flex items-center gap-1 mt-0.5" role="alert">
+        <p
+          className="mt-0.5 flex items-center gap-1 text-xs font-medium text-destructive"
+          role="alert"
+          aria-live="polite"
+        >
           {error}
         </p>
       )}
