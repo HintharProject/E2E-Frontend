@@ -73,11 +73,11 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
       <div
         className={cn(
           "flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors duration-200",
-          mode === "UNTIMED_REVISION" && "border-border bg-surface text-muted-foreground",
+          mode === "UNTIMED_REVISION" && "border-border bg-muted/50 text-muted-foreground",
           mode !== "UNTIMED_REVISION" && !isWarning && !isCritical && !isExpired &&
             "border-border bg-card text-foreground shadow-2xs",
           isWarning && "border-warning/50 bg-warning/10 text-warning font-bold",
-          isCritical && "border-destructive/60 bg-destructive/15 text-destructive font-bold animate-pulse",
+          isCritical && "border-destructive/60 bg-destructive/15 text-destructive font-bold motion-safe:animate-pulse",
           isExpired && "border-destructive bg-destructive/20 text-destructive font-black shadow-sm"
         )}
       >
@@ -85,13 +85,13 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
         {mode === "UNTIMED_REVISION" ? (
           <Clock className="size-3.5 text-muted-foreground" aria-hidden="true" />
         ) : isExpired ? (
-          <AlertTriangle className="size-3.5 text-destructive animate-pulse" aria-hidden="true" />
+          <AlertTriangle className="size-3.5 text-destructive motion-safe:animate-pulse" aria-hidden="true" />
         ) : isCritical ? (
-          <Flame className="size-3.5 text-destructive animate-pulse" aria-hidden="true" />
+          <Flame className="size-3.5 text-destructive motion-safe:animate-pulse" aria-hidden="true" />
         ) : isWarning ? (
           <AlertTriangle className="size-3.5 text-warning" aria-hidden="true" />
         ) : (
-          <Clock className={cn("size-3.5", isRunning ? "text-primary animate-spin" : "text-muted-foreground")} style={{ animationDuration: "8s" }} aria-hidden="true" />
+          <Clock className={cn("size-3.5", isRunning ? "text-primary motion-safe:animate-spin" : "text-muted-foreground")} style={{ animationDuration: "8s" }} aria-hidden="true" />
         )}
 
         {/* Readout */}
@@ -213,10 +213,10 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
 
       {/* Non-Blocking Expiry Toast Alert */}
       {isExpired && showExpiredBanner && (
-        <div className="absolute top-12 right-0 z-40 w-72 rounded-xl border border-red-500/40 bg-card p-3 shadow-xl animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute top-12 right-0 z-40 w-72 rounded-xl border border-destructive/40 bg-card p-3 shadow-modal animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="flex items-start justify-between gap-2">
-            <div className="flex items-center gap-2 text-red-600 dark:text-red-400 font-semibold text-xs">
-              <AlertTriangle className="size-4 shrink-0" />
+            <div className="flex items-center gap-2 text-destructive font-semibold text-xs">
+              <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
               <span>Time&apos;s Up!</span>
             </div>
             <button

@@ -201,6 +201,28 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     }
   }, [leftPaperId, rightPaperId]);
 
+  // Persist last opened Train! paper for Home Hub & Sidebar quick-resume
+  useEffect(() => {
+    const active = primaryPaper || paper;
+    if (!active?.id || typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        "e2e_last_train_paper",
+        JSON.stringify({
+          id: active.id,
+          title: active.title || active.file_name,
+          subject: active.subject_details?.name,
+          level: active.level_details?.name,
+          subjectName: active.subject_details?.name,
+          levelName: active.level_details?.name,
+          updatedAt: Date.now(),
+        })
+      );
+    } catch {
+      // Ignore storage access errors
+    }
+  }, [primaryPaper, paper]);
+
   // Handlers for Left and Right toggle buttons on each paper in the sidebar
   const handleToggleLeft = (treePaper: TrainTreePaper) => {
     if (leftPaperId === treePaper.id) {

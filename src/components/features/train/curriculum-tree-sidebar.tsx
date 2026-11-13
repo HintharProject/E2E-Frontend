@@ -115,8 +115,9 @@ export function CurriculumTreeSidebar({
 
       {/* Sidebar Container */}
       <aside
+        aria-label="Curriculum archive"
         className={cn(
-          "fixed lg:static top-14 bottom-0 left-0 z-40 w-72 sm:w-80 bg-card border-r border-border flex flex-col transition-transform duration-200 ease-in-out shrink-0 select-none",
+          "fixed lg:static top-14 bottom-0 left-0 z-40 w-72 sm:w-80 bg-sidebar border-r border-border flex flex-col transition-transform duration-200 ease-in-out shrink-0",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
@@ -128,7 +129,7 @@ export function CurriculumTreeSidebar({
                 Curriculum Archive
               </span>
               {treeData?.subject && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
                   {treeData.subject.code}
                 </Badge>
               )}
@@ -137,18 +138,20 @@ export function CurriculumTreeSidebar({
               type="button"
               onClick={onClose}
               aria-label="Close curriculum sidebar"
-              className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-1 text-muted-foreground hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
+              className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-1 text-muted-foreground hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
               <X className="size-4" aria-hidden="true" />
             </button>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" aria-hidden="true" />
             <Input
+              sizeVariant="sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search paper code (e.g. 12)..."
+              aria-label="Search paper code in curriculum archive"
               className="h-8 pl-8 text-xs bg-card border-border placeholder:text-muted-foreground"
             />
           </div>
@@ -182,23 +185,24 @@ export function CurriculumTreeSidebar({
                   <button
                     type="button"
                     onClick={() => toggleYear(yearItem.year)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+                    aria-expanded={isExpanded}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       {isExpanded ? (
-                        <FolderOpen className="size-3.5 text-primary" />
+                        <FolderOpen className="size-3.5 text-primary" aria-hidden="true" />
                       ) : (
-                        <Folder className="size-3.5 text-muted-foreground" />
+                        <Folder className="size-3.5 text-muted-foreground" aria-hidden="true" />
                       )}
-                      <span>{formatYear(yearItem.year)}</span>
+                      <span className="font-mono tabular-nums">{formatYear(yearItem.year)}</span>
                     </div>
 
                     <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <span className="text-[10px] font-normal">{totalPapersInYear} papers</span>
+                      <span className="font-mono tabular-nums text-[10px] font-normal">{totalPapersInYear} papers</span>
                       {isExpanded ? (
-                        <ChevronDown className="size-3" />
+                        <ChevronDown className="size-3" aria-hidden="true" />
                       ) : (
-                        <ChevronRight className="size-3" />
+                        <ChevronRight className="size-3" aria-hidden="true" />
                       )}
                     </div>
                   </button>
@@ -339,6 +343,8 @@ export function CurriculumTreeSidebar({
                               return onToggleLeft ? (
                                 <div
                                   key={paper.id}
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => {
                                     if (isMS && onToggleRight) {
                                       onToggleRight(paperWithMeta);
@@ -346,8 +352,18 @@ export function CurriculumTreeSidebar({
                                       onToggleLeft(paperWithMeta);
                                     }
                                   }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      if (isMS && onToggleRight) {
+                                        onToggleRight(paperWithMeta);
+                                      } else {
+                                        onToggleLeft(paperWithMeta);
+                                      }
+                                    }
+                                  }}
                                   className={cn(
-                                    "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border",
+                                    "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                     isLeft
                                       ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                                       : isRight

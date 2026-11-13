@@ -73,40 +73,51 @@ export function TrainTopBar({
     rightPaper?.subject_details?.name ||
     "";
 
+  const resourcesBackHref = React.useMemo(() => {
+    const params = new URLSearchParams();
+    const levelId = paper.level_details?.id || (typeof paper.level === "string" ? paper.level : "");
+    const subjectId = paper.subject_details?.id || (typeof paper.subject === "string" ? paper.subject : "");
+    if (levelId) params.set("level", levelId);
+    if (subjectId) params.set("subject", subjectId);
+    const qs = params.toString();
+    return qs ? `/resources?${qs}` : "/resources";
+  }, [paper]);
+
   return (
-    <header className="h-14 w-full border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
+    <header className="h-14 w-full border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 z-30">
       {/* Left Section: Back link & Navigation Breadcrumbs */}
-      <div className="flex items-center gap-2.5 min-w-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
         {/* Toggle Sidebar Button */}
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
+          className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[32px] md:min-w-[32px] p-1.5 rounded-lg border border-border bg-muted/60 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
           title={isSidebarOpen ? "Collapse Curriculum Sidebar" : "Expand Curriculum Sidebar"}
-          aria-label="Toggle Sidebar"
+          aria-label={isSidebarOpen ? "Collapse Curriculum Sidebar" : "Expand Curriculum Sidebar"}
+          aria-expanded={isSidebarOpen}
         >
-          <PanelLeft className="size-4" />
+          <PanelLeft className="size-4" aria-hidden="true" />
         </button>
 
         {/* Back Link to Resources */}
         <Link
-          href="/resources"
+          href={resourcesBackHref}
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
             className: "h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1 shrink-0",
           })}
         >
-          <ArrowLeft className="size-3.5" />
+          <ArrowLeft className="size-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">Resources</span>
         </Link>
 
-        <div className="h-4 w-px bg-border hidden sm:block shrink-0" />
+        <div className="h-4 w-px bg-border hidden sm:block shrink-0" aria-hidden="true" />
 
         {/* Subject & Paper Identity */}
         <div className="flex items-center gap-2 min-w-0">
           {activeSubjectName && (
-            <span className="text-xs font-semibold text-foreground truncate max-w-[120px] sm:max-w-[180px] hidden md:inline">
+            <span className="font-heading text-xs font-semibold text-foreground truncate max-w-[120px] sm:max-w-[180px] hidden md:inline">
               {activeSubjectName}
             </span>
           )}
@@ -115,7 +126,7 @@ export function TrainTopBar({
             <div className="flex items-center gap-1.5 flex-wrap">
               <Badge
                 variant="outline"
-                className="text-[11px] font-semibold border-primary/40 bg-primary/5 text-primary px-2 py-0.5 shrink-0 flex items-center gap-1"
+                className="font-mono tabular-nums text-[11px] font-semibold border-primary/40 bg-primary/8 text-primary px-2 py-0.5 shrink-0 flex items-center gap-1"
                 title={`Left Document: ${leftPaper.file_name}`}
               >
                 <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
@@ -130,10 +141,10 @@ export function TrainTopBar({
 
               <Badge
                 variant="outline"
-                className="text-[11px] font-semibold border-border bg-secondary text-secondary-foreground px-2 py-0.5 shrink-0 flex items-center gap-1"
+                className="font-mono tabular-nums text-[11px] font-semibold border-border bg-secondary text-secondary-foreground px-2 py-0.5 shrink-0 flex items-center gap-1"
                 title={`Right Document: ${rightPaper.file_name}`}
               >
-                <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
+                <span className="font-bold text-[9px] bg-foreground/80 text-background px-1 rounded leading-none py-0.5">
                   R
                 </span>
                 <span>
@@ -146,7 +157,7 @@ export function TrainTopBar({
           ) : (
             <Badge
               variant="outline"
-              className="text-[11px] font-semibold border-border bg-muted text-foreground px-2 py-0.5 shrink-0"
+              className="font-mono tabular-nums text-[11px] font-semibold border-border bg-muted text-foreground px-2 py-0.5 shrink-0"
             >
               {paper.year || ""} {formatSession(paper.session) && `· ${formatSession(paper.session)}`}
               {paper.paper_code ? ` · P${paper.paper_code}` : ""}{" "}
