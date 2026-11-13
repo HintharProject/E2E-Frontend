@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { Button } from "@/components/ui/button";
@@ -9,7 +10,7 @@ import { formatDate } from "@/lib/utils";
 import { LessonDetailActions } from "@/components/features/lessons/lesson-detail-actions";
 import dynamic from "next/dynamic";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
-  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-border animate-pulse"></div>,
   ssr: false
 });
 import LessonDetailLoading from "@/app/(app)/lessons/[id]/loading";
@@ -87,8 +88,8 @@ export function LessonDetailClient({ id }: { id: string }) {
 
   if (isError || !lesson) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <p className="text-ink-muted">Could not load this lesson.</p>
+      <div className="max-w-3xl py-8">
+        <p className="text-muted-foreground">Could not load this lesson.</p>
       </div>
     );
   }
@@ -108,7 +109,7 @@ export function LessonDetailClient({ id }: { id: string }) {
   }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="max-w-3xl space-y-6">
       <PageHeader
         title={lesson.title}
         description={`Published ${formatDate(lesson.created_at)} · no comments on lessons`}
@@ -148,19 +149,21 @@ export function LessonDetailClient({ id }: { id: string }) {
               variant={localUserVote === 1 ? "default" : "secondary"} 
               disabled={isAuthor}
               title={isAuthor ? "You cannot vote on your own lesson" : "Upvote"}
-              className={isAuthor ? "opacity-50 cursor-not-allowed" : ""}
+              className={isAuthor ? "opacity-50 cursor-not-allowed gap-1" : "gap-1"}
               onClick={() => handleVote(localUserVote === 1 ? 0 : 1)}
             >
-              ▲ Upvote ({localVoteCount})
+              <ChevronUp className="size-4" />
+              <span>Upvote ({localVoteCount})</span>
             </Button>
             <Button 
               variant={localUserVote === -1 ? "default" : "ghost"} 
               disabled={isAuthor}
               title={isAuthor ? "You cannot vote on your own lesson" : "Downvote"}
-              className={isAuthor ? "opacity-50 cursor-not-allowed" : ""}
+              className={isAuthor ? "opacity-50 cursor-not-allowed gap-1" : "gap-1"}
               onClick={() => handleVote(localUserVote === -1 ? 0 : -1)}
             >
-              ▼ Downvote
+              <ChevronDown className="size-4" />
+              <span>Downvote</span>
             </Button>
             <SaveButton entityType="lesson" entityId={lesson.id} variant="secondary" size="default" showLabel label="Save" />
             <Button variant="ghost" onClick={handleShare}>Share</Button>
