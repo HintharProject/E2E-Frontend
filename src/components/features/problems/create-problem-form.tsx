@@ -244,12 +244,12 @@ export function CreateProblemForm({
     }
   }, [selectedOrigin, selectedResource, watchedResourceId, watchedLevelId, watchedSubjectId, levels, subjects, setValue]);
 
-  const handleOpenTrainToSelectPaper = () => {
+  const handleOpenResourcesToSelectPaper = () => {
     const params = new URLSearchParams();
     if (watchedLevelId) params.set("level", watchedLevelId);
     if (watchedSubjectId) params.set("subject", watchedSubjectId);
     params.set("selectForProblem", "true");
-    router.push(`/train?${params.toString()}`);
+    router.push(`/resources?${params.toString()}`);
   };
 
   const formatSession = (s?: string) => {
@@ -628,14 +628,14 @@ export function CreateProblemForm({
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={handleOpenTrainToSelectPaper}
+                      onClick={handleOpenResourcesToSelectPaper}
                       className="h-9 px-4 gap-2 font-semibold text-xs shrink-0"
                     >
                       <FolderOpen className="size-4 text-primary" />
-                      <span>Select a Paper in Train</span>
+                      <span>Select a Paper in Resources</span>
                     </Button>
                     <span className="text-xs text-muted-foreground">
-                      Opens Train curriculum folders to choose and preview papers.
+                      Opens Exams &amp; Resources to browse, preview, and select past papers.
                     </span>
                   </div>
                 </div>
@@ -688,11 +688,11 @@ export function CreateProblemForm({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={handleOpenTrainToSelectPaper}
+                        onClick={handleOpenResourcesToSelectPaper}
                         className="h-8 px-2.5 gap-1.5 text-xs font-semibold"
                       >
                         <FolderOpen className="size-3.5" />
-                        <span>Change Paper in Train</span>
+                        <span>Change Paper</span>
                       </Button>
                       <Button
                         type="button"

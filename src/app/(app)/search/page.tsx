@@ -373,12 +373,12 @@ export default function SearchPage(props: {
                   <span className="text-[10px] text-ink-muted">Guides</span>
                 </Link>
                 <Link
-                  href="/train"
-                  className="p-3 rounded-xl border border-line bg-surface hover:border-primary/40 text-center transition-colors"
+                  href="/resources"
+                  className="p-3 rounded-xl border border-border bg-card hover:border-primary/40 text-center transition-colors"
                 >
-                  <FileText className="size-4 text-amber-500 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-ink block">Train!</span>
-                  <span className="text-[10px] text-ink-muted">Past Papers</span>
+                  <FileText className="size-4 text-primary mx-auto mb-1" />
+                  <span className="text-xs font-semibold text-foreground block">Resources</span>
+                  <span className="text-[10px] text-muted-foreground">Past Papers</span>
                 </Link>
               </div>
             </div>
