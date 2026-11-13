@@ -7,7 +7,7 @@ import { ForumFeed } from "@/components/features/forum-feed";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ContributionCard } from "@/components/features/users/contribution-card";
 import { ContributionLedgerTable } from "@/components/features/contributions/contribution-ledger-table";
-import { PostCardSkeleton } from "@/components/features/skeletons";
+import { PostCardSkeleton, ProblemCardSkeleton } from "@/components/features/skeletons";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useProblems } from "@/hooks/use-problems";
@@ -54,8 +54,8 @@ function ProblemsTimeline({ userId }: { userId: string }) {
   if (status === "pending" || isEmptyPending) {
     return (
       <div className="space-y-4">
-        <PostCardSkeleton />
-        <PostCardSkeleton />
+        <ProblemCardSkeleton />
+        <ProblemCardSkeleton />
       </div>
     );
   }
@@ -97,6 +97,7 @@ function ProblemsTimeline({ userId }: { userId: string }) {
             variant="secondary"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
+            className="min-h-[44px] md:min-h-0"
           >
             {isFetchingNextPage ? "Loading more..." : "Load more"}
           </Button>
@@ -189,7 +190,7 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
 
   return (
     <section className="mt-10">
-      <nav className="flex items-center gap-1.5 overflow-x-auto border-b border-border pb-2">
+      <nav aria-label="Profile activity sections" className="flex items-center gap-1.5 overflow-x-auto border-b border-border pb-2">
         {TABS.map((item) => {
           const pts = pointsMap[item.id] ?? 0;
           const isActive = tab === item.id;
@@ -200,8 +201,9 @@ export function ProfileActivityTabs({ userId }: { userId: string }) {
               onMouseEnter={() => prefetch(item.id)}
               onTouchStart={() => prefetch(item.id)}
               onClick={() => setTab(item.id)}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-sm font-semibold transition-colors cursor-pointer",
+                "inline-flex items-center gap-2 rounded-full min-h-[44px] md:min-h-0 px-3.5 py-1.5 text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                 isActive
                   ? "bg-primary text-primary-foreground shadow-2xs"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"

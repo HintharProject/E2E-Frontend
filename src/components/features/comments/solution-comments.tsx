@@ -657,6 +657,7 @@ function SolutionCommentsContent({
                   size="sm"
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
+                  className="min-h-[44px] md:min-h-0"
                 >
                   {isFetchingNextPage ? "Loading comments..." : "Load More Comments"}
                 </Button>

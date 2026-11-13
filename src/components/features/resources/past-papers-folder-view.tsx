@@ -155,7 +155,7 @@ export function PastPapersFolderView({
             <button
               type="button"
               onClick={() => toggleYear(y)}
-              className="flex items-center gap-3 p-4 text-left hover:bg-muted/40 transition-colors w-full focus:outline-none select-none"
+              className="flex items-center gap-3 p-4 text-left hover:bg-muted/40 transition-colors w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset select-none cursor-pointer"
             >
               <div className="flex items-center justify-center size-8 rounded-lg bg-muted border border-border text-primary shrink-0">
                 {isExpanded ? (

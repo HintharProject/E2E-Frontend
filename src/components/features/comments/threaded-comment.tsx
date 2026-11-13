@@ -313,7 +313,7 @@ export function ThreadedComment({
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-xs text-primary font-medium hover:underline h-7 px-2"
+                className="text-xs text-primary font-medium hover:underline min-h-[44px] md:min-h-[28px] px-2"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
               >

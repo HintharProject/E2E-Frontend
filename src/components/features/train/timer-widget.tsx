@@ -20,6 +20,7 @@ import {
   AlertTriangle,
   Flame,
   CheckCircle2,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -72,25 +73,25 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
       <div
         className={cn(
           "flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-colors duration-200",
-          mode === "UNTIMED_REVISION" && "border-line bg-surface text-ink-muted",
+          mode === "UNTIMED_REVISION" && "border-border bg-surface text-muted-foreground",
           mode !== "UNTIMED_REVISION" && !isWarning && !isCritical && !isExpired &&
-            "border-line bg-card text-ink shadow-2xs",
-          isWarning && "border-amber-500/50 bg-amber-500/10 text-amber-600 dark:text-amber-400 font-bold",
-          isCritical && "border-red-500/60 bg-red-500/15 text-red-600 dark:text-red-400 font-bold animate-pulse",
-          isExpired && "border-red-600 bg-red-600/20 text-red-500 font-black shadow-sm"
+            "border-border bg-card text-foreground shadow-2xs",
+          isWarning && "border-warning/50 bg-warning/10 text-warning font-bold",
+          isCritical && "border-destructive/60 bg-destructive/15 text-destructive font-bold animate-pulse",
+          isExpired && "border-destructive bg-destructive/20 text-destructive font-black shadow-sm"
         )}
       >
         {/* Status icon */}
         {mode === "UNTIMED_REVISION" ? (
-          <Clock className="size-3.5 text-ink-muted" />
+          <Clock className="size-3.5 text-muted-foreground" aria-hidden="true" />
         ) : isExpired ? (
-          <AlertTriangle className="size-3.5 text-red-500 animate-bounce" />
+          <AlertTriangle className="size-3.5 text-destructive animate-pulse" aria-hidden="true" />
         ) : isCritical ? (
-          <Flame className="size-3.5 text-red-500 animate-pulse" />
+          <Flame className="size-3.5 text-destructive animate-pulse" aria-hidden="true" />
         ) : isWarning ? (
-          <AlertTriangle className="size-3.5 text-amber-500" />
+          <AlertTriangle className="size-3.5 text-warning" aria-hidden="true" />
         ) : (
-          <Clock className={cn("size-3.5", isRunning ? "text-primary animate-spin" : "text-ink-muted")} style={{ animationDuration: "8s" }} />
+          <Clock className={cn("size-3.5", isRunning ? "text-primary animate-spin" : "text-muted-foreground")} style={{ animationDuration: "8s" }} aria-hidden="true" />
         )}
 
         {/* Readout */}
@@ -103,14 +104,14 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
           <button
             type="button"
             onClick={isRunning ? pauseTimer : startTimer}
-            className="p-1 hover:bg-muted/60 rounded-md transition-colors text-ink hover:text-primary cursor-pointer"
+            className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] md:min-h-[24px] md:min-w-[24px] p-1 hover:bg-muted/60 rounded-md transition-colors text-foreground hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
             title={isRunning ? "Pause Timer" : "Start Timer"}
             aria-label={isRunning ? "Pause Timer" : "Start Timer"}
           >
             {isRunning ? (
-              <Pause className="size-3.5 fill-current" />
+              <Pause className="size-3.5 fill-current" aria-hidden="true" />
             ) : (
-              <Play className="size-3.5 fill-current" />
+              <Play className="size-3.5 fill-current" aria-hidden="true" />
             )}
           </button>
         )}
@@ -120,11 +121,11 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
           <button
             type="button"
             onClick={() => resetTimer()}
-            className="p-1 hover:bg-muted/60 rounded-md transition-colors text-ink-muted hover:text-ink cursor-pointer"
+            className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] md:min-h-[24px] md:min-w-[24px] p-1 hover:bg-muted/60 rounded-md transition-colors text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
             title="Reset Timer"
             aria-label="Reset Timer"
           >
-            <RotateCcw className="size-3" />
+            <RotateCcw className="size-3" aria-hidden="true" />
           </button>
         )}
 
@@ -134,11 +135,11 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
             render={
               <button
                 type="button"
-                className="p-0.5 hover:bg-muted/60 rounded text-ink-muted hover:text-ink cursor-pointer ml-0.5"
+                className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] md:min-h-[24px] md:min-w-[24px] p-0.5 hover:bg-muted/60 rounded text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer ml-0.5"
                 title="Timer Options & Presets"
                 aria-label="Timer Options"
               >
-                <ChevronDown className="size-3" />
+                <ChevronDown className="size-3" aria-hidden="true" />
               </button>
             }
           />
@@ -221,12 +222,13 @@ export function TimerWidget({ timer, className }: TimerWidgetProps) {
             <button
               type="button"
               onClick={() => setShowExpiredBanner(false)}
-              className="text-ink-muted hover:text-ink text-xs p-0.5"
+              aria-label="Dismiss timer alert"
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] -mr-2 -mt-2 md:mr-0 md:mt-0 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 text-xs p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 cursor-pointer"
             >
-              ✕
+              <X className="size-3.5" aria-hidden="true" />
             </button>
           </div>
-          <p className="mt-1 text-[11px] text-ink-muted leading-relaxed">
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
             Your exam practice time has concluded. Review your answers against the Mark Scheme in Dual View.
           </p>
         </div>

@@ -182,7 +182,7 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
                   size="sm"
                   onClick={() => fetchNextActive()}
                   disabled={isFetchingNextActive}
-                  className="w-full text-xs"
+                  className="w-full min-h-[44px] md:min-h-0 text-xs"
                 >
                   {isFetchingNextActive ? "Loading more..." : "Load more solutions"}
                 </Button>

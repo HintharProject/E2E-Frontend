@@ -179,8 +179,8 @@ export function CommandPalette() {
         </div>
 
         {/* Input Bar */}
-        <div className="relative flex items-center border-b border-line px-4 py-3 bg-surface/50">
-          <Search className="size-5 text-ink-muted shrink-0 mr-3" />
+        <div className="relative flex items-center border-b border-border px-4 py-3 bg-surface/50">
+          <Search className="size-5 text-muted-foreground shrink-0 mr-3" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -190,13 +190,14 @@ export function CommandPalette() {
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
+            aria-label="Search discussions, problems, lessons, and past papers"
             placeholder="Search discussions, problems, lessons, past papers..."
-            className="w-full bg-transparent text-sm font-medium text-ink placeholder:text-ink-muted outline-none"
+            className="w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="flex items-center gap-2 shrink-0 ml-2">
             {(isLoading || isFetching) && (
-              <Loader2 className="size-4 animate-spin text-primary" />
+              <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
             )}
             {query && (
               <button
@@ -205,10 +206,11 @@ export function CommandPalette() {
                   setQuery("");
                   inputRef.current?.focus();
                 }}
-                className="rounded-md p-1 text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Clear query"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
                 title="Clear query"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             )}
             <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted bg-muted border border-line rounded">

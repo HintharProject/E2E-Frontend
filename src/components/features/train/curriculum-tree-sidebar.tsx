@@ -136,9 +136,10 @@ export function CurriculumTreeSidebar({
             <button
               type="button"
               onClick={onClose}
-              className="lg:hidden p-1 text-muted-foreground hover:text-foreground rounded-md"
+              aria-label="Close curriculum sidebar"
+              className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-1 text-muted-foreground hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary cursor-pointer"
             >
-              <X className="size-4" />
+              <X className="size-4" aria-hidden="true" />
             </button>
           </div>
 
@@ -280,8 +281,14 @@ export function CurriculumTreeSidebar({
                                           e.preventDefault();
                                           onToggleLeft(paperWithMeta);
                                         }}
+                                        aria-label={
+                                          isLeft
+                                            ? "Active on Left. Click to close Left panel."
+                                            : "Open paper in Left panel (L)"
+                                        }
+                                        aria-pressed={isLeft}
                                         className={cn(
-                                          "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
+                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                           isLeft
                                             ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
                                             : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
@@ -304,8 +311,14 @@ export function CurriculumTreeSidebar({
                                           e.preventDefault();
                                           onToggleRight(paperWithMeta);
                                         }}
+                                        aria-label={
+                                          isRight
+                                            ? "Active on Right. Click to close Right panel."
+                                            : "Open paper in Right panel (R)"
+                                        }
+                                        aria-pressed={isRight}
                                         className={cn(
-                                          "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
+                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                           isRight
                                             ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
                                             : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"

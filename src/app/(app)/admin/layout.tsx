@@ -170,16 +170,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <h2
                 className={cn(
-                  "text-lg font-semibold text-ink transition-all duration-300 overflow-hidden whitespace-nowrap",
+                  "text-lg font-semibold text-foreground transition-all duration-300 overflow-hidden whitespace-nowrap",
                   isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100"
                 )}
               >
                 {portalTitle}
               </h2>
               <button
+                type="button"
                 onClick={toggleCollapse}
+                aria-label={isCollapsed ? `Expand ${portalTitle.toLowerCase()}` : `Collapse ${portalTitle.toLowerCase()}`}
                 title={isCollapsed ? `Expand ${portalTitle.toLowerCase()}` : `Collapse ${portalTitle.toLowerCase()}`}
-                className="hidden md:inline-flex size-8 items-center justify-center rounded-lg border border-line bg-card text-ink-muted hover:bg-muted hover:text-ink transition-colors active:scale-95 shrink-0 shadow-2xs"
+                className="hidden md:inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95 shrink-0 shadow-2xs cursor-pointer"
               >
                 {isCollapsed ? (
                   <PanelLeftOpen className="size-4 text-primary" />

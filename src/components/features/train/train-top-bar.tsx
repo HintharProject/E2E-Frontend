@@ -199,10 +199,11 @@ export function TrainTopBar({
                 <button
                   type="button"
                   onClick={onCloseLeft}
-                  className="p-0.5 text-primary/70 hover:text-destructive rounded transition-colors cursor-pointer shrink-0"
+                  aria-label="Close Left Panel"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[20px] md:min-w-[20px] p-0.5 text-primary/80 hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
                   title="Close Left Panel"
                 >
-                  <X className="size-3" />
+                  <X className="size-3" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -222,10 +223,11 @@ export function TrainTopBar({
                 <button
                   type="button"
                   onClick={onCloseRight}
-                  className="p-0.5 text-muted-foreground hover:text-destructive rounded transition-colors cursor-pointer shrink-0"
+                  aria-label="Close Right Panel"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[20px] md:min-w-[20px] p-0.5 text-muted-foreground hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
                   title="Close Right Panel"
                 >
-                  <X className="size-3" />
+                  <X className="size-3" aria-hidden="true" />
                 </button>
               )}
             </div>

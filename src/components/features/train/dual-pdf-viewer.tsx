@@ -241,13 +241,14 @@ export function DualPdfViewer({
             <button
               type="button"
               onClick={() => toggleFullscreen(side)}
-              className="p-1.5 text-ink-muted hover:text-ink rounded hover:bg-muted transition-colors cursor-pointer"
+              aria-label={controls.isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
               title={controls.isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
             >
               {controls.isFullscreen ? (
-                <Minimize2 className="size-3.5" />
+                <Minimize2 className="size-3.5" aria-hidden="true" />
               ) : (
-                <Maximize2 className="size-3.5" />
+                <Maximize2 className="size-3.5" aria-hidden="true" />
               )}
             </button>
 
@@ -256,10 +257,11 @@ export function DualPdfViewer({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 text-ink-muted hover:text-destructive rounded hover:bg-destructive/10 transition-colors cursor-pointer ml-1"
+                aria-label={`Close ${side === "LEFT" ? "Left" : "Right"} Pane`}
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-destructive rounded hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer ml-1"
                 title={`Close ${side === "LEFT" ? "Left" : "Right"} Pane`}
               >
-                <X className="size-3.5" />
+                <X className="size-3.5" aria-hidden="true" />
               </button>
             )}
           </div>

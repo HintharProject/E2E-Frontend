@@ -138,14 +138,15 @@ export default function SearchPage(props: {
 
       {/* Prominent Search Bar */}
       <form onSubmit={handleSearchSubmit} className="relative mb-6">
-        <div className="relative flex items-center shadow-sm rounded-2xl border border-line bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-          <Search className="absolute left-4 size-5 text-ink-muted pointer-events-none" />
+        <div className="relative flex items-center shadow-sm rounded-2xl border border-border bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+          <Search className="absolute left-4 size-5 text-muted-foreground pointer-events-none" aria-hidden="true" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search keywords, topics, or syllabi"
             placeholder="Search keywords, topics, or syllabi (e.g. Calculus, 9702, Mechanics)..."
-            className="w-full h-13 pl-12 pr-28 rounded-2xl bg-transparent text-sm font-medium text-ink placeholder:text-ink-muted outline-none"
+            className="w-full h-13 pl-12 pr-28 rounded-2xl bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="absolute right-3 flex items-center gap-2">
@@ -153,10 +154,11 @@ export default function SearchPage(props: {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Clear search"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
                 title="Clear search"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             )}
             <Button
