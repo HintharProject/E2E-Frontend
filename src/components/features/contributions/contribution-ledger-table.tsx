@@ -234,18 +234,20 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px] md:min-h-0"
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1 || isFetching}
               >
-                <ChevronLeft className="size-3.5" /> Prev
+                <ChevronLeft className="size-3.5" aria-hidden="true" /> Prev
               </Button>
               <Button
                 variant="outline"
                 size="sm"
+                className="min-h-[44px] md:min-h-0"
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages || isFetching}
               >
-                Next <ChevronRight className="size-3.5" />
+                Next <ChevronRight className="size-3.5" aria-hidden="true" />
               </Button>
             </div>
           </div>

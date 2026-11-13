@@ -266,18 +266,20 @@ export function SaveButton({
             size={buttonSize}
             className={cn(
               "transition-colors",
-              isSaved && "text-brand hover:text-brand",
+              isSaved && "text-primary hover:text-primary",
               className
             )}
-            title={isSaved ? "Saved in collections" : "Save item"}
+            aria-label={isSaved ? "Saved in study plan or session" : "Save to session or study plan"}
+            aria-pressed={isSaved}
+            title={isSaved ? "Saved in collections" : "Save to session or study plan"}
             onClick={(e) => e.stopPropagation()}
           />
         }
       >
         {isSaved ? (
-          <BookmarkCheck className="h-4 w-4 fill-current text-brand" />
+          <BookmarkCheck className="h-4 w-4 fill-current text-primary" aria-hidden="true" />
         ) : (
-          <Bookmark className="h-4 w-4 text-ink-muted transition group-hover:text-ink" />
+          <Bookmark className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground" aria-hidden="true" />
         )}
         {showLabel && (
           <span className="ml-1.5">{isSaved ? "Saved" : label}</span>
@@ -290,11 +292,11 @@ export function SaveButton({
       >
         <DialogHeader>
           <div className="flex items-center justify-between pr-6">
-            <DialogTitle className="flex items-center gap-2 font-display text-base">
+            <DialogTitle className="flex items-center gap-2 font-heading text-base">
               {activeTab === "plan" ? (
-                <BookOpen className="h-4 w-4 text-brand" />
+                <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
               ) : (
-                <Bookmark className="h-4 w-4 text-brand" />
+                <Bookmark className="h-4 w-4 text-primary" aria-hidden="true" />
               )}
               {canSaveToPlan
                 ? activeTab === "plan"
@@ -310,7 +312,7 @@ export function SaveButton({
             </Badge>
           </div>
 
-          <DialogDescription className="text-xs text-ink-muted">
+          <DialogDescription className="text-xs text-muted-foreground">
             {activeTab === "plan"
               ? "Curate into structured, sequential syllabi and study plans."
               : "Bookmark for later reference across your saved collections."}
@@ -318,38 +320,42 @@ export function SaveButton({
 
           {/* Tab Switcher for Lessons, Solve, and Resources */}
           {canSaveToPlan && (
-            <div className="mt-3 flex rounded-xl border border-line bg-muted/40 p-1">
+            <div role="tablist" aria-label="Save collection type" className="mt-3 flex rounded-xl border border-border bg-muted/40 p-1">
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === "session"}
                 onClick={() => setActiveTab("session")}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer",
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg min-h-[44px] md:min-h-0 py-1.5 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                   activeTab === "session"
-                    ? "bg-card text-ink shadow-xs"
-                    : "text-ink-muted hover:text-ink"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Bookmark className="h-3.5 w-3.5" />
+                <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Saved Sessions</span>
                 {isSavedInAnySession && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
                 )}
               </button>
 
               <button
                 type="button"
+                role="tab"
+                aria-selected={activeTab === "plan"}
                 onClick={() => setActiveTab("plan")}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all cursor-pointer",
+                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg min-h-[44px] md:min-h-0 py-1.5 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
                   activeTab === "plan"
-                    ? "bg-card text-ink shadow-xs"
-                    : "text-ink-muted hover:text-ink"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <BookOpen className="h-3.5 w-3.5" />
+                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>Study Plans</span>
                 {isSavedInAnyPlan && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
                 )}
               </button>
             </div>

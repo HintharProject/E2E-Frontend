@@ -174,28 +174,32 @@ export function AppHeader() {
               size="icon"
               className="md:hidden size-11 rounded-lg shrink-0"
               onClick={toggleMobileNav}
-              aria-label="Open navigation menu"
+              aria-label="Open mobile navigation"
             >
-              <Menu className="size-5" />
+              <Menu className="size-5" aria-hidden="true" />
             </Button>
 
             {/* Logo */}
-            <Link href="/forum" className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/forum"
+              className="flex items-center gap-2 shrink-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
               <span className="font-heading text-2xl font-bold tracking-tight text-primary">
                 E2E
               </span>
             </Link>
 
             {/* Desktop Navigation Pills */}
-            <nav className="hidden md:flex items-center gap-1 min-w-0">
+            <nav aria-label="Primary navigation" className="hidden md:flex items-center gap-1 min-w-0">
               {PRIMARY_TABS.map((item) => {
                 const active = isNavActive(pathname, item.match, item.exclude);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-current={active ? "page" : undefined}
                     className={cn(
-                      "rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none",
+                      "rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                       active
                         ? "bg-primary/15 text-primary border border-primary/25 font-semibold shadow-2xs"
                         : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
@@ -210,14 +214,14 @@ export function AppHeader() {
               <DropdownMenu>
                 <DropdownMenuTrigger
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none",
+                    "inline-flex items-center gap-1 rounded-md px-2.5 lg:px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors whitespace-nowrap cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                     isCollectionsActive
                       ? "bg-primary/15 text-primary border border-primary/25 font-semibold shadow-2xs"
                       : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   )}
                 >
                   <span>Collections</span>
-                  <ChevronDown className="size-3.5 opacity-70" />
+                  <ChevronDown className="size-3.5 opacity-70" aria-hidden="true" />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-44">
                   <DropdownMenuItem
@@ -280,11 +284,11 @@ export function AppHeader() {
             <button
               type="button"
               onClick={openCommandPalette}
-              className="hidden md:flex items-center justify-between h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 px-3 text-xs text-muted-foreground transition-colors cursor-pointer group min-w-[140px] max-w-[200px] lg:max-w-[240px]"
+              className="hidden md:flex items-center justify-between h-9 rounded-lg border border-border bg-muted/40 hover:bg-muted/70 px-3 text-xs text-muted-foreground transition-colors cursor-pointer group min-w-[140px] max-w-[200px] lg:max-w-[240px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label="Open search command palette"
             >
               <span className="flex items-center gap-2 min-w-0">
-                <Search className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" />
+                <Search className="size-3.5 shrink-0 text-muted-foreground group-hover:text-foreground transition-colors" aria-hidden="true" />
                 <span className="font-normal truncate">
                   Search platform...
                 </span>
@@ -298,10 +302,10 @@ export function AppHeader() {
             <button
               type="button"
               onClick={openCommandPalette}
-              className="md:hidden flex size-10 items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+              className="md:hidden flex size-11 items-center justify-center rounded-lg border border-border bg-muted/40 text-muted-foreground hover:text-foreground transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
               aria-label="Open search"
             >
-              <Search className="size-4" />
+              <Search className="size-4" aria-hidden="true" />
             </button>
 
             {/* Cold Start Refresh Button */}
@@ -311,7 +315,7 @@ export function AppHeader() {
                 size="icon"
                 onClick={() => triggerRefresh()}
                 disabled={isRefreshing}
-                className="size-9 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer relative"
+                className="size-11 md:size-9 md:min-h-0 md:min-w-0 rounded-lg text-muted-foreground hover:text-foreground cursor-pointer relative"
                 title={isRefreshing ? "Refreshing feed..." : showSuccess ? "Refreshed!" : "Refresh feed"}
                 aria-label="Refresh feed"
               >

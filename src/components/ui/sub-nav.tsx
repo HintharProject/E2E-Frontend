@@ -44,8 +44,9 @@ export function SubNav({
                 href={item.href}
                 onMouseEnter={item.onPrefetch}
                 onTouchStart={item.onPrefetch}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
-                  "relative whitespace-nowrap pb-2 pt-1 text-xs sm:text-sm font-semibold transition-colors min-h-[36px] inline-flex items-center",
+                  "relative whitespace-nowrap pb-2 pt-1 text-xs sm:text-sm font-semibold transition-colors min-h-[44px] md:min-h-[36px] inline-flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-sm",
                   isActive
                     ? "text-primary border-b-2 border-primary"
                     : "text-muted-foreground hover:text-foreground"
@@ -62,8 +63,9 @@ export function SubNav({
               href={item.href}
               onMouseEnter={item.onPrefetch}
               onTouchStart={item.onPrefetch}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "inline-flex items-center whitespace-nowrap rounded-md px-3 py-1.5 text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none",
+                "inline-flex items-center whitespace-nowrap rounded-md px-3 py-1.5 min-h-[44px] md:min-h-0 text-xs sm:text-sm font-medium transition-colors cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
                 isActive
                   ? "bg-primary/15 text-primary border border-primary/25 font-semibold shadow-2xs"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted/60"

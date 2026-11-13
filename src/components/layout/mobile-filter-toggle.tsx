@@ -53,7 +53,7 @@ export function MobileFilterToggle(props: FilterSidebarProps) {
         type="button"
         onClick={() => setOpen(true)}
         className={cn(
-          "inline-flex min-h-[36px] sm:min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors lg:hidden cursor-pointer",
+          "inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors lg:hidden cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           activeFilterCount > 0
             ? "border-primary/40 bg-primary/10 text-primary"
             : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"

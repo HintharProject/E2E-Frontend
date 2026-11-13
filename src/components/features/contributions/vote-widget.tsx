@@ -179,7 +179,7 @@ export function VoteWidget({
     return (
       <div
         className={cn(
-          "relative flex flex-col items-center justify-center rounded-xl border border-line bg-card p-1.5 shadow-xs select-none",
+          "relative flex flex-col items-center justify-center gap-1 md:gap-0 rounded-xl border border-border bg-card p-1.5 shadow-xs select-none",
           className
         )}
         title={getDisabledTooltip()}
@@ -189,7 +189,7 @@ export function VoteWidget({
             key={floatingFeedback.key}
             className={cn(
               "animate-vote-multiplier pointer-events-none absolute -top-4 font-heading text-xs font-bold tracking-tight whitespace-nowrap z-20",
-              floatingFeedback.isPositive ? "text-emerald-500" : "text-rose-500"
+              floatingFeedback.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
             )}
           >
             {floatingFeedback.text}
@@ -204,14 +204,14 @@ export function VoteWidget({
           aria-label="Upvote"
           aria-pressed={userVote === 1}
           className={cn(
-            "flex size-7 items-center justify-center rounded-lg transition-colors cursor-pointer",
+            "flex size-11 md:size-7 items-center justify-center rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             userVote === 1
               ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold"
-              : "text-ink-muted hover:bg-muted hover:text-ink",
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
             isActionDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
           )}
         >
-          <ChevronUp className="size-4" />
+          <ChevronUp className="size-4" aria-hidden="true" />
         </button>
 
         {/* Score */}
@@ -222,7 +222,7 @@ export function VoteWidget({
             "my-0.5 font-heading text-xs font-semibold tabular-nums",
             userVote === 1 && "text-emerald-600 dark:text-emerald-400",
             userVote === -1 && "text-rose-600 dark:text-rose-400",
-            userVote === 0 && "text-ink"
+            userVote === 0 && "text-foreground"
           )}
         >
           {score}
@@ -236,14 +236,14 @@ export function VoteWidget({
           aria-label="Downvote"
           aria-pressed={userVote === -1}
           className={cn(
-            "flex size-7 items-center justify-center rounded-lg transition-colors cursor-pointer",
+            "flex size-11 md:size-7 items-center justify-center rounded-lg transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             userVote === -1
               ? "bg-rose-500/15 text-rose-600 dark:text-rose-400 font-bold"
-              : "text-ink-muted hover:bg-muted hover:text-ink",
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
             isActionDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
           )}
         >
-          <ChevronDown className="size-4" />
+          <ChevronDown className="size-4" aria-hidden="true" />
         </button>
       </div>
     );
@@ -253,10 +253,10 @@ export function VoteWidget({
   return (
     <div
       className={cn(
-        "relative inline-flex items-center rounded-full border border-line bg-card shadow-2xs select-none transition-colors",
-        size === "sm" && "h-6 px-1 text-[11px]",
-        size === "md" && "h-7 px-1.5 text-xs",
-        size === "lg" && "h-8 px-2 text-sm",
+        "relative inline-flex items-center rounded-full border border-border bg-card shadow-2xs select-none transition-colors",
+        size === "sm" && "min-h-[44px] md:min-h-0 md:h-6 px-1 text-[11px]",
+        size === "md" && "min-h-[44px] md:min-h-0 md:h-7 px-1.5 text-xs",
+        size === "lg" && "min-h-[44px] md:min-h-0 md:h-8 px-2 text-sm",
         className
       )}
       title={getDisabledTooltip()}
@@ -266,7 +266,7 @@ export function VoteWidget({
           key={floatingFeedback.key}
           className={cn(
             "animate-vote-multiplier pointer-events-none absolute -top-5 left-1/2 -translate-x-1/2 font-heading text-xs font-bold tracking-tight whitespace-nowrap z-20",
-            floatingFeedback.isPositive ? "text-emerald-500" : "text-rose-500"
+            floatingFeedback.isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-destructive"
           )}
         >
           {floatingFeedback.text}
@@ -281,14 +281,14 @@ export function VoteWidget({
         aria-label="Upvote"
         aria-pressed={userVote === 1}
         className={cn(
-          "inline-flex items-center justify-center rounded-full transition-colors cursor-pointer p-0.5",
+          "inline-flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-0.5 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           userVote === 1
             ? "text-emerald-600 dark:text-emerald-400 font-bold"
-            : "text-ink-muted hover:text-emerald-600 hover:bg-emerald-500/10",
+            : "text-muted-foreground hover:text-emerald-600 hover:bg-emerald-500/10",
           isActionDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
         )}
       >
-        <ChevronUp className="size-3.5" />
+        <ChevronUp className="size-3.5" aria-hidden="true" />
       </button>
 
       {/* Score */}
@@ -299,7 +299,7 @@ export function VoteWidget({
           "mx-1 font-heading font-semibold tabular-nums",
           userVote === 1 && "text-emerald-600 dark:text-emerald-400",
           userVote === -1 && "text-rose-600 dark:text-rose-400",
-          userVote === 0 && "text-ink"
+          userVote === 0 && "text-foreground"
         )}
       >
         {score}
@@ -313,14 +313,14 @@ export function VoteWidget({
         aria-label="Downvote"
         aria-pressed={userVote === -1}
         className={cn(
-          "inline-flex items-center justify-center rounded-full transition-colors cursor-pointer p-0.5",
+          "inline-flex items-center justify-center min-w-[44px] min-h-[44px] md:min-w-0 md:min-h-0 md:p-0.5 rounded-full transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
           userVote === -1
             ? "text-rose-600 dark:text-rose-400 font-bold"
-            : "text-ink-muted hover:text-rose-600 hover:bg-rose-500/10",
+            : "text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10",
           isActionDisabled && "opacity-50 cursor-not-allowed hover:bg-transparent"
         )}
       >
-        <ChevronDown className="size-3.5" />
+        <ChevronDown className="size-3.5" aria-hidden="true" />
       </button>
     </div>
   );
