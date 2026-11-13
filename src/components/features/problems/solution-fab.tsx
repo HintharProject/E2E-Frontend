@@ -52,8 +52,8 @@ export function SolutionFAB({ problem }: SolutionFABProps) {
 
   return (
     <>
-      {/* Floating Action Bubble: positioned directly above the + GlobalFAB (bottom-24 right-6) */}
-      <div className="fixed bottom-24 right-6 z-50 pointer-events-none flex items-center">
+      {/* Floating Action Bubble: positioned cleanly above MobileBottomNav on mobile and bottom-right on desktop */}
+      <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 pointer-events-none flex items-center">
         <div className="relative group flex items-center pointer-events-auto">
           {/* Tooltip badge on hover */}
           <span className="mr-3 hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold text-foreground bg-card/95 border border-border shadow-card backdrop-blur-xs opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200 pointer-events-none select-none whitespace-nowrap">

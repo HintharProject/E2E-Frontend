@@ -75,5 +75,7 @@ export function isNavActive(
     return false;
   }
   const matches = Array.isArray(match) ? match : [match];
-  return matches.some((m) => pathname === m || pathname.startsWith(m + "/"));
+  return matches.some((m) =>
+    m === "/" ? pathname === "/" : pathname === m || pathname.startsWith(m + "/")
+  );
 }

@@ -156,7 +156,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <aside
           className={cn(
-            "w-full shrink-0 md:sticky md:top-36 md:self-start transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-20",
+            "w-full shrink-0 md:sticky md:top-20 md:self-start transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-20",
             isCollapsed ? "md:w-16" : "md:w-64"
           )}
         >
