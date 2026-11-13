@@ -193,16 +193,16 @@ export default function TrainPage() {
     <div className="w-full space-y-6">
       {/* Informative Banner when selecting a paper for Solve! */}
       {isSelectForProblem && (
-        <div className="mt-3 mb-2 p-3.5 rounded-2xl border border-brand/30 bg-brand/5 flex flex-wrap items-center justify-between gap-3 animate-in fade-in-50">
+        <div className="mt-3 mb-2 p-3.5 rounded-xl border border-primary/30 bg-primary/5 flex flex-wrap items-center justify-between gap-3 animate-in fade-in-50">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex items-center justify-center size-8 rounded-lg bg-brand/10 text-brand shrink-0">
+            <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
               <BookOpen className="size-4" />
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-xs font-bold text-ink truncate">
+              <span className="text-xs font-bold text-foreground truncate">
                 Selecting a Curated Past Paper for Solve!
               </span>
-              <span className="text-[11px] text-ink-muted truncate">
+              <span className="text-[11px] text-muted-foreground truncate">
                 Browse folders below, preview the paper, and click &ldquo;Select for a Problem&rdquo; to view existing solutions or ask the community.
               </span>
             </div>
@@ -212,7 +212,7 @@ export default function TrainPage() {
             className={buttonVariants({
               variant: "outline",
               size: "sm",
-              className: "h-7 px-2.5 text-xs font-semibold gap-1 shrink-0 border-line bg-surface text-ink hover:text-ink",
+              className: "h-7 px-2.5 text-xs font-semibold gap-1 shrink-0 border-border bg-muted text-foreground hover:text-foreground",
             })}
           >
             <span>Back to Problem Form</span>
@@ -223,17 +223,17 @@ export default function TrainPage() {
       <div className="mt-2 flex flex-col gap-6 lg:flex-row lg:items-start">
         {/* Left Sidebar: Option to choose Level & Subject, then opens Folder Structure */}
         <aside className="w-full lg:w-80 shrink-0 flex flex-col gap-4">
-          <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-2xs">
+          <div className="rounded-xl border border-border bg-card overflow-hidden shadow-card">
             {/* Level & Subject Selector Header */}
-            <div className="p-4 border-b border-line bg-surface/50 flex flex-col gap-3">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-ink flex items-center gap-1.5">
+            <div className="p-4 border-b border-border bg-muted/40 flex flex-col gap-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-foreground flex items-center gap-1.5">
                 <GraduationCap className="size-4 text-primary" />
                 Select Curriculum
               </h3>
 
               {/* 1. Level Dropdown */}
               <div>
-                <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
                   1. Select Level
                 </label>
                 <select
@@ -244,7 +244,7 @@ export default function TrainPage() {
                     setLeftPaperId(undefined);
                     setRightPaperId(null);
                   }}
-                  className="w-full rounded-lg border border-line px-3 py-2 bg-card text-sm text-ink focus:outline-primary transition-colors disabled:opacity-50"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-card text-sm text-foreground focus:outline-primary transition-colors disabled:opacity-50"
                 >
                   <option value="">-- Choose Level --</option>
                   {levels.map((l) => (
@@ -257,7 +257,7 @@ export default function TrainPage() {
 
               {/* 2. Subject Dropdown */}
               <div>
-                <label className="block text-[11px] font-semibold text-ink-muted mb-1">
+                <label className="block text-[11px] font-semibold text-muted-foreground mb-1">
                   2. Select Subject
                 </label>
                 <select
@@ -268,7 +268,7 @@ export default function TrainPage() {
                     setLeftPaperId(undefined);
                     setRightPaperId(null);
                   }}
-                  className="w-full rounded-lg border border-line px-3 py-2 bg-card text-sm text-ink focus:outline-primary transition-colors disabled:opacity-50"
+                  className="w-full rounded-lg border border-border px-3 py-2 bg-card text-sm text-foreground focus:outline-primary transition-colors disabled:opacity-50"
                 >
                   <option value="">-- Choose Subject --</option>
                   {subjects.map((s) => (
@@ -282,15 +282,15 @@ export default function TrainPage() {
 
             {/* Folder Structure (opens on the side once Level & Subject are selected) */}
             {!selectedLevel || !selectedSubject ? (
-              <div className="p-8 text-center text-ink-muted flex flex-col items-center gap-2">
-                <Folder className="size-8 text-ink-muted/40" />
-                <p className="text-xs font-semibold text-ink">Folder Structure</p>
-                <p className="text-[11px] text-ink-muted leading-relaxed">
+              <div className="p-8 text-center text-muted-foreground flex flex-col items-center gap-2">
+                <Folder className="size-8 text-muted-foreground/40" />
+                <p className="text-xs font-semibold text-foreground">Folder Structure</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   Select a Level and Subject above to open the past paper folders.
                 </p>
               </div>
             ) : isTreeLoading || isLoadingResources ? (
-              <div className="p-8 flex flex-col items-center justify-center gap-2 text-ink-muted">
+              <div className="p-8 flex flex-col items-center justify-center gap-2 text-muted-foreground">
                 <Loader2 className="size-6 animate-spin text-primary" />
                 <span className="text-xs font-medium">Loading folders...</span>
               </div>
@@ -298,18 +298,18 @@ export default function TrainPage() {
               <div className="p-3 flex flex-col gap-2 max-h-[calc(100vh-320px)] overflow-y-auto custom-scrollbar">
                 {/* Search within tree */}
                 <div className="relative mb-1">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted" />
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Search folder papers..."
                     value={folderSearch}
                     onChange={(e) => setFolderSearch(e.target.value)}
-                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-line bg-surface text-xs focus:outline-primary"
+                    className="w-full pl-8 pr-3 py-1.5 rounded-lg border border-border bg-muted text-xs focus:outline-primary text-foreground placeholder:text-muted-foreground"
                   />
                 </div>
 
                 {filteredYears.length === 0 ? (
-                  <p className="text-xs text-ink-muted text-center py-6 italic">
+                  <p className="text-xs text-muted-foreground text-center py-6 italic">
                     No past papers found for this curriculum.
                   </p>
                 ) : (
@@ -318,7 +318,7 @@ export default function TrainPage() {
                     return (
                       <div
                         key={yearGroup.year}
-                        className="rounded-xl border border-line/60 overflow-hidden bg-surface/30"
+                        className="rounded-xl border border-border/60 overflow-hidden bg-muted/20"
                       >
                         {/* Year Header */}
                         <button
@@ -332,23 +332,23 @@ export default function TrainPage() {
                             ) : (
                               <Folder className="size-4 text-primary" />
                             )}
-                            <span className="text-xs font-bold text-ink">
+                            <span className="text-xs font-bold text-foreground">
                               {formatYear(yearGroup.year)} Past Papers
                             </span>
                           </div>
                           {isYearExpanded ? (
-                            <ChevronDown className="size-3.5 text-ink-muted" />
+                            <ChevronDown className="size-3.5 text-muted-foreground" />
                           ) : (
-                            <ChevronRight className="size-3.5 text-ink-muted" />
+                            <ChevronRight className="size-3.5 text-muted-foreground" />
                           )}
                         </button>
 
                         {/* Inside Year: Sessions */}
                         {isYearExpanded && (
-                          <div className="pl-3 pr-2 pb-2 pt-1 flex flex-col gap-1.5 border-t border-line/40">
+                          <div className="pl-3 pr-2 pb-2 pt-1 flex flex-col gap-1.5 border-t border-border/40">
                             {yearGroup.sessions.map((sessionGroup) => (
                               <div key={sessionGroup.session} className="flex flex-col gap-1">
-                                <span className="text-[11px] font-semibold text-ink-muted px-1">
+                                <span className="text-[11px] font-semibold text-muted-foreground px-1">
                                   {sessionGroup.session_label}
                                 </span>
 
@@ -366,10 +366,10 @@ export default function TrainPage() {
                                         className={cn(
                                           "flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors cursor-pointer group border",
                                           isLeft
-                                            ? "bg-primary/10 border-primary/30 text-ink font-semibold"
+                                            ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                                             : isRight
-                                            ? "bg-emerald-500/10 border-emerald-500/30 text-ink font-semibold"
-                                            : "hover:bg-muted text-ink border-transparent"
+                                            ? "bg-secondary border-border text-foreground font-semibold"
+                                            : "hover:bg-muted text-foreground border-transparent"
                                         )}
                                       >
                                         <div className="flex items-center gap-1.5 min-w-0 flex-1">
@@ -514,29 +514,29 @@ export default function TrainPage() {
         {/* Right Main Practice Canvas / Preview Area */}
         <main className="min-w-0 flex-1 flex flex-col gap-4">
           {!selectedLevel || !selectedSubject ? (
-            <div className="rounded-2xl border border-line border-dashed bg-card p-16 text-center text-ink-muted flex flex-col items-center justify-center gap-3 h-[450px]">
-              <GraduationCap className="size-12 text-ink-muted/30 stroke-1" />
-              <h3 className="text-base font-semibold text-ink">Exam Practice Workspace</h3>
-              <p className="text-xs text-ink-muted max-w-sm">
+            <div className="rounded-xl border border-border border-dashed bg-card p-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-3 h-[450px]">
+              <GraduationCap className="size-12 text-muted-foreground/40 stroke-1" />
+              <h3 className="text-base font-semibold text-foreground">Exam Practice Workspace</h3>
+              <p className="text-xs text-muted-foreground max-w-sm">
                 Select a Level and Subject from the sidebar to open the folder structure and start
                 practicing past papers.
               </p>
             </div>
           ) : !activePaper ? (
-            <div className="rounded-2xl border border-line border-dashed bg-card p-16 text-center text-ink-muted flex flex-col items-center justify-center gap-2 h-[450px]">
-              <BookOpen className="size-10 text-ink-muted/30 stroke-1" />
-              <p className="text-sm font-semibold text-ink">No Documents Open in Workspace</p>
-              <p className="text-xs text-ink-muted max-w-sm text-center leading-relaxed">
+            <div className="rounded-xl border border-border border-dashed bg-card p-16 text-center text-muted-foreground flex flex-col items-center justify-center gap-2 h-[450px]">
+              <BookOpen className="size-10 text-muted-foreground/40 stroke-1" />
+              <p className="text-sm font-semibold text-foreground">No Documents Open in Workspace</p>
+              <p className="text-xs text-muted-foreground max-w-sm text-center leading-relaxed">
                 Use the <span className="font-semibold text-primary">[L]</span> and <span className="font-semibold text-emerald-600 dark:text-emerald-400">[R]</span> toggle buttons in the folder structure to open papers.
               </p>
             </div>
           ) : (
             <div className="flex flex-col gap-3">
               {/* Active Paper Action Header */}
-              <div className="rounded-2xl border border-line bg-card p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
+              <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs">
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold text-ink text-base truncate">
+                    <span className="font-semibold text-foreground text-base truncate">
                       {leftPaper && rightPaper
                         ? `${leftPaper.file_name} & ${rightPaper.file_name}`
                         : activePaper.file_name}
@@ -555,14 +555,14 @@ export default function TrainPage() {
                           "text-[10px] font-bold uppercase",
                           activePaper.paper_type === "MS"
                             ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                            : "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                            : "border-primary/40 text-primary bg-primary/10"
                         )}
                       >
                         {activePaper.paper_type === "MS" ? "Mark Scheme" : "Question Paper"}
                       </Badge>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 text-xs text-ink-muted">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     {activeLevelName && <span>{activeLevelName}</span>}
                     {activeSubjectName && <span>• {activeSubjectName}</span>}
                     {activePaper.year && <span>• {activePaper.year}</span>}
@@ -582,12 +582,12 @@ export default function TrainPage() {
                     }}
                     className={`h-10 px-4 gap-2 font-semibold text-xs transition-colors shrink-0 cursor-pointer ${
                       isSelectForProblem
-                        ? "border-brand bg-brand/10 text-brand hover:bg-brand/20 shadow-xs"
-                        : "border-line bg-surface text-ink hover:border-brand hover:text-brand"
+                        ? "border-primary bg-primary/10 text-primary hover:bg-primary/20 shadow-xs"
+                        : "border-border bg-card text-foreground hover:border-primary hover:text-primary"
                     }`}
                     title="Browse existing community solutions or post a new question"
                   >
-                    <MessageSquare className="size-4 text-brand" />
+                    <MessageSquare className="size-4 text-primary" />
                     <span>Select for a Problem</span>
                   </Button>
 
@@ -608,7 +608,7 @@ export default function TrainPage() {
               </div>
 
               {/* In-Place Dual / Single PDF Preview Canvas */}
-              <div className="rounded-2xl border border-line bg-card overflow-hidden shadow-xs h-[calc(100vh-210px)] flex flex-col">
+              <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xs h-[calc(100vh-210px)] flex flex-col">
                 <DualPdfViewer
                   leftResource={leftPaper}
                   rightResource={rightPaper}

@@ -134,8 +134,8 @@ export function PastPapersFolderView({
 
   if (papers.length === 0) {
     return (
-      <div className="rounded-xl border border-line bg-card/60 p-8 text-center">
-        <p className="text-xs text-ink-muted italic">{emptyMessage}</p>
+      <div className="rounded-xl border border-border bg-card/60 p-8 text-center">
+        <p className="text-xs text-muted-foreground italic">{emptyMessage}</p>
       </div>
     );
   }
@@ -149,7 +149,7 @@ export function PastPapersFolderView({
         return (
           <div
             key={y}
-            className="rounded-2xl border border-line bg-card overflow-hidden transition-all shadow-2xs"
+            className="rounded-xl border border-border bg-card overflow-hidden transition-all shadow-card"
           >
             {/* Year Folder Header */}
             <button
@@ -157,7 +157,7 @@ export function PastPapersFolderView({
               onClick={() => toggleYear(y)}
               className="flex items-center gap-3 p-4 text-left hover:bg-muted/40 transition-colors w-full focus:outline-none select-none"
             >
-              <div className="flex items-center justify-center size-8 rounded-lg bg-surface border border-line text-primary shrink-0">
+              <div className="flex items-center justify-center size-8 rounded-lg bg-muted border border-border text-primary shrink-0">
                 {isExpanded ? (
                   <FolderOpen className="size-4" />
                 ) : (
@@ -166,8 +166,8 @@ export function PastPapersFolderView({
               </div>
 
               <div className="flex items-baseline gap-2">
-                <span className="font-semibold text-ink text-base">{formatYear(y)}</span>
-                <span className="text-xs text-ink-muted">Past Papers</span>
+                <span className="font-heading font-semibold text-foreground text-base">{formatYear(y)}</span>
+                <span className="text-xs text-muted-foreground">Past Papers</span>
               </div>
 
               <div className="ml-auto flex items-center gap-2.5">
@@ -178,22 +178,22 @@ export function PastPapersFolderView({
                   {yearPapers.length} {yearPapers.length === 1 ? "paper" : "papers"}
                 </Badge>
                 {isExpanded ? (
-                  <ChevronDown className="size-4 text-ink-muted" />
+                  <ChevronDown className="size-4 text-muted-foreground" />
                 ) : (
-                  <ChevronRight className="size-4 text-ink-muted" />
+                  <ChevronRight className="size-4 text-muted-foreground" />
                 )}
               </div>
             </button>
 
             {/* Inside Year Documents */}
             {isExpanded && (
-              <div className="border-t border-line bg-surface/30 p-3 flex flex-col gap-2">
+              <div className="border-t border-border bg-muted/20 p-3 flex flex-col gap-2">
                 {yearPapers.length === 0 ? (
-                  <p className="text-xs text-ink-muted text-center py-4 italic">
+                  <p className="text-xs text-muted-foreground text-center py-4 italic">
                     No past papers uploaded for {y === 0 ? "Others" : y} yet.
                   </p>
                 ) : (
-                  <div className="divide-y divide-line border border-line rounded-xl bg-card overflow-hidden">
+                  <div className="divide-y divide-border border border-border rounded-xl bg-card overflow-hidden">
                     {yearPapers.map((paper) => {
                       const ext = getFileExtension(paper.file_name || "");
                       const isSelected = selectedPaperId === paper.id;
@@ -216,7 +216,7 @@ export function PastPapersFolderView({
 
                             <div className="flex flex-col min-w-0">
                               <span
-                                className="font-medium text-ink text-sm truncate"
+                                className="font-medium text-foreground text-sm truncate"
                                 title={paper.file_name}
                               >
                                 {title}
@@ -224,7 +224,7 @@ export function PastPapersFolderView({
 
                               <div className="flex flex-wrap items-center gap-2 mt-1">
                                 {paper.session && (
-                                  <span className="inline-flex items-center text-[11px] font-medium text-ink-muted bg-surface border border-line px-2 py-0.5 rounded-md">
+                                  <span className="inline-flex items-center text-[11px] font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">
                                     {sessionsMap.get(paper.session) || formatSession(paper.session)}
                                   </span>
                                 )}
@@ -233,20 +233,20 @@ export function PastPapersFolderView({
                                     variant="outline"
                                     className={`text-[10px] uppercase font-semibold ${
                                       paper.paper_type === "QP"
-                                        ? "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/5"
-                                        : "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+                                        ? "border-primary/40 text-primary bg-primary/10"
+                                        : "border-border text-muted-foreground bg-secondary"
                                     }`}
                                   >
-                                    {paper.paper_type === "QP" ? "Question Paper" : "Mark Scheme"}
+                                    {paper.paper_type === "QP" ? "Question Paper (QP)" : "Mark Scheme (MS)"}
                                   </Badge>
                                 )}
                                 {ext && (
-                                  <span className="text-[10px] uppercase font-semibold text-ink-muted bg-muted px-1.5 py-0.5 rounded">
+                                  <span className="text-[10px] uppercase font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
                                     {ext.replace(".", "")}
                                   </span>
                                 )}
                                 {paper.subject_details?.name && (
-                                  <span className="text-[11px] text-ink-muted">
+                                  <span className="text-[11px] text-muted-foreground">
                                     {paper.subject_details.name}
                                   </span>
                                 )}
@@ -328,7 +328,7 @@ export function PastPapersFolderView({
                                     type="button"
                                     size="sm"
                                     variant="default"
-                                    className="h-8 px-3 gap-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                                    className="h-8 px-3 gap-1.5 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs"
                                     disabled
                                   >
                                     <Check className="size-3.5" />

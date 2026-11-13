@@ -74,14 +74,14 @@ export function TrainTopBar({
     "";
 
   return (
-    <header className="h-14 w-full border-b border-line bg-card/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
+    <header className="h-14 w-full border-b border-border bg-card/95 backdrop-blur-md px-3 sm:px-4 flex items-center justify-between gap-3 shrink-0 z-30 select-none">
       {/* Left Section: Back link & Navigation Breadcrumbs */}
       <div className="flex items-center gap-2.5 min-w-0">
         {/* Toggle Sidebar Button */}
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg border border-line bg-surface text-ink-muted hover:text-ink hover:bg-muted/60 transition-colors cursor-pointer"
+          className="p-1.5 rounded-lg border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80 transition-colors cursor-pointer"
           title={isSidebarOpen ? "Collapse Curriculum Sidebar" : "Expand Curriculum Sidebar"}
           aria-label="Toggle Sidebar"
         >
@@ -94,19 +94,19 @@ export function TrainTopBar({
           className={buttonVariants({
             variant: "ghost",
             size: "sm",
-            className: "h-8 px-2 text-xs font-medium text-ink-muted hover:text-ink gap-1 shrink-0",
+            className: "h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground gap-1 shrink-0",
           })}
         >
           <ArrowLeft className="size-3.5" />
           <span className="hidden sm:inline">Resources</span>
         </Link>
 
-        <div className="h-4 w-px bg-line hidden sm:block shrink-0" />
+        <div className="h-4 w-px bg-border hidden sm:block shrink-0" />
 
         {/* Subject & Paper Identity */}
         <div className="flex items-center gap-2 min-w-0">
           {activeSubjectName && (
-            <span className="text-xs font-semibold text-ink truncate max-w-[120px] sm:max-w-[180px] hidden md:inline">
+            <span className="text-xs font-semibold text-foreground truncate max-w-[120px] sm:max-w-[180px] hidden md:inline">
               {activeSubjectName}
             </span>
           )}
@@ -130,10 +130,10 @@ export function TrainTopBar({
 
               <Badge
                 variant="outline"
-                className="text-[11px] font-semibold border-emerald-500/40 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 shrink-0 flex items-center gap-1"
+                className="text-[11px] font-semibold border-border bg-secondary text-secondary-foreground px-2 py-0.5 shrink-0 flex items-center gap-1"
                 title={`Right Document: ${rightPaper.file_name}`}
               >
-                <span className="font-bold text-[9px] bg-emerald-600 text-white px-1 rounded leading-none py-0.5">
+                <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
                   R
                 </span>
                 <span>
@@ -146,7 +146,7 @@ export function TrainTopBar({
           ) : (
             <Badge
               variant="outline"
-              className="text-[11px] font-semibold border-line bg-surface text-ink px-2 py-0.5 shrink-0"
+              className="text-[11px] font-semibold border-border bg-muted text-foreground px-2 py-0.5 shrink-0"
             >
               {paper.year || ""} {formatSession(paper.session) && `· ${formatSession(paper.session)}`}
               {paper.paper_code ? ` · P${paper.paper_code}` : ""}{" "}
@@ -177,7 +177,7 @@ export function TrainTopBar({
           ) : isSingle ? (
             <Badge
               variant="outline"
-              className="text-xs font-semibold gap-1 px-2 py-1 border-line bg-surface text-ink-muted"
+              className="text-xs font-semibold gap-1 px-2 py-1 border-border bg-muted text-muted-foreground"
               title="Single View Active: Showing one document across workspace"
             >
               <Square className="size-3.5" />
@@ -211,10 +211,10 @@ export function TrainTopBar({
           {/* Active Right Document Chip */}
           {rightPaper && (
             <div
-              className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-emerald-500/30 bg-emerald-500/5 text-xs text-emerald-600 dark:text-emerald-400 font-medium max-w-[150px] xl:max-w-[180px]"
+              className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-secondary text-xs text-secondary-foreground font-medium max-w-[150px] xl:max-w-[180px]"
               title={`Right: ${rightPaper.file_name}`}
             >
-              <span className="font-bold text-[9px] bg-emerald-600 text-white px-1 rounded shrink-0">
+              <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded shrink-0">
                 R
               </span>
               <span className="truncate">{rightPaper.file_name}</span>
@@ -222,7 +222,7 @@ export function TrainTopBar({
                 <button
                   type="button"
                   onClick={onCloseRight}
-                  className="p-0.5 text-emerald-600/70 dark:text-emerald-400/70 hover:text-destructive rounded transition-colors cursor-pointer shrink-0"
+                  className="p-0.5 text-muted-foreground hover:text-destructive rounded transition-colors cursor-pointer shrink-0"
                   title="Close Right Panel"
                 >
                   <X className="size-3" />
@@ -238,7 +238,7 @@ export function TrainTopBar({
           entityId={paper.id}
           variant="outline"
           size="sm"
-          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-line hover:border-primary/40 text-ink shadow-2xs"
+          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-border hover:border-primary/40 text-foreground shadow-2xs"
           showLabel
           label="Save Paper"
         />
@@ -247,7 +247,7 @@ export function TrainTopBar({
         <Button
           size="sm"
           variant="outline"
-          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-line hover:border-primary/40 text-ink shadow-2xs"
+          className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-border hover:border-primary/40 text-foreground shadow-2xs"
           onClick={onOpenAskInSolve}
           title="Search existing solutions or ask community in Solve!"
         >
@@ -260,7 +260,7 @@ export function TrainTopBar({
           <Button
             size="sm"
             variant="outline"
-            className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-brand/30 bg-brand/5 hover:bg-brand/10 text-brand shadow-2xs hidden md:flex"
+            className="h-8 px-2.5 text-xs font-semibold gap-1.5 border-primary/30 bg-primary/5 hover:bg-primary/10 text-primary shadow-2xs hidden md:flex"
             onClick={onOpenSolveAPaper}
             title="Author standalone worked solution for this paper (Tier 2+ Pro Contributor)"
           >

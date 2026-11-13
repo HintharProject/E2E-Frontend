@@ -88,15 +88,15 @@ function ResourcesFeed() {
   return (
     <div className="flex flex-col gap-5">
       {/* Top Tab Switcher */}
-      <div className="flex items-center justify-between gap-4 border-b border-line pb-3">
+      <div className="flex items-center justify-between gap-4 border-b border-border pb-3">
         <div className="flex gap-2">
           <button
             type="button"
             onClick={() => setActiveTab("PAST_PAPERS")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
               activeTab === "PAST_PAPERS"
                 ? "bg-primary text-primary-foreground shadow-xs"
-                : "bg-card border border-line text-ink-muted hover:text-ink hover:bg-muted"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
             <Calendar className="size-4" />
@@ -105,7 +105,7 @@ function ResourcesFeed() {
               className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 activeTab === "PAST_PAPERS"
                   ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-muted text-ink-muted"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {pastPapers.length}
@@ -115,19 +115,19 @@ function ResourcesFeed() {
           <button
             type="button"
             onClick={() => setActiveTab("TEXTBOOKS")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
               activeTab === "TEXTBOOKS"
                 ? "bg-primary text-primary-foreground shadow-xs"
-                : "bg-card border border-line text-ink-muted hover:text-ink hover:bg-muted"
+                : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
             }`}
           >
             <BookOpen className="size-4" />
-            <span>Textbooks & Resources</span>
+            <span>Textbooks &amp; Resources</span>
             <span
               className={`text-xs px-2 py-0.5 rounded-full font-bold ${
                 activeTab === "TEXTBOOKS"
                   ? "bg-primary-foreground/20 text-primary-foreground"
-                  : "bg-muted text-ink-muted"
+                  : "bg-muted text-muted-foreground"
               }`}
             >
               {textbooks.length}
@@ -135,7 +135,7 @@ function ResourcesFeed() {
           </button>
         </div>
 
-        <div className="text-xs text-ink-muted hidden sm:block">
+        <div className="text-xs text-muted-foreground hidden sm:block">
           {levelId || subjectId ? "Filtered results" : "Showing all resources"}
         </div>
       </div>
@@ -152,10 +152,10 @@ function ResourcesFeed() {
         /* Textbooks View */
         <div className="flex flex-col gap-4">
           {textbooks.length === 0 ? (
-            <div className="rounded-2xl border border-line bg-card p-12 text-center text-ink-muted">
-              <BookOpen className="size-10 mx-auto text-ink-muted/40 mb-3" />
-              <p className="font-semibold text-ink text-base">No Textbooks Available</p>
-              <p className="text-xs text-ink-muted mt-1">
+            <div className="rounded-xl border border-border bg-card p-12 text-center text-muted-foreground">
+              <BookOpen className="size-10 mx-auto text-muted-foreground/40 mb-3" />
+              <p className="font-semibold text-foreground text-base">No Textbooks Available</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 Textbooks for this subject or level have not been uploaded yet.
               </p>
             </div>
@@ -166,24 +166,24 @@ function ResourcesFeed() {
                 return (
                   <div
                     key={tb.id}
-                    className="rounded-2xl border border-line bg-card p-5 flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors shadow-2xs group"
+                    className="rounded-xl border border-border bg-card p-5 flex flex-col justify-between gap-4 hover:border-primary/40 transition-colors shadow-card group"
                   >
                     <div className="flex items-start gap-3.5">
-                      <div className="flex items-center justify-center size-10 rounded-xl bg-blue-500/10 text-blue-500 shrink-0">
+                      <div className="flex items-center justify-center size-10 rounded-xl bg-primary/10 text-primary shrink-0">
                         <DocTypeIcon filename={tb.file_name || ""} resourceType={tb.resource_type} className="size-5 shrink-0" />
                       </div>
                       <div className="flex flex-col min-w-0">
-                        <h4 className="font-semibold text-ink text-sm line-clamp-2 leading-snug">
+                        <h4 className="font-semibold text-foreground text-sm line-clamp-2 leading-snug">
                           {tb.file_name}
                         </h4>
-                        <div className="flex items-center gap-2 mt-1.5 text-xs text-ink-muted">
+                        <div className="flex items-center gap-2 mt-1.5 text-xs text-muted-foreground">
                           {tb.level_details?.name && (
-                            <span className="bg-surface border border-line px-2 py-0.5 rounded">
+                            <span className="bg-muted border border-border px-2 py-0.5 rounded">
                               {tb.level_details.name}
                             </span>
                           )}
                           {tb.subject_details?.name && (
-                            <span className="bg-surface border border-line px-2 py-0.5 rounded">
+                            <span className="bg-muted border border-border px-2 py-0.5 rounded">
                               {tb.subject_details.name}
                             </span>
                           )}
@@ -196,8 +196,8 @@ function ResourcesFeed() {
                       </div>
                     </div>
 
-                    <div className="pt-2 border-t border-line/60 flex items-center justify-between">
-                      <span className="text-[11px] text-ink-muted uppercase">
+                    <div className="pt-3 border-t border-border/60 flex items-center justify-between">
+                      <span className="text-[11px] text-muted-foreground uppercase">
                         {ext ? `${ext.replace(".", "")} Document` : "Document"}
                       </span>
                       <div className="flex items-center gap-2">
