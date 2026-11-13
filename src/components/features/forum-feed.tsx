@@ -8,6 +8,7 @@ import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { PostCardSkeleton } from "./skeletons";
+import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import type { Post, ContentSortMode, TimeframeFilter } from "@/types";
@@ -130,6 +131,7 @@ export function ForumFeed({
   if (status === "pending" || isEmptyPending) {
     return (
       <div className="flex flex-col gap-4">
+        <ColdStartNotice delayMs={3000} />
         <PostCardSkeleton />
         <PostCardSkeleton />
         <PostCardSkeleton />
@@ -191,6 +193,7 @@ export function ForumFeed({
               variant="secondary"
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
+              className="min-h-[44px] md:min-h-0"
             >
               {isFetchingNextPage ? "Loading more..." : "Load more"}
             </Button>

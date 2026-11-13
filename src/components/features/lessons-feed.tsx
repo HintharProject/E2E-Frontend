@@ -11,6 +11,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { LessonCardSkeleton } from "./skeletons";
+import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import type { ContentSortMode, TimeframeFilter } from "@/types";
@@ -133,11 +134,14 @@ export function LessonsFeed({
 
   if (status === "pending" || (onlyMine && userLoading)) {
     return (
-      <div className="grid gap-4 md:grid-cols-2">
-        <LessonCardSkeleton />
-        <LessonCardSkeleton />
-        <LessonCardSkeleton />
-        <LessonCardSkeleton />
+      <div className="space-y-4">
+        <ColdStartNotice delayMs={3000} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <LessonCardSkeleton />
+          <LessonCardSkeleton />
+          <LessonCardSkeleton />
+          <LessonCardSkeleton />
+        </div>
       </div>
     );
   }
@@ -193,6 +197,7 @@ export function LessonsFeed({
             variant="secondary"
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
+            className="min-h-[44px] md:min-h-0"
           >
             {isFetchingNextPage ? "Loading more..." : "Load more"}
           </Button>

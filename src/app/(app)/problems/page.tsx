@@ -6,6 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ProblemCard } from "@/components/features/problems/problem-card";
+import { ProblemCardSkeleton } from "@/components/features/skeletons";
+import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { useProblems } from "@/hooks/use-problems";
 import { FilterSidebar } from "@/components/layout/filter-sidebar";
 import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
@@ -86,9 +88,10 @@ function ProblemsFeed() {
       </div>
       {isLoading ? (
         <div className="space-y-4">
-          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
-          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
-          <div className="h-40 rounded-xl bg-card border border-border animate-pulse" />
+          <ColdStartNotice delayMs={3000} />
+          <ProblemCardSkeleton />
+          <ProblemCardSkeleton />
+          <ProblemCardSkeleton />
         </div>
       ) : isError ? (
         <EmptyState
@@ -112,6 +115,7 @@ function ProblemsFeed() {
                 variant="secondary"
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
+                className="min-h-[44px] md:min-h-0"
               >
                 {isFetchingNextPage ? "Loading more..." : "Load more"}
               </Button>
@@ -130,7 +134,15 @@ export default function ProblemsPage() {
         <FilterSidebar hideTags showProblemStatus />
       </Suspense>
       <div className="min-w-0 flex-1">
-        <Suspense fallback={<div className="h-40 rounded-2xl bg-card border border-border animate-pulse" />}>
+        <Suspense
+          fallback={
+            <div className="space-y-4">
+              <ProblemCardSkeleton />
+              <ProblemCardSkeleton />
+              <ProblemCardSkeleton />
+            </div>
+          }
+        >
           <ProblemsFeed />
         </Suspense>
       </div>
