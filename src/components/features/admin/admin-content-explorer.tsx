@@ -46,18 +46,18 @@ const CONTENT_TYPE_CONFIG: Record<
 };
 
 const CATEGORICAL_PALETTE = [
-  "#0d9488", // Teal
-  "#0284c7", // Sky
-  "#8b5cf6", // Purple
-  "#ec4899", // Pink
-  "#f59e0b", // Amber
-  "#10b981", // Emerald
-  "#6366f1", // Indigo
-  "#f97316", // Orange
-  "#14b8a6", // Mint
-  "#a855f7", // Violet
-  "#e11d48", // Rose
-  "#64748b", // Slate
+  "var(--chart-1)",
+  "var(--chart-2)",
+  "var(--chart-3)",
+  "var(--chart-4)",
+  "var(--chart-5)",
+  "var(--primary)",
+  "var(--warning)",
+  "var(--tier-2)",
+  "var(--tier-3)",
+  "var(--tier-4)",
+  "var(--destructive)",
+  "var(--muted-foreground)",
 ];
 
 export function AdminContentExplorer({

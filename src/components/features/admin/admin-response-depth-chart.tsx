@@ -297,21 +297,21 @@ export function AdminResponseDepthChart({
                         </Badge>
                       </div>
                       <div className="flex flex-col gap-1.5 text-[11px]">
-                        <div className="flex justify-between items-center text-ink-muted">
+                        <div className="flex justify-between items-center text-muted-foreground">
                           <span>{isProb ? "Total Challenges:" : "Total Discussions:"}</span>
-                          <span className="font-semibold text-ink">{item.total}</span>
+                          <span className="font-mono tabular-nums font-semibold text-foreground">{item.total}</span>
                         </div>
-                        <div className="flex justify-between items-center text-emerald-600 dark:text-emerald-400">
+                        <div className="flex justify-between items-center text-primary">
                           <span>{isProb ? "Answered / Solved:" : "Active with Replies:"}</span>
-                          <span className="font-semibold">{item.solved}</span>
+                          <span className="font-mono tabular-nums font-semibold">{item.solved}</span>
                         </div>
-                        <div className="flex justify-between items-center text-amber-600 dark:text-amber-400">
+                        <div className="flex justify-between items-center text-warning">
                           <span>{isProb ? "Unanswered Gaps:" : "Zero-Reply Threads:"}</span>
-                          <span className="font-semibold">{item.unanswered}</span>
+                          <span className="font-mono tabular-nums font-semibold">{item.unanswered}</span>
                         </div>
-                        <div className="flex justify-between items-center text-primary pt-1 border-t border-line/60">
+                        <div className="flex justify-between items-center text-primary pt-1 border-t border-border/60">
                           <span>{isProb ? "Avg Solutions / Problem:" : "Avg Replies / Post:"}</span>
-                          <span className="font-bold">{item.ratio}x</span>
+                          <span className="font-mono tabular-nums font-bold">{item.ratio}x</span>
                         </div>
                       </div>
                     </div>
@@ -326,7 +326,7 @@ export function AdminResponseDepthChart({
               <Bar
                 dataKey="solved"
                 name={domain === "problems" ? "Answered / Solved" : "Active with Replies"}
-                fill="#10b981"
+                fill="var(--primary)"
                 stackId="stack"
                 radius={[0, 0, 0, 0]}
                 maxBarSize={40}
@@ -334,7 +334,7 @@ export function AdminResponseDepthChart({
               <Bar
                 dataKey="unanswered"
                 name={domain === "problems" ? "Unanswered Bottlenecks" : "Zero Replies"}
-                fill="#f59e0b"
+                fill="var(--warning)"
                 stackId="stack"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}

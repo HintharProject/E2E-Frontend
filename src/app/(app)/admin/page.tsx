@@ -57,9 +57,9 @@ export default function AdminDashboardPage() {
         <button
           onClick={() => refetch()}
           disabled={isLoading || isRefetching}
-          className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-line bg-card px-3.5 py-2 text-xs font-semibold text-ink shadow-xs transition-all hover:bg-muted active:scale-95 disabled:opacity-50"
+          className="inline-flex items-center gap-2 self-start sm:self-auto rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-semibold text-foreground shadow-xs transition-all hover:bg-muted active:scale-95 disabled:opacity-50"
         >
-          <RefreshCw className={`size-3.5 ${isRefetching ? "animate-spin text-primary" : "text-ink-muted"}`} />
+          <RefreshCw className={`size-3.5 ${isRefetching ? "animate-spin text-primary" : "text-muted-foreground"}`} />
           Refresh Stats
         </button>
       </div>
@@ -69,19 +69,19 @@ export default function AdminDashboardPage() {
           {/* Skeleton KPI Strip */}
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="h-36 rounded-2xl border border-line bg-card/60 animate-pulse" />
+              <div key={i} className="h-36 rounded-xl border border-border bg-card/60 animate-pulse" />
             ))}
           </div>
           {/* Skeleton Content Explorer */}
-          <div className="h-[480px] rounded-2xl border border-line bg-card/60 animate-pulse" />
+          <div className="h-[480px] rounded-xl border border-border bg-card/60 animate-pulse" />
           {/* Skeleton Response Depth */}
-          <div className="h-[480px] rounded-2xl border border-line bg-card/60 animate-pulse" />
+          <div className="h-[480px] rounded-xl border border-border bg-card/60 animate-pulse" />
           {/* Skeleton Health Action Center */}
-          <div className="h-[420px] rounded-2xl border border-line bg-card/60 animate-pulse" />
+          <div className="h-[420px] rounded-xl border border-border bg-card/60 animate-pulse" />
         </div>
       ) : error ? (
-        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-2xl border border-danger/30 bg-danger/5 p-6 text-center">
-          <p className="text-sm font-medium text-danger">
+        <div className="flex h-64 flex-col items-center justify-center gap-3 rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <p className="text-sm font-medium text-destructive">
             Failed to load analytics data: {(error as Error).message}
           </p>
           <button

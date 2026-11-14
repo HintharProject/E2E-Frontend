@@ -10,7 +10,6 @@ import {
   FolderTree,
   Megaphone,
   FileText,
-  UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
   Tag,
@@ -212,7 +211,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       isCollapsed ? "md:justify-center md:px-0 md:size-10" : "w-full",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-xs"
-                        : "text-ink-muted hover:bg-muted hover:text-ink"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
@@ -231,9 +230,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
           {children}
-        </main>
+        </div>
       </div>
     </AdminGuard>
   );
