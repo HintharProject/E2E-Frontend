@@ -115,20 +115,21 @@ export function CurriculumTreeSidebar({
 
       {/* Sidebar Container */}
       <aside
+        aria-label="Curriculum archive"
         className={cn(
-          "fixed lg:static top-14 bottom-0 left-0 z-40 w-72 sm:w-80 bg-card border-r border-line flex flex-col transition-transform duration-200 ease-in-out shrink-0 select-none",
+          "fixed lg:static top-14 bottom-0 left-0 z-40 w-72 sm:w-80 bg-sidebar border-r border-border flex flex-col transition-transform duration-200 ease-in-out shrink-0",
           isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
         {/* Sidebar Header & Search */}
-        <div className="p-3 border-b border-line flex flex-col gap-2.5 bg-surface/50">
+        <div className="p-3 border-b border-border flex flex-col gap-2.5 bg-muted/40">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-ink-muted">
+              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                 Curriculum Archive
               </span>
               {treeData?.subject && (
-                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                <Badge variant="outline" className="font-mono text-[10px] px-1.5 py-0">
                   {treeData.subject.code}
                 </Badge>
               )}
@@ -136,32 +137,35 @@ export function CurriculumTreeSidebar({
             <button
               type="button"
               onClick={onClose}
-              className="lg:hidden p-1 text-ink-muted hover:text-ink rounded-md"
+              aria-label="Close curriculum sidebar"
+              className="lg:hidden inline-flex items-center justify-center min-h-[44px] min-w-[44px] p-1 text-muted-foreground hover:text-foreground rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
-              <X className="size-4" />
+              <X className="size-4" aria-hidden="true" />
             </button>
           </div>
 
           <div className="relative">
-            <Search className="absolute left-2.5 top-2.5 size-3.5 text-ink-muted" />
+            <Search className="pointer-events-none absolute left-2.5 top-2.5 size-3.5 text-muted-foreground" aria-hidden="true" />
             <Input
+              sizeVariant="sm"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search paper code (e.g. 12)..."
-              className="h-8 pl-8 text-xs bg-card border-line placeholder:text-ink-muted"
+              aria-label="Search paper code in curriculum archive"
+              className="h-8 pl-8 text-xs bg-card border-border placeholder:text-muted-foreground"
             />
           </div>
         </div>
 
         {/* Hierarchy Tree Content */}
-        <div className="flex-1 overflow-y-auto p-2 space-y-1 divide-y divide-line/30">
+        <div className="flex-1 overflow-y-auto p-2 space-y-1 divide-y divide-border/30">
           {isTreeLoading ? (
-            <div className="flex flex-col items-center justify-center py-16 gap-2 text-ink-muted">
+            <div className="flex flex-col items-center justify-center py-16 gap-2 text-muted-foreground">
               <Loader2 className="size-5 animate-spin text-primary" />
               <span className="text-xs">Loading curriculum tree...</span>
             </div>
           ) : filteredYears.length === 0 ? (
-            <div className="py-12 text-center text-xs text-ink-muted italic">
+            <div className="py-12 text-center text-xs text-muted-foreground italic">
               {searchQuery ? "No matching past papers found." : "No papers in this curriculum."}
             </div>
           ) : (
@@ -181,33 +185,34 @@ export function CurriculumTreeSidebar({
                   <button
                     type="button"
                     onClick={() => toggleYear(yearItem.year)}
-                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold text-ink hover:bg-muted/50 transition-colors cursor-pointer"
+                    aria-expanded={isExpanded}
+                    className="w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-xs font-semibold text-foreground hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                   >
                     <div className="flex items-center gap-2">
                       {isExpanded ? (
-                        <FolderOpen className="size-3.5 text-primary" />
+                        <FolderOpen className="size-3.5 text-primary" aria-hidden="true" />
                       ) : (
-                        <Folder className="size-3.5 text-ink-muted" />
+                        <Folder className="size-3.5 text-muted-foreground" aria-hidden="true" />
                       )}
-                      <span>{formatYear(yearItem.year)}</span>
+                      <span className="font-mono tabular-nums">{formatYear(yearItem.year)}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-ink-muted">
-                      <span className="text-[10px] font-normal">{totalPapersInYear} papers</span>
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <span className="font-mono tabular-nums text-[10px] font-normal">{totalPapersInYear} papers</span>
                       {isExpanded ? (
-                        <ChevronDown className="size-3" />
+                        <ChevronDown className="size-3" aria-hidden="true" />
                       ) : (
-                        <ChevronRight className="size-3" />
+                        <ChevronRight className="size-3" aria-hidden="true" />
                       )}
                     </div>
                   </button>
 
                   {/* Sessions & Papers Accordion Body */}
                   {isExpanded && (
-                    <div className="ml-3 pl-2 border-l border-line/60 my-1 space-y-2">
+                    <div className="ml-3 pl-2 border-l border-border/60 my-1 space-y-2">
                       {yearItem.sessions.map((sessionItem) => (
                         <div key={sessionItem.session} className="space-y-1">
-                          <span className="block text-[11px] font-medium text-ink-muted/80 px-1.5 pt-1">
+                          <span className="block text-[11px] font-medium text-muted-foreground px-1.5 pt-1">
                             {sessionItem.session_label}
                           </span>
 
@@ -230,15 +235,15 @@ export function CurriculumTreeSidebar({
                                         className={cn(
                                           "size-3.5 shrink-0",
                                           isRight
-                                            ? "text-emerald-600 dark:text-emerald-400"
-                                            : "text-emerald-500"
+                                            ? "text-primary"
+                                            : "text-muted-foreground"
                                         )}
                                       />
                                     ) : (
                                       <FileText
                                         className={cn(
                                           "size-3.5 shrink-0",
-                                          isLeft ? "text-primary" : "text-amber-500"
+                                          isLeft ? "text-primary" : "text-primary/70"
                                         )}
                                       />
                                     )}
@@ -250,8 +255,8 @@ export function CurriculumTreeSidebar({
                                       className={cn(
                                         "text-[9px] px-1 py-0 font-bold uppercase shrink-0 leading-none h-4",
                                         isMS
-                                          ? "border-emerald-500/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
-                                          : "border-amber-500/40 text-amber-600 dark:text-amber-400 bg-amber-500/10"
+                                          ? "border-border text-muted-foreground bg-secondary"
+                                          : "border-primary/40 text-primary bg-primary/10"
                                       )}
                                     >
                                       {paper.paper_type || (isMS ? "MS" : "QP")}
@@ -259,8 +264,6 @@ export function CurriculumTreeSidebar({
                                   </div>
 
                                   <div className="flex items-center gap-1 shrink-0">
-
-
                                     {/* Solutions count indicator */}
                                     {paper.solutions_count > 0 && (
                                       <Badge
@@ -282,11 +285,17 @@ export function CurriculumTreeSidebar({
                                           e.preventDefault();
                                           onToggleLeft(paperWithMeta);
                                         }}
+                                        aria-label={
+                                          isLeft
+                                            ? "Active on Left. Click to close Left panel."
+                                            : "Open paper in Left panel (L)"
+                                        }
+                                        aria-pressed={isLeft}
                                         className={cn(
-                                          "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
+                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
                                           isLeft
                                             ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
-                                            : "border border-line/80 bg-surface/80 text-ink-muted hover:text-ink hover:bg-muted"
+                                            : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                                         )}
                                         title={
                                           isLeft
@@ -306,11 +315,17 @@ export function CurriculumTreeSidebar({
                                           e.preventDefault();
                                           onToggleRight(paperWithMeta);
                                         }}
-                                        className={cn(
-                                          "h-5 w-5 rounded text-[10px] font-bold flex items-center justify-center transition-all cursor-pointer",
+                                        aria-label={
                                           isRight
-                                            ? "bg-emerald-600 text-white shadow-xs border border-emerald-600 ring-1 ring-emerald-500/40"
-                                            : "border border-line/80 bg-surface/80 text-ink-muted hover:text-ink hover:bg-muted"
+                                            ? "Active on Right. Click to close Right panel."
+                                            : "Open paper in Right panel (R)"
+                                        }
+                                        aria-pressed={isRight}
+                                        className={cn(
+                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                          isRight
+                                            ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
+                                            : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
                                         )}
                                         title={
                                           isRight
@@ -328,6 +343,8 @@ export function CurriculumTreeSidebar({
                               return onToggleLeft ? (
                                 <div
                                   key={paper.id}
+                                  role="button"
+                                  tabIndex={0}
                                   onClick={() => {
                                     if (isMS && onToggleRight) {
                                       onToggleRight(paperWithMeta);
@@ -335,13 +352,23 @@ export function CurriculumTreeSidebar({
                                       onToggleLeft(paperWithMeta);
                                     }
                                   }}
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") {
+                                      e.preventDefault();
+                                      if (isMS && onToggleRight) {
+                                        onToggleRight(paperWithMeta);
+                                      } else {
+                                        onToggleLeft(paperWithMeta);
+                                      }
+                                    }
+                                  }}
                                   className={cn(
-                                    "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border",
+                                    "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                                     isLeft
-                                      ? "bg-primary/10 border-primary/30 text-ink font-semibold"
+                                      ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                                       : isRight
-                                      ? "bg-emerald-500/10 border-emerald-500/30 text-ink font-semibold"
-                                      : "hover:bg-muted/60 text-ink border-transparent"
+                                      ? "bg-secondary border-border text-foreground font-semibold"
+                                      : "hover:bg-muted/60 text-foreground border-transparent"
                                   )}
                                 >
                                   {content}
@@ -353,10 +380,10 @@ export function CurriculumTreeSidebar({
                                   className={cn(
                                     "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors border",
                                     isLeft
-                                      ? "bg-primary/10 border-primary/30 text-ink font-semibold"
+                                      ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                                       : isRight
-                                      ? "bg-emerald-500/10 border-emerald-500/30 text-ink font-semibold"
-                                      : "hover:bg-muted/60 text-ink border-transparent"
+                                      ? "bg-secondary border-border text-foreground font-semibold"
+                                      : "hover:bg-muted/60 text-foreground border-transparent"
                                   )}
                                 >
                                   {content}

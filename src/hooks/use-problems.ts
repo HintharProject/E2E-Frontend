@@ -1,7 +1,7 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
-import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse } from "@/types";
+import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse, ContentSortMode, TimeframeFilter } from "@/types";
 
 export interface ProblemFilters {
   subject?: string;
@@ -9,6 +9,8 @@ export interface ProblemFilters {
   status?: string;
   origin?: string;
   ordering?: string;
+  sort?: ContentSortMode;
+  timeframe?: TimeframeFilter;
   feed_visibility?: string;
   authorId?: string;
   resource?: string;
@@ -40,7 +42,7 @@ export function useProblems(filters: ProblemFilters = {}) {
     ...otherFilters,
     ...(authorId ? { author: authorId } : {}),
   };
-  
+
   return useInfiniteQuery({
     queryKey: ["problems", filters, "v2"],
     queryFn: async ({ pageParam = 1 }) => {
@@ -203,12 +205,12 @@ export function useCreateSolution() {
 export function useVoteSolution() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ solutionId, value }: { solutionId: string; value: 1 | -1 | 0 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      
+
       if (value === 0) {
         return apiFetch(`/solutions/${solutionId}/vote/`, token, {
           method: "DELETE",
@@ -230,12 +232,12 @@ export function useVoteSolution() {
 export function useVoteProblem() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: async ({ problemId, value }: { problemId: string; value: 1 | -1 | 0 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      
+
       if (value === 0) {
         return apiFetch(`/problems/${problemId}/vote/`, token, {
           method: "DELETE",

@@ -1,5 +1,5 @@
 import { apiFetch } from "./api-client";
-import { UnifiedSearchResponse, SearchCategoryFilter } from "@/types";
+import { UnifiedSearchResponse, SearchCategoryFilter, ContentSortMode, TimeframeFilter } from "@/types";
 
 export interface UnifiedSearchParams {
   q: string;
@@ -7,7 +7,8 @@ export interface UnifiedSearchParams {
   type?: SearchCategoryFilter;
   subject?: string;
   level?: string;
-  sort?: "relevance" | "popular" | "newest";
+  sort?: ContentSortMode | "relevance";
+  timeframe?: TimeframeFilter;
 }
 
 /**
@@ -42,8 +43,11 @@ export async function unifiedSearch(
   if (params.level) {
     queryParams.set("level", params.level);
   }
-  if (params.sort && params.sort !== "relevance") {
+  if (params.sort) {
     queryParams.set("sort", params.sort);
+  }
+  if (params.timeframe && params.sort === "popular") {
+    queryParams.set("timeframe", params.timeframe);
   }
 
   const res = await apiFetch<unknown>(`/search/?${queryParams.toString()}`, token);

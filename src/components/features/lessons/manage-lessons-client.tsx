@@ -7,11 +7,13 @@ export function ManageLessonsClient({
   levels,
   tagIds,
   state,
+  hideSort = false,
 }: {
   subjects: string[];
   levels: string[];
   tagIds: string[];
   state: string;
+  hideSort?: boolean;
 }) {
   return (
     <LessonsFeed 
@@ -20,6 +22,7 @@ export function ManageLessonsClient({
       tagIds={tagIds} 
       onlyMine={true} 
       state={state} 
+      hideSort={hideSort}
     />
   );
 }

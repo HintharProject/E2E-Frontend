@@ -19,8 +19,9 @@ import { useContributionStats } from "@/hooks/use-contribution";
 import { ProfileSkeleton } from "../skeletons";
 import { ProfileLessonsRail } from "./profile-lessons-rail";
 import { ProfileActivityTabs } from "./profile-activity-tabs";
+import { TierProgressBar } from "@/components/features/contributions/tier-progress-bar";
 import { formatDate } from "@/lib/utils";
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, Ban, ShieldBan, Sparkles } from "lucide-react";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -56,8 +57,8 @@ export function UserProfileView({ userId }: { userId: string }) {
 
   if (isError || !profile) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        <p className="text-ink-muted">Could not load this profile.</p>
+      <div className="max-w-5xl py-8">
+        <p className="text-muted-foreground">Could not load this profile.</p>
       </div>
     );
   }
@@ -91,8 +92,8 @@ export function UserProfileView({ userId }: { userId: string }) {
     0;
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-      <article className="rounded-3xl border border-line bg-card p-6 sm:p-8 shadow-2xs">
+    <div className="max-w-5xl space-y-6">
+      <article className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-card">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
           <Avatar className="size-20 sm:size-24 ring-4 ring-muted">
             {profile.profile_image_url && <AvatarImage src={profile.profile_image_url} />}
@@ -103,7 +104,7 @@ export function UserProfileView({ userId }: { userId: string }) {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <h1 className="font-heading text-2xl font-semibold tracking-tight text-ink sm:text-3xl">
+                  <h1 className="font-heading text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
                     {profile.display_name}
                   </h1>
                   {isStaffRole(profile.role) && (
@@ -112,23 +113,27 @@ export function UserProfileView({ userId }: { userId: string }) {
                   {profile.ban_status && profile.ban_status !== "ACTIVE" && (
                     <>
                       {profile.ban_status === "WARNING" && (
-                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 font-semibold text-xs">
-                          ⚠️ Warning Active
+                        <Badge variant="warning" className="gap-1 font-semibold text-xs">
+                          <AlertTriangle className="size-3" />
+                          Warning Active
                         </Badge>
                       )}
                       {profile.ban_status === "BANNED_24H" && (
-                        <Badge variant="destructive" className="font-semibold text-xs">
-                          ⛔ 24h Suspension
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <Ban className="size-3" />
+                          24h Suspension
                         </Badge>
                       )}
                       {profile.ban_status === "BANNED_7D" && (
-                        <Badge variant="destructive" className="font-semibold text-xs">
-                          ⛔ 7-Day Suspension
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <Ban className="size-3" />
+                          7-Day Suspension
                         </Badge>
                       )}
                       {profile.ban_status === "PERMANENT_BAN" && (
-                        <Badge variant="destructive" className="bg-red-800 text-white font-semibold text-xs">
-                          🚫 Permanently Banned
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <ShieldBan className="size-3" />
+                          Permanently Banned
                         </Badge>
                       )}
                     </>
@@ -141,7 +146,7 @@ export function UserProfileView({ userId }: { userId: string }) {
                 </div>
 
                 {profile.created_at && (
-                  <p className="mt-1 text-sm text-ink-muted">
+                  <p className="mt-1 text-sm text-muted-foreground">
                     Joined {formatDate(profile.created_at)}
                   </p>
                 )}
@@ -166,27 +171,27 @@ export function UserProfileView({ userId }: { userId: string }) {
             </div>
 
             {profile.bio ? (
-              <p className="mt-4 max-w-2xl text-ink">{profile.bio}</p>
+              <p className="mt-4 max-w-2xl text-foreground">{profile.bio}</p>
             ) : (
-              <p className="mt-4 text-sm text-ink-muted">No bio yet.</p>
+              <p className="mt-4 text-sm text-muted-foreground">No bio yet.</p>
             )}
 
             {(levelName || profile.custom_level || goodSubjectNames || weakSubjectNames) && (
-              <div className="mt-4 flex flex-col gap-1 text-xs text-ink-muted bg-muted/40 p-3 rounded-xl">
+              <div className="mt-4 flex flex-col gap-1 text-xs text-muted-foreground bg-muted/40 p-3 rounded-xl">
                 {(levelName || profile.custom_level) && (
                   <p>
-                    <span className="font-medium text-ink">Level:</span>{" "}
+                    <span className="font-medium text-foreground">Level:</span>{" "}
                     {profile.custom_level || levelName}
                   </p>
                 )}
                 {goodSubjectNames && (
                   <p>
-                    <span className="font-medium text-ink">Good subjects:</span> {goodSubjectNames}
+                    <span className="font-medium text-foreground">Good subjects:</span> {goodSubjectNames}
                   </p>
                 )}
                 {weakSubjectNames && (
                   <p>
-                    <span className="font-medium text-ink">Weak subjects:</span> {weakSubjectNames}
+                    <span className="font-medium text-foreground">Weak subjects:</span> {weakSubjectNames}
                   </p>
                 )}
               </div>
@@ -212,6 +217,13 @@ export function UserProfileView({ userId }: { userId: string }) {
           </div>
         </div>
       </article>
+
+      {/* Contributor Tier & Reputation Card */}
+      <TierProgressBar
+        tier={effectiveTier}
+        points={effectivePoints}
+        tierProgress={profile.reputation?.tier_progress}
+      />
 
       <ProfileLessonsRail userId={userId} />
       <ProfileActivityTabs userId={userId} />

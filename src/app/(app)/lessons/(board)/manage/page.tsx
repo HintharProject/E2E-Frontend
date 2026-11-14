@@ -19,6 +19,7 @@ export default async function ManageLessonsPage(props: {
       levels={levels} 
       tagIds={tagIds} 
       state={active} 
+      hideSort
     />
   );
 }

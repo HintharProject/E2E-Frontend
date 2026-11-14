@@ -309,3 +309,7 @@ export interface EndorseSolutionResponse {
   message: string;
 }
 
+export type ContentSortMode = "default" | "popular" | "newest";
+export type TimeframeFilter = "today" | "week" | "month" | "all";
+export type CommentSortMode = "popular" | "newest";
+

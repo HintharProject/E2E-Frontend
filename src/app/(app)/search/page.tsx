@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition, use } from "react";
 import Link from "next/link";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Search,
   X,
@@ -17,21 +17,19 @@ import {
   SlidersHorizontal,
   RotateCcw,
   CheckCircle2,
-  Calendar,
-  Layers,
 } from "lucide-react";
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import {
   SearchCategoryFilter,
-  SearchPostItem,
-  SearchProblemItem,
-  SearchLessonItem,
-  SearchResourceItem,
+  ContentSortMode,
+  TimeframeFilter,
 } from "@/types";
+import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
 import { cn } from "@/lib/utils";
 
 const POPULAR_TOPICS = [
@@ -55,13 +53,15 @@ export default function SearchPage(props: {
   const initialType = (resolvedParams?.type as SearchCategoryFilter) || "all";
   const initialSubject = (resolvedParams?.subject as string) || "";
   const initialLevel = (resolvedParams?.level as string) || "";
-  const initialSort = (resolvedParams?.sort as "relevance" | "popular" | "newest") || "relevance";
+  const initialSort = (resolvedParams?.sort as ContentSortMode) || "default";
+  const initialTimeframe = (resolvedParams?.timeframe as TimeframeFilter) || "all";
 
   const [query, setQuery] = useState(initialQ);
   const [category, setCategory] = useState<SearchCategoryFilter>(initialType);
   const [subject, setSubject] = useState(initialSubject);
   const [level, setLevel] = useState(initialLevel);
-  const [sort, setSort] = useState<"relevance" | "popular" | "newest">(initialSort);
+  const [sort, setSort] = useState<ContentSortMode>(initialSort);
+  const [timeframe, setTimeframe] = useState<TimeframeFilter>(initialTimeframe);
   const [showFiltersMobile, setShowFiltersMobile] = useState(false);
 
   const { data: subjects = [] } = useSubjects();
@@ -75,6 +75,7 @@ export default function SearchPage(props: {
     subject: subject || undefined,
     level: level || undefined,
     sort,
+    timeframe,
     debounceMs: 300,
   });
 
@@ -85,7 +86,8 @@ export default function SearchPage(props: {
     if (category !== "all") params.set("type", category);
     if (subject) params.set("subject", subject);
     if (level) params.set("level", level);
-    if (sort !== "relevance") params.set("sort", sort);
+    if (sort !== "default") params.set("sort", sort);
+    if (sort === "popular" && timeframe !== "all") params.set("timeframe", timeframe);
 
     const queryString = params.toString();
     const newUrl = queryString ? `${pathname}?${queryString}` : pathname;
@@ -93,7 +95,7 @@ export default function SearchPage(props: {
     startTransition(() => {
       window.history.replaceState(null, "", newUrl);
     });
-  }, [query, category, subject, level, sort, pathname]);
+  }, [query, category, subject, level, sort, timeframe, pathname]);
 
   const posts = data?.results.posts || [];
   const problems = data?.results.problems || [];
@@ -101,12 +103,13 @@ export default function SearchPage(props: {
   const resources = data?.results.resources || [];
   const counts = data?.counts || { posts: 0, problems: 0, lessons: 0, resources: 0, total: 0 };
 
-  const hasActiveFacets = Boolean(subject || level || sort !== "relevance");
+  const hasActiveFacets = Boolean(subject || level || sort !== "default" || timeframe !== "all");
 
   const clearFacets = () => {
     setSubject("");
     setLevel("");
-    setSort("relevance");
+    setSort("default");
+    setTimeframe("all");
   };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -130,14 +133,15 @@ export default function SearchPage(props: {
 
       {/* Prominent Search Bar */}
       <form onSubmit={handleSearchSubmit} className="relative mb-6">
-        <div className="relative flex items-center shadow-sm rounded-2xl border border-line bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-          <Search className="absolute left-4 size-5 text-ink-muted pointer-events-none" />
+        <div className="relative flex items-center shadow-sm rounded-2xl border border-border bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+          <Search className="absolute left-4 size-5 text-muted-foreground pointer-events-none" aria-hidden="true" />
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
+            aria-label="Search keywords, topics, or syllabi"
             placeholder="Search keywords, topics, or syllabi (e.g. Calculus, 9702, Mechanics)..."
-            className="w-full h-13 pl-12 pr-28 rounded-2xl bg-transparent text-sm font-medium text-ink placeholder:text-ink-muted outline-none"
+            className="w-full h-13 pl-12 pr-28 rounded-2xl bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="absolute right-3 flex items-center gap-2">
@@ -145,10 +149,11 @@ export default function SearchPage(props: {
               <button
                 type="button"
                 onClick={() => setQuery("")}
-                className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Clear search"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
                 title="Clear search"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             )}
             <Button
@@ -207,7 +212,7 @@ export default function SearchPage(props: {
         <button
           type="button"
           onClick={() => setShowFiltersMobile(!showFiltersMobile)}
-          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-line bg-card text-xs font-semibold text-ink"
+          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground"
         >
           <SlidersHorizontal className="size-3.5" />
           <span>Filters</span>
@@ -220,12 +225,12 @@ export default function SearchPage(props: {
         {/* Filters Sidebar */}
         <div
           className={cn(
-            "space-y-5 rounded-2xl border border-line bg-card p-4 shadow-2xs md:block",
+            "space-y-5 rounded-xl border border-border bg-card p-4 shadow-card md:block",
             showFiltersMobile ? "block" : "hidden md:block"
           )}
         >
-          <div className="flex items-center justify-between pb-3 border-b border-line">
-            <span className="flex items-center gap-2 text-xs font-bold font-heading text-ink uppercase tracking-wider">
+          <div className="flex items-center justify-between pb-3 border-b border-border">
+            <span className="flex items-center gap-2 text-xs font-semibold font-heading text-foreground">
               <Filter className="size-3.5 text-primary" /> Filter Results
             </span>
             {hasActiveFacets && (
@@ -241,11 +246,14 @@ export default function SearchPage(props: {
 
           {/* Subject Filter */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">Subject</label>
-            <select
+            <label htmlFor="search-subject-filter" className="text-xs font-semibold text-foreground">
+              Subject
+            </label>
+            <Select
+              id="search-subject-filter"
+              sizeVariant="sm"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
             >
               <option value="">All Subjects</option>
               {subjects.map((s) => (
@@ -253,16 +261,19 @@ export default function SearchPage(props: {
                   {s.name} {s.code ? `(${s.code})` : ""}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Level Filter */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">Academic Level</label>
-            <select
+            <label htmlFor="search-level-filter" className="text-xs font-semibold text-foreground">
+              Academic Level
+            </label>
+            <Select
+              id="search-level-filter"
+              sizeVariant="sm"
               value={level}
               onChange={(e) => setLevel(e.target.value)}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
             >
               <option value="">All Levels</option>
               {levels.map((l) => (
@@ -270,27 +281,24 @@ export default function SearchPage(props: {
                   {l.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           {/* Sort By Filter */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">Sort Order</label>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as "relevance" | "popular" | "newest")}
-              className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs text-ink outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer"
-            >
-              <option value="relevance">Best Match (Relevance)</option>
-              <option value="popular">Most Popular (Votes)</option>
-              <option value="newest">Newest First</option>
-            </select>
+            <label className="text-xs font-semibold text-foreground">Sort Order</label>
+            <ContentSortToggle
+              sort={sort}
+              timeframe={timeframe}
+              onSortChange={setSort}
+              onTimeframeChange={setTimeframe}
+            />
           </div>
 
           {/* Quick Help Tip */}
-          <div className="rounded-xl bg-muted/60 p-3 text-[11px] text-ink-muted leading-relaxed">
-            <p className="font-semibold text-ink mb-1">Search Tip:</p>
-            You can search by subject code (e.g. <span className="font-mono text-ink">9702</span> for Physics) or paper component (e.g. <span className="font-mono text-ink">42</span>).
+          <div className="rounded-lg bg-muted/60 p-3 text-[11px] text-muted-foreground leading-relaxed">
+            <p className="font-semibold text-foreground mb-1">Search Tip</p>
+            You can search by subject code (e.g. <span className="font-mono text-foreground">9702</span> for Physics) or paper component (e.g. <span className="font-mono text-foreground">42</span>).
           </div>
         </div>
 
@@ -298,9 +306,9 @@ export default function SearchPage(props: {
         <div className="md:col-span-3 space-y-6">
           {/* Real-time Summary Header */}
           {query.trim().length >= 2 && (
-            <div className="flex items-center justify-between text-xs text-ink-muted pb-1">
+            <div className="flex items-center justify-between text-xs text-muted-foreground pb-1">
               <span>
-                Found <strong className="text-ink font-semibold">{counts.total}</strong> results for &ldquo;{query}&rdquo;
+                Found <strong className="font-mono tabular-nums text-foreground font-semibold">{counts.total}</strong> results for &ldquo;{query}&rdquo;
                 {isFetching && <span className="ml-2 animate-pulse text-primary font-medium">Updating...</span>}
               </span>
             </div>
@@ -308,22 +316,22 @@ export default function SearchPage(props: {
 
           {/* State: Prompt to search (query < 2 chars) */}
           {query.trim().length < 2 && (
-            <div className="rounded-2xl border border-line bg-card p-8 sm:p-12 text-center space-y-6">
-              <div className="mx-auto size-14 rounded-2xl bg-primary/10 text-primary flex items-center justify-center">
+            <div className="rounded-xl border border-border bg-card p-8 sm:p-12 text-center shadow-card space-y-6">
+              <div className="mx-auto size-14 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
                 <Sparkles className="size-7" />
               </div>
 
               <div className="space-y-2 max-w-md mx-auto">
-                <h3 className="text-lg font-bold font-heading text-ink">
+                <h3 className="text-lg font-bold font-heading text-foreground">
                   Explore Academic Content
                 </h3>
-                <p className="text-xs text-ink-muted leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   Start typing in the search bar above to look up questions, community problems, lessons, and exam past papers across all curriculums.
                 </p>
               </div>
 
               <div className="space-y-3">
-                <p className="text-xs font-semibold text-ink-muted uppercase tracking-wider">
+                <p className="text-xs font-semibold text-muted-foreground">
                   Popular Topics
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-2 max-w-lg mx-auto">
@@ -332,7 +340,7 @@ export default function SearchPage(props: {
                       key={topic}
                       type="button"
                       onClick={() => setQuery(topic)}
-                      className="px-3 py-1.5 rounded-full border border-line bg-surface hover:bg-muted text-xs font-medium text-ink transition-colors cursor-pointer"
+                      className="px-3 py-1.5 rounded-full border border-border bg-muted/40 hover:bg-muted text-xs font-medium text-foreground transition-colors cursor-pointer"
                     >
                       {topic}
                     </button>
@@ -340,14 +348,14 @@ export default function SearchPage(props: {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-line/60 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
+              <div className="pt-4 border-t border-border/60 grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-lg mx-auto">
                 <Link
                   href="/forum"
-                  className="p-3 rounded-xl border border-line bg-surface hover:border-primary/40 text-center transition-colors"
+                  className="p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 text-center transition-colors"
                 >
-                  <MessageSquare className="size-4 text-blue-500 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-ink block">Forum</span>
-                  <span className="text-[10px] text-ink-muted">Q&A Feed</span>
+                  <MessageSquare className="size-4 text-primary mx-auto mb-1" />
+                  <span className="text-xs font-semibold text-foreground block">Forum</span>
+                  <span className="text-[10px] text-muted-foreground">Q&amp;A Feed</span>
                 </Link>
                 <Link
                   href="/problems"
@@ -366,12 +374,12 @@ export default function SearchPage(props: {
                   <span className="text-[10px] text-ink-muted">Guides</span>
                 </Link>
                 <Link
-                  href="/train"
-                  className="p-3 rounded-xl border border-line bg-surface hover:border-primary/40 text-center transition-colors"
+                  href="/resources"
+                  className="p-3 rounded-xl border border-border bg-card hover:border-primary/40 text-center transition-colors"
                 >
-                  <FileText className="size-4 text-amber-500 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-ink block">Train!</span>
-                  <span className="text-[10px] text-ink-muted">Past Papers</span>
+                  <FileText className="size-4 text-primary mx-auto mb-1" />
+                  <span className="text-xs font-semibold text-foreground block">Resources</span>
+                  <span className="text-[10px] text-muted-foreground">Past Papers</span>
                 </Link>
               </div>
             </div>
@@ -426,7 +434,7 @@ export default function SearchPage(props: {
                       <Link
                         key={post.id}
                         href={`/posts/${post.id}`}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-card hover:border-primary/50 hover:shadow-xs transition-all"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card shadow-card hover:border-primary/50 hover:shadow-card-hover transition-all"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -435,30 +443,30 @@ export default function SearchPage(props: {
                               className={cn(
                                 "text-[10px] h-4.5 px-1.5 font-semibold",
                                 post.post_type === "QUESTION"
-                                  ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5"
-                                  : "border-blue-500/30 text-blue-600 dark:text-blue-400 bg-blue-500/5"
+                                  ? "border-primary/30 text-primary bg-primary/10"
+                                  : "border-warning/30 text-warning bg-warning/10"
                               )}
                             >
                               {post.post_type}
                             </Badge>
                             {post.subject && (
-                              <span className="text-[11px] font-medium text-ink-muted">
+                              <span className="text-[11px] font-medium text-muted-foreground">
                                 {post.subject.name}
                               </span>
                             )}
                             {post.level && (
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 • {post.level.name}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-ink group-hover:text-primary transition-colors line-clamp-1">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                             {post.title}
                           </h3>
 
-                          <div className="flex items-center gap-2 text-xs text-ink-muted">
-                            <Avatar className="size-4 border border-line">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <Avatar className="size-4 border border-border">
                               {post.author?.image_url && <AvatarImage src={post.author.image_url} />}
                               <AvatarFallback className="text-[8px]">
                                 {post.author?.display_name?.slice(0, 2).toUpperCase() || "?"}
@@ -468,14 +476,14 @@ export default function SearchPage(props: {
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0 text-xs text-ink-muted pt-2 sm:pt-0 border-t sm:border-t-0 border-line/50">
+                        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 font-mono tabular-nums">
                           <span className="flex items-center gap-1 font-medium">
                             <ThumbsUp className="size-3.5" /> {post.vote_score}
                           </span>
                           <span className="flex items-center gap-1 font-medium">
                             <MessageSquare className="size-3.5" /> {post.comments_count}
                           </span>
-                          <ArrowRight className="size-4 text-ink-muted group-hover:text-primary group-hover:translate-x-0.5 transition-all hidden sm:block" />
+                          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all hidden sm:block" />
                         </div>
                       </Link>
                     ))}
@@ -487,7 +495,7 @@ export default function SearchPage(props: {
               {(category === "all" || category === "problems") && problems.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-violet-600 dark:text-violet-400">
+                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-chart-3">
                       <Lightbulb className="size-4" /> Problems ({counts.problems})
                     </h2>
                     {category === "all" && counts.problems > problems.length && (
@@ -506,53 +514,53 @@ export default function SearchPage(props: {
                       <Link
                         key={prob.id}
                         href={`/problems/${prob.id}`}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-card hover:border-violet-500/50 hover:shadow-xs transition-all"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card shadow-card hover:border-primary/50 hover:shadow-card-hover transition-all"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold border-violet-500/30 text-violet-600 dark:text-violet-400 bg-violet-500/5"
+                              className="text-[10px] h-4.5 px-1.5 font-semibold border-chart-3/30 text-chart-3 bg-chart-3/10"
                             >
                               Solve!
                             </Badge>
                             {prob.is_verified && (
                               <Badge
                                 variant="outline"
-                                className="text-[10px] h-4.5 px-1.5 font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 flex items-center gap-1"
+                                className="text-[10px] h-4.5 px-1.5 font-semibold border-primary/30 text-primary bg-primary/10 flex items-center gap-1"
                               >
                                 <CheckCircle2 className="size-3" /> Solved
                               </Badge>
                             )}
                             {prob.subject && (
-                              <span className="text-[11px] font-medium text-ink-muted">
+                              <span className="text-[11px] font-medium text-muted-foreground">
                                 {prob.subject.name}
                               </span>
                             )}
                             {prob.level && (
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 • {prob.level.name}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-ink group-hover:text-violet-600 dark:group-hover:text-violet-400 transition-colors line-clamp-1">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                             {prob.title}
                           </h3>
 
-                          <div className="flex items-center gap-2 text-xs text-ink-muted">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>Author: {prob.author?.display_name || "Community Member"}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0 text-xs text-ink-muted pt-2 sm:pt-0 border-t sm:border-t-0 border-line/50">
+                        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 font-mono tabular-nums">
                           <span className="flex items-center gap-1 font-medium">
                             <ThumbsUp className="size-3.5" /> {prob.vote_score}
                           </span>
-                          <span className="font-medium text-ink">
+                          <span className="font-medium text-foreground">
                             {prob.solutions_count} solutions
                           </span>
-                          <ArrowRight className="size-4 text-ink-muted group-hover:text-violet-500 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+                          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all hidden sm:block" />
                         </div>
                       </Link>
                     ))}
@@ -564,7 +572,7 @@ export default function SearchPage(props: {
               {(category === "all" || category === "lessons") && lessons.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-emerald-600 dark:text-emerald-400">
+                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-primary">
                       <BookOpen className="size-4" /> Lessons ({counts.lessons})
                     </h2>
                     {category === "all" && counts.lessons > lessons.length && (
@@ -583,42 +591,42 @@ export default function SearchPage(props: {
                       <Link
                         key={lesson.id}
                         href={`/lessons/${lesson.id}`}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-card hover:border-emerald-500/50 hover:shadow-xs transition-all"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card shadow-card hover:border-primary/50 hover:shadow-card-hover transition-all"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/5"
+                              className="text-[10px] h-4.5 px-1.5 font-semibold border-primary/30 text-primary bg-primary/10"
                             >
                               Study Guide
                             </Badge>
                             {lesson.subject && (
-                              <span className="text-[11px] font-medium text-ink-muted">
+                              <span className="text-[11px] font-medium text-muted-foreground">
                                 {lesson.subject.name}
                               </span>
                             )}
                             {lesson.level && (
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 • {lesson.level.name}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-ink group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors line-clamp-1">
+                          <h3 className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                             {lesson.title}
                           </h3>
 
-                          <div className="flex items-center gap-2 text-xs text-ink-muted">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             <span>By {lesson.author?.display_name || "Educator"}</span>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0 text-xs text-ink-muted pt-2 sm:pt-0 border-t sm:border-t-0 border-line/50">
+                        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50 font-mono tabular-nums">
                           <span className="flex items-center gap-1 font-medium">
                             <ThumbsUp className="size-3.5" /> {lesson.vote_score}
                           </span>
-                          <ArrowRight className="size-4 text-ink-muted group-hover:text-emerald-500 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+                          <ArrowRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all hidden sm:block" />
                         </div>
                       </Link>
                     ))}
@@ -630,8 +638,8 @@ export default function SearchPage(props: {
               {(category === "all" || category === "resources") && resources.length > 0 && (
                 <section className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-amber-600 dark:text-amber-400">
-                      <FileText className="size-4" /> Exam Papers & Mark Schemes ({counts.resources})
+                    <h2 className="flex items-center gap-2 text-sm font-bold font-heading text-warning">
+                      <FileText className="size-4" /> Exam Papers &amp; Mark Schemes ({counts.resources})
                     </h2>
                     {category === "all" && counts.resources > resources.length && (
                       <button
@@ -649,13 +657,13 @@ export default function SearchPage(props: {
                       <Link
                         key={res.id}
                         href={`/train/${res.id}`}
-                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-card hover:border-amber-500/50 hover:shadow-xs transition-all"
+                        className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card shadow-card hover:border-warning/60 hover:shadow-card-hover transition-all"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
-                              variant="outline"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5"
+                              variant="warning"
+                              className="text-[10px] h-4.5 px-1.5 font-semibold"
                             >
                               {res.paper_type === "QP"
                                 ? "Question Paper"
@@ -664,37 +672,37 @@ export default function SearchPage(props: {
                                 : res.paper_type || "Exam Paper"}
                             </Badge>
                             {res.year && (
-                              <span className="text-[11px] font-semibold text-ink">
+                              <span className="font-mono tabular-nums text-[11px] font-semibold text-foreground">
                                 {res.year}
                               </span>
                             )}
                             {res.session && (
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="text-[11px] text-muted-foreground">
                                 • {res.session}
                               </span>
                             )}
                             {res.paper_code && (
-                              <span className="text-[11px] text-ink-muted">
+                              <span className="font-mono tabular-nums text-[11px] text-muted-foreground">
                                 • Variant {res.paper_code}
                               </span>
                             )}
                           </div>
 
-                          <h3 className="text-sm font-semibold text-ink group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors line-clamp-1 font-mono text-xs">
+                          <h3 className="text-xs font-semibold text-foreground group-hover:text-warning transition-colors line-clamp-1 font-mono">
                             {res.file_name}
                           </h3>
 
-                          <div className="flex items-center gap-2 text-xs text-ink-muted">
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
                             {res.subject && <span>{res.subject.name}</span>}
                             {res.level && <span>• {res.level.name}</span>}
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-3 shrink-0 text-xs text-ink-muted pt-2 sm:pt-0 border-t sm:border-t-0 border-line/50">
-                          <span className="text-amber-600 dark:text-amber-400 font-semibold group-hover:underline">
+                        <div className="flex items-center gap-3 shrink-0 text-xs text-muted-foreground pt-2 sm:pt-0 border-t sm:border-t-0 border-border/50">
+                          <span className="text-warning font-semibold group-hover:underline">
                             Open in Train!
                           </span>
-                          <ArrowRight className="size-4 text-ink-muted group-hover:text-amber-500 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+                          <ArrowRight className="size-4 text-muted-foreground group-hover:text-warning group-hover:translate-x-0.5 transition-all hidden sm:block" />
                         </div>
                       </Link>
                     ))}

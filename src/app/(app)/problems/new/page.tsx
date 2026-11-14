@@ -10,12 +10,12 @@ export default function NewProblemPage() {
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="Post a Problem"
         description="Ask the community for a step-by-step solution."
       />
-      <div className="mt-8">
+      <div>
         {writeLocked ? (
           <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-6 text-center text-sm font-medium text-destructive">
             Your account is restricted. You cannot post problems at this time.

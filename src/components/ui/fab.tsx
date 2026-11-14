@@ -76,14 +76,14 @@ export function GlobalFAB() {
             key={opt.href}
             href={opt.href}
             onClick={() => setOpen(false)}
-            className="group flex items-center gap-3 rounded-full border border-line bg-card py-2.5 pl-4 pr-5 shadow-lg transition-all hover:border-brand/40 hover:shadow-[0_8px_30px_-12px_oklch(0.508_0.118_165.612_/_0.5)]"
+            className="group flex items-center gap-3 rounded-full border border-border bg-card py-2.5 pl-4 pr-5 shadow-card transition-all hover:border-primary/40 hover:shadow-card-hover"
           >
-            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-brand/10 text-brand transition-colors group-hover:bg-brand group-hover:text-white">
+            <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
               {opt.icon}
             </span>
             <div className="flex flex-col leading-tight">
-              <span className="text-sm font-semibold text-ink">{opt.label}</span>
-              <span className="text-[11px] text-ink-muted">{opt.description}</span>
+              <span className="text-sm font-semibold text-foreground">{opt.label}</span>
+              <span className="text-[11px] text-muted-foreground">{opt.description}</span>
             </div>
           </Link>
         ))}
@@ -95,10 +95,10 @@ export function GlobalFAB() {
         onClick={() => setOpen((prev) => !prev)}
         aria-label={open ? "Close menu" : "Create new content"}
         aria-expanded={open}
-        className={`pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full shadow-[0_8px_30px_-8px_oklch(0.508_0.118_165.612_/_0.6)] transition-all duration-200 hover:scale-105 hover:shadow-[0_12px_40px_-8px_oklch(0.508_0.118_165.612_/_0.7)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 ${
+        className={`pointer-events-auto flex h-14 w-14 items-center justify-center rounded-full shadow-card-hover transition-all duration-200 hover:scale-105 hover:shadow-modal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
           open
-            ? "bg-ink text-background rotate-45"
-            : "bg-brand text-white"
+            ? "bg-foreground text-background rotate-45"
+            : "bg-primary text-primary-foreground"
         }`}
       >
         {open ? (

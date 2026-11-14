@@ -179,8 +179,8 @@ export function CommandPalette() {
         </div>
 
         {/* Input Bar */}
-        <div className="relative flex items-center border-b border-line px-4 py-3 bg-surface/50">
-          <Search className="size-5 text-ink-muted shrink-0 mr-3" />
+        <div className="relative flex items-center border-b border-border px-4 py-3 bg-surface/50">
+          <Search className="size-5 text-muted-foreground shrink-0 mr-3" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
@@ -190,13 +190,14 @@ export function CommandPalette() {
               setSelectedIndex(0);
             }}
             onKeyDown={handleKeyDown}
+            aria-label="Search discussions, problems, lessons, and past papers"
             placeholder="Search discussions, problems, lessons, past papers..."
-            className="w-full bg-transparent text-sm font-medium text-ink placeholder:text-ink-muted outline-none"
+            className="w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="flex items-center gap-2 shrink-0 ml-2">
             {(isLoading || isFetching) && (
-              <Loader2 className="size-4 animate-spin text-primary" />
+              <Loader2 className="size-4 animate-spin text-primary" aria-hidden="true" />
             )}
             {query && (
               <button
@@ -205,10 +206,11 @@ export function CommandPalette() {
                   setQuery("");
                   inputRef.current?.focus();
                 }}
-                className="rounded-md p-1 text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Clear query"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
                 title="Clear query"
               >
-                <X className="size-4" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             )}
             <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted bg-muted border border-line rounded">
@@ -288,8 +290,8 @@ export function CommandPalette() {
           {/* State: No Results */}
           {query.trim().length >= 2 && !isLoading && totalResults === 0 && (
             <div className="py-8 px-4 text-center">
-              <p className="text-sm font-semibold text-ink">No results for &ldquo;{query}&rdquo;</p>
-              <p className="text-xs text-ink-muted mt-1">
+              <p className="text-sm font-semibold text-foreground">No results for &ldquo;{query}&rdquo;</p>
+              <p className="text-xs text-muted-foreground mt-1">
                 Try searching for different keywords, syllabus codes (e.g. 9702), or explore the full catalog.
               </p>
               <button
@@ -308,11 +310,11 @@ export function CommandPalette() {
           {/* Section: Discussions */}
           {(activeCategory === "all" || activeCategory === "posts") && posts.length > 0 && (
             <div className="pt-2 first:pt-0">
-              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400">
+              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-chart-3">
                 <span className="flex items-center gap-1.5">
                   <MessageSquare className="size-3.5" /> Discussions ({posts.length})
                 </span>
-                <span className="text-[10px] font-normal text-ink-muted">Posts</span>
+                <span className="text-[10px] font-normal text-muted-foreground">Posts</span>
               </div>
               <div className="space-y-1 mt-1">
                 {posts.map((post) => {
@@ -331,11 +333,11 @@ export function CommandPalette() {
                         "flex items-center justify-between gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left",
                         isSelected
                           ? "bg-primary/10 text-primary dark:bg-primary/20"
-                          : "hover:bg-muted/60 text-ink"
+                          : "hover:bg-muted/60 text-foreground"
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <Avatar className="size-6 shrink-0 border border-line">
+                        <Avatar className="size-6 shrink-0 border border-border">
                           {post.author?.image_url && <AvatarImage src={post.author.image_url} />}
                           <AvatarFallback className="text-[10px]">
                             {post.author?.display_name?.slice(0, 2).toUpperCase() || "?"}
@@ -343,7 +345,7 @@ export function CommandPalette() {
                         </Avatar>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium truncate">{post.title}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-ink-muted mt-0.5">
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             <span>{post.author?.display_name || "Anonymous"}</span>
                             {post.subject && (
                               <span className="truncate max-w-[120px]">
@@ -355,7 +357,7 @@ export function CommandPalette() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0 text-[11px] text-ink-muted">
+                      <div className="flex items-center gap-2 shrink-0 text-[11px] text-muted-foreground font-mono tabular-nums">
                         <span className="flex items-center gap-1">
                           <ThumbsUp className="size-3" /> {post.vote_score}
                         </span>
@@ -373,11 +375,11 @@ export function CommandPalette() {
           {/* Section: Problems */}
           {(activeCategory === "all" || activeCategory === "problems") && problems.length > 0 && (
             <div className="pt-2 first:pt-0">
-              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400">
+              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-chart-3">
                 <span className="flex items-center gap-1.5">
                   <Lightbulb className="size-3.5" /> Problems ({problems.length})
                 </span>
-                <span className="text-[10px] font-normal text-ink-muted">Solve!</span>
+                <span className="text-[10px] font-normal text-muted-foreground">Solve!</span>
               </div>
               <div className="space-y-1 mt-1">
                 {problems.map((problem) => {
@@ -397,12 +399,12 @@ export function CommandPalette() {
                       className={cn(
                         "flex items-center justify-between gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left",
                         isSelected
-                          ? "bg-violet-500/10 text-violet-700 dark:text-violet-300 dark:bg-violet-500/20"
-                          : "hover:bg-muted/60 text-ink"
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : "hover:bg-muted/60 text-foreground"
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="size-6 rounded-md bg-violet-500/10 text-violet-500 flex items-center justify-center shrink-0">
+                        <div className="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
                           <Lightbulb className="size-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
@@ -411,13 +413,13 @@ export function CommandPalette() {
                             {problem.is_verified && (
                               <Badge
                                 variant="outline"
-                                className="h-4 px-1 text-[9px] border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 shrink-0"
+                                className="h-4 px-1 text-[9px] border-primary/30 text-primary bg-primary/10 shrink-0"
                               >
                                 Verified
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-[10px] text-ink-muted mt-0.5">
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {problem.subject && <span>{problem.subject.name}</span>}
                             {problem.level && <span>• {problem.level.name}</span>}
                             <span>• {problem.solutions_count} solutions</span>
@@ -425,7 +427,7 @@ export function CommandPalette() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-ink-muted">
+                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-muted-foreground font-mono tabular-nums">
                         <ThumbsUp className="size-3" /> {problem.vote_score}
                       </div>
                     </div>
@@ -438,11 +440,11 @@ export function CommandPalette() {
           {/* Section: Lessons */}
           {(activeCategory === "all" || activeCategory === "lessons") && lessons.length > 0 && (
             <div className="pt-2 first:pt-0">
-              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-primary">
                 <span className="flex items-center gap-1.5">
                   <BookOpen className="size-3.5" /> Lessons ({lessons.length})
                 </span>
-                <span className="text-[10px] font-normal text-ink-muted">Study Guides</span>
+                <span className="text-[10px] font-normal text-muted-foreground">Study Guides</span>
               </div>
               <div className="space-y-1 mt-1">
                 {lessons.map((lesson) => {
@@ -462,17 +464,17 @@ export function CommandPalette() {
                       className={cn(
                         "flex items-center justify-between gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left",
                         isSelected
-                          ? "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:bg-emerald-500/20"
-                          : "hover:bg-muted/60 text-ink"
+                          ? "bg-primary/10 text-primary dark:bg-primary/20"
+                          : "hover:bg-muted/60 text-foreground"
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="size-6 rounded-md bg-emerald-500/10 text-emerald-500 flex items-center justify-center shrink-0">
+                        <div className="size-6 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
                           <BookOpen className="size-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium truncate">{lesson.title}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-ink-muted mt-0.5">
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             <span>By {lesson.author?.display_name || "Educator"}</span>
                             {lesson.subject && <span>• {lesson.subject.name}</span>}
                             {lesson.level && <span>• {lesson.level.name}</span>}
@@ -480,7 +482,7 @@ export function CommandPalette() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-ink-muted">
+                      <div className="flex items-center gap-1.5 shrink-0 text-[11px] text-muted-foreground font-mono tabular-nums">
                         <ThumbsUp className="size-3" /> {lesson.vote_score}
                       </div>
                     </div>
@@ -493,11 +495,11 @@ export function CommandPalette() {
           {/* Section: Exam Papers */}
           {(activeCategory === "all" || activeCategory === "resources") && resources.length > 0 && (
             <div className="pt-2 first:pt-0">
-              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+              <div className="flex items-center justify-between px-3 py-1.5 text-xs font-semibold text-warning">
                 <span className="flex items-center gap-1.5">
                   <FileText className="size-3.5" /> Exam Papers ({resources.length})
                 </span>
-                <span className="text-[10px] font-normal text-ink-muted">Train! Archive</span>
+                <span className="text-[10px] font-normal text-muted-foreground">Train! Archive</span>
               </div>
               <div className="space-y-1 mt-1">
                 {resources.map((resource) => {
@@ -517,17 +519,17 @@ export function CommandPalette() {
                       className={cn(
                         "flex items-center justify-between gap-3 px-3 py-2 rounded-xl cursor-pointer transition-colors text-left",
                         isSelected
-                          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300 dark:bg-amber-500/20"
-                          : "hover:bg-muted/60 text-ink"
+                          ? "bg-warning/15 text-warning"
+                          : "hover:bg-muted/60 text-foreground"
                       )}
                     >
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                        <div className="size-6 rounded-md bg-amber-500/10 text-amber-500 flex items-center justify-center shrink-0">
+                        <div className="size-6 rounded-md bg-warning/15 text-warning flex items-center justify-center shrink-0">
                           <FileText className="size-3.5" />
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="text-xs font-medium truncate">{resource.file_name}</p>
-                          <div className="flex items-center gap-2 text-[10px] text-ink-muted mt-0.5">
+                          <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {resource.year && <span>{resource.year}</span>}
                             {resource.session && <span>• {resource.session}</span>}
                             {resource.paper_type && <span>• {resource.paper_type}</span>}
@@ -538,8 +540,8 @@ export function CommandPalette() {
                       </div>
 
                       <Badge
-                        variant="outline"
-                        className="text-[10px] border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/5 shrink-0"
+                        variant="warning"
+                        className="text-[10px] shrink-0"
                       >
                         {resource.paper_type || "Paper"}
                       </Badge>

@@ -199,14 +199,14 @@ export function CardMoreMenu({
             e.stopPropagation();
           }}
           className={cn(
-            "flex h-7 w-7 items-center justify-center rounded-full transition-colors focus:opacity-100",
+            "flex size-11 md:size-8 items-center justify-center rounded-full transition-colors focus:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2",
             isStaff
               ? "text-amber-600 dark:text-amber-400 hover:bg-amber-500/15"
-              : "text-ink-muted hover:bg-muted hover:text-ink"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
           aria-label="More options"
         >
-          <MoreHorizontal className="h-4 w-4" />
+          <MoreHorizontal className="h-4 w-4" aria-hidden="true" />
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-56 text-xs">
           {/* Share */}

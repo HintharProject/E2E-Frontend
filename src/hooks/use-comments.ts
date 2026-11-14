@@ -1,16 +1,16 @@
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
-import { PaginatedResponse, Comment } from "@/types";
+import { PaginatedResponse, Comment, CommentSortMode } from "@/types";
 
-export function useTopLevelComments(postId: string) {
+export function useTopLevelComments(postId: string, sort: CommentSortMode = "popular") {
   const { getToken } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["comments", postId],
+    queryKey: ["comments", postId, sort],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam, expand: "replies" });
+      const qs = buildQueryString({ page: pageParam, expand: "replies", sort });
       return apiFetch<PaginatedResponse<Comment>>(`/posts/${postId}/comments/${qs}`, token);
     },
     initialPageParam: 1,
@@ -21,14 +21,14 @@ export function useTopLevelComments(postId: string) {
   });
 }
 
-export function useSolutionComments(solutionId: string) {
+export function useSolutionComments(solutionId: string, sort: CommentSortMode = "popular") {
   const { getToken } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["comments", "solution", solutionId],
+    queryKey: ["comments", "solution", solutionId, sort],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({ page: pageParam, sort });
       return apiFetch<PaginatedResponse<Comment>>(`/solutions/${solutionId}/comments/${qs}`, token);
     },
     initialPageParam: 1,
@@ -40,14 +40,14 @@ export function useSolutionComments(solutionId: string) {
   });
 }
 
-export function useReplies(parentId: string, enabled: boolean = false) {
+export function useReplies(parentId: string, enabled: boolean = false, sort: CommentSortMode = "popular") {
   const { getToken } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["replies", parentId],
+    queryKey: ["replies", parentId, sort],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam });
+      const qs = buildQueryString({ page: pageParam, sort });
       return apiFetch<PaginatedResponse<Comment>>(`/comments/${parentId}/replies/${qs}`, token);
     },
     initialPageParam: 1,
@@ -78,7 +78,7 @@ export function useCreateComment() {
       const token = await getToken();
       if (!token) throw new Error("Unauthorized");
       if (!postId && !solutionId) throw new Error("postId or solutionId is required to create a comment");
-      
+
       const payload: Record<string, any> = { body };
       if (parentId) payload.parent_comment = parentId;
 

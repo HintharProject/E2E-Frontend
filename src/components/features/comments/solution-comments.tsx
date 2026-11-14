@@ -13,6 +13,7 @@ import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import {
@@ -25,6 +26,8 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
+import { CommentSortProvider, useCommentSort } from "./comment-sort-context";
+import { CommentSortToggle } from "./comment-sort-toggle";
 import {
   MessageSquare,
   Share2,
@@ -49,16 +52,13 @@ function getInitials(name?: string | null): string {
     .slice(0, 2);
 }
 
-const inputClass =
-  "w-full rounded-xl border border-line bg-card px-3.5 py-2.5 text-sm font-normal text-ink outline-none transition-all placeholder:text-ink-muted/70 focus:border-brand focus:ring-2 focus:ring-brand/20 resize-none";
-
 // Format comment body to highlight @mentions
 function renderFormattedBody(text: string) {
   const parts = text.split(/(@\w[\w\s]{0,24}?\b(?=\s|$)|\s+)/g);
   return parts.map((part, idx) => {
     if (part.startsWith("@")) {
       return (
-        <span key={idx} className="font-semibold text-brand bg-brand/10 px-1 py-0.5 rounded text-xs">
+        <span key={idx} className="font-semibold text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">
           {part}
         </span>
       );
@@ -246,10 +246,10 @@ function FlatCommentItem({
       {/* Body / Inline Edit Form */}
       {isEditing ? (
         <form onSubmit={handleEditSubmit} className="space-y-2 mt-2">
-          <textarea
+          <Textarea
             value={editBody}
             onChange={(e) => setEditBody(e.target.value)}
-            className={inputClass}
+            className="resize-none"
             rows={3}
             autoFocus
           />
@@ -481,7 +481,7 @@ function FlatCommentItem({
 // =============================================================================
 // Main Solution Comments Component
 // =============================================================================
-export function SolutionComments({
+function SolutionCommentsContent({
   solutionId,
   totalCount,
   initialCount,
@@ -492,6 +492,7 @@ export function SolutionComments({
 }) {
   const { user: currentUser } = useCurrentUser();
   const createComment = useCreateComment();
+  const { sort: commentSort } = useCommentSort();
 
   const [body, setBody] = useState("");
   const [replyTarget, setReplyTarget] = useState<{
@@ -507,7 +508,7 @@ export function SolutionComments({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
-  } = useSolutionComments(solutionId);
+  } = useSolutionComments(solutionId, commentSort);
 
   const comments = data?.pages.flatMap((p) => p.data) ?? [];
   const count = totalCount ?? initialCount ?? comments.length;
@@ -567,9 +568,7 @@ export function SolutionComments({
             Comments {count > 0 && <span className="text-ink-muted">({count})</span>}
           </h3>
         </div>
-        <span className="text-xs text-ink-muted">
-          Ask questions or leave feedback for the solver
-        </span>
+        <CommentSortToggle />
       </div>
 
       {/* Comment / Reply Input Box */}
@@ -591,7 +590,7 @@ export function SolutionComments({
         )}
 
         <div className="relative">
-          <textarea
+          <Textarea
             ref={textareaRef}
             value={body}
             onChange={(e) => setBody(e.target.value)}
@@ -604,7 +603,7 @@ export function SolutionComments({
             }
             disabled={!currentUser || createComment.isPending}
             rows={3}
-            className={inputClass}
+            className="resize-none"
           />
         </div>
 
@@ -658,6 +657,7 @@ export function SolutionComments({
                   size="sm"
                   onClick={() => fetchNextPage()}
                   disabled={isFetchingNextPage}
+                  className="min-h-[44px] md:min-h-0"
                 >
                   {isFetchingNextPage ? "Loading comments..." : "Load More Comments"}
                 </Button>
@@ -667,5 +667,17 @@ export function SolutionComments({
         )}
       </div>
     </div>
+  );
+}
+
+export function SolutionComments(props: {
+  solutionId: string;
+  totalCount?: number;
+  initialCount?: number;
+}) {
+  return (
+    <CommentSortProvider initialSort="popular">
+      <SolutionCommentsContent {...props} />
+    </CommentSortProvider>
   );
 }

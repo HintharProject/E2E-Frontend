@@ -201,6 +201,28 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     }
   }, [leftPaperId, rightPaperId]);
 
+  // Persist last opened Train! paper for Home Hub & Sidebar quick-resume
+  useEffect(() => {
+    const active = primaryPaper || paper;
+    if (!active?.id || typeof window === "undefined") return;
+    try {
+      localStorage.setItem(
+        "e2e_last_train_paper",
+        JSON.stringify({
+          id: active.id,
+          title: active.title || active.file_name,
+          subject: active.subject_details?.name,
+          level: active.level_details?.name,
+          subjectName: active.subject_details?.name,
+          levelName: active.level_details?.name,
+          updatedAt: Date.now(),
+        })
+      );
+    } catch {
+      // Ignore storage access errors
+    }
+  }, [primaryPaper, paper]);
+
   // Handlers for Left and Right toggle buttons on each paper in the sidebar
   const handleToggleLeft = (treePaper: TrainTreePaper) => {
     if (leftPaperId === treePaper.id) {
@@ -290,7 +312,7 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
     return (
       <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
         {/* Top bar skeleton */}
-        <div className="h-14 border-b border-line bg-surface/50 px-4 flex items-center justify-between">
+        <div className="h-14 border-b border-border bg-card/50 px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Skeleton className="size-8 rounded-lg" />
             <Skeleton className="h-4 w-32 rounded" />
@@ -305,7 +327,7 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
 
         {/* Content row skeleton */}
         <div className="flex-1 flex overflow-hidden">
-          <div className="w-72 border-r border-line bg-card/30 p-3 space-y-3 hidden lg:block">
+          <div className="w-72 border-r border-border bg-card/30 p-3 space-y-3 hidden lg:block">
             <Skeleton className="h-8 w-full rounded-lg" />
             <Skeleton className="h-6 w-3/4 rounded" />
             <Skeleton className="h-16 w-full rounded-lg" />
@@ -327,8 +349,8 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
           <AlertTriangle className="size-7" />
         </div>
         <div className="space-y-1 max-w-md">
-          <h2 className="text-xl font-bold text-ink">Exam Paper Not Found</h2>
-          <p className="text-xs text-ink-muted leading-relaxed">
+          <h2 className="text-xl font-bold text-foreground">Exam Paper Not Found</h2>
+          <p className="text-xs text-muted-foreground leading-relaxed">
             {paperError?.message ||
               "The requested exam paper could not be found or has been removed from the platform archives."}
           </p>

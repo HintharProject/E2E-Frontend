@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Geist_Mono, Montserrat, Manrope } from "next/font/google";
+import { Geist_Mono, Newsreader, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "./providers";
@@ -9,9 +9,27 @@ import { Toaster } from "@/components/ui/sonner";
 import { DevTools } from "@/components/dev/dev-tools";
 import { ThemeProvider } from "@/components/providers/theme-provider";
 
-const manropeHeading = Manrope({ subsets: ["latin"], variable: "--font-heading", preload: false });
-const montserrat = Montserrat({ subsets: ["latin"], variable: "--font-sans" });
-const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], preload: false });
+const newsreaderDisplay = Newsreader({
+  subsets: ["latin"],
+  style: ["normal", "italic"],
+  variable: "--font-display",
+  display: "swap",
+  preload: false,
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  variable: "--font-sans",
+  display: "swap",
+  preload: false,
+});
+
+const geistMono = Geist_Mono({
+  subsets: ["latin"],
+  variable: "--font-geist-mono",
+  display: "swap",
+  preload: false,
+});
 
 export const metadata: Metadata = {
   title: "E2E — Creator-led learning",
@@ -32,10 +50,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         className={cn(
           "h-full",
           "antialiased",
-          geistMono.variable,
           "font-sans",
-          montserrat.variable,
-          manropeHeading.variable
+          newsreaderDisplay.variable,
+          plusJakartaSans.variable,
+          geistMono.variable
         )}
       >
         <body className="min-h-full flex flex-col">

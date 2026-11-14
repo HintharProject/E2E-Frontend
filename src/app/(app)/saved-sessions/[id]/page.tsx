@@ -18,8 +18,6 @@ import {
   ExternalLink,
   Loader2,
   X,
-  Bookmark,
-  Check,
   ArrowRight,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -72,9 +70,9 @@ export default function SavedSessionDetailPage({
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
+      <div className="max-w-5xl py-12">
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-brand" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -82,9 +80,9 @@ export default function SavedSessionDetailPage({
 
   if (isError || !session) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Saved session not found</h2>
-        <p className="mt-2 text-sm text-ink-muted">
+      <div className="max-w-3xl py-16 text-center">
+        <h2 className="text-xl font-bold text-foreground">Saved session not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           This session may be private or has been deleted.
         </p>
         <Button variant="outline" className="mt-6" nativeButton={false} render={<Link href="/saved-sessions" />}>
@@ -177,23 +175,23 @@ export default function SavedSessionDetailPage({
   };
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-8">
+    <div className="max-w-5xl space-y-8">
       {/* Top Breadcrumb Navigation */}
       <div>
         <Link
           href="/saved-sessions"
-          className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to saved sessions
         </Link>
       </div>
 
       {/* Header Container */}
-      <div className="rounded-2xl border border-line bg-card p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-bold tracking-tight text-ink truncate">
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground truncate">
                 {session.title || (session as any).name || "Untitled Session"}
               </h1>
               {isOwner && (
@@ -203,14 +201,14 @@ export default function SavedSessionDetailPage({
                     setNewTitle(session.title || (session as any).name || "");
                     setEditOpen(true);
                   }}
-                  className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-muted transition"
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition"
                   title="Rename Session"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>Created {formatDate(session.created_at)}</span>
               <span>·</span>
               <span>{items.length} {items.length === 1 ? "item" : "items"} saved</span>
@@ -279,15 +277,15 @@ export default function SavedSessionDetailPage({
       </div>
 
       {/* Category Tabs */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-3">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
         <button
           type="button"
           onClick={() => setActiveTab("all")}
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition",
             activeTab === "all"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           All ({items.length})
@@ -299,8 +297,8 @@ export default function SavedSessionDetailPage({
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5",
             activeTab === "post"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <FileText className="h-3 w-3" />
@@ -313,8 +311,8 @@ export default function SavedSessionDetailPage({
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5",
             activeTab === "problem"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <HelpCircle className="h-3 w-3" />
@@ -327,8 +325,8 @@ export default function SavedSessionDetailPage({
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5",
             activeTab === "solution"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <CheckCircle2 className="h-3 w-3" />
@@ -341,8 +339,8 @@ export default function SavedSessionDetailPage({
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5",
             activeTab === "lesson"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <BookOpen className="h-3 w-3" />
@@ -355,8 +353,8 @@ export default function SavedSessionDetailPage({
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5",
             activeTab === "resource"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <FileDown className="h-3 w-3" />
@@ -379,26 +377,32 @@ export default function SavedSessionDetailPage({
           }
         />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {filteredItems.map((item) => {
             const isRemoving = removingItemId === item.id;
 
-            return (
-              <div
-                key={item.id}
-                className="group relative rounded-2xl border border-line bg-card p-1 shadow-sm transition hover:border-brand/40"
-              >
-                {/* Quick Remove Button (Owner only) */}
+            const renderItemMetaRow = (typeLabel: string, badgeClassName: string) => (
+              <div className="flex items-center justify-between gap-3 px-0.5">
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className={badgeClassName}>
+                    {typeLabel}
+                  </Badge>
+                  <span className="text-xs text-muted-foreground">
+                    Saved {formatDate(item.added_at)}
+                  </span>
+                </div>
                 {isOwner && (
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="xs"
+                    disabled={isRemoving}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       handleRemoveItem(item.id, item.item_type || "item");
                     }}
-                    disabled={isRemoving}
-                    className="absolute -top-2.5 -right-2.5 z-20 flex h-7 w-7 items-center justify-center rounded-full border border-line bg-card text-ink-muted shadow-sm hover:border-destructive hover:bg-destructive hover:text-white transition cursor-pointer"
+                    className="gap-1 text-muted-foreground hover:text-destructive min-h-[36px] sm:min-h-0"
                     title="Remove from this session"
                   >
                     {isRemoving ? (
@@ -406,123 +410,142 @@ export default function SavedSessionDetailPage({
                     ) : (
                       <X className="h-3.5 w-3.5" />
                     )}
-                  </button>
+                    <span>Remove</span>
+                  </Button>
                 )}
+              </div>
+            );
 
-                {/* Render Post */}
-                {item.post_details && (
-                  <div className="p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] uppercase font-bold text-brand bg-brand/5 border-brand/20">
-                        Discussion Post
+            if (item.post_details) {
+              return (
+                <div key={item.id} className="space-y-2.5">
+                  {renderItemMetaRow(
+                    "Discussion Post",
+                    "text-xs font-medium text-primary bg-primary/10 border-primary/30"
+                  )}
+                  <PostCard post={item.post_details} />
+                </div>
+              );
+            }
+
+            if (item.problem_details) {
+              return (
+                <div key={item.id} className="space-y-2.5">
+                  {renderItemMetaRow(
+                    "Problem",
+                    "text-xs font-medium text-chart-3 bg-chart-3/10 border-chart-3/30"
+                  )}
+                  <ProblemCard problem={item.problem_details} />
+                </div>
+              );
+            }
+
+            if (item.lesson_details) {
+              return (
+                <div key={item.id} className="space-y-2.5">
+                  {renderItemMetaRow(
+                    "Lesson",
+                    "text-xs font-medium text-warning bg-warning/10 border-warning/30"
+                  )}
+                  <LessonCard lesson={item.lesson_details} />
+                </div>
+              );
+            }
+
+            if (item.solution_details) {
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-border bg-card p-5 shadow-card space-y-3"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant="outline"
+                        className="text-xs font-medium text-primary bg-primary/10 border-primary/30"
+                      >
+                        Worked Solution
                       </Badge>
-                      <span className="text-[11px] text-ink-muted">
+                      <span className="text-xs text-muted-foreground">
                         Saved {formatDate(item.added_at)}
                       </span>
                     </div>
-                    <PostCard post={item.post_details} />
-                  </div>
-                )}
-
-                {/* Render Problem */}
-                {item.problem_details && (
-                  <div className="p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] uppercase font-bold text-indigo-600 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800">
-                        Problem
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary" className="font-mono tabular-nums text-xs">
+                        {item.solution_details.vote_count ?? item.solution_details.vote_score ?? 0} votes
                       </Badge>
-                      <span className="text-[11px] text-ink-muted">
-                        Saved {formatDate(item.added_at)}
-                      </span>
-                    </div>
-                    <ProblemCard problem={item.problem_details} />
-                  </div>
-                )}
-
-                {/* Render Solution Card */}
-                {item.solution_details && (
-                  <div className="p-5">
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800">
-                          Worked Solution
-                        </Badge>
-                        <span className="text-[11px] text-ink-muted">
-                          Saved {formatDate(item.added_at)}
-                        </span>
-                      </div>
-                      <Badge variant="secondary" className="text-xs">
-                        ★ {item.solution_details.vote_count ?? item.solution_details.vote_score ?? 0} Votes
-                      </Badge>
-                    </div>
-
-                    {/* Solution Text (Clickable to detailed view) */}
-                    <Link
-                      href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
-                      className="block group/solution hover:opacity-95 transition"
-                    >
-                      <div className="line-clamp-3 text-sm text-ink/90 whitespace-pre-line font-sans">
-                        {item.solution_details.body}
-                      </div>
-                    </Link>
-
-                    {/* Metadata & Actions */}
-                    <div className="mt-3 flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line/60 text-xs">
-                      <span className="text-ink-muted font-medium">
-                        By {item.solution_details.author_details?.display_name || "Community Solver"}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <Link
-                          href={`/problems/${item.solution_details.problem}`}
-                          className="inline-flex items-center gap-1 text-ink-muted hover:text-ink hover:underline font-medium transition"
-                          title="Open related problem in Solve! workspace"
+                      {isOwner && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="xs"
+                          disabled={isRemoving}
+                          onClick={() => handleRemoveItem(item.id, item.item_type || "solution")}
+                          className="gap-1 text-muted-foreground hover:text-destructive min-h-[36px] sm:min-h-0"
+                          title="Remove from this session"
                         >
-                          <span>View Problem</span>
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>
-                        <Link
-                          href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
-                          className="inline-flex items-center gap-1 font-semibold text-brand hover:underline transition"
-                        >
-                          <span>View Solution</span>
-                          <ArrowRight className="h-3 w-3" />
-                        </Link>
-                      </div>
+                          {isRemoving ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <X className="h-3.5 w-3.5" />
+                          )}
+                          <span>Remove</span>
+                        </Button>
+                      )}
                     </div>
                   </div>
-                )}
 
-                {/* Render Lesson */}
-                {item.lesson_details && (
-                  <div className="p-3">
-                    <div className="mb-2 flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] uppercase font-bold text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800">
-                        Lesson
-                      </Badge>
-                      <span className="text-[11px] text-ink-muted">
-                        Saved {formatDate(item.added_at)}
-                      </span>
+                  <Link
+                    href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
+                    className="block hover:opacity-95 transition"
+                  >
+                    <div className="line-clamp-3 text-sm leading-relaxed text-foreground whitespace-pre-line">
+                      {item.solution_details.body}
                     </div>
-                    <LessonCard lesson={item.lesson_details} />
-                  </div>
-                )}
+                  </Link>
 
-                {/* Render Exam Paper Resource */}
-                {item.resource_details && (
-                  <div className="p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="pt-2 border-t border-border/60 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <span className="text-muted-foreground font-medium">
+                      By {item.solution_details.author_details?.display_name || "Community Solver"}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/problems/${item.solution_details.problem}`}
+                        className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline font-medium transition"
+                        title="Open related problem in Solve! workspace"
+                      >
+                        <span>View Problem</span>
+                        <ExternalLink className="h-3 w-3" />
+                      </Link>
+                      <Link
+                        href={`/problems/${item.solution_details.problem}/solutions/${item.solution_details.id}`}
+                        className="inline-flex items-center gap-1 font-semibold text-primary hover:underline transition"
+                      >
+                        <span>View Solution</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            if (item.resource_details) {
+              return (
+                <div
+                  key={item.id}
+                  className="rounded-xl border border-border bg-card p-5 shadow-card space-y-3"
+                >
+                  {renderItemMetaRow(
+                    "Past Paper",
+                    "text-xs font-medium text-chart-3 bg-chart-3/10 border-chart-3/30"
+                  )}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="space-y-1.5 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <Badge variant="outline" className="text-[10px] uppercase font-bold text-sky-600 bg-sky-50 border-sky-200 dark:bg-sky-950/40 dark:border-sky-800">
-                          Past Paper
-                        </Badge>
-                        <span className="text-[11px] text-ink-muted">
-                          Saved {formatDate(item.added_at)}
-                        </span>
-                      </div>
-                      <h3 className="font-display font-bold text-base text-ink truncate">
+                      <h3 className="font-heading font-semibold text-base text-foreground truncate">
                         {item.resource_details.title || item.resource_details.file_name}
                       </h3>
-                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-ink-muted">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
                         {item.resource_details.subject_details && (
                           <Badge variant="outline">{item.resource_details.subject_details.name}</Badge>
                         )}
@@ -530,8 +553,9 @@ export default function SavedSessionDetailPage({
                           <Badge variant="outline">{item.resource_details.level_details.name}</Badge>
                         )}
                         {item.resource_details.year && (
-                          <span>
-                            {item.resource_details.year} {item.resource_details.session} · {item.resource_details.paper_type}
+                          <span className="font-mono tabular-nums">
+                            {item.resource_details.year} {item.resource_details.session} ·{" "}
+                            {item.resource_details.paper_type}
                           </span>
                         )}
                       </div>
@@ -554,7 +578,7 @@ export default function SavedSessionDetailPage({
                           href={item.resource_details.download_url || item.resource_details.file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex h-8 items-center justify-center rounded-md border border-line bg-card px-2.5 text-xs font-medium text-ink hover:bg-muted transition"
+                          className="inline-flex h-8 items-center justify-center rounded-md border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:bg-muted transition"
                         >
                           <FileDown className="h-3.5 w-3.5 mr-1" />
                           PDF
@@ -562,9 +586,11 @@ export default function SavedSessionDetailPage({
                       )}
                     </div>
                   </div>
-                )}
-              </div>
-            );
+                </div>
+              );
+            }
+
+            return null;
           })}
         </div>
       )}

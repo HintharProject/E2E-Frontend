@@ -6,6 +6,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { useAuth } from "@clerk/nextjs";
@@ -18,9 +20,7 @@ import { applyFieldErrorsToForm, extractApiFieldErrors } from "@/lib/form-errors
 import { generateProblemUploadUrl } from "@/hooks/use-problems";
 import { AlertCircle, Info, Sparkles, Video } from "lucide-react";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -112,7 +112,7 @@ export function CreateSolutionForm({
 
   if (isClosed) {
     return (
-      <div className="rounded-xl border border-line bg-muted/20 p-6 text-center text-sm text-ink-muted">
+      <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
         This discussion thread has been closed by moderation. New solutions cannot be posted.
       </div>
     );
@@ -122,10 +122,10 @@ export function CreateSolutionForm({
   if (activePoolCount >= 7) {
     if (!canEvict) {
       return (
-        <div className="rounded-xl border border-line bg-card p-6 text-center shadow-xs">
-          <AlertCircle className="size-8 text-amber-500 mx-auto mb-2" />
-          <h4 className="font-semibold text-ink text-sm">Solution Pool Capacity Reached (7/7)</h4>
-          <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
+        <div className="rounded-xl border border-border bg-card p-6 text-center shadow-card">
+          <AlertCircle className="size-8 text-warning mx-auto mb-2" />
+          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Capacity Reached (7/7)</h4>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
             The active solution pool is full. Submissions are temporarily reserved for Contributor Tier 2+
             to review or replace stale attempts with higher-quality working.
           </p>
@@ -135,10 +135,10 @@ export function CreateSolutionForm({
 
     if (isPoolLocked) {
       return (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 text-center shadow-xs">
-          <Info className="size-8 text-amber-600 mx-auto mb-2" />
-          <h4 className="font-semibold text-ink text-sm">Solution Pool Locked (High Quality)</h4>
-          <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-6 text-center shadow-card">
+          <Info className="size-8 text-warning mx-auto mb-2" />
+          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Locked (High Quality)</h4>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
             All 7 active solutions currently have positive peer ratings (S &gt; 0) or author endorsements.
             The pool is locked until community consensus shifts.
           </p>
@@ -240,9 +240,9 @@ export function CreateSolutionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6 shadow-xs">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-semibold text-ink">Submit a Worked Solution</h3>
+        <h3 className="font-heading text-lg font-semibold text-foreground">Submit a Worked Solution</h3>
         {activePoolCount >= 7 && canEvict && (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
             <Sparkles className="size-3" /> Tier 2+ Eviction Enabled
@@ -253,36 +253,36 @@ export function CreateSolutionForm({
       <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
 
       {activePoolCount >= 7 && canEvict && (
-        <div className="rounded-xl border border-brand/20 bg-brand/5 p-3 text-xs text-ink flex items-start gap-2">
-          <Info className="size-4 shrink-0 text-brand mt-0.5" />
+        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground flex items-start gap-2">
+          <Info className="size-4 shrink-0 text-primary mt-0.5" />
           <span>
             The active pool is at capacity (7/7). Submitting your solution will automatically archive the lowest-scoring unendorsed attempt (S &le; 0).
           </span>
         </div>
       )}
 
-      <Field label="Your Worked Steps & Reasoning">
-        <textarea
+      <Field label="Your Worked Steps & Reasoning" error={errors.body?.message}>
+        <Textarea
           {...register("body")}
-          className={`${inputClass} min-h-36 resize-none ${errors.body ? errorClass : ""}`}
+          className="min-h-36 resize-none"
           placeholder="Explain your step-by-step mathematical working clearly..."
+          aria-invalid={!!errors.body}
         />
-        {errors.body && <p className="mt-1 text-xs text-danger font-normal">{errors.body.message}</p>}
       </Field>
 
-      <Field label="Video Walkthrough URL (Optional)">
+      <Field label="Video Walkthrough URL (Optional)" error={errors.video_url?.message}>
         <div className="relative">
-          <input
+          <Input
             {...register("video_url")}
             placeholder="e.g. https://www.youtube.com/watch?v=..."
-            className={`${inputClass} pl-8 ${errors.video_url ? errorClass : ""}`}
+            className="pl-8"
+            aria-invalid={!!errors.video_url}
           />
-          <Video className="size-4 text-ink-muted absolute left-2.5 top-1/2 -translate-y-1/2" />
+          <Video className="size-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
-        {errors.video_url && <p className="mt-1 text-xs text-danger font-normal">{errors.video_url.message}</p>}
       </Field>
 
-      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)">
+      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)" error={(errors as any).attachments?.message}>
         <FileDropzone
           onFilesSelected={(files) => {
             setValue("attachments", files, { shouldValidate: true });
@@ -292,9 +292,6 @@ export function CreateSolutionForm({
           acceptedTypes={ACCEPTED_FILE_TYPES}
           error={errors.attachments?.message as string}
         />
-        {(errors as any).attachments && (
-          <p className="mt-1 text-xs text-danger font-normal">{(errors as any).attachments.message}</p>
-        )}
       </Field>
 
       <div className="flex items-center justify-end gap-2.5 pt-2">

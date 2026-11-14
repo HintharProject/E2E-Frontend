@@ -63,7 +63,7 @@ export function ContributorBadge({
     1: "border-tier-1/30 bg-tier-1-bg text-tier-1 font-medium",
     2: "border-tier-2/30 bg-tier-2-bg text-tier-2 font-medium",
     3: "border-tier-3/30 bg-tier-3-bg text-tier-3 font-semibold",
-    4: "border-purple-400/40 animate-scholar-shimmer text-white font-bold shadow-sm",
+    4: "border-tier-4/40 animate-scholar-shimmer text-white font-bold shadow-sm",
   }[safeTier];
 
   const tooltipText = showWeightTooltip
@@ -99,7 +99,7 @@ export function ContributorBadge({
         className={cn(
           "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none",
           interactive
-            ? "cursor-pointer hover:shadow-xs hover:brightness-105 active:scale-[0.98] group/contributor-badge"
+            ? "cursor-pointer hover:shadow-xs hover:brightness-105 active:scale-[0.98] group/contributor-badge focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
             : "cursor-default",
           sizeClasses,
           tierStyleClasses,

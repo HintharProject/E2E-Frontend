@@ -17,8 +17,12 @@ import { toast } from "sonner";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useDeletePost } from "@/hooks/use-interactions";
 import { useDeleteLesson, useUpdateLessonState } from "@/hooks/use-interactions";
-import { BaseFeedCard } from "@/components/ui/base-card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { getInitials, stripHtml } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { Video, Paperclip, MessageSquareText, BookOpenText, Megaphone } from "lucide-react";
 
 
 function formatDateStr(dateStr: string): string {
@@ -46,7 +50,7 @@ export function PostCard({ post }: { post: Post }) {
   const isAuthor = isContentAuthor(user, author, post.author);
   const subject = post.subject_details;
   const level = post.level_details;
-  const tags = post.tags_data || [];
+  const tags = (post.tags_data || []).slice(0, 3);
   const expiresIn = daysUntilExpiration(post.created_at);
 
   const shareUrl = typeof window !== "undefined"
@@ -80,43 +84,118 @@ export function PostCard({ post }: { post: Post }) {
   };
 
   return (
-    <BaseFeedCard
-      href={`/posts/${post.id}`}
+    <Card
+      className="group relative transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       onMouseEnter={handleMouseEnter}
-      author={{
-        id: author?.id || "",
-        display_name: author?.display_name || "Unknown",
-        profile_image_url: author?.profile_image_url,
-        contributor_tier: author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
-      }}
-      subtitle={`${formatDateStr(post.created_at)} · expires in ${expiresIn}d`}
-      topRight={
-        <Badge
-          variant={
-            post.post_type === "ANNOUNCEMENT"
-              ? "default"
-              : post.post_type === "QUESTION"
-                ? "outline"
-                : "secondary"
-          }
-        >
-          {post.post_type}
-        </Badge>
-      }
-      title={post.title}
-      body={post.body}
-      bottomLeft={
-        <>
+    >
+      <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {author ? (
+            <Link href={`/users/${author.id}`}>
+              <Avatar size="sm">
+                {author.profile_image_url && (
+                  <AvatarImage src={author.profile_image_url} />
+                )}
+                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              {author ? (
+                <Link
+                  href={`/users/${author.id}`}
+                  className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  {author.display_name}
+                </Link>
+              ) : (
+                <span className="text-sm font-semibold text-foreground">Unknown</span>
+              )}
+              {author ? (
+                <ContributorBadge
+                  tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                  size="sm"
+                />
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+              <span>{formatDateStr(post.created_at)}</span>
+              {expiresIn <= 3 ? (
+                <Badge variant="warning" className="font-mono tabular-nums text-[10px] px-1.5 py-0 leading-tight">
+                  Expires in {expiresIn}d
+                </Badge>
+              ) : (
+                <span>
+                  · <span className="font-mono tabular-nums">{expiresIn}d</span> left
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {post.post_type === "QUESTION" && (
+            <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary text-xs">
+              <MessageSquareText className="size-3" />
+              Question
+            </Badge>
+          )}
+          {post.post_type === "SHARING" && (
+            <Badge variant="outline" className="gap-1 border-warning/35 bg-warning/10 text-warning text-xs">
+              <BookOpenText className="size-3" />
+              Sharing
+            </Badge>
+          )}
+          {post.post_type === "ANNOUNCEMENT" && (
+            <Badge variant="warning" className="gap-1 text-xs">
+              <Megaphone className="size-3" />
+              Notice
+            </Badge>
+          )}
+          <CardMoreMenu
+            shareUrl={shareUrl}
+            contentType="POST"
+            contentId={post.id}
+            author={author ? {
+              id: author.id,
+              display_name: author.display_name,
+              role: author.role,
+              contributor_tier: author.contributor_tier,
+            } : null}
+            isHidden={(post as any).is_hidden}
+            isLocked={(post as any).is_locked}
+            editHref={isAuthor ? `/posts/${post.id}/edit` : undefined}
+            onDelete={isAuthor ? handleDelete : undefined}
+            deleteLabel="this post"
+          />
+        </div>
+      </CardHeader>
+      <CardContent className="pt-2">
+        <Link href={`/posts/${post.id}`} className="block group">
+          <CardTitle className="group-hover:text-primary transition-colors">
+            {post.title}
+          </CardTitle>
+          <CardDescription className="line-clamp-2 mt-2">
+            {stripHtml(post.body)}
+          </CardDescription>
+        </Link>
+        <div className="flex flex-wrap items-center gap-1.5 mt-4">
           {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
           {level ? <Badge variant="outline">{level.name}</Badge> : null}
           {tags.map((t) => (
             <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
           ))}
-        </>
-      }
-      bottomRight={
-        post.post_type !== "ANNOUNCEMENT" ? (
-          <>
+          {post.attachment_url && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
+              <Paperclip className="size-3" />
+              {post.attachment_name || "Attachment"}
+            </span>
+          )}
+        </div>
+      </CardContent>
+      <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50 text-xs font-semibold text-muted-foreground">
+        <div className="flex items-center gap-2.5">
+          {post.post_type !== "ANNOUNCEMENT" ? (
             <PostCardVote
               postId={post.id}
               initialVoteCount={post.vote_count ?? 0}
@@ -124,35 +203,14 @@ export function PostCard({ post }: { post: Post }) {
               authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
               authorClerkId={author?.clerk_id}
             />
-            <span>· {post.comment_count ?? 0} comments</span>
-            <SaveButton entityType="post" entityId={post.id} variant="icon" />
-          </>
-        ) : (
-          <div className="flex items-center gap-1.5">
-            <span>{post.comment_count ?? 0} comments</span>
-            <SaveButton entityType="post" entityId={post.id} variant="icon" />
-          </div>
-        )
-      }
-      moreMenu={
-        <CardMoreMenu
-          shareUrl={shareUrl}
-          contentType="POST"
-          contentId={post.id}
-          author={author ? {
-            id: author.id,
-            display_name: author.display_name,
-            role: author.role,
-            contributor_tier: author.contributor_tier,
-          } : null}
-          isHidden={(post as any).is_hidden}
-          isLocked={(post as any).is_locked}
-          editHref={isAuthor ? `/posts/${post.id}/edit` : undefined}
-          onDelete={isAuthor ? handleDelete : undefined}
-          deleteLabel="this post"
-        />
-      }
-    />
+          ) : null}
+          <span className="font-mono tabular-nums">· {post.comment_count ?? 0} comments</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <SaveButton entityType="post" entityId={post.id} variant="icon" />
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
 
@@ -223,31 +281,158 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     );
   };
 
+  const hasVideo = Boolean(lesson.embedded_video_url);
+  const attachmentCount = lesson.attachments?.length ?? 0;
+  const syllabusParts = [
+    level?.name,
+    subject ? (subject.code ? `${subject.name} (${subject.code})` : subject.name) : null,
+  ].filter(Boolean);
+  const visibleTags = tags.slice(0, 3);
+
   return (
-    <BaseFeedCard
-      href={`/lessons/${lesson.id}`}
+    <Card
+      className="group relative flex h-full flex-col justify-between transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       onMouseEnter={handleMouseEnter}
-      author={author ? {
-        id: author.id || "",
-        display_name: author.display_name || "Unknown",
-        profile_image_url: author.profile_image_url,
-        contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
-      } : undefined}
-      subtitle={formatDateStr(lesson.created_at)}
-      topRight={
-        <div className="flex items-center gap-2">
-          <Badge
-            variant={
-              lesson.state === "PUBLISHED"
-                ? "default"
-                : lesson.state === "DRAFT"
+    >
+      <div>
+        {/* Top Syllabus & State Strip */}
+        <CardHeader className="flex flex-row items-center justify-between gap-2 space-y-0 pb-2.5 border-b border-border/50">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-mono text-xs font-medium text-muted-foreground">
+              {syllabusParts.length > 0 ? syllabusParts.join(" · ") : "General Courseware"}
+            </p>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <Badge
+              variant={
+                lesson.state === "PUBLISHED"
                   ? "secondary"
-                  : "outline"
-            }
-            className={lesson.state === "DRAFT" ? "bg-warning/20 text-warning hover:bg-warning/30" : ""}
+                  : lesson.state === "DRAFT"
+                    ? "warning"
+                    : "outline"
+              }
+              className="text-xs px-2 py-0 h-5"
+            >
+              {lesson.state === "PUBLISHED"
+                ? "Published"
+                : lesson.state === "DRAFT"
+                  ? "Draft"
+                  : "Archived"}
+            </Badge>
+            <CardMoreMenu
+              shareUrl={shareUrl}
+              contentType="LESSON"
+              contentId={lesson.id}
+              author={author ? {
+                id: author.id,
+                display_name: author.display_name,
+                role: author.role,
+                contributor_tier: author.contributor_tier,
+              } : null}
+              isHidden={lesson.state === "DRAFT"}
+              editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
+              onDelete={canDelete ? handleDelete : undefined}
+              deleteLabel="this lesson"
+              onPublish={canPublish ? handlePublish : undefined}
+              onArchive={canArchive ? handleArchive : undefined}
+            />
+          </div>
+        </CardHeader>
+
+        {/* Title, Excerpt, Media Strip & Tags */}
+        <CardContent className="pt-3.5 space-y-3">
+          <Link
+            href={`/lessons/${lesson.id}`}
+            className="block group/link rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            {lesson.state}
-          </Badge>
+            <CardTitle className="font-heading text-base font-semibold leading-snug text-foreground group-hover/link:text-primary transition-colors line-clamp-2">
+              {lesson.title}
+            </CardTitle>
+            <CardDescription className="line-clamp-2 mt-1.5 text-sm leading-relaxed">
+              {stripHtml(lesson.body)}
+            </CardDescription>
+          </Link>
+
+          {/* Media & Resource Indicators Strip */}
+          {(hasVideo || attachmentCount > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {hasVideo && (
+                <Badge
+                  variant="default"
+                  className="text-xs font-medium gap-1 px-2 py-0.5 h-5"
+                >
+                  <Video className="size-3" aria-hidden="true" />
+                  <span>Video Lecture</span>
+                </Badge>
+              )}
+              {attachmentCount > 0 && (
+                <Badge
+                  variant="outline"
+                  className="text-xs font-medium gap-1 px-2 py-0.5 h-5 bg-muted/40"
+                >
+                  <Paperclip className="size-3" aria-hidden="true" />
+                  <span>
+                    {attachmentCount} {attachmentCount === 1 ? "Resource" : "Resources"}
+                  </span>
+                </Badge>
+              )}
+            </div>
+          )}
+
+          {/* Tag Row (max 3) */}
+          {visibleTags.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5">
+              {visibleTags.map((t) => (
+                <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </div>
+
+      {/* Footer: Author + Vote + Save */}
+      <CardFooter className="justify-between gap-2 pt-3.5 mt-4 border-t border-border/50 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 min-w-0">
+          {author ? (
+            <Link
+              href={`/users/${author.id}`}
+              className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <Avatar size="sm">
+                {author.profile_image_url && (
+                  <AvatarImage src={author.profile_image_url} alt={author.display_name} />
+                )}
+                <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
+              </Avatar>
+            </Link>
+          ) : null}
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5">
+              {author ? (
+                <Link
+                  href={`/users/${author.id}`}
+                  className="truncate text-xs font-semibold text-foreground hover:text-primary transition-colors"
+                >
+                  {author.display_name}
+                </Link>
+              ) : (
+                <span className="truncate text-xs font-semibold text-foreground">Unknown</span>
+              )}
+              {author ? (
+                <ContributorBadge
+                  tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                  size="sm"
+                  showInfoIcon={false}
+                />
+              ) : null}
+            </div>
+            <div className="text-xs text-muted-foreground leading-tight">
+              {formatDateStr(lesson.created_at)}
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5 shrink-0">
           <LessonCardVote
             lessonId={lesson.id}
             initialVoteCount={lesson.vote_count ?? 0}
@@ -257,37 +442,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           />
           <SaveButton entityType="lesson" entityId={lesson.id} variant="icon" />
         </div>
-      }
-      title={lesson.title}
-      body={lesson.body}
-      bottomLeft={
-        <>
-          {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {tags.map((t) => (
-            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
-          ))}
-        </>
-      }
-      moreMenu={
-        <CardMoreMenu
-          shareUrl={shareUrl}
-          contentType="LESSON"
-          contentId={lesson.id}
-          author={author ? {
-            id: author.id,
-            display_name: author.display_name,
-            role: author.role,
-            contributor_tier: author.contributor_tier,
-          } : null}
-          isHidden={lesson.state === "DRAFT"}
-          editHref={canEdit ? `/lessons/${lesson.id}/edit` : undefined}
-          onDelete={canDelete ? handleDelete : undefined}
-          deleteLabel="this lesson"
-          onPublish={canPublish ? handlePublish : undefined}
-          onArchive={canArchive ? handleArchive : undefined}
-        />
-      }
-    />
+      </CardFooter>
+    </Card>
   );
 }

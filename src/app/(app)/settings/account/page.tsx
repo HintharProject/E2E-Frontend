@@ -13,11 +13,11 @@ export default function AccountSettingsPage() {
 
   if (!isSignedIn && hasDevToken) {
     return (
-      <div className="rounded-2xl border border-line bg-card p-6 text-center max-w-xl mx-auto">
-        <h3 className="font-heading text-lg font-semibold text-ink">
+      <div className="rounded-xl border border-border bg-card p-6 text-center max-w-xl mx-auto shadow-card">
+        <h3 className="font-heading text-lg font-semibold text-foreground">
           Development Account Active
         </h3>
-        <p className="mt-2 text-sm text-ink-muted">
+        <p className="mt-2 text-sm text-muted-foreground">
           You are currently signed in via a local development account. Clerk account security management
           (passwords, two-factor authentication, and connected accounts) is only available when signed in with a live Clerk account.
         </p>
@@ -32,7 +32,7 @@ export default function AccountSettingsPage() {
         appearance={{
           elements: {
             rootBox: "w-full max-w-4xl",
-            card: "shadow-none border border-line bg-card w-full rounded-2xl",
+            card: "shadow-none border border-border bg-card w-full rounded-xl",
             navbar: "hidden",
           }
         }}

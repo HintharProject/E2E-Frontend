@@ -92,7 +92,7 @@ export function PostInteractions({ post }: { post: Post }) {
   };
 
   return (
-    <div className="mt-6 flex flex-wrap gap-2 border-t border-line pt-4">
+    <div className="mt-6 flex flex-wrap gap-2 border-t border-border pt-4">
       {post.post_type !== "ANNOUNCEMENT" ? (
         <>
           <Button

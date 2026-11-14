@@ -141,26 +141,26 @@ export function DualPdfViewer({
         )}
       >
         {/* Panel Mini Toolbar */}
-        <div className="h-10 px-3 border-b border-line bg-surface/70 flex items-center justify-between gap-2 shrink-0 select-none">
+        <div className="h-10 px-3 border-b border-border bg-muted/40 flex items-center justify-between gap-2 shrink-0 select-none">
           <div className="flex items-center gap-2 min-w-0">
             {isLoading ? (
-              <Loader2 className="size-3.5 text-primary animate-spin shrink-0" />
+              <Loader2 className="size-3.5 text-primary animate-spin shrink-0" aria-hidden="true" />
             ) : isQP ? (
-              <FileText className="size-3.5 text-amber-500 shrink-0" />
+              <FileText className="size-3.5 text-primary shrink-0" aria-hidden="true" />
             ) : (
-              <BookOpen className="size-3.5 text-emerald-500 shrink-0" />
+              <BookOpen className="size-3.5 text-muted-foreground shrink-0" aria-hidden="true" />
             )}
-            <span className="text-xs font-semibold text-ink truncate max-w-[200px] sm:max-w-[320px]" title={title}>
+            <span className="text-xs font-semibold text-foreground truncate max-w-[200px] sm:max-w-[320px]" title={title}>
               {title}
             </span>
             {resource && (
               <Badge
                 variant="outline"
                 className={cn(
-                  "text-[10px] px-1.5 py-0 font-bold uppercase shrink-0",
+                  "text-[10px] px-1.5 py-0 font-mono font-bold uppercase shrink-0",
                   isQP
-                    ? "border-amber-500/30 text-amber-600 dark:text-amber-400 bg-amber-500/10"
-                    : "border-emerald-500/30 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10"
+                    ? "border-primary/35 text-primary bg-primary/10"
+                    : "border-border text-secondary-foreground bg-secondary"
                 )}
               >
                 {resource.paper_type || (side === "LEFT" ? "QP" : "MS")}
@@ -176,36 +176,39 @@ export function DualPdfViewer({
 
           <div className="flex items-center gap-1 shrink-0">
             {/* Zoom Controls */}
-            <div className="flex items-center border border-line rounded-lg bg-card overflow-hidden">
+            <div className="flex items-center border border-border rounded-lg bg-card overflow-hidden">
               <button
                 type="button"
                 onClick={() => handleZoom(side, "out")}
-                className="p-1 text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
                 title="Zoom Out"
+                aria-label="Zoom out document"
                 disabled={controls.zoom <= 0.5}
               >
-                <ZoomOut className="size-3" />
+                <ZoomOut className="size-3" aria-hidden="true" />
               </button>
-              <span className="px-1.5 text-[10px] font-mono font-medium text-ink tabular-nums">
+              <span className="px-1.5 text-[10px] font-mono font-medium text-foreground tabular-nums">
                 {Math.round(controls.zoom * 100)}%
               </span>
               <button
                 type="button"
                 onClick={() => handleZoom(side, "in")}
-                className="p-1 text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
                 title="Zoom In"
+                aria-label="Zoom in document"
                 disabled={controls.zoom >= 2.0}
               >
-                <ZoomIn className="size-3" />
+                <ZoomIn className="size-3" aria-hidden="true" />
               </button>
               {controls.zoom !== 1.0 && (
                 <button
                   type="button"
                   onClick={() => handleZoom(side, "reset")}
-                  className="p-1 border-l border-line text-ink-muted hover:text-ink hover:bg-muted transition-colors cursor-pointer"
+                  className="p-1 border-l border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                   title="Reset Zoom"
+                  aria-label="Reset zoom to 100%"
                 >
-                  <RotateCcw className="size-2.5" />
+                  <RotateCcw className="size-2.5" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -216,10 +219,11 @@ export function DualPdfViewer({
                 href={resource.file_url}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1.5 text-ink-muted hover:text-ink rounded hover:bg-muted transition-colors cursor-pointer"
+                className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                 title="Open PDF in new tab"
+                aria-label={`Open ${title} in new tab`}
               >
-                <ExternalLink className="size-3.5" />
+                <ExternalLink className="size-3.5" aria-hidden="true" />
               </a>
             )}
 
@@ -230,10 +234,11 @@ export function DualPdfViewer({
                 download={title}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1.5 text-ink-muted hover:text-ink rounded hover:bg-muted transition-colors cursor-pointer"
+                className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                 title="Download PDF"
+                aria-label={`Download ${title}`}
               >
-                <Download className="size-3.5" />
+                <Download className="size-3.5" aria-hidden="true" />
               </a>
             )}
 
@@ -241,13 +246,14 @@ export function DualPdfViewer({
             <button
               type="button"
               onClick={() => toggleFullscreen(side)}
-              className="p-1.5 text-ink-muted hover:text-ink rounded hover:bg-muted transition-colors cursor-pointer"
+              aria-label={controls.isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
+              className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer"
               title={controls.isFullscreen ? "Exit Fullscreen" : "Fullscreen View"}
             >
               {controls.isFullscreen ? (
-                <Minimize2 className="size-3.5" />
+                <Minimize2 className="size-3.5" aria-hidden="true" />
               ) : (
-                <Maximize2 className="size-3.5" />
+                <Maximize2 className="size-3.5" aria-hidden="true" />
               )}
             </button>
 
@@ -256,10 +262,11 @@ export function DualPdfViewer({
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 text-ink-muted hover:text-destructive rounded hover:bg-destructive/10 transition-colors cursor-pointer ml-1"
+                aria-label={`Close ${side === "LEFT" ? "Left" : "Right"} Pane`}
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-destructive rounded hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer ml-1"
                 title={`Close ${side === "LEFT" ? "Left" : "Right"} Pane`}
               >
-                <X className="size-3.5" />
+                <X className="size-3.5" aria-hidden="true" />
               </button>
             )}
           </div>
@@ -268,8 +275,8 @@ export function DualPdfViewer({
         {/* PDF Frame Canvas Viewport */}
         <div className="flex-1 w-full h-full relative overflow-auto bg-muted/30">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-3 select-none">
-              <Loader2 className="size-7 animate-spin text-primary" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-3 select-none">
+              <Loader2 className="size-7 animate-spin text-primary" aria-hidden="true" />
               <p className="text-xs font-medium">Opening document...</p>
             </div>
           ) : resource?.file_url ? (
@@ -289,8 +296,8 @@ export function DualPdfViewer({
               />
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-ink-muted gap-2">
-              <FileText className="size-8 stroke-1" />
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground gap-2">
+              <FileText className="size-8 stroke-1" aria-hidden="true" />
               <p className="text-xs">Document preview unavailable</p>
             </div>
           )}
@@ -302,11 +309,11 @@ export function DualPdfViewer({
   // Case 0: Neither Left nor Right active
   if (!hasLeft && !hasRight) {
     return (
-      <div className="flex flex-col items-center justify-center h-full w-full bg-card/40 text-ink-muted gap-3 p-8 select-none">
-        <BookOpen className="size-12 text-ink-muted/30 stroke-1" />
-        <h3 className="text-base font-semibold text-ink">No Documents Open in Workspace</h3>
-        <p className="text-xs text-ink-muted max-w-sm text-center leading-relaxed">
-          Open the folder structure on the side and click <span className="font-semibold text-primary">[L]</span> on a paper to open it on the left, or <span className="font-semibold text-emerald-600 dark:text-emerald-400">[R]</span> to open it on the right.
+      <div className="flex flex-col items-center justify-center h-full w-full bg-card/40 text-muted-foreground gap-3 p-8 select-none">
+        <BookOpen className="size-12 text-muted-foreground/40 stroke-1" aria-hidden="true" />
+        <h3 className="font-heading text-base font-semibold text-foreground">No Documents Open in Workspace</h3>
+        <p className="text-xs text-muted-foreground max-w-sm text-center leading-relaxed">
+          Open the curriculum sidebar on the left and select <span className="font-mono font-semibold text-primary">[L]</span> or <span className="font-mono font-semibold text-foreground">[R]</span> on a paper to view it here.
         </p>
       </div>
     );
@@ -316,8 +323,8 @@ export function DualPdfViewer({
     <div ref={containerRef} className="relative flex-1 w-full h-full flex flex-col overflow-hidden">
       {/* Mobile Segmented Switcher Header (< 1024px) when both are active */}
       {isDual && (
-        <div className="lg:hidden flex items-center justify-between px-3 py-2 border-b border-line bg-surface shrink-0">
-          <div className="flex items-center gap-1.5 p-0.5 rounded-lg border border-line bg-card w-full">
+        <div className="lg:hidden flex items-center justify-between px-3 py-2 border-b border-border bg-muted/40 shrink-0">
+          <div className="flex items-center gap-1.5 p-0.5 rounded-lg border border-border bg-card w-full">
             <button
               type="button"
               onClick={() => setMobileActiveTab("LEFT")}
@@ -325,7 +332,7 @@ export function DualPdfViewer({
                 "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer truncate px-2",
                 mobileActiveTab === "LEFT"
                   ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Left: {isLoadingLeft ? "Loading..." : leftResource?.file_name || "Paper"}
@@ -338,7 +345,7 @@ export function DualPdfViewer({
                 "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer truncate px-2",
                 mobileActiveTab === "RIGHT"
                   ? "bg-primary text-primary-foreground shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               Right: {isLoadingRight ? "Loading..." : rightResource?.file_name || "Paper"}
@@ -389,18 +396,42 @@ export function DualPdfViewer({
               {renderPanel("LEFT", leftResource, isLoadingLeft, onCloseLeft)}
             </div>
 
-            {/* Draggable Divider Handle */}
+            {/* Draggable & Keyboard-Accessible Divider Handle */}
             <div
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize split document panes"
+              aria-valuemin={30}
+              aria-valuemax={70}
+              aria-valuenow={Math.round(splitRatio)}
+              tabIndex={0}
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft") {
+                  e.preventDefault();
+                  setSplitRatio((prev) => {
+                    const next = Math.max(30, prev - 5);
+                    try { localStorage.setItem("train_split_ratio", next.toString()); } catch {}
+                    return next;
+                  });
+                } else if (e.key === "ArrowRight") {
+                  e.preventDefault();
+                  setSplitRatio((prev) => {
+                    const next = Math.min(70, prev + 5);
+                    try { localStorage.setItem("train_split_ratio", next.toString()); } catch {}
+                    return next;
+                  });
+                }
+              }}
               className={cn(
-                "w-1.5 hover:w-2 bg-line hover:bg-primary/60 transition-all cursor-col-resize flex items-center justify-center group shrink-0 relative select-none",
+                "w-1.5 hover:w-2 bg-border hover:bg-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all cursor-col-resize flex items-center justify-center group shrink-0 relative select-none",
                 isDragging && "bg-primary w-2 shadow-lg"
               )}
-              title="Drag to resize split panes (30% - 70%)"
+              title="Drag or use Left/Right arrows to resize split panes (30% - 70%)"
             >
-              <div className="w-0.5 h-8 rounded-full bg-ink-muted/40 group-hover:bg-primary-foreground" />
+              <div className="w-0.5 h-8 rounded-full bg-muted-foreground/40 group-hover:bg-primary-foreground" />
             </div>
 
             {/* Right Panel */}

@@ -1,34 +1,33 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
-import { MobileFilterToggle } from "@/components/layout/mobile-filter-toggle";
-import type { FilterSidebarProps } from "@/components/layout/filter-sidebar";
 
 const FORUM_ITEMS = [
-  { href: "/forum", label: "Main" },
+  { href: "/forum", label: "Main Feed" },
   { href: "/forum/announcements", label: "Announcements" },
-  { href: "/forum/creators", label: "Following" },
+  { href: "/forum/creators", label: "Followed Creators" },
 ] as const;
 
 /**
- * Forum sub-nav with sticky tabs + mobile filter toggle.
- * Pass the same filter props as FilterSidebar.
+ * Forum sub-nav with segmented tabs.
  */
 export function ForumSubNav({
   activeHref,
-  filterProps,
 }: {
-  activeHref: string;
-  filterProps?: FilterSidebarProps;
+  activeHref?: string;
 }) {
+  const pathname = usePathname();
+  const current = activeHref ?? pathname;
+
   const items = FORUM_ITEMS.map((item) => ({
     ...item,
-    active: item.href === activeHref,
+    active: item.href === current,
   }));
 
   return (
-    <div className="relative">
-      <SubNav items={items} />
+    <div className="relative w-full">
+      <SubNav items={items} variant="underline" />
     </div>
   );
 }

@@ -42,8 +42,7 @@ export const PRIMARY_NAV: NavItem[] = [
     exclude: ["/lessons/new"],
   },
   { href: "/problems", label: "Solve!", match: "/problems" },
-  { href: "/train", label: "Train!", match: "/train" },
-  { href: "/resources", label: "Resources", match: "/resources" },
+  { href: "/resources", label: "Resources", match: ["/resources", "/train"] },
   {
     href: "/study-plans",
     label: "Collections",
@@ -75,5 +74,7 @@ export function isNavActive(
     return false;
   }
   const matches = Array.isArray(match) ? match : [match];
-  return matches.some((m) => pathname === m || pathname.startsWith(m + "/"));
+  return matches.some((m) =>
+    m === "/" ? pathname === "/" : pathname === m || pathname.startsWith(m + "/")
+  );
 }

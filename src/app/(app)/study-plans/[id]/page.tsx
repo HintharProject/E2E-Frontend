@@ -62,9 +62,9 @@ export default function StudyPlanDetailPage({
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
+      <div className="max-w-4xl py-12">
         <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-brand" />
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       </div>
     );
@@ -72,9 +72,9 @@ export default function StudyPlanDetailPage({
 
   if (isError || !plan) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Study plan not found</h2>
-        <p className="mt-2 text-sm text-ink-muted">
+      <div className="max-w-3xl py-16 text-center">
+        <h2 className="text-xl font-bold text-foreground">Study plan not found</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           This study plan may be private or has been removed.
         </p>
         <Button variant="outline" className="mt-6" nativeButton={false} render={<Link href="/study-plans" />}>
@@ -151,23 +151,23 @@ export default function StudyPlanDetailPage({
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 space-y-8">
+    <div className="max-w-4xl space-y-8">
       {/* Top Breadcrumb */}
       <div>
         <Link
           href="/study-plans"
-          className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to study plans
         </Link>
       </div>
 
       {/* Header Container */}
-      <div className="rounded-2xl border border-line bg-card p-6 shadow-sm">
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2">
-              <h1 className="font-display text-2xl font-bold tracking-tight text-ink truncate">
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground truncate">
                 {plan.title || (plan as any).name || "Untitled Study Plan"}
               </h1>
               {isOwner && (
@@ -177,14 +177,14 @@ export default function StudyPlanDetailPage({
                     setNewTitle(plan.title || (plan as any).name || "");
                     setEditOpen(true);
                   }}
-                  className="p-1 rounded-md text-ink-muted hover:text-ink hover:bg-muted transition"
+                  className="p-1 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition"
                   title="Rename Plan"
                 >
                   <Pencil className="h-3.5 w-3.5" />
                 </button>
               )}
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>Created {formatDate(plan.created_at)}</span>
               <span>·</span>
               <span>{items.length} {items.length === 1 ? "lesson" : "lessons"} in curriculum</span>
@@ -254,12 +254,12 @@ export default function StudyPlanDetailPage({
 
       {/* Sequential Playlist */}
       {items.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-card/40 p-10 text-center sm:p-14">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-3">
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 text-center sm:p-14">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-3">
             <BookOpen className="h-6 w-6" />
           </div>
-          <h3 className="font-display text-lg font-bold text-ink">No lessons in this study plan yet</h3>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted leading-relaxed">
+          <h3 className="font-heading text-lg font-bold text-foreground">No lessons in this study plan yet</h3>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
             Browse published lessons across the platform and click &quot;Add to Study Plan&quot; to curate your sequential curriculum.
           </p>
           <div className="mt-6 flex justify-center">
@@ -276,10 +276,10 @@ export default function StudyPlanDetailPage({
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between pb-1">
-            <h2 className="font-display font-semibold text-base text-ink">
+            <h2 className="font-heading font-semibold text-base text-foreground">
               Sequential Learning Progression ({items.length} {items.length === 1 ? "Item" : "Items"})
             </h2>
-            <span className="text-xs text-ink-muted">
+            <span className="text-xs text-muted-foreground">
               Step-by-step syllabus playlist
             </span>
           </div>
@@ -350,11 +350,11 @@ export default function StudyPlanDetailPage({
               return (
                 <div
                   key={item.id}
-                  className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-2xl border border-line bg-card p-5 transition-all hover:border-brand/40 hover:shadow-xs"
+                  className="group relative flex flex-col sm:flex-row sm:items-center justify-between gap-4 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/40 hover:shadow-card-hover"
                 >
                   <div className="flex items-start sm:items-center gap-4 min-w-0 pr-2">
                     {/* Step Number Index */}
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 font-display font-bold text-sm text-brand">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 font-heading font-bold text-sm text-primary">
                       {stepNumber}
                     </div>
 
@@ -367,12 +367,12 @@ export default function StudyPlanDetailPage({
 
                       <Link
                         href={itemHref}
-                        className="font-display font-semibold text-base text-ink hover:text-brand hover:underline transition truncate block"
+                        className="font-heading font-semibold text-base text-foreground hover:text-primary hover:underline transition truncate block"
                       >
                         {itemTitle}
                       </Link>
 
-                      <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                         {subjectName && (
                           <Badge variant="outline" className="text-[11px] font-normal">
                             {subjectName}
@@ -397,7 +397,7 @@ export default function StudyPlanDetailPage({
                     <Button
                       size="sm"
                       variant="outline"
-                      className="text-xs gap-1.5 text-brand hover:text-brand"
+                      className="text-xs gap-1.5 text-primary hover:text-primary"
                       nativeButton={false}
                       render={<Link href={itemHref} />}
                     >
@@ -410,7 +410,7 @@ export default function StudyPlanDetailPage({
                         type="button"
                         onClick={() => handleRemoveLesson(item.id, itemTitle)}
                         disabled={isRemoving}
-                        className="p-2 rounded-lg text-ink-muted hover:text-destructive hover:bg-destructive/10 transition cursor-pointer"
+                        className="p-2 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition cursor-pointer"
                         title="Remove item from plan"
                       >
                         {isRemoving ? (

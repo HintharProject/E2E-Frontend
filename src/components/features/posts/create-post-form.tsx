@@ -7,6 +7,9 @@ import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import Link from "next/link";
@@ -19,9 +22,7 @@ import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm } from "@/lib/form-errors";
 import { uploadDirectlyToB2 } from "@/lib/storage";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
@@ -118,7 +119,7 @@ export function CreatePostForm({
       key: "create_post",
       loadingMessage: "Publishing post...",
       successMessage: "Post published successfully!",
-      returnUrl: "/posts/create",
+      returnUrl: "/posts/new",
       formValues: data,
       files: data.attachment,
       fieldMapping: {
@@ -173,55 +174,51 @@ export function CreatePostForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
       <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
       
-      <Field label="Post type">
-        <select {...register("post_type")} className={`${inputClass} ${errors.post_type ? errorClass : ""}`}>
+      <Field label="Post type" error={errors.post_type?.message}>
+        <Select {...register("post_type")} aria-invalid={!!errors.post_type}>
           <option value="QUESTION">Question</option>
           <option value="SHARING">Sharing</option>
           {canAnnounce && <option value="ANNOUNCEMENT">Announcement</option>}
-        </select>
-        {errors.post_type && <p className="mt-1 text-xs text-danger">{errors.post_type.message}</p>}
+        </Select>
       </Field>
 
-      <Field label="Title (max 100)">
-        <input
+      <Field label="Title (max 100)" error={errors.title?.message}>
+        <Input
           {...register("title")}
-          className={`${inputClass} ${errors.title ? errorClass : ""}`}
           placeholder="Clear, searchable title"
+          aria-invalid={!!errors.title}
         />
-        {errors.title && <p className="mt-1 text-xs text-danger">{errors.title.message}</p>}
       </Field>
 
-      <Field label="Body (max 3000)">
-        <textarea
+      <Field label="Body (max 3000)" error={errors.body?.message}>
+        <Textarea
           {...register("body")}
-          className={`${inputClass} min-h-32 ${errors.body ? errorClass : ""}`}
           placeholder="What's on your mind?"
+          aria-invalid={!!errors.body}
+          className="min-h-32"
         />
-        {errors.body && <p className="mt-1 text-xs text-danger">{errors.body.message}</p>}
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={`Subject${subjectRequired ? " *" : " (optional)"}`}>
-          <select {...register("subject_id")} className={`${inputClass} ${errors.subject_id ? errorClass : ""}`}>
+        <Field label={`Subject${subjectRequired ? " *" : " (optional)"}`} error={errors.subject_id?.message}>
+          <Select {...register("subject_id")} aria-invalid={!!errors.subject_id}>
             <option value="">Select…</option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
-          </select>
-          {errors.subject_id && <p className="mt-1 text-xs text-danger">{errors.subject_id.message}</p>}
+          </Select>
         </Field>
 
-        <Field label={`Level${subjectRequired ? " *" : " (optional)"}`}>
-          <select {...register("level_id")} className={`${inputClass} ${errors.level_id ? errorClass : ""}`}>
+        <Field label={`Level${subjectRequired ? " *" : " (optional)"}`} error={errors.level_id?.message}>
+          <Select {...register("level_id")} aria-invalid={!!errors.level_id}>
             <option value="">Select…</option>
             {levels.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
-          </select>
-          {errors.level_id && <p className="mt-1 text-xs text-danger">{errors.level_id.message}</p>}
+          </Select>
         </Field>
       </div>
 

@@ -10,7 +10,6 @@ import {
   FolderTree,
   Megaphone,
   FileText,
-  UserCheck,
   PanelLeftClose,
   PanelLeftOpen,
   Tag,
@@ -156,7 +155,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       <div className="flex flex-col md:flex-row gap-8 items-start">
         <aside
           className={cn(
-            "w-full shrink-0 md:sticky md:top-36 md:self-start transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-20",
+            "w-full shrink-0 md:sticky md:top-20 md:self-start transition-[width] duration-300 ease-[cubic-bezier(0.4,0,0.2,1)] z-20",
             isCollapsed ? "md:w-16" : "md:w-64"
           )}
         >
@@ -170,16 +169,18 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             >
               <h2
                 className={cn(
-                  "text-lg font-semibold text-ink transition-all duration-300 overflow-hidden whitespace-nowrap",
+                  "text-lg font-semibold text-foreground transition-all duration-300 overflow-hidden whitespace-nowrap",
                   isCollapsed ? "w-0 opacity-0 pointer-events-none" : "w-auto opacity-100"
                 )}
               >
                 {portalTitle}
               </h2>
               <button
+                type="button"
                 onClick={toggleCollapse}
+                aria-label={isCollapsed ? `Expand ${portalTitle.toLowerCase()}` : `Collapse ${portalTitle.toLowerCase()}`}
                 title={isCollapsed ? `Expand ${portalTitle.toLowerCase()}` : `Collapse ${portalTitle.toLowerCase()}`}
-                className="hidden md:inline-flex size-8 items-center justify-center rounded-lg border border-line bg-card text-ink-muted hover:bg-muted hover:text-ink transition-colors active:scale-95 shrink-0 shadow-2xs"
+                className="hidden md:inline-flex size-8 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 active:scale-95 shrink-0 shadow-2xs cursor-pointer"
               >
                 {isCollapsed ? (
                   <PanelLeftOpen className="size-4 text-primary" />
@@ -210,7 +211,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
                       isCollapsed ? "md:justify-center md:px-0 md:size-10" : "w-full",
                       isActive
                         ? "bg-primary text-primary-foreground shadow-xs"
-                        : "text-ink-muted hover:bg-muted hover:text-ink"
+                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
                     )}
                   >
                     <Icon className="size-4 shrink-0" />
@@ -229,9 +230,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           </div>
         </aside>
 
-        <main className="flex-1 min-w-0">
+        <div className="flex-1 min-w-0">
           {children}
-        </main>
+        </div>
       </div>
     </AdminGuard>
   );

@@ -24,7 +24,6 @@ import {
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
-import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "@/components/features/problems/author-endorse-button";
 import { SolutionComments } from "@/components/features/comments/solution-comments";
@@ -90,7 +89,7 @@ export default function SolutionDetailPage({
   if (isSolLoading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-72 rounded-2xl bg-card border border-line animate-pulse" />
+        <div className="h-72 rounded-xl bg-card border border-border animate-pulse" />
       </div>
     );
   }
@@ -98,7 +97,7 @@ export default function SolutionDetailPage({
   if (isSolError || !solution) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
-        <h2 className="text-xl font-bold text-ink">Solution not found</h2>
+        <h2 className="font-heading text-xl font-bold text-foreground">Solution not found</h2>
         <Button
           variant="outline"
           className="mt-4"
@@ -143,11 +142,11 @@ export default function SolutionDetailPage({
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       {/* Breadcrumb Back Link to Problem */}
       <Link
         href={`/problems/${problemId}`}
-        className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink mb-6 transition-colors"
+        className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
       >
         <ChevronLeft className="mr-1 h-4 w-4" />
         <span>Back to Problem{problem?.title ? `: ${problem.title}` : ""}</span>
@@ -174,25 +173,25 @@ export default function SolutionDetailPage({
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
             {isAccepted && (
-              <Badge variant="default" className="bg-emerald-600 hover:bg-emerald-600 text-white gap-1 text-[10px]">
+              <Badge variant="default" className="gap-1 text-xs">
                 <CheckCircle2 className="size-3" /> Accepted Solution
               </Badge>
             )}
 
             {isAuthorSolution && (
-              <Badge variant="outline" className="border-brand/40 text-brand text-[10px] h-5 gap-1">
+              <Badge variant="outline" className="border-primary/40 text-primary text-xs h-5 gap-1">
                 <UserCheck className="size-3" /> Problem Author
               </Badge>
             )}
 
             {isEndorsed && (
-              <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] h-5 gap-1">
-                <Star className="size-3 fill-amber-500 text-amber-500" /> Author Endorsed ★ (+5)
+              <Badge variant="warning" className="text-xs h-5 gap-1">
+                <Star className="size-3 fill-current" /> Author Endorsed (+5)
               </Badge>
             )}
 
             {isArchived && (
-              <Badge variant="secondary" className="text-[10px] h-5 gap-1">
+              <Badge variant="secondary" className="text-xs h-5 gap-1">
                 <Archive className="size-3" /> Archived Attempt
               </Badge>
             )}

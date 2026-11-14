@@ -131,17 +131,17 @@ export function ChangeRoleModal({
           </DialogHeader>
 
           {/* User Preview */}
-          <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs">
-            <div className="font-semibold text-ink">{user.display_name}</div>
-            {user.email ? <div className="text-ink-muted">{user.email}</div> : null}
-            <div className="mt-1 text-ink-muted">
-              Current Role: <span className="font-semibold text-ink">{user.role || "USER"}</span>
+          <div className="rounded-xl border border-border bg-muted/30 p-3 text-xs">
+            <div className="font-semibold text-foreground">{user.display_name}</div>
+            {user.email ? <div className="text-muted-foreground">{user.email}</div> : null}
+            <div className="mt-1 text-muted-foreground">
+              Current Role: <span className="font-semibold text-foreground">{user.role || "USER"}</span>
             </div>
           </div>
 
           {/* Role Options */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-ink">Select New Role</label>
+            <label className="text-xs font-semibold text-foreground">Select New Role</label>
             <div className="grid gap-2">
               {AVAILABLE_ROLES.map((r) => {
                 const isSelected = selectedRole === r.role;
@@ -156,8 +156,8 @@ export function ChangeRoleModal({
                     className={cn(
                       "flex items-start gap-3 rounded-xl border p-3 text-left transition-all",
                       isSelected
-                        ? "border-primary bg-primary/5 text-ink ring-1 ring-primary/20"
-                        : "border-line bg-card hover:bg-muted/40 text-ink-muted",
+                        ? "border-primary bg-primary/5 text-foreground ring-1 ring-primary/20"
+                        : "border-border bg-card hover:bg-muted/40 text-muted-foreground",
                       isDisabled && "cursor-not-allowed opacity-40 hover:bg-card"
                     )}
                   >
@@ -166,13 +166,13 @@ export function ChangeRoleModal({
                         "mt-0.5 flex size-4 shrink-0 items-center justify-center rounded-full border",
                         isSelected
                           ? "border-primary bg-primary text-primary-foreground"
-                          : "border-line bg-surface"
+                          : "border-border bg-background"
                       )}
                     >
                       {isSelected && <Check className="size-2.5" />}
                     </div>
                     <div className="space-y-0.5">
-                      <div className="flex items-center gap-2 text-xs font-semibold text-ink">
+                      <div className="flex items-center gap-2 text-xs font-semibold text-foreground">
                         {r.label}
                         {isDisabled && (
                           <span className="text-[10px] text-amber-500 font-normal">
@@ -180,7 +180,7 @@ export function ChangeRoleModal({
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] leading-relaxed text-ink-muted">
+                      <p className="text-[11px] leading-relaxed text-muted-foreground">
                         {r.description}
                       </p>
                     </div>
@@ -192,7 +192,7 @@ export function ChangeRoleModal({
 
           {/* Audit Reason */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">Audit Reason (Optional)</label>
+            <label className="text-xs font-semibold text-foreground">Audit Reason (Optional)</label>
             <Input
               placeholder="e.g. Promoted to Subject Moderator following review..."
               value={reason}

@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, SavedSession } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   Bookmark,
   Lock,
@@ -14,7 +15,6 @@ import {
   ArrowRight,
   Plus,
   AlertCircle,
-  Layers,
   FolderHeart,
 } from "lucide-react";
 
@@ -35,14 +35,14 @@ export default async function SavedSessionsPage() {
   }
 
   const hasEmpty = mine.some((session) => !session.items || session.items.length === 0);
-  const atCap = mine.length >= 12;
+  const atCap = mine.length >= 3;
   const canCreate = Boolean(token) && !atCap && !hasEmpty;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Saved sessions"
-        description="Bookmark posts, problems, solutions, lessons, and exam papers across the platform. Up to 12 sessions."
+        description="Bookmark posts, problems, solutions, lessons, and exam papers across the platform. Up to 3 sessions."
         actions={
           canCreate ? (
             <Button
@@ -55,7 +55,7 @@ export default async function SavedSessionsPage() {
             </Button>
           ) : (
             <Button disabled className="gap-2">
-              {atCap ? "Limit reached (12)" : "Empty session exists"}
+              {atCap ? "Limit reached (3)" : hasEmpty ? "Empty session exists" : "New session"}
             </Button>
           )
         }
@@ -70,29 +70,27 @@ export default async function SavedSessionsPage() {
         />
       </div>
 
-      {/* Capacity indicator */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/60 bg-muted/30 px-4 py-3 text-xs text-ink-muted">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-brand" />
-          <span>
-            <strong className="text-ink font-semibold">{mine.length}</strong> of 12 saved sessions used
-          </span>
-        </div>
-        {hasEmpty && (
-          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>You have an empty session. Bookmark items to it before creating another.</span>
-          </div>
-        )}
-      </div>
+      {/* Capacity indicator & 3-slot visual header */}
+      <CollectionCapacityStrip
+        label="Saved Sessions"
+        singularLabel="saved session"
+        basePath="/saved-sessions"
+        collections={mine.map((s) => ({
+          id: s.id,
+          title: s.title,
+          item_count: s.items?.length ?? 0,
+        }))}
+        hasEmpty={hasEmpty}
+        atCap={atCap}
+      />
 
       {mine.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-card/40 p-12 text-center sm:p-16">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-4">
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center sm:p-16">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
             <FolderHeart className="h-7 w-7" />
           </div>
-          <h2 className="font-display text-xl font-bold text-ink">No saved sessions yet</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted leading-relaxed">
+          <h2 className="font-heading text-xl font-bold text-foreground">No saved sessions yet</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
             Create collections of valuable posts, tricky problems, or helpful resources to reference later.
           </p>
           <div className="mt-6 flex justify-center gap-3">
@@ -114,11 +112,11 @@ export default async function SavedSessionsPage() {
               <Link
                 key={s.id}
                 href={`/saved-sessions/${s.id}`}
-                className="group relative flex flex-col justify-between rounded-2xl border border-line bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+                className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand group-hover:scale-105 transition-transform">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform">
                       <Bookmark className="h-5 w-5" />
                     </div>
                     <Badge
@@ -137,21 +135,21 @@ export default async function SavedSessionsPage() {
                     </Badge>
                   </div>
 
-                  <h2 className="font-display text-lg font-bold text-ink group-hover:text-brand transition-colors line-clamp-2">
+                  <h2 className="font-heading text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                     {s.title}
                   </h2>
 
-                  <p className="mt-2 text-xs text-ink-muted">
+                  <p className="mt-2 text-xs text-muted-foreground">
                     Created {formatDate(s.created_at)}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-line/60 flex items-center justify-between text-xs">
+                <div className="mt-6 pt-4 border-t border-border/60 flex items-center justify-between text-xs">
                   <span
                     className={
                       isEmpty
                         ? "text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1"
-                        : "text-ink-muted font-medium"
+                        : "text-muted-foreground font-medium"
                     }
                   >
                     {isEmpty ? (
@@ -161,13 +159,13 @@ export default async function SavedSessionsPage() {
                       </>
                     ) : (
                       <>
-                        <strong className="text-ink font-semibold">{itemCount}</strong>{" "}
+                        <strong className="text-foreground font-semibold">{itemCount}</strong>{" "}
                         {itemCount === 1 ? "item" : "items"}
                       </>
                     )}
                   </span>
 
-                  <span className="flex items-center gap-1 font-semibold text-brand transition-transform group-hover:translate-x-0.5">
+                  <span className="flex items-center gap-1 font-semibold text-primary transition-transform group-hover:translate-x-0.5">
                     View session <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>

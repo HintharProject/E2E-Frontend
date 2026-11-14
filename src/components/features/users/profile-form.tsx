@@ -7,6 +7,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select } from "@/components/ui/select";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
@@ -14,9 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { AppUser } from "@/types/user";
 
-const inputClass =
-  "w-full rounded-lg border border-line bg-card px-3 py-2 text-sm font-normal normal-case tracking-normal text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
-const errorClass = "border-danger focus:ring-danger/20";
+
 
 export function ProfileForm({
   user,
@@ -152,30 +153,29 @@ export function ProfileForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 rounded-2xl border border-line bg-card p-6 max-w-3xl mx-auto">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 rounded-xl border border-border bg-card p-6 max-w-3xl mx-auto shadow-card">
       <FormErrorBanner serverMessage={serverError} />
 
-      <Field label="Display Name">
-        <input
+      <Field label="Display Name" error={errors.display_name?.message}>
+        <Input
           {...register("display_name")}
-          className={`${inputClass} ${errors.display_name ? errorClass : ""}`}
           placeholder="e.g. John Doe"
+          aria-invalid={!!errors.display_name}
         />
-        {errors.display_name && <p className="mt-1 text-xs text-danger">{errors.display_name.message}</p>}
       </Field>
 
-      <Field label="Bio (max 1000)">
-        <textarea
+      <Field label="Bio (max 1000)" error={errors.bio?.message}>
+        <Textarea
           {...register("bio")}
-          className={`${inputClass} min-h-32 ${errors.bio ? errorClass : ""}`}
+          className="min-h-32"
           placeholder="Tell us a little bit about yourself."
+          aria-invalid={!!errors.bio}
         />
-        {errors.bio && <p className="mt-1 text-xs text-danger">{errors.bio.message}</p>}
       </Field>
 
       <div className="grid gap-8 sm:grid-cols-2">
         <Field label="Subjects to Improve (Weak)">
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-line p-4 grid gap-2">
+          <div className="max-h-64 overflow-y-auto rounded-lg border border-border p-4 grid gap-2">
             {subjects.map((sub) => {
               const isSelected = weakSubjectsWatch.includes(sub.id);
               const isDisabled = goodSubjectsWatch.includes(sub.id);
@@ -186,18 +186,18 @@ export function ProfileForm({
                     checked={isSelected}
                     disabled={isDisabled}
                     onChange={() => handleSubjectToggle(sub.id, "weak")}
-                    className="rounded border-gray-300 text-brand focus:ring-brand"
+                    className="h-4 w-4 rounded border-border accent-primary focus:ring-primary"
                   />
                   <span>{sub.name}</span>
                 </label>
               );
             })}
           </div>
-          <p className="mt-1 text-xs text-ink-muted">Select subjects you want help with.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Select subjects you want help with.</p>
         </Field>
 
         <Field label="Strong Subjects (Good)">
-          <div className="max-h-64 overflow-y-auto rounded-lg border border-line p-4 grid gap-2">
+          <div className="max-h-64 overflow-y-auto rounded-lg border border-border p-4 grid gap-2">
             {subjects.map((sub) => {
               const isSelected = goodSubjectsWatch.includes(sub.id);
               const isDisabled = weakSubjectsWatch.includes(sub.id);
@@ -208,42 +208,41 @@ export function ProfileForm({
                     checked={isSelected}
                     disabled={isDisabled}
                     onChange={() => handleSubjectToggle(sub.id, "good")}
-                    className="rounded border-gray-300 text-brand focus:ring-brand"
+                    className="h-4 w-4 rounded border-border accent-primary focus:ring-primary"
                   />
                   <span>{sub.name}</span>
                 </label>
               );
             })}
           </div>
-          <p className="mt-1 text-xs text-ink-muted">Select subjects you can help others with.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Select subjects you can help others with.</p>
         </Field>
       </div>
 
       <div className="space-y-4">
-        <Field label="Education Level">
-          <select {...register("level")} className={`${inputClass} max-w-md ${errors.level ? errorClass : ""}`}>
+        <Field label="Education Level" error={errors.level?.message}>
+          <Select {...register("level")} className="max-w-md" aria-invalid={!!errors.level}>
             <option value="">Select level...</option>
             {levels.map((l) => (
               <option key={l.id} value={l.id}>{l.name}</option>
             ))}
             <option value="more">More...</option>
-          </select>
-          {errors.level && <p className="mt-1 text-xs text-danger">{errors.level.message}</p>}
+          </Select>
         </Field>
 
         {levelWatch === "more" && (
-          <Field label="Custom Education Level">
-            <input
+          <Field label="Custom Education Level" error={errors.custom_level?.message}>
+            <Input
               {...register("custom_level")}
-              className={`${inputClass} max-w-md ${errors.custom_level ? errorClass : ""}`}
+              className="max-w-md"
               placeholder="e.g. PhD in Physics"
+              aria-invalid={!!errors.custom_level}
             />
-            {errors.custom_level && <p className="mt-1 text-xs text-danger">{errors.custom_level.message}</p>}
           </Field>
         )}
       </div>
 
-      <div className="flex items-center gap-4 pt-4 border-t border-line">
+      <div className="flex items-center gap-4 pt-4 border-t border-border/50">
         <Button type="submit" disabled={isSubmitting}>
           {isOnboarding ? "Save & Continue" : "Save Profile"}
         </Button>

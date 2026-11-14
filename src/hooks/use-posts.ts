@@ -3,7 +3,7 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
-import { PaginatedResponse, Post } from "@/types";
+import { PaginatedResponse, Post, ContentSortMode, TimeframeFilter } from "@/types";
 
 interface PostQueryParams {
   subject?: string;
@@ -13,6 +13,8 @@ interface PostQueryParams {
   tags?: string;
   feed?: 'main' | 'announcement' | 'creator';
   authorId?: string;
+  sort?: ContentSortMode;
+  timeframe?: TimeframeFilter;
 }
 
 export function useInfinitePosts(params: PostQueryParams = {}) {
@@ -32,6 +34,8 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
         tags: params.tags,
         feed: params.feed,
         author_id: params.authorId,
+        sort: params.sort,
+        timeframe: params.timeframe,
         cursor: pageParam,
         limit: pageParam ? 6 : 12,
         expand: "author_details,subject_details,level_details,tags_data",

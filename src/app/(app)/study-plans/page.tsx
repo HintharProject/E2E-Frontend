@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, StudyPlan } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   BookOpen,
   GraduationCap,
@@ -15,7 +16,6 @@ import {
   ArrowRight,
   Plus,
   AlertCircle,
-  Layers,
 } from "lucide-react";
 
 export default async function StudyPlansPage() {
@@ -35,14 +35,14 @@ export default async function StudyPlansPage() {
   }
 
   const hasEmpty = mine.some((plan) => !plan.items || plan.items.length === 0);
-  const atCap = mine.length >= 12;
+  const atCap = mine.length >= 3;
   const canCreate = Boolean(token) && !atCap && !hasEmpty;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
+    <div className="w-full space-y-6">
       <PageHeader
         title="Study plans"
-        description="Curate structured, sequential learning paths from lessons. Up to 12 study plans per account."
+        description="Curate structured, sequential learning paths from lessons. Up to 3 study plans per account."
         actions={
           canCreate ? (
             <Button
@@ -55,7 +55,7 @@ export default async function StudyPlansPage() {
             </Button>
           ) : (
             <Button disabled className="gap-2">
-              {atCap ? "Limit reached (12)" : hasEmpty ? "Empty plan exists" : "New plan"}
+              {atCap ? "Limit reached (3)" : hasEmpty ? "Empty plan exists" : "New plan"}
             </Button>
           )
         }
@@ -70,29 +70,27 @@ export default async function StudyPlansPage() {
         />
       </div>
 
-      {/* Plan capacity indicator & hints */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line/60 bg-muted/30 px-4 py-3 text-xs text-ink-muted">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-brand" />
-          <span>
-            <strong className="text-ink font-semibold">{mine.length}</strong> of 12 study plans used
-          </span>
-        </div>
-        {hasEmpty && (
-          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>You have an empty plan. Add lessons to it before creating another.</span>
-          </div>
-        )}
-      </div>
+      {/* Plan capacity indicator & 3-slot visual header */}
+      <CollectionCapacityStrip
+        label="Study Plans"
+        singularLabel="study plan"
+        basePath="/study-plans"
+        collections={mine.map((plan) => ({
+          id: plan.id,
+          title: plan.title,
+          item_count: plan.items?.length ?? 0,
+        }))}
+        hasEmpty={hasEmpty}
+        atCap={atCap}
+      />
 
       {mine.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-card/40 p-12 text-center sm:p-16">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand/10 text-brand mb-4">
+        <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center sm:p-16">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary mb-4">
             <GraduationCap className="h-7 w-7" />
           </div>
-          <h2 className="font-display text-xl font-bold text-ink">No study plans yet</h2>
-          <p className="mx-auto mt-2 max-w-md text-sm text-ink-muted leading-relaxed">
+          <h2 className="font-heading text-xl font-bold text-foreground">No study plans yet</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground leading-relaxed">
             Organize lessons into a step-by-step syllabus to master complex subjects and track your learning progress.
           </p>
           <div className="mt-6 flex justify-center gap-3">
@@ -118,11 +116,11 @@ export default async function StudyPlansPage() {
               <Link
                 key={plan.id}
                 href={`/study-plans/${plan.id}`}
-                className="group relative flex flex-col justify-between rounded-2xl border border-line bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-brand/40 hover:shadow-md"
+                className="group relative flex flex-col justify-between rounded-xl border border-border bg-card p-6 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-card-hover"
               >
                 <div>
                   <div className="flex items-start justify-between gap-3 mb-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand group-hover:scale-105 transition-transform">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-105 transition-transform">
                       <BookOpen className="h-5 w-5" />
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -143,21 +141,21 @@ export default async function StudyPlansPage() {
                     </div>
                   </div>
 
-                  <h2 className="font-display text-lg font-bold text-ink group-hover:text-brand transition-colors line-clamp-2">
+                  <h2 className="font-heading text-lg font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2">
                     {plan.title}
                   </h2>
 
-                  <p className="mt-2 text-xs text-ink-muted">
+                  <p className="mt-2 text-xs text-muted-foreground">
                     Created {formatDate(plan.created_at)}
                   </p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-line/60 flex items-center justify-between text-xs">
+                <div className="mt-6 pt-4 border-t border-border/60 flex items-center justify-between text-xs">
                   <span
                     className={
                       isEmpty
                         ? "text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1"
-                        : "text-ink-muted font-medium"
+                        : "text-muted-foreground font-medium"
                     }
                   >
                     {isEmpty ? (
@@ -167,13 +165,13 @@ export default async function StudyPlansPage() {
                       </>
                     ) : (
                       <>
-                        <strong className="text-ink font-semibold">{itemCount}</strong>{" "}
+                        <strong className="text-foreground font-semibold">{itemCount}</strong>{" "}
                         {itemCount === 1 ? "lesson" : "lessons"}
                       </>
                     )}
                   </span>
 
-                  <span className="flex items-center gap-1 font-semibold text-brand transition-transform group-hover:translate-x-0.5">
+                  <span className="flex items-center gap-1 font-semibold text-primary transition-transform group-hover:translate-x-0.5">
                     View plan <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>

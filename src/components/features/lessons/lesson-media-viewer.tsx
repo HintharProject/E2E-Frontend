@@ -109,13 +109,16 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
                   )}
 
                   {hasError ? (
-                    <div className="flex flex-col items-center justify-center gap-2 text-ink-muted">
-                      <ImageIcon className="w-8 h-8 opacity-40" />
+                    <div className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
+                      <ImageIcon className="w-8 h-8 opacity-40" aria-hidden="true" />
                       <span className="text-xs">Failed to load image</span>
                     </div>
                   ) : (
                     <Dialog>
-                      <DialogTrigger className="relative w-full h-full flex items-center justify-center group outline-none">
+                      <DialogTrigger
+                        aria-label="Open media preview"
+                        className="relative w-full h-full flex items-center justify-center group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 rounded-lg"
+                      >
                         <Image
                           src={url}
                           alt={img.file_name || "Attachment"}

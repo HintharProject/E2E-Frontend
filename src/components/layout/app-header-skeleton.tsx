@@ -2,37 +2,33 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 /**
  * Skeleton placeholder for the AppHeader while user data is loading.
- * Mirrors the header's visual structure with pulsing blocks.
+ * Mirrors the streamlined single-row header structure to prevent Cumulative Layout Shift (CLS).
  */
 export function AppHeaderSkeleton() {
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-3 sm:px-6">
-        {/* Top row: Logo + search + avatar */}
-        <div className="flex items-center gap-4">
-          {/* Logo placeholder */}
-          <Skeleton className="h-8 w-14 rounded" />
-
-          {/* Search bar placeholder (desktop) */}
-          <Skeleton className="hidden h-9 flex-1 rounded-full md:block" />
-
-          {/* Avatar + badge placeholder */}
-          <div className="ml-auto flex items-center gap-2">
-            <Skeleton className="h-9 w-28 rounded-full" />
-            <Skeleton className="h-9 w-9 rounded-full" />
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        {/* Left: Logo + Nav pills placeholder */}
+        <div className="flex items-center gap-6">
+          <Skeleton className="h-8 w-12 rounded" />
+          <div className="hidden md:flex items-center gap-2">
+            <Skeleton className="h-7 w-16 rounded-md" />
+            <Skeleton className="h-7 w-18 rounded-md" />
+            <Skeleton className="h-7 w-16 rounded-md" />
+            <Skeleton className="h-7 w-16 rounded-md" />
+            <Skeleton className="h-7 w-20 rounded-md" />
+            <Skeleton className="h-7 w-22 rounded-md" />
           </div>
         </div>
 
-        {/* Navigation pills placeholder */}
-        <nav className="flex gap-1 pb-1">
-          <Skeleton className="h-8 w-16 rounded-full" />
-          <Skeleton className="h-8 w-20 rounded-full" />
-          <Skeleton className="h-8 w-24 rounded-full" />
-          <Skeleton className="h-8 w-16 rounded-full" />
-        </nav>
-
-        {/* Mobile search placeholder */}
-        <Skeleton className="h-9 w-full rounded-full md:hidden" />
+        {/* Center/Right: Search + Utilities */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <Skeleton className="hidden md:block h-9 w-44 lg:w-60 rounded-lg" />
+          <Skeleton className="size-9 rounded-md" />
+          <Skeleton className="size-9 rounded-md" />
+          <Skeleton className="hidden sm:block h-9 w-28 rounded-full" />
+          <Skeleton className="size-9 rounded-full" />
+        </div>
       </div>
     </header>
   );

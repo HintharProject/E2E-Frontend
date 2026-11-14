@@ -30,14 +30,14 @@ export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
         e.stopPropagation();
       }}
       title={`Explore all contents tagged #${cleanName}`}
-      className="inline-flex outline-none focus-visible:ring-2 focus-visible:ring-brand/50 rounded-full"
+      className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <Badge
         variant="outline"
         className={cn(
-          "font-mono transition-colors cursor-pointer select-none",
-          "hover:border-brand/40 hover:bg-brand/10 hover:text-brand",
-          size === "sm" ? "text-[11px] px-2 py-0.5" : "text-xs px-2.5 py-1",
+          "border-border bg-secondary/70 font-mono font-medium text-muted-foreground transition-colors cursor-pointer select-none",
+          "hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+          size === "sm" ? "h-5 px-2 py-0.5 text-xs" : "h-6 px-2.5 py-1 text-xs",
           className
         )}
       >
@@ -46,4 +46,3 @@ export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
     </Link>
   );
 }
-

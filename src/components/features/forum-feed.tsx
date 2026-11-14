@@ -1,14 +1,17 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useTransition } from "react";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useInfinitePosts } from "@/hooks/use-posts";
 import { useDualStateFilter } from "@/hooks/use-dual-state-filter";
 import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { PostCardSkeleton } from "./skeletons";
+import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
-import type { Post } from "@/types";
+import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
+import type { Post, ContentSortMode, TimeframeFilter } from "@/types";
 
 export function ForumFeed({
   subjects = [],
@@ -17,6 +20,7 @@ export function ForumFeed({
   tagIds = [],
   feed,
   authorId,
+  hideSort = false,
 }: {
   subjects?: string[];
   levels?: string[];
@@ -24,7 +28,41 @@ export function ForumFeed({
   tagIds?: string[];
   feed?: 'main' | 'announcement' | 'creator';
   authorId?: string;
+  hideSort?: boolean;
 }) {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const [, startTransition] = useTransition();
+
+  const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
+  const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
+
+  const handleSortChange = (newSort: ContentSortMode) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newSort === "default") {
+      params.delete("sort");
+    } else {
+      params.set("sort", newSort);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
+
+  const handleTimeframeChange = (newTf: TimeframeFilter) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (newTf === "all") {
+      params.delete("timeframe");
+    } else {
+      params.set("timeframe", newTf);
+    }
+    const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+    startTransition(() => {
+      window.history.replaceState(null, "", newUrl);
+    });
+  };
+
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetching, status, refetch, isRefetching } =
     useInfinitePosts({
       subject: subjects.join(","),
@@ -33,6 +71,8 @@ export function ForumFeed({
       tags: tagIds.join(","),
       feed,
       authorId,
+      sort: currentSort,
+      timeframe: currentTimeframe,
     });
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -93,6 +133,7 @@ export function ForumFeed({
   if (status === "pending" || isEmptyPending) {
     return (
       <div className="flex flex-col gap-4">
+        <ColdStartNotice delayMs={3000} />
         <PostCardSkeleton />
         <PostCardSkeleton />
         <PostCardSkeleton />
@@ -123,12 +164,23 @@ export function ForumFeed({
   }
 
   return (
-    <TopmostScrollRefresh 
-      onRefresh={() => refetch()} 
+    <TopmostScrollRefresh
+      onRefresh={() => refetch()}
       isRefreshing={isRefetching}
       label="posts"
     >
       <div className="flex flex-col gap-4">
+        {!hideSort && (
+          <div className="flex items-center justify-between pb-1">
+            <ContentSortToggle
+              sort={currentSort}
+              timeframe={currentTimeframe}
+              onSortChange={handleSortChange}
+              onTimeframeChange={handleTimeframeChange}
+            />
+          </div>
+        )}
+
         {posts.map((post) => (
           <PostCard key={post.id} post={post} />
         ))}
@@ -138,13 +190,14 @@ export function ForumFeed({
             <PostCardSkeleton />
           </div>
         )}
-        
+
         {!isOptimistic && hasNextPage && (
           <div ref={loadMoreRef} className="mt-4 flex justify-center py-4">
             <Button
               variant="secondary"
               onClick={() => fetchNextPage()}
               disabled={isFetchingNextPage}
+              className="min-h-[44px] md:min-h-0"
             >
               {isFetchingNextPage ? "Loading more..." : "Load more"}
             </Button>

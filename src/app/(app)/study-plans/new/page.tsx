@@ -49,32 +49,35 @@ export default function NewStudyPlanPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <PageHeader title="New Study Plan" description="Create a new plan to organize lessons." />
-      
-      <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-        <Field label="Title">
-          <Input 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-            placeholder="e.g. Math Midterm Prep" 
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader title="New Study Plan" description="Create a structured syllabus to organize lessons." />
+
+      <form
+        onSubmit={handleSubmit}
+        className="rounded-xl border border-border bg-card p-6 shadow-card space-y-6"
+      >
+        <Field label="Title" htmlFor="study-plan-title" required error={error || undefined}>
+          <Input
+            id="study-plan-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Math Midterm Prep"
             disabled={isLoading}
           />
-          {error && <span className="text-sm text-destructive">{error}</span>}
         </Field>
-        
-        <label className="flex items-center gap-2 text-sm">
-          <input 
-            type="checkbox" 
-            checked={isPublic} 
-            onChange={(e) => setIsPublic(e.target.checked)} 
+
+        <label className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={isPublic}
+            onChange={(e) => setIsPublic(e.target.checked)}
             disabled={isLoading}
-            className="rounded border-line"
+            className="h-4 w-4 rounded border-border accent-primary"
           />
           Make this study plan public
         </label>
-        
-        <div className="flex gap-2">
+
+        <div className="flex items-center gap-2.5 pt-2 border-t border-border/60">
           <Button type="submit" disabled={isLoading || !title.trim()}>
             {isLoading ? "Creating..." : "Create Study Plan"}
           </Button>

@@ -8,8 +8,12 @@ import {
   parseFilterList,
   serializeFilterList,
 } from "@/lib/filter-params";
-import { useSubjects, useLevels, useTags } from "@/hooks/use-metadata";
+import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { TagSearchFilter } from "./tag-search-filter";
+import { HorizontalFilterBar, type HorizontalFilterBarProps } from "./horizontal-filter-bar";
+
+export { HorizontalFilterBar };
+export type { HorizontalFilterBarProps };
 
 export type FilterSidebarProps = {
   showPostType?: boolean;
@@ -41,13 +45,13 @@ function CheckboxGroup({
         <button
           type="button"
           onClick={() => setIsExpanded(!isExpanded)}
-          className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-ink-muted"
+          className="mb-2 flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wide text-muted-foreground"
         >
           {legend}
           <ChevronDown className={`h-4 w-4 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
         </button>
       ) : (
-        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
           {legend}
         </legend>
       )}
@@ -58,11 +62,11 @@ function CheckboxGroup({
             return (
               <label
                 key={opt.value}
-                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors"
               >
                 <input
                   type="checkbox"
-                  className="h-4 w-4 shrink-0 rounded border-line accent-brand"
+                  className="h-4 w-4 shrink-0 rounded border-border accent-primary cursor-pointer"
                   checked={checked}
                   onChange={() => onToggle(opt.value)}
                 />
@@ -97,7 +101,6 @@ export function FilterContent({
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
-  const { data: tags = [] } = useTags();
 
   const selectedSubjects = parseFilterList(searchParams.get("subject"));
   const selectedLevels = parseFilterList(searchParams.get("level"));
@@ -132,12 +135,12 @@ export function FilterContent({
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-2">
-        <h2 className="font-display text-lg text-ink">Filters</h2>
+        <h2 className="font-heading text-base font-semibold tracking-tight text-foreground">Filters</h2>
         {hasFilters ? (
           <button
             type="button"
             onClick={clearFilters}
-            className="text-xs font-semibold text-brand-dark hover:underline"
+            className="text-xs font-semibold text-primary hover:underline cursor-pointer"
           >
             Clear
           </button>
@@ -168,7 +171,7 @@ export function FilterContent({
       ) : null}
       {effectiveShowStateFilter ? (
         <fieldset>
-          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Status
           </legend>
           <div className="flex flex-col gap-2">
@@ -179,12 +182,12 @@ export function FilterContent({
             ].map((opt) => (
               <label
                 key={opt.value}
-                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors"
               >
                 <input
                   type="radio"
                   name="State"
-                  className="h-4 w-4 shrink-0 border-line accent-brand"
+                  className="h-4 w-4 shrink-0 border-border accent-primary cursor-pointer"
                   checked={searchParams.get("state") === opt.value || (!searchParams.get("state") && opt.value === "PUBLISHED")}
                   onChange={() => {
                     const next = new URLSearchParams(searchParams.toString());
@@ -200,7 +203,7 @@ export function FilterContent({
       ) : null}
       {showProblemStatus ? (
         <fieldset>
-          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-muted">
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Status
           </legend>
           <div className="flex flex-col gap-2">
@@ -214,12 +217,12 @@ export function FilterContent({
 
               <label
                 key={opt.value}
-                className="flex cursor-pointer items-center gap-2.5 text-sm text-ink"
+                className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors"
               >
                 <input
                   type="radio"
                   name="Status"
-                  className="h-4 w-4 shrink-0 border-line accent-brand"
+                  className="h-4 w-4 shrink-0 border-border accent-primary cursor-pointer"
                   checked={searchParams.get("status") === opt.value || (!searchParams.get("status") && opt.value === "")}
                   onChange={() => {
                     const next = new URLSearchParams(searchParams.toString());
@@ -247,14 +250,16 @@ export function FilterContent({
   );
 }
 
-/** Desktop sidebar — hidden on mobile (use MobileFilterToggle instead) */
+/** Compatibility wrapper delegating to HorizontalFilterBar. */
 export function FilterSidebar(props: FilterSidebarProps) {
   return (
-    <aside className="hidden w-full shrink-0 lg:block lg:w-56 sticky top-[180px] self-start -ml-4">
-      <div className="rounded-2xl border border-line bg-card p-4 max-h-[calc(100vh-170px)] overflow-y-auto custom-scrollbar">
-        <FilterContent {...props} />
-      </div>
-    </aside>
+    <HorizontalFilterBar
+      showPostType={props.showPostType}
+      showStateFilter={props.showStateFilter}
+      hideTags={props.hideTags}
+      showProblemStatus={props.showProblemStatus}
+      postTypeOptions={props.postTypeOptions}
+    />
   );
 }
 
