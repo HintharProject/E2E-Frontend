@@ -4,6 +4,7 @@ import { use } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProblem } from "@/hooks/use-problems";
+import { useReport } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { Badge } from "@/components/ui/badge";
@@ -13,21 +14,19 @@ import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { SolutionPoolContainer } from "@/components/features/problems/solution-pool-container";
-import { SolutionFAB } from "@/components/features/problems/solution-fab";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { BaseDetailedCard } from "@/components/ui/base-card";
-import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { SaveButton } from "@/components/features/collections/save-button";
 
 const LessonMediaViewer = dynamic(
   () => import("@/components/features/lessons/lesson-media-viewer").then((mod) => mod.LessonMediaViewer),
   {
-    loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse" />,
+    loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-border animate-pulse" />,
     ssr: false,
   }
 );
@@ -38,7 +37,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   const { user } = useCurrentUser();
 
   const { data: problem, isLoading: isProblemLoading, isError: isProblemError } = useProblem(id);
-  const { useReport } = require("@/hooks/use-interactions");
   const reportMutation = useReport();
 
   const handleShare = () => {
@@ -171,7 +169,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
             {problem.status === "FINAL" && (
-              <Badge className="bg-indigo-600 hover:bg-indigo-600 text-white font-medium text-xs gap-1">
+              <Badge variant="outline" className="border-chart-3/40 bg-chart-3/10 text-chart-3 font-medium text-xs gap-1">
                 <Lock className="size-3" /> Final Consensus
               </Badge>
             )}
@@ -181,7 +179,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               </Badge>
             )}
             {problem.status === "OPEN" && (
-              <Badge variant="outline" className="border-primary/50 text-primary bg-primary/5 text-xs">
+              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-xs">
                 Active Pool
               </Badge>
             )}
@@ -239,9 +237,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Solutions Section with 7-Slot Pool & Eviction Engine */}
       <SolutionPoolContainer problem={problem} isAuthor={isAuthor} />
-
-      {/* Floating Action Button for worked solution submission */}
-      <SolutionFAB problem={problem} />
     </div>
   );
 }

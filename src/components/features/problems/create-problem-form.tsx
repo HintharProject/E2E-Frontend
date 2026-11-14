@@ -440,14 +440,14 @@ export function CreateProblemForm({
   return (
     <div className="space-y-6">
       {/* Pipeline Selector: Path A vs Path B */}
-      <div className="flex rounded-xl border border-line bg-muted/40 p-1">
+      <div className="flex rounded-xl border border-border bg-muted/40 p-1">
         <button
           type="button"
           onClick={() => handleOriginChange("USER_UPLOAD")}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
             selectedOrigin === "USER_UPLOAD"
-              ? "bg-card text-brand shadow-xs"
-              : "text-ink-muted hover:text-ink"
+              ? "bg-card text-primary shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <Camera className="size-4" />
@@ -459,8 +459,8 @@ export function CreateProblemForm({
           onClick={() => handleOriginChange("PAST_PAPER")}
           className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
             selectedOrigin === "PAST_PAPER"
-              ? "bg-card text-brand shadow-xs"
-              : "text-ink-muted hover:text-ink"
+              ? "bg-card text-primary shadow-xs"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           <BookOpen className="size-4" />
@@ -753,7 +753,7 @@ export function CreateProblemForm({
           </>
         )}
 
-        <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
           <Link href="/problems" className={buttonVariants({ variant: "outline" })}>
             Cancel
           </Link>

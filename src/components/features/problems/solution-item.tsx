@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Solution, Problem } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -16,6 +15,7 @@ import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { AuthorEndorseButton } from "./author-endorse-button";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { MathRenderer } from "@/components/ui/math-renderer";
 import { toast } from "sonner";
 import {
   CheckCircle2,
@@ -34,10 +34,6 @@ function getInitials(name?: string | null): string {
   if (parts.length === 0) return "?";
   if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
   return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-}
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>?/gm, "");
 }
 
 export interface SolutionItemProps {
@@ -192,8 +188,8 @@ export function SolutionItem({
               )}
 
               {isEndorsed && (
-                <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30 text-[10px] h-5 gap-1">
-                  <Star className="size-3 fill-amber-500 text-amber-500" /> Author Endorsed ★ (+5)
+                <Badge variant="warning" className="text-[11px] h-5 gap-1">
+                  <Star className="size-3 fill-current" /> Author Endorsed (+5)
                 </Badge>
               )}
 
@@ -205,8 +201,8 @@ export function SolutionItem({
             </div>
 
             {/* Solution Working Content */}
-            <div className="text-sm leading-relaxed text-foreground whitespace-pre-line break-words pt-1">
-              {solution.body}
+            <div className="pt-1 text-sm leading-relaxed text-foreground">
+              <MathRenderer content={solution.body} />
             </div>
 
             {/* Video Walkthrough Link */}

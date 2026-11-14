@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -88,24 +89,45 @@ function ProblemsFeed() {
   );
 }
 
+import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
+import { Plus } from "lucide-react";
+
 export default function ProblemsPage() {
   return (
     <div className="flex flex-col gap-5">
       <Suspense fallback={<div className="h-12 rounded-xl bg-card border border-border animate-pulse" />}>
-        <HorizontalFilterBar hideTags showProblemStatus showSort />
-      </Suspense>
-      <div className="min-w-0 flex-1">
-        <Suspense
-          fallback={
-            <div className="space-y-4">
-              <ProblemCardSkeleton />
-              <ProblemCardSkeleton />
-              <ProblemCardSkeleton />
-            </div>
+        <HorizontalFilterBar
+          hideTags
+          showProblemStatus
+          showSort
+          rightActions={
+            <Button
+              size="sm"
+              className="xl:hidden gap-1.5"
+              nativeButton={false}
+              render={<Link href="/problems/new" />}
+            >
+              <Plus className="size-4" />
+              Ask Question
+            </Button>
           }
-        >
-          <ProblemsFeed />
-        </Suspense>
+        />
+      </Suspense>
+      <div className="flex flex-col xl:flex-row gap-6 items-start">
+        <div className="min-w-0 flex-1 w-full">
+          <Suspense
+            fallback={
+              <div className="space-y-4">
+                <ProblemCardSkeleton />
+                <ProblemCardSkeleton />
+                <ProblemCardSkeleton />
+              </div>
+            }
+          >
+            <ProblemsFeed />
+          </Suspense>
+        </div>
+        <ProblemsRightRail />
       </div>
     </div>
   );

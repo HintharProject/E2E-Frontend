@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import { Problem, Solution } from "@/types";
+import { Problem } from "@/types";
 import { useSolutions } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { SolutionItem } from "./solution-item";
+import { SolutionFAB } from "./solution-fab";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Layers, Sparkles, Info } from "lucide-react";
+import { ChevronDown, ChevronRight, Layers, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface SolutionPoolContainerProps {
@@ -67,9 +68,6 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
     );
   }, [activeCount, activeSolutions]);
 
-  const isClosed = problem.status === "CLOSED";
-  const isFinal = problem.status === "FINAL";
-
   return (
     <div className="space-y-8">
       {/* Pool Header & Visual Capacity Meter */}
@@ -82,15 +80,14 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
             </h2>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <Badge
-              variant={activeCount >= 7 ? "default" : "outline"}
-              className={`text-xs px-2.5 py-1 ${
-                activeCount >= 7 ? "bg-amber-600 hover:bg-amber-600 text-white" : "border-border text-muted-foreground"
-              }`}
+              variant={activeCount >= 7 ? "warning" : "outline"}
+              className="font-mono tabular-nums text-xs px-2.5 py-1"
             >
               Active Pool: {activeCount} / 7
             </Badge>
+            <SolutionFAB problem={problem} variant="inline" />
           </div>
         </div>
 
@@ -98,7 +95,8 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
         <div className="space-y-1.5 pt-1">
           <div className="flex items-center justify-between text-xs">
             <span className="font-medium text-foreground">
-              Capacity Pool: {activeCount} / 7 slots filled
+              Capacity Pool:{" "}
+              <span className="font-mono tabular-nums">{activeCount} / 7</span> slots filled
             </span>
             <span className="text-muted-foreground">
               {7 - activeCount > 0 ? `${7 - activeCount} slots remaining` : "Pool at maximum capacity"}
@@ -112,7 +110,7 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
                   "h-full rounded-sm transition-all duration-300",
                   i < activeCount
                     ? activeCount >= 7
-                      ? "bg-amber-500"
+                      ? "bg-warning"
                       : "bg-primary"
                     : "bg-muted"
                 )}
@@ -121,12 +119,18 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
           </div>
 
           {activeCount >= 7 && (
-            <div className="flex items-start gap-2 text-xs text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/20 px-3.5 py-2.5 rounded-lg mt-2">
-              <Info className="size-4 shrink-0 mt-0.5 text-amber-600 dark:text-amber-400" />
+            <div className="flex items-start gap-2.5 text-xs bg-warning/10 border border-warning/30 px-3.5 py-2.5 rounded-lg mt-2 text-foreground">
+              <Info className="size-4 shrink-0 mt-0.5 text-warning" />
               <div className="space-y-0.5">
-                <span className="font-semibold">Tier 2+ Eviction Engine Active:</span>
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  The solution pool is currently full. Submissions by Tier 2+ contributors will automatically evict the lowest unendorsed attempt with score ≤ 0 to make room.
+                <span className="font-semibold">
+                  {isPoolLocked ? "Solution Pool Locked" : "Tier 2+ Eviction Engine Active"}
+                </span>
+                <p className="text-xs text-muted-foreground">
+                  {isPoolLocked
+                    ? "All 7 active slots have positive community scores or author endorsement. New submissions are paused unless a slot drops to 0 or below."
+                    : canEvict
+                      ? "The pool is full. As a Tier 2+ contributor, submitting a new solution will automatically evict the lowest unendorsed attempt with score ≤ 0."
+                      : "The solution pool is full. Submissions by Tier 2+ contributors automatically evict the lowest unendorsed attempt with score ≤ 0."}
                 </p>
               </div>
             </div>
@@ -162,8 +166,8 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
           {competingSolutions.length > 0 && (
             <div className="space-y-4">
               {acceptedSolution && (
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground pt-2">
-                  Active Solution Pool ({competingSolutions.length})
+                <h3 className="text-xs font-semibold text-muted-foreground pt-2">
+                  Active Solution Pool (<span className="font-mono tabular-nums">{competingSolutions.length}</span>)
                 </h3>
               )}
 

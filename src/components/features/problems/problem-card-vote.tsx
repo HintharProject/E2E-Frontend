@@ -5,18 +5,23 @@ import { useVoteProblem } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
 
+import { ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 export function ProblemCardVote({
   problemId,
   initialVoteCount,
   initialUserVote,
   authorId,
   authorClerkId,
+  variant = "inline",
 }: {
   problemId: string;
   initialVoteCount: number;
   initialUserVote?: number | null;
   authorId?: string;
   authorClerkId?: string;
+  variant?: "inline" | "rail";
 }) {
   const { user } = useCurrentUser();
   const voteMutation = useVoteProblem();
@@ -75,18 +80,46 @@ export function ProblemCardVote({
     }, 400);
   };
 
+  if (variant === "rail") {
+    return (
+      <button
+        type="button"
+        onClick={handleVote}
+        disabled={isSelf}
+        aria-label={isSelf ? "Cannot vote on your own question" : `Upvote question (${voteCount} votes)`}
+        aria-pressed={userVote === 1}
+        title={isSelf ? "You cannot vote on your own question" : "Upvote question"}
+        className={cn(
+          "flex flex-col items-center justify-center rounded-lg px-2 py-1.5 min-h-[44px] min-w-[44px] border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+          userVote === 1
+            ? "border-primary/40 bg-primary/10 text-primary"
+            : "border-transparent bg-background/60 text-muted-foreground hover:border-border hover:text-foreground"
+        )}
+      >
+        <ChevronUp className="size-4 shrink-0" />
+        <span className="font-mono tabular-nums text-base font-semibold leading-tight text-foreground">
+          {voteCount}
+        </span>
+      </button>
+    );
+  }
+
   return (
     <button
+      type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own question" : "Vote on question"}
-      className={`flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-      } ${
-        userVote === 1 ? "text-emerald-600 dark:text-emerald-400 font-bold" : "text-ink-muted hover:text-brand"
-      }`}
+      className={cn(
+        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded",
+        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        userVote === 1 ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"
+      )}
     >
-      ▲ {voteCount}
+      <ChevronUp className="size-3.5" />
+      <span className="font-mono tabular-nums">{voteCount}</span>
     </button>
   );
 }

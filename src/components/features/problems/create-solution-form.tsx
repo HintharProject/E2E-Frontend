@@ -112,7 +112,7 @@ export function CreateSolutionForm({
 
   if (isClosed) {
     return (
-      <div className="rounded-xl border border-line bg-muted/20 p-6 text-center text-sm text-ink-muted">
+      <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
         This discussion thread has been closed by moderation. New solutions cannot be posted.
       </div>
     );
@@ -122,10 +122,10 @@ export function CreateSolutionForm({
   if (activePoolCount >= 7) {
     if (!canEvict) {
       return (
-        <div className="rounded-xl border border-line bg-card p-6 text-center shadow-xs">
-          <AlertCircle className="size-8 text-amber-500 mx-auto mb-2" />
-          <h4 className="font-semibold text-ink text-sm">Solution Pool Capacity Reached (7/7)</h4>
-          <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
+        <div className="rounded-xl border border-border bg-card p-6 text-center shadow-card">
+          <AlertCircle className="size-8 text-warning mx-auto mb-2" />
+          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Capacity Reached (7/7)</h4>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
             The active solution pool is full. Submissions are temporarily reserved for Contributor Tier 2+
             to review or replace stale attempts with higher-quality working.
           </p>
@@ -135,10 +135,10 @@ export function CreateSolutionForm({
 
     if (isPoolLocked) {
       return (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-6 text-center shadow-xs">
-          <Info className="size-8 text-amber-600 mx-auto mb-2" />
-          <h4 className="font-semibold text-ink text-sm">Solution Pool Locked (High Quality)</h4>
-          <p className="mt-1 text-xs text-ink-muted max-w-md mx-auto">
+        <div className="rounded-xl border border-warning/30 bg-warning/10 p-6 text-center shadow-card">
+          <Info className="size-8 text-warning mx-auto mb-2" />
+          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Locked (High Quality)</h4>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
             All 7 active solutions currently have positive peer ratings (S &gt; 0) or author endorsements.
             The pool is locked until community consensus shifts.
           </p>
@@ -240,9 +240,9 @@ export function CreateSolutionForm({
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-2xl border border-line bg-card p-6 shadow-xs">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
       <div className="flex items-center justify-between gap-2">
-        <h3 className="font-display text-lg font-semibold text-ink">Submit a Worked Solution</h3>
+        <h3 className="font-heading text-lg font-semibold text-foreground">Submit a Worked Solution</h3>
         {activePoolCount >= 7 && canEvict && (
           <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
             <Sparkles className="size-3" /> Tier 2+ Eviction Enabled
