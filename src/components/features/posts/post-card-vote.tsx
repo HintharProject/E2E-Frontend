@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { useVotePost } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
+import { ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export function PostCardVote({
   postId,
@@ -90,14 +92,19 @@ export function PostCardVote({
 
   return (
     <button
+      type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own post" : "Upvote"}
-      className={`flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-      } ${userVote === 1 ? "text-brand font-bold" : "text-ink-muted hover:text-brand"}`}
+      className={cn(
+        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
+      )}
     >
-      ▲ {voteCount}
+      <ChevronUp className="size-3.5" />
+      <span className="font-mono tabular-nums">{voteCount}</span>
     </button>
   );
 }

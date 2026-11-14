@@ -259,7 +259,7 @@ export function ThreadedComment({
                 <Button
                   variant="ghost"
                   size="xs"
-                  className="text-xs text-primary font-medium hover:underline h-7 px-2"
+                  className="text-xs text-primary font-medium hover:underline min-h-[44px] sm:min-h-[28px] px-2"
                   onClick={() => setShowReplies(!showReplies)}
                 >
                   {showReplies ? "Hide replies" : `View replies (${comment.reply_count})`}
@@ -302,7 +302,7 @@ export function ThreadedComment({
       )}
 
       {showReplies && (
-        <div className="ml-4 pl-4 border-l-2 border-border/60 flex flex-col gap-2 mt-2">
+        <div className="ml-4 pl-4 border-l-2 border-border/70 flex flex-col gap-2 mt-2">
           {isLoading && <div className="text-sm text-muted-foreground">Loading replies...</div>}
           {replies.map((reply) => (
             <ThreadedComment key={reply.id} comment={reply} postId={postId} />

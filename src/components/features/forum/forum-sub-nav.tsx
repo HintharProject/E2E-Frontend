@@ -2,7 +2,6 @@
 
 import { usePathname } from "next/navigation";
 import { PrefetchingSubNav as SubNav } from "@/components/ui/prefetching-sub-nav";
-import type { FilterSidebarProps } from "@/components/layout/filter-sidebar";
 
 const FORUM_ITEMS = [
   { href: "/forum", label: "Main Feed" },
@@ -17,7 +16,6 @@ export function ForumSubNav({
   activeHref,
 }: {
   activeHref?: string;
-  filterProps?: FilterSidebarProps;
 }) {
   const pathname = usePathname();
   const current = activeHref ?? pathname;

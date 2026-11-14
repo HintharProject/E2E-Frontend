@@ -119,7 +119,7 @@ export function CreatePostForm({
       key: "create_post",
       loadingMessage: "Publishing post...",
       successMessage: "Post published successfully!",
-      returnUrl: "/posts/create",
+      returnUrl: "/posts/new",
       formValues: data,
       files: data.attachment,
       fieldMapping: {

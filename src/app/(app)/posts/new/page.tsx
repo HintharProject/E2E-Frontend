@@ -13,7 +13,7 @@ export default async function NewPostPage() {
   const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="New post"
         description={
@@ -22,10 +22,10 @@ export default async function NewPostPage() {
             : "Admins may post Announcements and omit Subject/Level."
         }
       />
-      
-      <CreatePostForm 
-        userRole={user.role} 
-        writeLocked={writeLocked} 
+
+      <CreatePostForm
+        userRole={user.role}
+        writeLocked={writeLocked}
       />
     </div>
   );

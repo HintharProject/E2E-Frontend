@@ -1,8 +1,6 @@
 "use client";
 
 import { usePost } from "@/hooks/use-posts";
-import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { PageHeader } from "@/components/ui/page-header";
@@ -16,15 +14,10 @@ import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import dynamic from "next/dynamic";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
-  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-line animate-pulse"></div>,
+  loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-border animate-pulse"></div>,
   ssr: false
 });
 import { BaseDetailedCard } from "@/components/ui/base-card";
-
-function getInitials(name?: string | null): string {
-  if (!name) return "?";
-  return name.trim().split(/\s+/).map((p) => p[0]).join("").toUpperCase().slice(0, 2);
-}
 
 function daysUntilExpiration(createdAt: string): number {
   const createdDate = new Date(createdAt);

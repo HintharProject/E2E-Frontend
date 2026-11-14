@@ -29,7 +29,7 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
         <Dialog>
           <DialogTrigger 
             render={
-              <button type="button" className="relative overflow-hidden w-full aspect-video rounded-xl border border-line bg-surface transition-transform hover:scale-[1.02] flex items-center justify-center cursor-zoom-in group" />
+              <button type="button" className="relative overflow-hidden w-full aspect-video rounded-xl border border-border bg-muted/30 transition-transform hover:scale-[1.01] flex items-center justify-center cursor-zoom-in group" />
             }
           >
             <Image
@@ -86,17 +86,17 @@ export function PostAttachment({ url, downloadUrl, filename: overrideFilename }:
         target="_blank" 
         rel="noopener noreferrer"
         download
-        className="inline-flex items-center gap-4 px-5 py-3.5 rounded-xl border border-line bg-surface hover:bg-surface-raised transition-colors shadow-sm w-full group text-left"
+        className="inline-flex items-center gap-4 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition-colors shadow-card w-full group text-left"
       >
-        <div className="p-2.5 bg-brand/10 text-brand rounded-lg shrink-0">
+        <div className="p-2.5 bg-primary/10 text-primary rounded-lg shrink-0">
           <FileIcon className="w-6 h-6" />
         </div>
         <div className="flex flex-col flex-1 min-w-0 pr-2">
-          <span className="text-sm font-semibold text-ink truncate block">{filename}</span>
-          <span className="text-xs text-ink-muted mt-0.5 font-medium">Click to view or download</span>
+          <span className="text-sm font-semibold text-foreground truncate block">{filename}</span>
+          <span className="text-xs text-muted-foreground mt-0.5 font-medium">Click to view or download</span>
         </div>
-        <div className="pl-2 border-l border-line flex items-center justify-center">
-          <Download className="w-5 h-5 text-ink-muted group-hover:text-ink transition-colors ml-2" />
+        <div className="pl-2 border-l border-border flex items-center justify-center">
+          <Download className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors ml-2" />
         </div>
       </a>
     </div>

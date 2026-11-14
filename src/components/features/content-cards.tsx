@@ -22,7 +22,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { getInitials, stripHtml } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
-import { Video, Paperclip } from "lucide-react";
+import { Video, Paperclip, MessageSquareText, BookOpenText, Megaphone } from "lucide-react";
 
 
 function formatDateStr(dateStr: string): string {
@@ -50,7 +50,7 @@ export function PostCard({ post }: { post: Post }) {
   const isAuthor = isContentAuthor(user, author, post.author);
   const subject = post.subject_details;
   const level = post.level_details;
-  const tags = post.tags_data || [];
+  const tags = (post.tags_data || []).slice(0, 3);
   const expiresIn = daysUntilExpiration(post.created_at);
 
   const shareUrl = typeof window !== "undefined"
@@ -122,27 +122,36 @@ export function PostCard({ post }: { post: Post }) {
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
               <span>{formatDateStr(post.created_at)}</span>
               {expiresIn <= 3 ? (
-                <Badge variant="warning" className="text-[10px] px-1.5 py-0 leading-tight">
+                <Badge variant="warning" className="font-mono tabular-nums text-[10px] px-1.5 py-0 leading-tight">
                   Expires in {expiresIn}d
                 </Badge>
               ) : (
-                <span>· expires in {expiresIn}d</span>
+                <span>
+                  · <span className="font-mono tabular-nums">{expiresIn}d</span> left
+                </span>
               )}
             </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          <Badge
-            variant={
-              post.post_type === "ANNOUNCEMENT"
-                ? "default"
-                : post.post_type === "QUESTION"
-                  ? "outline"
-                  : "secondary"
-            }
-          >
-            {post.post_type}
-          </Badge>
+          {post.post_type === "QUESTION" && (
+            <Badge variant="outline" className="gap-1 border-primary/30 bg-primary/10 text-primary text-xs">
+              <MessageSquareText className="size-3" />
+              Question
+            </Badge>
+          )}
+          {post.post_type === "SHARING" && (
+            <Badge variant="outline" className="gap-1 border-warning/35 bg-warning/10 text-warning text-xs">
+              <BookOpenText className="size-3" />
+              Sharing
+            </Badge>
+          )}
+          {post.post_type === "ANNOUNCEMENT" && (
+            <Badge variant="warning" className="gap-1 text-xs">
+              <Megaphone className="size-3" />
+              Notice
+            </Badge>
+          )}
           <CardMoreMenu
             shareUrl={shareUrl}
             contentType="POST"
@@ -176,10 +185,16 @@ export function PostCard({ post }: { post: Post }) {
           {tags.map((t) => (
             <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
           ))}
+          {post.attachment_url && (
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
+              <Paperclip className="size-3" />
+              {post.attachment_name || "Attachment"}
+            </span>
+          )}
         </div>
       </CardContent>
       <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50 text-xs font-semibold text-muted-foreground">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           {post.post_type !== "ANNOUNCEMENT" ? (
             <PostCardVote
               postId={post.id}
@@ -189,7 +204,7 @@ export function PostCard({ post }: { post: Post }) {
               authorClerkId={author?.clerk_id}
             />
           ) : null}
-          <span>· {post.comment_count ?? 0} comments</span>
+          <span className="font-mono tabular-nums">· {post.comment_count ?? 0} comments</span>
         </div>
         <div className="flex items-center gap-1">
           <SaveButton entityType="post" entityId={post.id} variant="icon" />
