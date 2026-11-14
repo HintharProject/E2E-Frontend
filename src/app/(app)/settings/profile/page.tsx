@@ -19,14 +19,14 @@ export default function ProfileSettingsPage() {
   if (!user) {
     return (
       <div className="py-8">
-        <p className="text-ink-muted">Please log in to edit your profile.</p>
+        <p className="text-muted-foreground">Please log in to edit your profile.</p>
       </div>
     );
   }
 
   return (
-    <div className="py-2">
-      <p className="mb-6 text-ink-muted">
+    <div className="py-2 space-y-6">
+      <p className="text-sm text-muted-foreground">
         Update your display name, bio, level, and subjects here.
       </p>
 

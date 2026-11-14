@@ -8,15 +8,13 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
   ];
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6">
-      <div className="mb-6">
-        <PageHeader title="Settings" />
-      </div>
-      
-      <div className="mb-8 border-b border-line pb-4">
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader title="Settings" />
+
+      <div className="border-b border-border pb-3">
         <SubNav items={navItems} />
       </div>
-      
+
       <div>
         {children}
       </div>

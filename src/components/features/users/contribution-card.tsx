@@ -21,7 +21,7 @@ export function ContributionCard({ solution }: { solution: Solution }) {
         className="group block rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover"
       >
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="font-mono tabular-nums text-xs text-muted-foreground">
             Solution · {formatDate(solution.created_at)}
           </p>
           <Badge

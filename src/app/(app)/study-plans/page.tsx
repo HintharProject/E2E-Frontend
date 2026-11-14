@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, StudyPlan } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   BookOpen,
   GraduationCap,
@@ -15,7 +16,6 @@ import {
   ArrowRight,
   Plus,
   AlertCircle,
-  Layers,
 } from "lucide-react";
 
 export default async function StudyPlansPage() {
@@ -70,21 +70,19 @@ export default async function StudyPlansPage() {
         />
       </div>
 
-      {/* Plan capacity indicator & hints */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-primary" />
-          <span>
-            <strong className="text-foreground font-semibold">{mine.length}</strong> of 3 study plans used
-          </span>
-        </div>
-        {hasEmpty && (
-          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>You have an empty plan. Add lessons to it before creating another.</span>
-          </div>
-        )}
-      </div>
+      {/* Plan capacity indicator & 3-slot visual header */}
+      <CollectionCapacityStrip
+        label="Study Plans"
+        singularLabel="study plan"
+        basePath="/study-plans"
+        collections={mine.map((plan) => ({
+          id: plan.id,
+          title: plan.title,
+          item_count: plan.items?.length ?? 0,
+        }))}
+        hasEmpty={hasEmpty}
+        atCap={atCap}
+      />
 
       {mine.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center sm:p-16">

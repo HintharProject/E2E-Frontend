@@ -58,8 +58,8 @@ export function TierProgressBar({
         <div className="flex items-center gap-3">
           <ContributorBadge tier={currentTier} size="lg" showWeightTooltip={false} />
           <div>
-            <div className="font-heading text-lg font-bold text-foreground">
-              {points.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">Net Points</span>
+            <div className="font-heading text-lg font-bold text-foreground font-mono tabular-nums">
+              {points.toLocaleString()} <span className="font-sans text-xs font-normal text-muted-foreground">Net Points</span>
             </div>
             <div className="text-xs text-muted-foreground">
               {currentConfig.voteMultiplier}x Dynamic Vote Multiplier
@@ -72,11 +72,11 @@ export function TierProgressBar({
           <div className="inline-flex items-center gap-1.5 self-start sm:self-center rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
             <TrendingUp className="size-3.5 text-primary" />
             <span>
-              <strong className="text-foreground">{pointsToNext.toLocaleString()} pts</strong> to {nextConfig?.name}
+              <strong className="font-mono tabular-nums text-foreground">{pointsToNext.toLocaleString()} pts</strong> to {nextConfig?.name}
             </span>
           </div>
         ) : (
-          <div className="inline-flex items-center gap-1.5 self-start sm:self-center rounded-full bg-purple-500/10 px-3 py-1 text-xs font-semibold text-purple-600 dark:text-purple-400">
+          <div className="inline-flex items-center gap-1.5 self-start sm:self-center rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
             <Sparkles className="size-3.5" />
             <span>Diamond Scholar · Max Tier</span>
           </div>
@@ -87,12 +87,7 @@ export function TierProgressBar({
       <div className="space-y-1.5">
         <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-muted">
           <div
-            className={cn(
-              "h-full transition-all duration-500 rounded-full",
-              currentTier === 4
-                ? "bg-gradient-to-r from-purple-500 via-pink-500 to-purple-500 animate-scholar-shimmer"
-                : "bg-primary"
-            )}
+            className="h-full transition-all duration-500 rounded-full bg-primary"
             style={{ width: `${currentTier === 4 ? 100 : progressPercentage}%` }}
           />
         </div>

@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, SavedSession } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   Bookmark,
   Lock,
@@ -14,7 +15,6 @@ import {
   ArrowRight,
   Plus,
   AlertCircle,
-  Layers,
   FolderHeart,
 } from "lucide-react";
 
@@ -55,7 +55,7 @@ export default async function SavedSessionsPage() {
             </Button>
           ) : (
             <Button disabled className="gap-2">
-              {atCap ? "Limit reached (3)" : "Empty session exists"}
+              {atCap ? "Limit reached (3)" : hasEmpty ? "Empty session exists" : "New session"}
             </Button>
           )
         }
@@ -70,21 +70,19 @@ export default async function SavedSessionsPage() {
         />
       </div>
 
-      {/* Capacity indicator */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3 text-xs text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <Layers className="h-4 w-4 text-primary" />
-          <span>
-            <strong className="text-foreground font-semibold">{mine.length}</strong> of 3 saved sessions used
-          </span>
-        </div>
-        {hasEmpty && (
-          <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 font-medium">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-            <span>You have an empty session. Bookmark items to it before creating another.</span>
-          </div>
-        )}
-      </div>
+      {/* Capacity indicator & 3-slot visual header */}
+      <CollectionCapacityStrip
+        label="Saved Sessions"
+        singularLabel="saved session"
+        basePath="/saved-sessions"
+        collections={mine.map((s) => ({
+          id: s.id,
+          title: s.title,
+          item_count: s.items?.length ?? 0,
+        }))}
+        hasEmpty={hasEmpty}
+        atCap={atCap}
+      />
 
       {mine.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-12 text-center sm:p-16">

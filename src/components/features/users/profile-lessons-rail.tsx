@@ -17,16 +17,16 @@ const PREVIEW_COUNT = 4;
 
 function LessonTile({ lesson }: { lesson: Lesson }) {
   return (
-    <article className="rounded-2xl border border-line bg-card p-4 transition hover:border-brand/35">
+    <article className="rounded-xl border border-border bg-card p-4 shadow-card transition hover:border-primary/40 hover:shadow-card-hover">
       <Link href={`/lessons/${lesson.id}`} className="flex h-full flex-col">
         <div className="flex items-center justify-between gap-2">
           <Badge variant="outline">{lesson.subject_details?.name ?? "Lesson"}</Badge>
-          <span className="text-[11px] text-ink-muted">{formatDate(lesson.created_at)}</span>
+          <span className="text-[11px] text-muted-foreground">{formatDate(lesson.created_at)}</span>
         </div>
-        <h3 className="mt-3 line-clamp-2 font-heading text-base font-semibold text-ink">
+        <h3 className="mt-3 line-clamp-2 font-heading text-base font-semibold text-foreground">
           {lesson.title}
         </h3>
-        <p className="mt-2 line-clamp-3 text-sm text-ink-muted">
+        <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
           {lesson.body.replace(/<[^>]*>?/gm, "")}
         </p>
         <div className="mt-auto flex flex-wrap gap-2 pt-4">
@@ -51,7 +51,7 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
     return (
       <section className="mt-8">
         <div className="flex items-center gap-2.5">
-          <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+          <h2 className="font-heading text-xl font-semibold text-foreground">Lessons</h2>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
             <Sparkles className="size-3" />
             <span>{formatContributionPoints(lessonPoints)}</span>
@@ -69,7 +69,7 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
     return (
       <section className="mt-8">
         <div className="flex items-center gap-2.5">
-          <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+          <h2 className="font-heading text-xl font-semibold text-foreground">Lessons</h2>
           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
             <Sparkles className="size-3" />
             <span>{formatContributionPoints(lessonPoints)}</span>
@@ -106,13 +106,13 @@ export function ProfileLessonsRail({ userId }: { userId: string }) {
       <div className="flex items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2.5">
-            <h2 className="font-heading text-xl font-semibold text-ink">Lessons</h2>
+            <h2 className="font-heading text-xl font-semibold text-foreground">Lessons</h2>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
               <Sparkles className="size-3" />
               <span>{formatContributionPoints(lessonPoints)}</span>
             </span>
           </div>
-          <p className="text-sm text-ink-muted">
+          <p className="text-sm text-muted-foreground">
             {lessons.length === 0
               ? "No published lessons yet"
               : `${lessons.length} published lesson${lessons.length === 1 ? "" : "s"}`}

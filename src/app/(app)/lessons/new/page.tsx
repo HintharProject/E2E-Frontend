@@ -37,16 +37,16 @@ export default async function NewLessonPage() {
   ] as [Subject[], Level[], Tag[]]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
+    <div className="mx-auto max-w-3xl space-y-6">
       <PageHeader
         title="New lesson"
         description="Subject and Level are required. Videos must be YouTube/playlist URLs — no direct video upload."
       />
-      <Suspense fallback={<div className="h-64 rounded-2xl bg-card border border-line animate-pulse" />}>
-        <CreateLessonForm 
-          subjects={subjects} 
-          levels={levels} 
-          tags={tags} 
+      <Suspense fallback={<div className="h-64 rounded-xl bg-card border border-border animate-pulse" />}>
+        <CreateLessonForm
+          subjects={subjects}
+          levels={levels}
+          tags={tags}
         />
       </Suspense>
     </div>

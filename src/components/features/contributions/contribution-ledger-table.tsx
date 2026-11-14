@@ -5,6 +5,7 @@ import { useContributionLedger } from "@/hooks/use-contribution";
 import { formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { ContributorBadge } from "./contributor-badge";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight, ArrowDownRight, RefreshCw, ChevronLeft, ChevronRight, FileText } from "lucide-react";
@@ -74,21 +75,22 @@ export function ContributionLedgerTable({ userId, className }: ContributionLedge
           <label htmlFor="event-filter" className="text-xs font-medium text-muted-foreground">
             Filter Event:
           </label>
-          <select
+          <Select
             id="event-filter"
+            sizeVariant="sm"
             value={eventTypeFilter}
             onChange={(e) => {
               setEventTypeFilter(e.target.value);
               setPage(1);
             }}
-            className="rounded-lg border border-border bg-card px-2.5 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-auto min-w-[180px]"
           >
             {EVENT_TYPE_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
                 {opt.label}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
 
         <Button

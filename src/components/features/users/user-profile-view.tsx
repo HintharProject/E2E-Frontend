@@ -21,7 +21,7 @@ import { ProfileLessonsRail } from "./profile-lessons-rail";
 import { ProfileActivityTabs } from "./profile-activity-tabs";
 import { TierProgressBar } from "@/components/features/contributions/tier-progress-bar";
 import { formatDate } from "@/lib/utils";
-import { Sparkles } from "lucide-react";
+import { AlertTriangle, Ban, ShieldBan, Sparkles } from "lucide-react";
 
 function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -113,23 +113,27 @@ export function UserProfileView({ userId }: { userId: string }) {
                   {profile.ban_status && profile.ban_status !== "ACTIVE" && (
                     <>
                       {profile.ban_status === "WARNING" && (
-                        <Badge variant="outline" className="border-amber-500/40 bg-amber-500/10 text-amber-600 font-semibold text-xs">
-                          ⚠️ Warning Active
+                        <Badge variant="warning" className="gap-1 font-semibold text-xs">
+                          <AlertTriangle className="size-3" />
+                          Warning Active
                         </Badge>
                       )}
                       {profile.ban_status === "BANNED_24H" && (
-                        <Badge variant="destructive" className="font-semibold text-xs">
-                          ⛔ 24h Suspension
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <Ban className="size-3" />
+                          24h Suspension
                         </Badge>
                       )}
                       {profile.ban_status === "BANNED_7D" && (
-                        <Badge variant="destructive" className="font-semibold text-xs">
-                          ⛔ 7-Day Suspension
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <Ban className="size-3" />
+                          7-Day Suspension
                         </Badge>
                       )}
                       {profile.ban_status === "PERMANENT_BAN" && (
-                        <Badge variant="destructive" className="bg-red-800 text-white font-semibold text-xs">
-                          🚫 Permanently Banned
+                        <Badge variant="destructive" className="gap-1 font-semibold text-xs">
+                          <ShieldBan className="size-3" />
+                          Permanently Banned
                         </Badge>
                       )}
                     </>

@@ -9,7 +9,6 @@ import {
   HelpCircle,
   BookOpen,
   Tag as TagIcon,
-  Loader2,
   AlertCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -81,22 +80,22 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-12 sm:px-6">
-        <div className="flex items-center justify-center py-24">
-          <Loader2 className="h-8 w-8 animate-spin text-brand" />
-        </div>
+      <div className="mx-auto max-w-5xl space-y-6">
+        <div className="h-28 rounded-xl border border-border bg-card animate-pulse" />
+        <div className="h-36 rounded-xl border border-border bg-card animate-pulse" />
+        <div className="h-36 rounded-xl border border-border bg-card animate-pulse" />
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive mb-4">
+      <div className="mx-auto max-w-3xl py-16 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive mb-4">
           <AlertCircle className="h-6 w-6" />
         </div>
-        <h2 className="text-xl font-bold text-ink">Failed to load tag contents</h2>
-        <p className="mt-2 text-sm text-ink-muted">
+        <h2 className="font-heading text-xl font-bold text-foreground">Failed to load tag contents</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
           Could not retrieve items tagged with #{cleanTag}. Please try again later.
         </p>
         <Button variant="outline" className="mt-6" nativeButton={false} render={<Link href="/forum" />}>
@@ -107,35 +106,35 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 space-y-8">
+    <div className="mx-auto max-w-5xl space-y-8">
       {/* Top Breadcrumb Navigation */}
       <div>
         <Link
           href="/forum"
-          className="inline-flex items-center text-sm font-medium text-ink-muted hover:text-ink transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to explore
         </Link>
       </div>
 
-      {/* Recycled Header Container from saved-sessions/[id]/page.tsx */}
-      <div className="rounded-2xl border border-line bg-card p-6 shadow-sm">
+      {/* Tag Hub Header */}
+      <div className="rounded-xl border border-border bg-card p-6 shadow-card">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1.5 min-w-0">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/10 text-brand">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
                 <TagIcon className="h-5 w-5" />
               </div>
-              <h1 className="font-display text-2xl font-bold tracking-tight text-ink truncate">
+              <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground truncate">
                 #{cleanTag}
               </h1>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-xs text-ink-muted">
+            <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
               <span>Topic Tag</span>
               <span>·</span>
-              <span>{totalCount} {totalCount === 1 ? "item" : "items"} total</span>
+              <span className="font-mono tabular-nums">{totalCount} {totalCount === 1 ? "item" : "items"} total</span>
               <span>·</span>
-              <span className="text-brand font-medium">
+              <span className="text-primary font-medium font-mono tabular-nums">
                 {posts.length} discussions · {problems.length} problems · {lessons.length} lessons
               </span>
             </div>
@@ -156,19 +155,19 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
         </div>
       </div>
 
-      {/* Recycled Category Tabs Bar from saved-sessions/[id]/page.tsx */}
-      <div className="flex flex-wrap items-center gap-2 border-b border-line pb-3">
+      {/* Category Tabs Bar */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-3">
         <button
           type="button"
           onClick={() => setActiveTab("all")}
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition cursor-pointer",
             activeTab === "all"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
-          All ({totalCount})
+          All (<span className="font-mono tabular-nums">{totalCount}</span>)
         </button>
 
         <button
@@ -177,12 +176,12 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer",
             activeTab === "post"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <FileText className="h-3 w-3" />
-          Discussions ({posts.length})
+          Discussions (<span className="font-mono tabular-nums">{posts.length}</span>)
         </button>
 
         <button
@@ -191,12 +190,12 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer",
             activeTab === "problem"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <HelpCircle className="h-3 w-3" />
-          Problems ({problems.length})
+          Problems (<span className="font-mono tabular-nums">{problems.length}</span>)
         </button>
 
         <button
@@ -205,69 +204,65 @@ export function TagDetailClient({ tagName }: TagDetailClientProps) {
           className={cn(
             "rounded-lg px-3 py-1.5 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer",
             activeTab === "lesson"
-              ? "bg-brand text-white shadow-xs"
-              : "bg-muted/50 text-ink-muted hover:bg-muted hover:text-ink"
+              ? "bg-primary text-primary-foreground shadow-xs"
+              : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
           )}
         >
           <BookOpen className="h-3 w-3" />
-          Lessons ({lessons.length})
+          Lessons (<span className="font-mono tabular-nums">{lessons.length}</span>)
         </button>
       </div>
 
-      {/* Recycled Content Viewport & Card Shell from saved-sessions/[id]/page.tsx */}
+      {/* Content Viewport (flat container, no nested cards) */}
       {totalCount === 0 ? (
         <EmptyState
           title={`No contents found for #${cleanTag}`}
           description="Be the first to tag a discussion post, problem, or lesson with this topic."
         />
       ) : activeTab === "all" ? (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {allItems.map((item) => (
-            <div
-              key={`${item.type}-${item.id}`}
-              className="group relative rounded-2xl border border-line bg-card p-1 shadow-sm transition hover:border-brand/40"
-            >
-              {/* Recycled contextual badge headers from saved-sessions/[id]/page.tsx */}
+            <div key={`${item.type}-${item.id}`} className="space-y-2.5">
               {item.post && (
-                <div className="p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-brand bg-brand/5 border-brand/20">
+                <>
+                  <div className="flex items-center gap-2 px-0.5">
+                    <Badge variant="outline" className="text-xs font-medium text-primary bg-primary/10 border-primary/30">
                       Discussion Post
                     </Badge>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-muted-foreground">
                       Posted {formatDate(item.post.created_at)}
                     </span>
                   </div>
                   <PostCard post={item.post} />
-                </div>
+                </>
               )}
 
               {item.problem && (
-                <div className="p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-indigo-600 bg-indigo-50 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-800">
+                <>
+                  <div className="flex items-center gap-2 px-0.5">
+                    <Badge variant="outline" className="text-xs font-medium text-chart-3 bg-chart-3/10 border-chart-3/30">
                       Problem
                     </Badge>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-muted-foreground">
                       Asked {formatDate(item.problem.created_at)}
                     </span>
                   </div>
                   <ProblemCard problem={item.problem} />
-                </div>
+                </>
               )}
 
               {item.lesson && (
-                <div className="p-3">
-                  <div className="mb-2 flex items-center gap-2">
-                    <Badge variant="outline" className="text-[10px] uppercase font-bold text-amber-600 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800">
+                <>
+                  <div className="flex items-center gap-2 px-0.5">
+                    <Badge variant="outline" className="text-xs font-medium text-warning bg-warning/10 border-warning/30">
                       Lesson
                     </Badge>
-                    <span className="text-[11px] text-ink-muted">
+                    <span className="text-xs text-muted-foreground">
                       Published {formatDate(item.lesson.created_at)}
                     </span>
                   </div>
                   <LessonCard lesson={item.lesson} />
-                </div>
+                </>
               )}
             </div>
           ))}

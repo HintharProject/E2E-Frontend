@@ -186,7 +186,7 @@ export function ProfileForm({
                     checked={isSelected}
                     disabled={isDisabled}
                     onChange={() => handleSubjectToggle(sub.id, "weak")}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-border accent-primary focus:ring-primary"
                   />
                   <span>{sub.name}</span>
                 </label>
@@ -208,7 +208,7 @@ export function ProfileForm({
                     checked={isSelected}
                     disabled={isDisabled}
                     onChange={() => handleSubjectToggle(sub.id, "good")}
-                    className="rounded border-gray-300 text-primary focus:ring-primary"
+                    className="h-4 w-4 rounded border-border accent-primary focus:ring-primary"
                   />
                   <span>{sub.name}</span>
                 </label>
