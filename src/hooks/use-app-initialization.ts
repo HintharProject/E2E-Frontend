@@ -65,7 +65,7 @@ export function useAppInitialization() {
 
         setInitializationMessage("Fetching forum posts...");
         await queryClient.prefetchInfiniteQuery({
-          queryKey: ["posts", {}, "v2"],
+          queryKey: ["posts", {}, isSignedIn ? "auth" : "guest", "v2"],
           queryFn: async ({ pageParam }) => {
             const queryStr = buildQueryString({
               cursor: pageParam,

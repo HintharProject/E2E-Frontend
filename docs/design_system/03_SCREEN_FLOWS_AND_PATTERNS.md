@@ -36,6 +36,7 @@
 
 - **Feed (`/problems`):** Asymmetric **Academic Challenge Ticket** cards paired with `<ProblemsRightRail />` (Path A Self-Typed vs. Path B Past Paper provenance guidance and Consensus summary).
 - **Detail (`/problems/[id]`):** `max-w-3xl` reading column + `<SolutionPoolContainer />` displaying the `7`-slot meter, Tier 2+ eviction / locked pool state notice, inline `Submit Solution` dialog trigger (`SolutionFAB variant="inline"`), accepted solution banner, `<MathRenderer />` solution bodies, and `FINAL` consensus indicator (`border-chart-3/40 bg-chart-3/10 text-chart-3`).
+- **Solution Threads (`/problems/[id]/solutions/[solutionId]`):** `<SolutionComments />` inside `.comment-module-v2` with `Popular`/`Newest` sorting, LaTeX-capable composer (`0/1000`), `@mention` highlighting, inline 2-level reply composer, reply collapse/expand toggle, `font-mono tabular-nums` vote pill, and footer-aligned overflow/staff controls.
 
 ---
 
@@ -43,7 +44,7 @@
 
 - **Feed (`/forum`, `/forum/creators`, `/forum/announcements`):** Sub-navigation + sticky `<HorizontalFilterBar />` + `<ForumRightRail />` (quick CTAs, latest 3 active notices, Question/Sharing format legend).
 - **Cards (`PostCard`):** Differentiates `QUESTION`, `SHARING`, and `ANNOUNCEMENT` badges, attachment pill, max 3 tags, and `30-day TTL` warning badge (`Expires in Xd` when `<= 3` days left).
-- **Threads (`ThreadedComment`):** Clean left guide line (`border-l-2 border-border/70 pl-4`), `ChevronUp` upvote button (`font-mono tabular-nums`), and accessible reply toggle targets.
+- **Threads (`PostComments` & `ThreadedComment`):** Scoped `.comment-module-v2` layout with `Virtuoso` window scroll, `Popular`/`Newest` sort toggle, `1.5px` thread guide rail (clamped after depth 4), inline reply composer, `font-mono tabular-nums` vote pill, footer-aligned overflow/staff controls, accessible collapse toggles, and a 3-comment guest auth gate (`CommentGuestGate`).
 
 ---
 

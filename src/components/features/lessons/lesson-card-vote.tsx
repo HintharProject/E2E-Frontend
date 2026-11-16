@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useVoteLesson } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function LessonCardVote({
   lessonId,
@@ -18,6 +19,7 @@ export function LessonCardVote({
   authorClerkId?: string;
 }) {
   const { user: currentUser } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const voteMutation = useVoteLesson();
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
@@ -53,6 +55,11 @@ export function LessonCardVote({
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "vote on lessons" });
+      return;
+    }
 
     if (isSelf) {
       toast.info("You cannot vote on your own lesson.");

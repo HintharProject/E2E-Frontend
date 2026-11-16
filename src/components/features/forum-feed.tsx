@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useCallback, useTransition } from "react";
 import { useSearchParams, usePathname } from "next/navigation";
+import Link from "next/link";
 import { useInfinitePosts } from "@/hooks/use-posts";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useDualStateFilter } from "@/hooks/use-dual-state-filter";
 import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -33,6 +35,7 @@ export function ForumFeed({
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
+  const { isSignedIn } = useAuthGate();
 
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
   const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
@@ -43,6 +46,9 @@ export function ForumFeed({
       params.delete("sort");
     } else {
       params.set("sort", newSort);
+    }
+    if (newSort !== "popular") {
+      params.delete("timeframe");
     }
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     startTransition(() => {
@@ -63,7 +69,7 @@ export function ForumFeed({
     });
   };
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetching, status, refetch, isRefetching } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isFetching, status, error, refetch, isRefetching } =
     useInfinitePosts({
       subject: subjects.join(","),
       level: levels.join(","),
@@ -142,6 +148,25 @@ export function ForumFeed({
   }
 
   if (status === "error") {
+    const errStatus = (error as { status?: number } | null)?.status;
+    if (!isSignedIn && (errStatus === 401 || errStatus === 403)) {
+      return (
+        <EmptyState
+          title="Sign in to browse the Forum"
+          description="Sign up free or log in to read peer discussions, announcements, and comment threads."
+          action={
+            <div className="flex items-center gap-2">
+              <Button asChild size="sm">
+                <Link href="/sign-up?redirect_url=%2Fforum">Sign up free</Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href="/sign-in?redirect_url=%2Fforum">Log in</Link>
+              </Button>
+            </div>
+          }
+        />
+      );
+    }
     return (
       <EmptyState
         title="Error loading posts"

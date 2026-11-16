@@ -37,7 +37,6 @@ import {
   AlertTriangle,
   Coins,
   FileMinus,
-  FileCheck,
   User,
   Shield,
   Loader2,
@@ -99,14 +98,9 @@ export function StaffContentActionMenu({
   const { user: currentUser } = useCurrentUser();
   const { takedownMutation, isPending } = useStaffActions();
 
-  // Role Gate: strictly render null if not moderator or above
-  if (!isModeratorOrAbove(currentUser?.role)) {
-    return null;
-  }
-
   const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
 
-  // Modal & Dialog states
+  // Modal & Dialog states (declared unconditionally before role gate)
   const [confirmConfig, setConfirmConfig] = useState<PendingActionConfig | null>(null);
   const [actionReason, setActionReason] = useState("");
 
@@ -114,6 +108,11 @@ export function StaffContentActionMenu({
   const [initialSanctionStatus, setInitialSanctionStatus] = useState<BanState>("WARNING");
   const [pointModalOpen, setPointModalOpen] = useState(false);
   const [intelOpen, setIntelOpen] = useState(false);
+
+  // Role Gate: strictly render null if not moderator or above
+  if (!isModeratorOrAbove(currentUser?.role)) {
+    return null;
+  }
 
   // Author normalization for modals
   const targetUserForModal: SanctionTargetUser | null = author?.id
@@ -162,7 +161,7 @@ export function StaffContentActionMenu({
         <DropdownMenuTrigger
           render={
             trigger ? (
-              (trigger as any)
+              (trigger as React.ReactElement)
             ) : variant === "badge" ? (
               <Button
                 variant="outline"
@@ -171,9 +170,10 @@ export function StaffContentActionMenu({
                   "h-6 px-2 gap-1 text-[11px] font-semibold border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20",
                   className
                 )}
+                aria-label="Staff moderation actions"
                 title="Staff Moderation Actions"
               >
-                <ShieldAlert className="size-3 text-amber-500" />
+                <ShieldAlert className="size-3 text-amber-500" aria-hidden="true" />
                 <span>Mod</span>
               </Button>
             ) : (
@@ -184,9 +184,10 @@ export function StaffContentActionMenu({
                   "size-8 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300",
                   className
                 )}
+                aria-label={`Staff moderation controls${targetTitle ? ` for ${targetTitle}` : ""}`}
                 title="Staff Moderation Controls"
               >
-                <ShieldAlert className="size-4" />
+                <ShieldAlert className="size-4" aria-hidden="true" />
               </Button>
             )
           }
@@ -442,7 +443,7 @@ export function StaffContentActionMenu({
           user={{
             id: targetUserForModal.id,
             display_name: targetUserForModal.display_name,
-            contributor_tier: (author?.contributor_tier as any) || 0,
+            contributor_tier: (author?.contributor_tier as ContributorTier | undefined) ?? 0,
             contribution_points: author?.contribution_points || 0,
           }}
           open={pointModalOpen}

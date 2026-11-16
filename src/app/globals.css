@@ -235,9 +235,10 @@
   html,
   body {
     overflow-x: clip;
+    @apply bg-background text-foreground;
   }
   body {
-    @apply bg-background text-foreground leading-relaxed;
+    @apply leading-relaxed;
     caret-color: var(--primary);
   }
   html {

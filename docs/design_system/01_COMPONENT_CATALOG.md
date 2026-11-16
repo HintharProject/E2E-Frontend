@@ -85,6 +85,9 @@ src/components/layout/
    - Distinct treatment for `QUESTION`, `SHARING`, and `ANNOUNCEMENT`, 30-day TTL remaining/warning badges, attachment chip, and `ForumRightRail` displaying quick CTAs and the latest 3 active notices.
 5. **`CollectionCapacityStrip` (`components/features/collections/collection-capacity-strip.tsx`):**
    - Visual `3`-slot binder indicator used at the top of `/study-plans` and `/saved-sessions` reflecting `X / 3 slots used` plus empty-collection creation guard guidance.
+6. **Comment Section Module (`components/features/comments/` — `.comment-module-v2`):**
+   - Scoped via `comment-module-v2.css` and unified through `comment-primitives.tsx` (`CommentModuleRoot`, `CommentSectionHeader`, `CommentComposerShell`, `CommentItemShell`, `CommentThreadRail`, `CommentSkeletonList`, `CommentReplySkeleton`, `CommentEmptyState`, `CommentErrorState`, `CommentGuestGate`) plus `CommentSortToggle`, `PostComments`, `ThreadedComment`, and `SolutionComments`.
+   - Features compact single-layer cards, a `1.5px` thread guide rail (visual indent clamped after depth 4 in Discussions; 2-level hierarchy in Solutions), inline reply composer with `@mention` prefill, collapse/expand reply toggles, `Write | Preview` LaTeX math preview (`MathRenderer`), `0/1000` mono telemetry, `font-mono tabular-nums` vote pills, and right-aligned footer controls (`.cm-footer-controls`) housing `<StaffContentActionMenu />` and the overflow `DropdownMenu` (`Edit`, `Delete` confirmation `Dialog`, `Copy link`, `Report`).
 
 ---
 

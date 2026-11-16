@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function ProblemCardVote({
   problemId,
@@ -24,6 +25,7 @@ export function ProblemCardVote({
   variant?: "inline" | "rail";
 }) {
   const { user } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const voteMutation = useVoteProblem();
 
   const voterMultiplier =
@@ -59,7 +61,7 @@ export function ProblemCardVote({
     e.stopPropagation();
 
     if (!user) {
-      toast.info("Please sign in to vote.");
+      requireAuth(undefined, { actionLabel: "vote on problems" });
       return;
     }
 

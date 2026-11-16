@@ -18,13 +18,12 @@ interface PostQueryParams {
 }
 
 export function useInfinitePosts(params: PostQueryParams = {}) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
   return useInfiniteQuery({
-    queryKey: ["posts", params, "v2"],
+    queryKey: ["posts", params, isSignedIn ? "auth" : "guest", "v2"],
     queryFn: async ({ pageParam }) => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
 
       const backendParams = {
         search: params.search,
@@ -42,7 +41,7 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
       };
 
       const queryStr = buildQueryString(backendParams);
-      return apiFetch<PaginatedResponse<Post>>(`/posts/${queryStr}`, token);
+      return apiFetch<PaginatedResponse<Post>>(`/posts/${queryStr}`, token || undefined);
     },
     getNextPageParam: (lastPage) => {
       if (lastPage.meta.next) {
@@ -62,15 +61,14 @@ export function useInfinitePosts(params: PostQueryParams = {}) {
 }
 
 export function usePost(id: string) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
 
   return useQuery({
-    queryKey: ["post", id, "v2"],
+    queryKey: ["post", id, isSignedIn ? "auth" : "guest", "v2"],
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
-      return apiFetch<Post>(`/posts/${id}/?expand=author_details,subject_details,level_details,tags_data`, token);
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      return apiFetch<Post>(`/posts/${id}/?expand=author_details,subject_details,level_details,tags_data`, token || undefined);
     },
     enabled: !!id,
     staleTime: 5 * 60 * 1000,

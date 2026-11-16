@@ -1,15 +1,17 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
 import { Problem } from "@/types";
 import { useSolutions } from "@/hooks/use-problems";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { SolutionItem } from "./solution-item";
 import { SolutionFAB } from "./solution-fab";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { ChevronDown, ChevronRight, Layers, Info } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ChevronDown, ChevronRight, Layers, Info, Lock, LogIn, UserPlus, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export interface SolutionPoolContainerProps {
   problem: Problem;
@@ -18,22 +20,25 @@ export interface SolutionPoolContainerProps {
 
 export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContainerProps) {
   const { user } = useCurrentUser();
+  const { isSignedIn, isLoaded, openAuthGate } = useAuthGate();
   const [showArchived, setShowArchived] = useState(false);
 
-  // Active pool solutions (up to 7)
+  const hasMemberAccess = Boolean(isSignedIn || user);
+
+  // Active pool solutions (up to 7) — fetched only for authenticated members
   const {
     data: activeData,
     isLoading: isActiveLoading,
     fetchNextPage: fetchNextActive,
     hasNextPage: hasNextActive,
     isFetchingNextPage: isFetchingNextActive,
-  } = useSolutions(problem.id, true);
+  } = useSolutions(problem.id, true, hasMemberAccess);
 
   // Archived attempts (demoted by Tier 2+ submissions)
   const {
     data: archivedData,
     isLoading: isArchivedLoading,
-  } = useSolutions(problem.id, false);
+  } = useSolutions(problem.id, false, hasMemberAccess);
 
   const activeSolutions = useMemo(() => {
     return activeData?.pages.flatMap((p) => p.data) ?? [];
@@ -53,7 +58,9 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
     return activeSolutions.filter((s) => s.id !== acceptedSolution.id);
   }, [activeSolutions, acceptedSolution]);
 
-  const activeCount = activeSolutions.length;
+  const activeCount = hasMemberAccess
+    ? activeSolutions.length
+    : Math.min(problem.solution_count ?? 0, 7);
 
   // Determine if current user can trigger Tier 2+ eviction when pool is at 7/7
   const contributorTier = user?.contributor_tier ?? 0;
@@ -67,6 +74,118 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
       (s) => !s.is_author_endorsed && !s.is_accepted && (s.vote_score ?? 0) <= 0
     );
   }, [activeCount, activeSolutions]);
+
+  const encodedRedirect = encodeURIComponent(`/problems/${problem.id}`);
+
+  if (isLoaded && !hasMemberAccess) {
+    return (
+      <section aria-label="Solutions gated preview" className="space-y-6">
+        <div className="space-y-3 pb-4 border-b border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Layers className="size-5 text-primary" aria-hidden="true" />
+              <h2 className="font-heading text-2xl font-semibold text-foreground tracking-tight">
+                Solutions &amp; Peer Consensus
+              </h2>
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <Badge
+                variant={activeCount >= 7 ? "warning" : "outline"}
+                className="font-mono tabular-nums text-xs px-2.5 py-1"
+              >
+                Active Pool: {activeCount} / 7
+              </Badge>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() =>
+                  openAuthGate({
+                    actionLabel: "submit a worked solution",
+                    redirectUrl: `/problems/${problem.id}`,
+                  })
+                }
+                className="gap-1.5 text-xs font-semibold"
+              >
+                <Lock className="size-3.5" aria-hidden="true" />
+                <span>Submit Solution</span>
+              </Button>
+            </div>
+          </div>
+
+          <div className="space-y-1.5 pt-1">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-medium text-foreground">
+                Capacity Pool:{" "}
+                <span className="font-mono tabular-nums">{activeCount} / 7</span> slots filled
+              </span>
+              <span className="text-muted-foreground">
+                {7 - activeCount > 0 ? `${7 - activeCount} slots open` : "Pool at capacity"}
+              </span>
+            </div>
+            <div className="grid grid-cols-7 gap-1.5 h-2 w-full">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div
+                  key={i}
+                  className={cn(
+                    "h-full rounded-sm transition-all duration-300",
+                    i < activeCount
+                      ? activeCount >= 7
+                        ? "bg-warning"
+                        : "bg-primary"
+                      : "bg-muted"
+                  )}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-border bg-card p-6 sm:p-8 shadow-card text-center space-y-4">
+          <div className="mx-auto flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary border border-primary/20">
+            <Lock className="size-5" aria-hidden="true" />
+          </div>
+          <div className="mx-auto max-w-md space-y-1.5">
+            <h3 className="font-heading text-lg font-semibold text-foreground tracking-tight">
+              Sign up or log in to inspect peer solutions
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {activeCount > 0
+                ? `${activeCount} worked ${activeCount === 1 ? "solution has" : "solutions have"} been submitted to this problem's 7-slot consensus pool.`
+                : "Be the first to contribute a worked step-by-step solution once signed in."}{" "}
+              Create a free E2E account to read solutions, see author consensus, vote, and contribute.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <Link
+              href={`/sign-up?redirect_url=${encodedRedirect}`}
+              className={buttonVariants({
+                variant: "default",
+                size: "sm",
+                className: "min-h-[44px] md:min-h-[38px] px-4 gap-1.5 font-semibold",
+              })}
+            >
+              <UserPlus className="size-4" aria-hidden="true" />
+              <span>Sign up free</span>
+              <ArrowRight className="size-3.5" aria-hidden="true" />
+            </Link>
+            <Link
+              href={`/sign-in?redirect_url=${encodedRedirect}`}
+              className={buttonVariants({
+                variant: "outline",
+                size: "sm",
+                className: "min-h-[44px] md:min-h-[38px] px-4 gap-1.5 font-semibold",
+              })}
+            >
+              <LogIn className="size-4" aria-hidden="true" />
+              <span>Log in</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <div className="space-y-8">

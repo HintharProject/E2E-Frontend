@@ -17,13 +17,12 @@ interface LessonQueryParams {
 }
 
 export function useInfiniteLessons(params: LessonQueryParams = {}) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
   return useInfiniteQuery({
-    queryKey: ["lessons", params, "v2"],
+    queryKey: ["lessons", params, isSignedIn ? "auth" : "guest", "v2"],
     queryFn: async ({ pageParam = 1 }) => {
-      const token = await getToken();
-      if (!token) throw new Error("Not authenticated");
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
 
       const backendParams = {
         search: params.search,
@@ -39,7 +38,7 @@ export function useInfiniteLessons(params: LessonQueryParams = {}) {
       };
 
       const queryStr = buildQueryString(backendParams);
-      return apiFetch<PaginatedResponse<Lesson>>(`/lessons/${queryStr}`, token);
+      return apiFetch<PaginatedResponse<Lesson>>(`/lessons/${queryStr}`, token || undefined);
     },
     getNextPageParam: (lastPage, allPages) => {
       if (lastPage.meta.next) {

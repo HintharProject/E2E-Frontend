@@ -1,17 +1,16 @@
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
 import { PaginatedResponse, Comment, CommentSortMode } from "@/types";
 
 export function useTopLevelComments(postId: string, sort: CommentSortMode = "popular") {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   return useInfiniteQuery({
-    queryKey: ["comments", postId, sort],
+    queryKey: ["comments", postId, sort, isSignedIn ? "auth" : "guest"],
     queryFn: async ({ pageParam = 1 }) => {
-      const token = await getToken();
-      if (!token) throw new Error("Unauthorized");
-      const qs = buildQueryString({ page: pageParam, expand: "replies", sort });
-      return apiFetch<PaginatedResponse<Comment>>(`/posts/${postId}/comments/${qs}`, token);
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      const qs = buildQueryString({ page: pageParam, expand: isSignedIn ? "replies" : undefined, sort });
+      return apiFetch<PaginatedResponse<Comment>>(`/posts/${postId}/comments/${qs}`, token || undefined);
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
@@ -22,7 +21,7 @@ export function useTopLevelComments(postId: string, sort: CommentSortMode = "pop
 }
 
 export function useSolutionComments(solutionId: string, sort: CommentSortMode = "popular") {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   return useInfiniteQuery({
     queryKey: ["comments", "solution", solutionId, sort],
     queryFn: async ({ pageParam = 1 }) => {
@@ -36,7 +35,7 @@ export function useSolutionComments(solutionId: string, sort: CommentSortMode = 
       if (lastPage.meta?.next) return allPages.length + 1;
       return undefined;
     },
-    enabled: Boolean(solutionId),
+    enabled: Boolean(solutionId) && Boolean(isSignedIn),
   });
 }
 
@@ -79,7 +78,7 @@ export function useCreateComment() {
       if (!token) throw new Error("Unauthorized");
       if (!postId && !solutionId) throw new Error("postId or solutionId is required to create a comment");
 
-      const payload: Record<string, any> = { body };
+      const payload: { body: string; parent_comment?: string } = { body };
       if (parentId) payload.parent_comment = parentId;
 
       const endpoint = solutionId

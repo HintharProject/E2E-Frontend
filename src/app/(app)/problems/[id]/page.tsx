@@ -22,6 +22,7 @@ import { StaffContentActionMenu } from "@/components/features/moderation/staff-c
 import { BaseDetailedCard } from "@/components/ui/base-card";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 const LessonMediaViewer = dynamic(
   () => import("@/components/features/lessons/lesson-media-viewer").then((mod) => mod.LessonMediaViewer),
@@ -35,6 +36,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const router = useRouter();
   const { user } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
 
   const { data: problem, isLoading: isProblemLoading, isError: isProblemError } = useProblem(id);
   const reportMutation = useReport();
@@ -45,6 +47,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   };
 
   const handleReport = async () => {
+    if (!requireAuth(undefined, { actionLabel: "report a problem" })) return;
     try {
       await reportMutation.mutateAsync({ targetId: id, targetType: "PROBLEM" });
       toast.success("Problem reported to moderation queue.");

@@ -8,9 +8,11 @@ import { SaveToSessionDialog } from "@/components/features/collections/save-to-s
 import { ReportModal } from "@/components/features/moderation/report-modal";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { toast } from "sonner";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function PostInteractions({ post }: { post: Post }) {
   const { user: currentUser } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const voteMutation = useVotePost();
   const [reportOpen, setReportOpen] = useState(false);
 
@@ -48,6 +50,11 @@ export function PostInteractions({ post }: { post: Post }) {
     (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
 
   const handleVote = (value: 1 | -1 | 0) => {
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "vote on forum posts" });
+      return;
+    }
+
     if (isAuthor) {
       toast.info("You cannot vote on your own post.");
       return;
@@ -83,6 +90,10 @@ export function PostInteractions({ post }: { post: Post }) {
   };
 
   const handleReport = () => {
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "report a forum post" });
+      return;
+    }
     setReportOpen(true);
   };
 

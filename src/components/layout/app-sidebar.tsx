@@ -10,13 +10,16 @@ import {
   Settings,
   UserCog,
   ArrowUpRight,
+  LogIn,
+  UserPlus,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useStudyPlans, useSavedSessions } from "@/hooks/use-collections";
 import { isNavActive } from "@/lib/constants";
@@ -39,6 +42,8 @@ interface LastTrainPaper {
 export function AppSidebar() {
   const pathname = usePathname();
   const { user, isLoading } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
+  const isDevLoginEnabled = process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true";
   const { isSidebarCollapsed, toggleSidebar, setSidebarCollapsed } = useUIStore();
   const { data: studyPlans } = useStudyPlans();
   const { data: savedSessions } = useSavedSessions();
@@ -225,6 +230,15 @@ export function AppSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  onClick={(e) => {
+                    if (!user) {
+                      e.preventDefault();
+                      requireAuth(undefined, {
+                        actionLabel: `access ${item.label}`,
+                        redirectUrl: item.href,
+                      });
+                    }
+                  }}
                   title={
                     isSidebarCollapsed
                       ? countText
@@ -343,36 +357,78 @@ export function AppSidebar() {
           </div>
         ) : !user ? (
           <div className="space-y-2">
-            <Button
-              type="button"
-              variant="outline"
-              size={isSidebarCollapsed ? "icon-sm" : "sm"}
-              onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
-              title="Switch Account"
-              aria-label="Switch Account"
-              className={cn(
-                "border-dashed border-primary/50 text-primary hover:bg-primary/10",
-                isSidebarCollapsed ? "mx-auto flex" : "w-full justify-start gap-2"
-              )}
-            >
-              <UserCog className="size-4 shrink-0" aria-hidden="true" />
-              {!isSidebarCollapsed && <span>Switch Account</span>}
-            </Button>
-            <div
-              className={cn(
-                "flex items-center",
-                isSidebarCollapsed ? "justify-center" : "justify-between px-1"
-              )}
-            >
-              <ThemeToggle />
-              <UserButton
-                appearance={{
-                  elements: {
-                    avatarBox: "size-8",
-                  },
-                }}
-              />
-            </div>
+            {isSidebarCollapsed ? (
+              <div className="flex flex-col items-center gap-2">
+                <Link
+                  href="/sign-up"
+                  title="Sign up free"
+                  aria-label="Sign up free"
+                  className={buttonVariants({
+                    variant: "default",
+                    size: "icon-sm",
+                    className: "size-9",
+                  })}
+                >
+                  <UserPlus className="size-4" aria-hidden="true" />
+                </Link>
+                <Link
+                  href="/sign-in"
+                  title="Log in"
+                  aria-label="Log in"
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "icon-sm",
+                    className: "size-9",
+                  })}
+                >
+                  <LogIn className="size-4" aria-hidden="true" />
+                </Link>
+                <ThemeToggle />
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <Link
+                    href="/sign-up"
+                    className={buttonVariants({
+                      variant: "default",
+                      size: "sm",
+                      className: "w-full justify-center gap-1.5 font-semibold",
+                    })}
+                  >
+                    <UserPlus className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span>Sign up free</span>
+                  </Link>
+                  <Link
+                    href="/sign-in"
+                    className={buttonVariants({
+                      variant: "outline",
+                      size: "sm",
+                      className: "w-full justify-center gap-1.5 font-medium",
+                    })}
+                  >
+                    <LogIn className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span>Log in</span>
+                  </Link>
+                </div>
+                {isDevLoginEnabled && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => window.dispatchEvent(new CustomEvent("open-dev-tools"))}
+                    className="w-full justify-start gap-2 text-xs text-muted-foreground border border-dashed border-border"
+                  >
+                    <UserCog className="size-3.5 shrink-0" aria-hidden="true" />
+                    <span>Dev Switch Account</span>
+                  </Button>
+                )}
+                <div className="flex items-center justify-between px-1 pt-0.5">
+                  <span className="text-xs text-muted-foreground">Appearance</span>
+                  <ThemeToggle />
+                </div>
+              </>
+            )}
           </div>
         ) : isSidebarCollapsed ? (
           <div className="flex flex-col items-center gap-2">
