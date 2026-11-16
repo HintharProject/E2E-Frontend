@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { Plus, FileText, PenLine, ShieldCheck, Layers, Sparkles, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { GatedLink } from "@/components/features/auth/gated-link";
 
 export function ProblemsRightRail() {
   return (
@@ -43,7 +43,7 @@ export function ProblemsRightRail() {
           className="w-full gap-1.5"
           size="sm"
           nativeButton={false}
-          render={<Link href="/problems/new" />}
+          render={<GatedLink href="/problems/new" actionLabel="post a problem in Solve!" />}
         >
           <Plus className="size-4" />
           New Problem Thread

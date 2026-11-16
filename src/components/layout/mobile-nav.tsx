@@ -4,12 +4,13 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
-import { X, Settings, User as UserIcon } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { X, Settings, User as UserIcon, LogIn, UserPlus } from "lucide-react";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useStudyPlans, useSavedSessions } from "@/hooks/use-collections";
 import { isNavActive } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
@@ -32,6 +33,7 @@ export function MobileNav({ user }: MobileNavProps) {
   const { isMobileNavOpen, closeMobileNav } = useUIStore();
   const { data: studyPlans } = useStudyPlans();
   const { data: savedSessions } = useSavedSessions();
+  const { requireAuth } = useAuthGate();
 
   useEffect(() => {
     if (!isMobileNavOpen) {
@@ -175,22 +177,36 @@ export function MobileNav({ user }: MobileNavProps) {
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-border p-3 text-center">
-              <p className="text-xs text-muted-foreground mb-2">
-                Sign in to unlock personalized study tracks
+            <div className="rounded-xl border border-border bg-card p-3 space-y-2.5">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Sign up or log in to unlock peer solutions, full lessons, and study plans.
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  closeMobileNav();
-                  window.dispatchEvent(new CustomEvent("open-dev-tools"));
-                }}
-                className="w-full min-h-[44px] text-xs font-semibold"
-              >
-                Switch Account / Sign In
-              </Button>
+              <div className="grid grid-cols-2 gap-2">
+                <Link
+                  href="/sign-up"
+                  onClick={closeMobileNav}
+                  className={buttonVariants({
+                    variant: "default",
+                    size: "sm",
+                    className: "min-h-[44px] text-xs font-semibold gap-1.5 justify-center",
+                  })}
+                >
+                  <UserPlus className="size-3.5" aria-hidden="true" />
+                  <span>Sign up</span>
+                </Link>
+                <Link
+                  href="/sign-in"
+                  onClick={closeMobileNav}
+                  className={buttonVariants({
+                    variant: "outline",
+                    size: "sm",
+                    className: "min-h-[44px] text-xs font-semibold gap-1.5 justify-center",
+                  })}
+                >
+                  <LogIn className="size-3.5" aria-hidden="true" />
+                  <span>Log in</span>
+                </Link>
+              </div>
             </div>
           )}
 
@@ -207,7 +223,16 @@ export function MobileNav({ user }: MobileNavProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={closeMobileNav}
+                    onClick={(e) => {
+                      closeMobileNav();
+                      if (!user) {
+                        e.preventDefault();
+                        requireAuth(undefined, {
+                          actionLabel: `access ${item.label}`,
+                          redirectUrl: item.href,
+                        });
+                      }
+                    }}
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -244,7 +269,16 @@ export function MobileNav({ user }: MobileNavProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={closeMobileNav}
+                    onClick={(e) => {
+                      closeMobileNav();
+                      if (!user) {
+                        e.preventDefault();
+                        requireAuth(undefined, {
+                          actionLabel: `access ${item.label}`,
+                          redirectUrl: item.href,
+                        });
+                      }
+                    }}
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex min-h-[44px] items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",

@@ -13,6 +13,7 @@ import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,7 @@ export function ThreadedComment({
   postId: string;
 }) {
   const { user: currentUser } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const isAuthor = isContentAuthor(currentUser, comment.author_details, comment.author);
 
   const [showReplyForm, setShowReplyForm] = useState(false);
@@ -63,7 +65,7 @@ export function ThreadedComment({
   const { sort: commentSort } = useCommentSort();
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useReplies(
     comment.id,
-    hasReplies && !isPreloaded,
+    hasReplies && !isPreloaded && Boolean(currentUser),
     commentSort
   );
   const createComment = useCreateComment();
@@ -136,6 +138,10 @@ export function ThreadedComment({
     (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
 
   const handleVote = (value: 1 | -1 | 0) => {
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "vote on comments" });
+      return;
+    }
     if (isAuthor) {
       toast.info("You cannot vote on your own comment.");
       return;
@@ -222,7 +228,14 @@ export function ThreadedComment({
                 </button>
               </div>
 
-              <Button variant="ghost" size="xs" onClick={() => setShowReplyForm(!showReplyForm)}>
+              <Button
+                variant="ghost"
+                size="xs"
+                onClick={() => {
+                  if (!requireAuth(undefined, { actionLabel: "reply to this comment" })) return;
+                  setShowReplyForm(!showReplyForm);
+                }}
+              >
                 Reply
               </Button>
 
@@ -260,7 +273,10 @@ export function ThreadedComment({
                   variant="ghost"
                   size="xs"
                   className="text-xs text-primary font-medium hover:underline min-h-[44px] sm:min-h-[28px] px-2"
-                  onClick={() => setShowReplies(!showReplies)}
+                  onClick={() => {
+                    if (!requireAuth(undefined, { actionLabel: "view comment replies" })) return;
+                    setShowReplies(!showReplies);
+                  }}
                 >
                   {showReplies ? "Hide replies" : `View replies (${comment.reply_count})`}
                 </Button>

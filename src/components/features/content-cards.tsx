@@ -23,6 +23,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { getInitials, stripHtml } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { Video, Paperclip, MessageSquareText, BookOpenText, Megaphone } from "lucide-react";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 
 function formatDateStr(dateStr: string): string {
@@ -41,6 +42,7 @@ function daysUntilExpiration(createdAt: string): number {
 export function PostCard({ post }: { post: Post }) {
   const { user } = useCurrentUser();
   const { getToken } = useAuth();
+  const { requireAuth, isSignedIn } = useAuthGate();
   const queryClient = useQueryClient();
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -59,14 +61,13 @@ export function PostCard({ post }: { post: Post }) {
 
   // Prefetch post detail on hover so clicking feels instant
   const handleMouseEnter = () => {
-    if (prefetchedRef.current) return;
+    if (prefetchedRef.current || !isSignedIn) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["post", post.id, "v2"],
+      queryKey: ["post", post.id, isSignedIn ? "auth" : "guest", "v2"],
       queryFn: async () => {
-        const token = await getToken();
-        if (!token) return post;
-        return apiFetch<Post>(`/posts/${post.id}/?expand=author_details,subject_details,level_details,tags_data`, token);
+        const token = isSignedIn ? await getToken().catch(() => null) : null;
+        return apiFetch<Post>(`/posts/${post.id}/?expand=author_details,subject_details,level_details,tags_data`, token || undefined);
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -91,7 +92,14 @@ export function PostCard({ post }: { post: Post }) {
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
         <div className="flex items-center gap-3 min-w-0">
           {author ? (
-            <Link href={`/users/${author.id}`}>
+            <Link
+              href={`/users/${author.id}`}
+              onClick={(e) => {
+                if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <Avatar size="sm">
                 {author.profile_image_url && (
                   <AvatarImage src={author.profile_image_url} />
@@ -105,6 +113,11 @@ export function PostCard({ post }: { post: Post }) {
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
+                  onClick={(e) => {
+                    if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="text-sm font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   {author.display_name}
@@ -217,6 +230,7 @@ export function PostCard({ post }: { post: Post }) {
 export function LessonCard({ lesson }: { lesson: Lesson }) {
   const { user } = useCurrentUser();
   const { getToken } = useAuth();
+  const { requireAuth, isSignedIn } = useAuthGate();
   const queryClient = useQueryClient();
   const prefetchedRef = useRef(false);
   const deleteMutation = useDeleteLesson();
@@ -238,7 +252,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     : `/lessons/${lesson.id}`;
 
   const handleMouseEnter = () => {
-    if (prefetchedRef.current) return;
+    if (prefetchedRef.current || !isSignedIn) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
       queryKey: ["lesson", lesson.id, "v2"],
@@ -343,6 +357,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         <CardContent className="pt-3.5 space-y-3">
           <Link
             href={`/lessons/${lesson.id}`}
+            onClick={(e) => {
+              if (!requireAuth(undefined, { actionLabel: "open the full lesson", redirectUrl: `/lessons/${lesson.id}` })) {
+                e.preventDefault();
+              }
+            }}
             className="block group/link rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
             <CardTitle className="font-heading text-base font-semibold leading-snug text-foreground group-hover/link:text-primary transition-colors line-clamp-2">
@@ -396,6 +415,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           {author ? (
             <Link
               href={`/users/${author.id}`}
+              onClick={(e) => {
+                if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                  e.preventDefault();
+                }
+              }}
               className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <Avatar size="sm">
@@ -411,6 +435,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
+                  onClick={(e) => {
+                    if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="truncate text-xs font-semibold text-foreground hover:text-primary transition-colors"
                 >
                   {author.display_name}

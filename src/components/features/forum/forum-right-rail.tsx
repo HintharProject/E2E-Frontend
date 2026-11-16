@@ -5,6 +5,7 @@ import { Megaphone, Plus, MessageSquareText, BookOpenText, ArrowRight, HelpCircl
 import { Button } from "@/components/ui/button";
 import { useAnnouncements } from "@/hooks/use-announcements";
 import { formatDate } from "@/lib/utils";
+import { GatedLink } from "@/components/features/auth/gated-link";
 
 export function ForumRightRail() {
   const { data: announcementsData, isLoading } = useAnnouncements({ active_only: true });
@@ -29,7 +30,7 @@ export function ForumRightRail() {
             size="sm"
             className="w-full justify-start gap-2"
             nativeButton={false}
-            render={<Link href="/posts/new" />}
+            render={<GatedLink href="/posts/new" actionLabel="create a forum post" />}
           >
             <Plus className="size-4" />
             Create Forum Post
@@ -39,7 +40,7 @@ export function ForumRightRail() {
             variant="outline"
             className="w-full justify-start gap-2"
             nativeButton={false}
-            render={<Link href="/problems/new" />}
+            render={<GatedLink href="/problems/new" actionLabel="ask a problem in Solve!" />}
           >
             <HelpCircle className="size-4 text-primary" />
             Ask Problem in Solve!

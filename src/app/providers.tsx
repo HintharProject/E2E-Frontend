@@ -5,6 +5,7 @@ import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useState } from "react";
 
 import { setupCacheManager } from "@/lib/store/cache-manager";
+import { AuthGateProvider } from "@/components/features/auth/auth-gate-modal";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => {
@@ -27,7 +28,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <AuthGateProvider>{children}</AuthGateProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

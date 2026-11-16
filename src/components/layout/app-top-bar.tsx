@@ -21,7 +21,7 @@ import {
   AlertTriangle,
   ShieldAlert,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -277,8 +277,31 @@ export function AppTopBar() {
               )}
             </Button>
 
-            {/* Contextual Primary CTA */}
-            {user && !writeLocked && !isAlreadyOnCreatePage && (
+            {/* Guest Sign in / Sign up CTA OR Contextual Primary CTA */}
+            {!user && !isLoading ? (
+              <div className="flex items-center gap-1.5">
+                <Link
+                  href="/sign-in"
+                  className={buttonVariants({
+                    variant: "ghost",
+                    size: "sm",
+                    className: "h-10 md:h-9 px-2.5 sm:px-3 text-xs font-semibold",
+                  })}
+                >
+                  Log in
+                </Link>
+                <Link
+                  href="/sign-up"
+                  className={buttonVariants({
+                    variant: "default",
+                    size: "sm",
+                    className: "h-10 md:h-9 px-2.5 sm:px-3.5 text-xs font-semibold shadow-2xs",
+                  })}
+                >
+                  Sign up free
+                </Link>
+              </div>
+            ) : user && !writeLocked && !isAlreadyOnCreatePage && (
               createConfig.mode === "direct" && createConfig.href ? (
                 <Button
                   asChild

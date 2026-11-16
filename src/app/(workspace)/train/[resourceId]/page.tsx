@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 interface TrainWorkspacePageProps {
   params: Promise<{ resourceId: string }>;
@@ -19,6 +20,7 @@ interface TrainWorkspacePageProps {
 
 export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) {
   const { resourceId } = use(params);
+  const { requireAuth } = useAuthGate();
 
   // Fetch target Question Paper
   const {
@@ -380,8 +382,18 @@ export default function TrainWorkspacePage({ params }: TrainWorkspacePageProps) 
         onCloseLeft={leftPaper ? handleCloseLeft : undefined}
         onCloseRight={rightPaper ? handleCloseRight : undefined}
         timer={timer}
-        onOpenAskInSolve={() => setIsAskInSolveOpen(true)}
-        onOpenSolveAPaper={() => setIsSolveAPaperOpen(true)}
+        onOpenAskInSolve={() =>
+          requireAuth(() => setIsAskInSolveOpen(true), {
+            actionLabel: "check or ask Solve! questions on this paper",
+            redirectUrl: `/train/${resourceId}`,
+          })
+        }
+        onOpenSolveAPaper={() =>
+          requireAuth(() => setIsSolveAPaperOpen(true), {
+            actionLabel: "author a worked solution walkthrough",
+            redirectUrl: `/train/${resourceId}`,
+          })
+        }
         isSidebarOpen={isSidebarOpen}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
       />

@@ -26,6 +26,7 @@ import {
 } from "@/components/features/resources/document-viewer-modal";
 import { AskInSolveModal } from "@/components/features/train/ask-in-solve-modal";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { cn } from "@/lib/utils";
 import type { Resource } from "@/types";
 import {
@@ -60,6 +61,7 @@ function ResourcesLoadingSkeleton() {
 
 function ResourcesFeed() {
   const { getToken } = useAuth();
+  const { isSignedIn, requireAuth } = useAuthGate();
   const searchParams = useSearchParams();
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
@@ -80,7 +82,7 @@ function ResourcesFeed() {
   const { data: resources = [], isLoading, isError, refetch } = useQuery<Resource[]>({
     queryKey: ["userResourcesList", levels.join(","), subjects.join(",")],
     queryFn: async () => {
-      const token = await getToken();
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
       const params = new URLSearchParams();
       if (levels.length > 0) params.append("level", levels.join(","));
       if (subjects.length > 0) params.append("subject", subjects.join(","));
@@ -88,7 +90,7 @@ function ResourcesFeed() {
 
       const res = await apiFetch<{ data?: Resource[]; results?: Resource[] } | Resource[]>(
         `/resources/files/?${params.toString()}`,
-        token as string
+        token || undefined
       );
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
@@ -130,6 +132,14 @@ function ResourcesFeed() {
   }, [levels, subjects]);
 
   const handleOpenAskInSolve = (paper: Resource, paired?: PairedPapersContext) => {
+    if (
+      !requireAuth(undefined, {
+        actionLabel: "check or ask Solve! questions on this paper",
+        redirectUrl: "/resources",
+      })
+    ) {
+      return;
+    }
     setAskModalState({ paper, paired });
   };
 

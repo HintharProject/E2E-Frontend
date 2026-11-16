@@ -37,6 +37,7 @@ import {
 import type { SaveTargetType, SavedSession, StudyPlan } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export interface SaveButtonProps {
   entityType: SaveTargetType;
@@ -79,6 +80,7 @@ export function SaveButton({
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
 
   const { isSignedIn } = useAuth();
+  const { requireAuth } = useAuthGate();
   const isAuthed =
     isSignedIn ||
     (typeof window !== "undefined" &&
@@ -257,8 +259,16 @@ export function SaveButton({
   const buttonVariant = variant === "icon" ? "ghost" : variant;
   const buttonSize = variant === "icon" ? "icon" : size;
 
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen && !isAuthed) {
+      requireAuth(undefined, { actionLabel: "save items to your library" });
+      return;
+    }
+    setOpen(nextOpen);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger
         render={
           <Button
@@ -272,7 +282,13 @@ export function SaveButton({
             aria-label={isSaved ? "Saved in study plan or session" : "Save to session or study plan"}
             aria-pressed={isSaved}
             title={isSaved ? "Saved in collections" : "Save to session or study plan"}
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+              if (!isAuthed) {
+                e.preventDefault();
+                requireAuth(undefined, { actionLabel: "save items to your library" });
+              }
+            }}
           />
         }
       >

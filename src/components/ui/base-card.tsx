@@ -1,9 +1,12 @@
+"use client";
+
 import * as React from "react";
 import Link from "next/link";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { ContributorTier } from "@/types/contribution";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function getInitials(name?: string | null): string {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
@@ -69,6 +72,8 @@ export function BaseFeedCard({
   className = "",
   moreMenu,
 }: BaseFeedCardProps) {
+  const { requireAuth } = useAuthGate();
+
   return (
     <article
       data-slot="base-feed-card"
@@ -85,6 +90,11 @@ export function BaseFeedCard({
           {author ? (
             <Link
               href={`/users/${author.id}`}
+              onClick={(e) => {
+                if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                  e.preventDefault();
+                }
+              }}
               className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               <Avatar size="sm">
@@ -183,6 +193,8 @@ export function BaseDetailedCard({
   variant = "default",
   className = "",
 }: BaseDetailedCardProps) {
+  const { requireAuth } = useAuthGate();
+
   return (
     <article
       data-slot="base-detailed-card"
@@ -199,6 +211,11 @@ export function BaseDetailedCard({
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/users/${author.id}`}
+                onClick={(e) => {
+                  if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                    e.preventDefault();
+                  }
+                }}
                 className="flex items-center gap-2.5 hover:opacity-85 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
               >
                 <Avatar size="sm">

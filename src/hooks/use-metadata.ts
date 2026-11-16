@@ -32,15 +32,18 @@ export function useLevels() {
 }
 
 export function useTags() {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   
   return useQuery({
-    queryKey: ["tags"],
+    queryKey: ["tags", isSignedIn ? "auth" : "guest"],
     queryFn: async () => {
-      const token = await getToken();
-      if (!token) return []; // Return empty if not authenticated
-      const res = await apiFetch<Tag[]>("/tags/", token);
-      return res;
+      const token = isSignedIn ? await getToken().catch(() => null) : null;
+      try {
+        const res = await apiFetch<Tag[]>("/tags/", token || undefined);
+        return res;
+      } catch {
+        return [];
+      }
     },
     staleTime: 1000 * 60 * 60, // 1 hour — almost never changes
     gcTime: 1000 * 60 * 60 * 2,

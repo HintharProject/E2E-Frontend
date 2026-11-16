@@ -8,6 +8,7 @@ import { isWriteLocked } from "@/types/user";
 import { cn } from "@/lib/utils";
 import { ChevronUp, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export interface VoteWidgetProps {
   contentType: ContentVoteType;
@@ -41,6 +42,7 @@ export function VoteWidget({
   className,
 }: VoteWidgetProps) {
   const { user } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<1 | -1 | 0>((initialUserVote ?? 0) as 1 | -1 | 0);
   const [floatingFeedback, setFloatingFeedback] = useState<{
@@ -78,7 +80,7 @@ export function VoteWidget({
     );
   const isArchived = isActivePool === false;
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-  const isActionDisabled = disabled || isSelf || isProblemAuthor || isArchived || writeLocked || !user;
+  const isActionDisabled = disabled || isSelf || isProblemAuthor || isArchived || writeLocked;
 
 
   const voterMultiplier =
@@ -102,7 +104,7 @@ export function VoteWidget({
     e.stopPropagation();
 
     if (!user) {
-      toast.info("Please sign in to vote.");
+      requireAuth(undefined, { actionLabel: "vote on problems and solutions" });
       return;
     }
 

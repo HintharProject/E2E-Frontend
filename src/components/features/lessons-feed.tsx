@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useTransition } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
+import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useAuth } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, BookOpen } from "lucide-react";
 import { apiFetch, buildQueryString } from "@/services/api-client";
@@ -53,6 +55,7 @@ export function LessonsFeed({
   hideSort?: boolean;
 }) {
   const { user, isLoading: userLoading } = useCurrentUser();
+  const { isSignedIn } = useAuthGate();
   const queryClient = useQueryClient();
   const { getToken } = useAuth();
   const router = useRouter();
@@ -200,7 +203,7 @@ export function LessonsFeed({
     getToken,
   ]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, refetch, isRefetching } =
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, status, error, refetch, isRefetching } =
     useInfiniteLessons({
       subject: effectiveSubjects.join(","),
       level: effectiveLevels.join(","),
@@ -418,6 +421,29 @@ export function LessonsFeed({
   }
 
   if (status === "error") {
+    const errStatus = (error as { status?: number } | null)?.status;
+    if (!isSignedIn && (errStatus === 401 || errStatus === 403)) {
+      return (
+        <div className="space-y-5">
+          {renderLevelPillSwitcher()}
+          {renderManageStateSwitcher()}
+          <EmptyState
+            title="Sign in to browse the Lessons catalog"
+            description="Sign up free or log in to explore creator-authored lessons, worked video lectures, and study materials."
+            action={
+              <div className="flex items-center gap-2">
+                <Button asChild size="sm">
+                  <Link href="/sign-up?redirect_url=%2Flessons">Sign up free</Link>
+                </Button>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/sign-in?redirect_url=%2Flessons">Log in</Link>
+                </Button>
+              </div>
+            }
+          />
+        </div>
+      );
+    }
     return (
       <div className="space-y-5">
         {renderLevelPillSwitcher()}

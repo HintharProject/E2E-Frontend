@@ -1,10 +1,13 @@
 "use client";
 
 import { usePost } from "@/hooks/use-posts";
+import Link from "next/link";
+import { Lock, LogIn, UserPlus } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { cn, formatDate } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { formatDate } from "@/lib/utils";
 import { PostInteractions } from "@/components/features/posts/post-interactions";
 import { PostComments } from "@/components/features/comments/post-comments";
 import { PostAuthorActions } from "@/components/features/posts/post-author-actions";
@@ -52,13 +55,54 @@ function PostDetailSkeleton() {
 }
 
 export function PostDetailView({ postId }: { postId: string }) {
-  const { data: post, isLoading, isError } = usePost(postId);
-  const { user: clerkUser } = useUser();
+  const { data: post, isLoading, isError, error } = usePost(postId);
+  const { user: clerkUser, isLoaded: clerkLoaded } = useUser();
   const { user } = useCurrentUser();
 
   if (isLoading) return <PostDetailSkeleton />;
 
   if (isError || !post) {
+    const errorStatus = (error as { status?: number } | null)?.status;
+    const isGuestAuthGate =
+      clerkLoaded &&
+      !clerkUser &&
+      (errorStatus === 401 || errorStatus === 403 || !errorStatus);
+    const encodedRedirect = encodeURIComponent(`/posts/${postId}`);
+
+    if (isGuestAuthGate) {
+      return (
+        <div className="mx-auto max-w-2xl rounded-xl border border-border bg-card p-6 sm:p-8 text-center space-y-4">
+          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full border border-border bg-muted text-muted-foreground">
+            <Lock className="h-4 w-4" aria-hidden="true" />
+          </div>
+          <div className="space-y-1.5">
+            <h2 className="font-heading text-lg font-semibold text-foreground">
+              Sign in to view this post
+            </h2>
+            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+              Create a free account or log in to read full forum discussions and join the conversation.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+            <Link
+              href={`/sign-up?redirect_url=${encodedRedirect}`}
+              className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-1.5")}
+            >
+              <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
+              Sign up free
+            </Link>
+            <Link
+              href={`/sign-in?redirect_url=${encodedRedirect}`}
+              className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
+            >
+              <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
+              Log in
+            </Link>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="mx-auto max-w-3xl py-12 text-center">
         <p className="text-muted-foreground">Could not load this post. It may have been deleted or you may not have access.</p>

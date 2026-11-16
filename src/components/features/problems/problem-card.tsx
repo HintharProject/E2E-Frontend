@@ -21,6 +21,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getInitials } from "@/components/ui/base-card";
 import { BookOpen, ExternalLink, Image as ImageIcon, Lock, MessageSquare } from "lucide-react";
 import { SaveButton } from "@/components/features/collections/save-button";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 function stripProblemPreview(raw: string): string {
   return raw
@@ -33,6 +34,7 @@ function stripProblemPreview(raw: string): string {
 export function ProblemCard({ problem }: { problem: Problem }) {
   const { user } = useCurrentUser();
   const { getToken } = useAuth();
+  const { requireAuth } = useAuthGate();
   const queryClient = useQueryClient();
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -248,7 +250,12 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             {author && (
               <Link
                 href={`/users/${author.id}`}
-                onClick={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                    e.preventDefault();
+                  }
+                }}
                 className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
               >
                 <Avatar size="sm">

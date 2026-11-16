@@ -47,6 +47,7 @@ import { ManageSanctionModal, SanctionTargetUser } from "@/components/features/a
 import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
 import { StaffAuthorInfo } from "@/components/features/moderation/staff-content-action-menu";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 type ContentType = "POST" | "LESSON" | "PROBLEM" | "SOLUTION";
 
@@ -101,6 +102,7 @@ export function CardMoreMenu({
   onArchive,
 }: CardMoreMenuProps) {
   const { user: currentUser } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const isStaff = isModeratorOrAbove(currentUser?.role);
   const isAdmin = isAdminOrSuperAdmin(currentUser?.role);
 
@@ -141,6 +143,10 @@ export function CardMoreMenu({
   function handleReport(e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "report content" });
+      return;
+    }
     setReportOpen(true);
   }
 

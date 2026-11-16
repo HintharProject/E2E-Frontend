@@ -5,6 +5,7 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
 import { ChevronUp } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function PostCardVote({
   postId,
@@ -20,6 +21,7 @@ export function PostCardVote({
   authorClerkId?: string;
 }) {
   const { user: currentUser } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
   const voteMutation = useVotePost();
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
@@ -55,6 +57,11 @@ export function PostCardVote({
   const handleVote = (e: React.MouseEvent) => {
     e.preventDefault(); // Prevent navigating to post detail if the card is wrapped in a Link
     e.stopPropagation();
+
+    if (!currentUser) {
+      requireAuth(undefined, { actionLabel: "vote on forum posts" });
+      return;
+    }
 
     if (isSelf) {
       toast.info("You cannot vote on your own post.");

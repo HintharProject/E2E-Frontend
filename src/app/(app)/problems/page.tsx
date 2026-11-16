@@ -1,7 +1,6 @@
 "use client";
 
 import { Suspense } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -91,6 +90,7 @@ function ProblemsFeed() {
 
 import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
 import { Plus } from "lucide-react";
+import { GatedLink } from "@/components/features/auth/gated-link";
 
 export default function ProblemsPage() {
   return (
@@ -105,7 +105,7 @@ export default function ProblemsPage() {
               size="sm"
               className="xl:hidden gap-1.5"
               nativeButton={false}
-              render={<Link href="/problems/new" />}
+              render={<GatedLink href="/problems/new" actionLabel="ask a problem in Solve!" />}
             >
               <Plus className="size-4" />
               Ask Question

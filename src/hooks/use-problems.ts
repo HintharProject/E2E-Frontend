@@ -87,7 +87,7 @@ export function useSolution(id: string) {
   });
 }
 
-export function useSolutions(problemId: string, isActivePool: boolean = true) {
+export function useSolutions(problemId: string, isActivePool: boolean = true, enabled: boolean = true) {
   const { getToken } = useAuth();
   return useInfiniteQuery({
     queryKey: ["solutions", problemId, isActivePool],
@@ -104,7 +104,7 @@ export function useSolutions(problemId: string, isActivePool: boolean = true) {
     getNextPageParam: (lastPage, allPages) => {
       return lastPage.meta.next ? allPages.length + 1 : undefined;
     },
-    enabled: !!problemId,
+    enabled: Boolean(problemId) && enabled,
   });
 }
 
