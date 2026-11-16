@@ -125,3 +125,14 @@ Configured in `src/app/layout.tsx` and bound in `src/app/globals.css`:
   - `--shadow-card-hover`: Smooth hover lift (`hover:border-primary/35 hover:shadow-card-hover`).
   - `--shadow-modal`: Popovers, menus, and dialogs.
 - **Radii:** `rounded-sm` (`<kbd>`), `rounded-md` (pills, tags, badges), `rounded-lg` (inputs, standard buttons), `rounded-xl` (feed cards, right rail panels, modals), `rounded-full` (avatars, status indicators).
+
+---
+
+## 4. Scoped Module Tokens — Comment Section (`.comment-module-v2`)
+
+The unified Discussion and Solution comment system isolates all component-specific CSS custom properties (`--cm-*`) inside `.comment-module-v2` (`src/components/features/comments/comment-module-v2.css`), including light (`Warm Archival Paper`) and dark (`.dark .comment-module-v2` / `[data-theme="dark"]`) parity and portal wrappers (`DropdownMenuContent`, `DialogContent`) without altering global `:root` tokens:
+
+- **Surfaces & Ink:** `--cm-canvas`, `--cm-surface`, `--cm-surface-subtle`, `--cm-surface-nested`, `--cm-popover`, `--cm-ink`, `--cm-ink-muted`.
+- **Accents & Status:** `--cm-accent` (Oxford Emerald), `--cm-accent-soft` (`@mention` pills & reply banners), `--cm-danger` (Academic Crimson), `--cm-warning` (`Hidden`/`Locked` status pills).
+- **Thread Geometry & Compact Spacing:** `--cm-card-pad-y` (`0.625rem` / `0.75rem`), `--cm-card-pad-x` (`0.875rem` / `1rem`), `--cm-composer-pad` (`0.75rem`), `--cm-thread-indent` (`0.75rem` / `0.875rem` with `1.5px solid var(--cm-thread-line)`), `--cm-thread-gap` (`0.5rem`), and `--cm-touch-min` (`44px` mobile hit floor).
+- **Typography:** `--cm-text-body` (`0.875rem`), `--cm-text-body-nested` (`0.8125rem`), `--cm-text-body-mobile` (`1rem` in `<textarea>` to prevent iOS auto-zoom), `--cm-text-micro` (`0.6875rem`), `--cm-leading-body` (`1.5`), and `font-mono tabular-nums` on vote totals, reply counts, and `0/1000` composer gauges.

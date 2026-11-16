@@ -221,7 +221,7 @@ Derived from `--radius: 0.625rem` (`10px`) in `src/app/globals.css`, form geomet
 - **Compact Controls (`8px` / `rounded-md` & `rounded-lg`):** Standard buttons, `Input`, `Select`, `Textarea`, sidebar navigation links, and filter chip triggers (`8px–10px`).
 - **Containers & Overlays (`14px` / `rounded-xl`):** Feed cards, `Card` variants, `EmptyState` dashed panels (`border-dashed`), right contextual rails, `DialogContent`, and split-rail `ProblemCard` containers (`overflow-hidden`).
 - **Pills & Status (`9999px` / `rounded-full`):** `Badge`, `TagBadge`, `ContributorBadge`, user avatars, and `EmptyState` icon wells.
-- **Structural Accents:** Threaded comment hierarchies use a clean `2px` vertical guide rule (`border-l-2 border-border/70 pl-4`), and active mobile tabs mark selection with a `2px` top emerald indicator bar (`h-0.5 rounded-full bg-primary`).
+- **Structural Accents:** Threaded comment hierarchies are scoped inside `.comment-module-v2` (`src/components/features/comments/comment-module-v2.css`) with a `1.5px` vertical thread guide rail (`--cm-thread-line`), compact single-layer cards (`--cm-card-pad-y`/`x`), and footer-aligned overflow/staff controls (`.cm-footer-controls`). Active mobile tabs mark selection with a `2px` top emerald indicator bar (`h-0.5 rounded-full bg-primary`).
 
 ## Components
 
