@@ -4,7 +4,7 @@ import { API_BASE_URL } from "@/lib/constants";
 import AppLayout from "@/app/(app)/layout";
 import { AcademicHub } from "@/components/features/home/academic-hub";
 import { LandingPage } from "@/components/features/landing/landing-page";
-import type { Problem, Resource, Subject } from "@/types";
+import type { Lesson, Problem, Resource, Subject } from "@/types";
 
 function unwrapArray<T>(payload: unknown): T[] {
   if (Array.isArray(payload)) return payload as T[];
@@ -57,8 +57,9 @@ export default async function HomePage() {
     );
   }
 
-  const [initialProblems, initialPapers, initialSubjects] = await Promise.all([
+  const [initialProblems, initialLessons, initialPapers, initialSubjects] = await Promise.all([
     fetchPublicSnapshot<Problem>("/problems/?page_size=4&expand=subject_details,level_details"),
+    fetchPublicSnapshot<Lesson>("/lessons/?page_size=4"),
     fetchPublicSnapshot<Resource>("/resources/files/?resource_type=PAST_PAPER&page_size=4"),
     fetchPublicSnapshot<Subject>("/subjects/"),
   ]);
@@ -66,6 +67,7 @@ export default async function HomePage() {
   return (
     <LandingPage
       initialProblems={initialProblems}
+      initialLessons={initialLessons}
       initialPapers={initialPapers}
       initialSubjects={initialSubjects}
     />

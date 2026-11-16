@@ -123,7 +123,7 @@ components:
 
 **Creative North Star: "The Archival Study"**
 
-Hinthar Education E2E replaces heavy LMS chrome with quiet editorial clarity built for focused exam preparation and peer problem solving. Surfaces behave like well-organized archival stationery: warm ivory parchment (`--background`), crisp bright paper cards (`--card`), Oxford academic emerald ink (`--primary`), and high-contrast slate charcoal typography (`--foreground`), paired with a co-equal Deep Library Obsidian dark theme (`defaultTheme="dark"` in `src/app/layout.tsx`) calibrated for low-strain evening study.
+Hinthar Education E2E replaces heavy LMS chrome with quiet editorial clarity built for focused exam preparation and peer problem solving. Surfaces behave like well-organized archival stationery: warm ivory parchment (`--background`, `defaultTheme="light"` in `src/app/layout.tsx`), crisp bright paper cards (`--card`), Oxford academic emerald ink (`--primary`), and high-contrast slate charcoal typography (`--foreground`), paired with a co-equal Deep Library Obsidian dark theme calibrated for low-strain evening study.
 
 Every screen honors a deliberate separation between **Operate Mode** (wide `max-w-7xl` bento hubs, feeds, curriculum shelves, and contextual right rails) and **Read & Authoring Mode** (constrained `max-w-3xl` lesson articles, problem threads, and creation studios), alongside a zero-chrome fullscreen `Train!` practice workspace (`src/app/(workspace)/layout.tsx`). Detailed screen specifications and component APIs live alongside this file in [00_DESIGN_TOKENS.md](./docs/design_system/00_DESIGN_TOKENS.md), [01_COMPONENT_CATALOG.md](./docs/design_system/01_COMPONENT_CATALOG.md), [02_LAYOUT_AND_NAVIGATION.md](./docs/design_system/02_LAYOUT_AND_NAVIGATION.md), and [03_SCREEN_FLOWS_AND_PATTERNS.md](./docs/design_system/03_SCREEN_FLOWS_AND_PATTERNS.md).
 
@@ -159,7 +159,7 @@ The palette pairs warm stone-tinted paper neutrals with disciplined Oxford emera
 - **Cerulean Final (`cerulean-final` / `--chart-3`):** `FINAL` 48-hour consensus lock badges (`border-chart-3/40 bg-chart-3/10 text-chart-3`) and analytics series; paired with `--chart-1`..`--chart-5` for Recharts visualizations in Admin Studio.
 - **Contributor Tiers (`0–4` via `--tier-0..4` & `--tier-0-bg..4-bg`):** Neutral Slate Novice (`1×`), Amber Bronze Explorer (`2×`), Sky Silver Solver (`3×`, unlocks 7-slot eviction), Emerald Gold Master (`4×`), and **Scholar Royal Violet** (`scholar-royal-violet` / `--tier-4`, `5×`, paired with `.animate-scholar-shimmer`).
 
-### Dark Mode (`Deep Library Obsidian` — `.dark`, `defaultTheme="dark"`)
+### Dark Mode (`Deep Library Obsidian` — `.dark`)
 - **Canvas & Surfaces:** Deep slate-obsidian canvas (`oklch(0.155 0.008 250)`), recessed sidebar rail (`oklch(0.135 0.008 250)`), elevated slate cards (`oklch(0.205 0.01 250)`), popovers (`oklch(0.225 0.011 250)`), warm parchment ink (`oklch(0.955 0.006 85)`), and crisp `1px` borders (`oklch(0.285 0.01 250)`).
 - **Accents & Status:** Luminous emerald primary (`oklch(0.66 0.13 162)`), deep forest accent well (`oklch(0.265 0.025 162)`), crimson (`oklch(0.65 0.20 25)`), and luminous amber (`oklch(0.76 0.15 72)`).
 

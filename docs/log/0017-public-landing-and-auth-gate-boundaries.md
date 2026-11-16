@@ -2,9 +2,9 @@
 
 - **Date:** 2026-11-16
 - **Status:** Implemented & Verified (Frontend Build/HTTP Verified; Browser Visual QA & Backend Deploy Pending)
-- **Scope:** Public `/` Warm Archival Paper landing experience (`editorial-cover-sheet`), middleware/hook/UI access boundaries distinguishing public previews from `"Sign up / Log in to see more"` member actions across `Solve!`, `Forum`, `Lessons`, `Resources`, and `Train!`, plus design/product specification sync.
+- **Scope:** Public `/` Warm Archival Paper landing experience (`editorial-cover-sheet`), shared `next-themes` light-first default (`defaultTheme="light"` across landing and app shell), middleware/hook/UI access boundaries across `Solve!`, `Lessons`, `Exams & Resources` (`Train!`), and `Forum`, plus design/product specification sync.
 - **Target Files:**
-  - `src/app/page.tsx`, `src/app/globals.css`, `src/components/features/landing/landing-page.tsx`
+  - `src/app/layout.tsx`, `src/app/page.tsx`, `src/app/globals.css`, `src/components/features/landing/*`
   - `src/proxy.ts`, `src/app/providers.tsx`, `src/components/features/auth/auth-gate-modal.tsx`, `src/components/features/auth/gated-link.tsx`
   - `src/components/layout/app-sidebar.tsx`, `src/components/layout/app-top-bar.tsx`, `src/components/layout/mobile-nav.tsx`
   - `src/hooks/use-app-initialization.ts`, `src/hooks/use-comments.ts`, `src/hooks/use-lessons.ts`, `src/hooks/use-metadata.ts`, `src/hooks/use-posts.ts`, `src/hooks/use-problems.ts`
@@ -18,8 +18,8 @@
 ## Summary of Changes
 
 ### 1. Public Editorial Cover Sheet Landing Page (`/`)
-- **Auth-Split Root Route (`src/app/page.tsx`):** Server-side check renders `<AppLayout><AcademicHub /></AppLayout>` for signed-in users and fetches bounded public snapshots (`/problems/`, `/resources/files/`, `/subjects/` with a 2.5s `AbortSignal.timeout`) into `<LandingPage />` for unauthenticated visitors.
-- **Warm Archival Paper Opening Canvas (`src/app/globals.css`, `src/components/features/landing/landing-page.tsx`):** Scoped `.landing-archival-light` OKLCH surface tokens so `/` opens cleanly in Warm Archival Paper while supporting header toggling into Deep Library Obsidian dark mode. Includes `Newsreader` display typography, archive search (`/search?q=...`), subject quick links, an interactive 3-tab product tour (`Train! QP + MS`, `Solve! Consensus Pool`, `Lessons & Forum`) with live KaTeX (`MathRenderer`) and English/Myanmar (`မြန်မာစာ`) sample blocks, live archive previews, and an explicit Public vs. Member directory.
+- **Auth-Split Root Route (`src/app/page.tsx`):** Server-side check renders `<AppLayout><AcademicHub /></AppLayout>` for signed-in users and fetches bounded public snapshots (`/problems/`, `/lessons/`, `/resources/files/`, `/subjects/` with a 2.5s `AbortSignal.timeout`) into `<LandingPage />` for unauthenticated visitors.
+- **Unified Light-First Theme & Overscroll Fix (`src/app/layout.tsx`, `src/app/globals.css`, `src/components/features/landing/*`):** Set `defaultTheme="light"` globally in `ThemeProvider` and applied `bg-background text-foreground` onto `html, body` so Warm Archival Paper is the shared opening theme across `/` and the WebApp, `ThemeToggle` switches persist seamlessly between landing and app routes, and top/bottom overscroll shows zero mismatched blankspace. Modularized the landing page into `landing-header.tsx`, `landing-tour.tsx`, `landing-preview.tsx`, `landing-features.tsx`, and `landing-page.tsx` with `Newsreader` display typography, WebApp-aligned vocabulary (`Search`, `Browse Resources`, `Exams & Resources`), a `Solve!` + `Lessons`-first feature switcher with concise mock previews, live `Solve! Problems` and `Lessons` snapshots, and a clean `Features` directory (`Solve!`, `Lessons`, `Exams & Resources`, `Discussions`).
 
 ### 2. Route Middleware & Guest Shell Controls
 - **Clerk Route Matching (`src/proxy.ts`):** Opened `/`, `/problems(.*)`, `/resources(.*)`, `/train(.*)`, `/lessons`, `/forum(.*)`, `/posts(.*)`, and `/search(.*)` to public visitors while keeping authoring, edit, profile, personal collection, and `/lessons/(.+)` detail routes protected behind `auth.protect()`.
