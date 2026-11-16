@@ -374,7 +374,11 @@ export default function SolutionDetailPage({
       />
 
       {/* Discussion & 2-Level Comments Underneath the Solution */}
-      <SolutionComments solutionId={solution.id} initialCount={solution.comment_count ?? 0} />
+      <SolutionComments
+        solutionId={solution.id}
+        initialCount={solution.comment_count ?? 0}
+        isLocked={Boolean(solution.is_locked || problem?.is_locked)}
+      />
     </div>
   );
 }

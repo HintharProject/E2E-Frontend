@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useId, useState } from "react";
+import React, { createContext, useContext, useId, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   AlertTriangle,
@@ -24,11 +24,16 @@ import {
   UserPlus,
   X,
 } from "lucide-react";
-import { Comment } from "@/types";
+import { Comment, UserPublic } from "@/types";
 import { cn, formatDate } from "@/lib/utils";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { MathRenderer } from "@/components/ui/math-renderer";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+import {
+  CommentProfilePreviewUser,
+  CommentUserProfileDialog,
+} from "./comment-user-profile-dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -45,6 +50,76 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import "./comment-module-v2.css";
+
+const CommentHeadingContext = createContext<string | undefined>(undefined);
+const CommentProfileContext = createContext<((user: CommentProfilePreviewUser) => void) | null>(null);
+
+export type { CommentProfilePreviewUser };
+
+export function toProfilePreviewUser(
+  authorDetails?: Partial<UserPublic> | null,
+  fallbackId?: string | null
+): CommentProfilePreviewUser | null {
+  const id = authorDetails?.id || fallbackId;
+  if (!id) return null;
+  return {
+    id,
+    display_name: authorDetails?.display_name ?? null,
+    profile_image_url: authorDetails?.profile_image_url ?? null,
+    contributor_tier:
+      authorDetails?.contributor_tier ??
+      authorDetails?.reputation?.contributor_tier ??
+      null,
+    role: authorDetails?.role ?? null,
+  };
+}
+
+export function collectCommentParticipants(
+  comments: Comment[],
+  extraUsers: Array<CommentProfilePreviewUser | null | undefined> = []
+): CommentProfilePreviewUser[] {
+  const seen = new Map<string, CommentProfilePreviewUser>();
+  const addUser = (user: CommentProfilePreviewUser | null | undefined) => {
+    if (!user?.id) return;
+    const existing = seen.get(user.id);
+    if (!existing || (!existing.display_name && user.display_name)) {
+      seen.set(user.id, user);
+    }
+  };
+
+  for (const extra of extraUsers) {
+    addUser(extra);
+  }
+  for (const item of comments) {
+    addUser(toProfilePreviewUser(item.author_details, item.author));
+    if (Array.isArray(item.replies)) {
+      for (const reply of item.replies) {
+        addUser(toProfilePreviewUser(reply.author_details, reply.author));
+      }
+    }
+  }
+  return Array.from(seen.values());
+}
+
+function escapeMentionRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+const emptySubscribe = () => () => {};
+function getIsApplePlatform(): boolean {
+  if (typeof navigator === "undefined") return false;
+  return /Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent);
+}
+
+function safeFormatDate(iso?: string | null): string {
+  if (!iso || Number.isNaN(Date.parse(iso))) return "Recently";
+  return formatDate(iso);
+}
+
+function safeFormatDateTime(iso?: string | null): string | undefined {
+  if (!iso || Number.isNaN(Date.parse(iso))) return undefined;
+  return new Date(iso).toLocaleString();
+}
 
 export function getCommentInitials(name?: string | null): string {
   if (!name) return "?";
@@ -65,18 +140,93 @@ export function isCommentEdited(createdAt?: string, updatedAt?: string): boolean
   return updatedMs - createdMs > 5000;
 }
 
-export function renderCommentBodyWithMentions(text: string): React.ReactNode {
-  const parts = text.split(/(@\w[\w\s]{0,24}?\b(?=\s|$)|\s+)/g);
-  return parts.map((part, idx) => {
-    if (part.startsWith("@")) {
-      return (
-        <span key={idx} className="cm-mention">
-          {part}
+export function renderCommentBodyWithMentions(
+  text: string,
+  options?: {
+    mentionUsers?: CommentProfilePreviewUser[];
+    onMentionClick?: (user: CommentProfilePreviewUser) => void;
+  }
+): React.ReactNode {
+  const userByLowerName = new Map<string, CommentProfilePreviewUser>();
+  for (const user of options?.mentionUsers ?? []) {
+    const trimmed = user.display_name?.trim();
+    if (trimmed && !userByLowerName.has(trimmed.toLowerCase())) {
+      userByLowerName.set(trimmed.toLowerCase(), user);
+    }
+  }
+
+  const knownNames = Array.from(userByLowerName.values())
+    .map((u) => u.display_name!.trim())
+    .sort((a, b) => b.length - a.length);
+
+  const nameAlternation =
+    knownNames.length > 0
+      ? `(?:${knownNames.map(escapeMentionRegex).join("|")}|[A-Za-z0-9_.-]+)`
+      : "[A-Za-z0-9_.-]+";
+
+  const mentionRegex = new RegExp(
+    `(^|[\\s(\\[\\"'“‘])(@(${nameAlternation}))(?=[ \\t\\r\\n.,!?;:)\\]\\"'”’]|$)`,
+    "gi"
+  );
+
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  let keyIdx = 0;
+
+  while ((match = mentionRegex.exec(text)) !== null) {
+    const prefix = match[1];
+    const fullMention = match[2];
+    const matchedName = match[3];
+    const matchStart = match.index;
+
+    if (matchStart > lastIndex) {
+      nodes.push(
+        <React.Fragment key={`t-${keyIdx++}`}>
+          {text.slice(lastIndex, matchStart)}
+        </React.Fragment>
+      );
+    }
+
+    if (prefix) {
+      nodes.push(
+        <React.Fragment key={`p-${keyIdx++}`}>{prefix}</React.Fragment>
+      );
+    }
+
+    const resolvedUser = userByLowerName.get(matchedName.toLowerCase());
+    if (resolvedUser?.id && options?.onMentionClick) {
+      const displayLabel = resolvedUser.display_name || matchedName;
+      nodes.push(
+        <button
+          key={`m-${keyIdx++}`}
+          type="button"
+          className="cm-mention cm-mention-btn"
+          onClick={() => options.onMentionClick?.(resolvedUser)}
+          aria-label={`View profile for ${displayLabel}`}
+          title={`View ${displayLabel}'s profile`}
+        >
+          {fullMention}
+        </button>
+      );
+    } else {
+      nodes.push(
+        <span key={`m-${keyIdx++}`} className="cm-mention">
+          {fullMention}
         </span>
       );
     }
-    return <React.Fragment key={idx}>{part}</React.Fragment>;
-  });
+
+    lastIndex = matchStart + match[0].length;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(
+      <React.Fragment key={`t-${keyIdx++}`}>{text.slice(lastIndex)}</React.Fragment>
+    );
+  }
+
+  return nodes.length > 0 ? nodes : text;
 }
 
 export function CommentModuleRoot({
@@ -86,13 +236,41 @@ export function CommentModuleRoot({
   children: React.ReactNode;
   className?: string;
 }) {
+  const headingId = useId();
+  const { requireAuth } = useAuthGate();
+  const [selectedUser, setSelectedUser] = useState<CommentProfilePreviewUser | null>(null);
+  const [profileOpen, setProfileOpen] = useState(false);
+
+  const openUserProfile = (user: CommentProfilePreviewUser) => {
+    if (!user?.id) return;
+    if (
+      !requireAuth(undefined, {
+        actionLabel: "view contributor profiles",
+        redirectUrl: `/users/${user.id}`,
+      })
+    ) {
+      return;
+    }
+    setSelectedUser(user);
+    setProfileOpen(true);
+  };
+
   return (
-    <section
-      aria-label="Comments"
-      className={cn("comment-module-v2 mt-6", className)}
-    >
-      <div className="cm-root">{children}</div>
-    </section>
+    <CommentHeadingContext.Provider value={headingId}>
+      <CommentProfileContext.Provider value={openUserProfile}>
+        <section
+          aria-labelledby={headingId}
+          className={cn("comment-module-v2 mt-6", className)}
+        >
+          <div className="cm-root">{children}</div>
+          <CommentUserProfileDialog
+            user={selectedUser}
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+          />
+        </section>
+      </CommentProfileContext.Provider>
+    </CommentHeadingContext.Provider>
   );
 }
 
@@ -103,12 +281,15 @@ export function CommentSectionHeader({
   count: number;
   sortSlot: React.ReactNode;
 }) {
+  const headingId = useContext(CommentHeadingContext);
   return (
     <div className="cm-header">
       <div className="cm-header-title-group">
         <MessageSquare className="cm-header-icon size-[18px]" aria-hidden="true" />
-        <h2 className="cm-header-title">Comments</h2>
-        <span className="cm-count-pill" aria-live="polite">
+        <h2 id={headingId} className="cm-header-title">
+          Comments
+        </h2>
+        <span className="cm-count-pill" aria-live="polite" aria-label={`${count} ${count === 1 ? "comment" : "comments"}`}>
           {count}
         </span>
       </div>
@@ -166,7 +347,21 @@ export function CommentComposerShell({
   label = "Write a comment",
 }: CommentComposerShellProps) {
   const inputId = useId();
+  const hintId = useId();
   const [isPreview, setIsPreview] = useState(false);
+  const localTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const isComposingRef = useRef(false);
+  const compositionEndAtRef = useRef(0);
+  const isApple = useSyncExternalStore(emptySubscribe, getIsApplePlatform, () => false);
+
+  const effectivePreview = isPreview && Boolean(value.trim());
+
+  const setMergedTextareaRef = (node: HTMLTextAreaElement | null) => {
+    localTextareaRef.current = node;
+    if (textareaRef) {
+      textareaRef.current = node;
+    }
+  };
 
   const charCount = value.length;
   const charState =
@@ -177,36 +372,69 @@ export function CommentComposerShell({
         : "normal";
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
-    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+    const isImeActive =
+      e.nativeEvent.isComposing ||
+      e.keyCode === 229 ||
+      isComposingRef.current ||
+      Date.now() - compositionEndAtRef.current < 80;
+    if (isImeActive) return;
+
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key === "Enter") {
       e.preventDefault();
-      if (!submitDisabled && !isSubmitting) {
+      if (!submitDisabled && !isSubmitting && !textareaDisabled) {
         e.currentTarget.form?.requestSubmit();
       }
+      return;
     }
+
     if (e.key === "Escape" && onCancel && !isSubmitting) {
       e.preventDefault();
       onCancel();
     }
   };
 
+  const handleFormSubmit = (e: React.FormEvent) => {
+    setIsPreview(false);
+    onSubmit(e);
+  };
+
   const handleInsertMath = () => {
     if (textareaDisabled || isSubmitting) return;
-    const next = value.length > 0 && !value.endsWith(" ") ? `${value} $ $` : `${value}$ $`;
+    setIsPreview(false);
+    const el = localTextareaRef.current;
+    const start = el?.selectionStart ?? value.length;
+    const end = el?.selectionEnd ?? value.length;
+    const before = value.slice(0, start);
+    const selected = value.slice(start, end);
+    const after = value.slice(end);
+    const needsLeadingSpace = before.length > 0 && !/\s$/.test(before);
+    const snippet = selected ? `$${selected}$` : "$ $";
+    const insertion = `${needsLeadingSpace ? " " : ""}${snippet}`;
+    const next = `${before}${insertion}${after}`;
+
     if (next.length <= maxLength) {
       onChange(next);
+      const cursorTarget =
+        before.length + (needsLeadingSpace ? 1 : 0) + (selected ? snippet.length : 1);
+      requestAnimationFrame(() => {
+        const targetEl = localTextareaRef.current;
+        if (targetEl) {
+          targetEl.focus();
+          targetEl.setSelectionRange(cursorTarget, cursorTarget);
+        }
+      });
     }
   };
 
   return (
     <form
-      onSubmit={onSubmit}
+      onSubmit={handleFormSubmit}
       className="cm-composer"
       data-compact={compact ? "true" : "false"}
     >
       {replyTarget && (
         <div className="cm-reply-banner" role="status">
-          <span>
+          <span className="cm-reply-banner-text">
             Replying to <strong>@{replyTarget.authorName}</strong>
           </span>
           {onCancelReply && (
@@ -227,8 +455,8 @@ export function CommentComposerShell({
         <div className="cm-composer-meta">
           <div className="cm-composer-identity">
             <Avatar size="sm" className="size-5">
-              {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-              <AvatarFallback style={{ fontSize: "var(--cm-text-micro)" }}>
+              {author.profile_image_url && <AvatarImage src={author.profile_image_url} alt="" />}
+              <AvatarFallback className="cm-avatar-fallback-sm">
                 {getCommentInitials(author.display_name)}
               </AvatarFallback>
             </Avatar>
@@ -242,15 +470,22 @@ export function CommentComposerShell({
       <label htmlFor={inputId} className="sr-only">
         {label}
       </label>
+      <span id={hintId} className="sr-only">
+        Press Control plus Enter or Command plus Enter to submit. Press Enter or Shift plus Enter for a new line.
+      </span>
 
-      {isPreview && value.trim() ? (
-        <div className="cm-textarea" style={{ minHeight: compact ? "54px" : "64px", overflowY: "auto" }}>
+      {effectivePreview ? (
+        <div
+          role="region"
+          aria-label="Formatted comment preview"
+          className="cm-preview-box"
+        >
           <MathRenderer content={value} />
         </div>
       ) : (
         <textarea
           id={inputId}
-          ref={textareaRef}
+          ref={setMergedTextareaRef}
           className="cm-textarea"
           maxLength={maxLength}
           placeholder={placeholder}
@@ -258,7 +493,16 @@ export function CommentComposerShell({
           disabled={textareaDisabled}
           readOnly={isSubmitting}
           autoFocus={autoFocus}
+          aria-keyshortcuts="Control+Enter Meta+Enter"
+          aria-describedby={hintId}
           onFocus={onFocus}
+          onCompositionStart={() => {
+            isComposingRef.current = true;
+          }}
+          onCompositionEnd={() => {
+            isComposingRef.current = false;
+            compositionEndAtRef.current = Date.now();
+          }}
           onKeyDown={handleKeyDown}
           onChange={(e) => onChange(e.target.value)}
         />
@@ -273,6 +517,7 @@ export function CommentComposerShell({
             data-size="xs"
             onClick={handleInsertMath}
             disabled={textareaDisabled || isSubmitting}
+            aria-label="Insert inline LaTeX math"
             title="Insert inline LaTeX math ($...$)"
           >
             <Sigma className="size-3.5" aria-hidden="true" />
@@ -286,9 +531,10 @@ export function CommentComposerShell({
             data-size="xs"
             onClick={() => setIsPreview((p) => !p)}
             disabled={!value.trim()}
-            aria-pressed={isPreview}
+            aria-pressed={effectivePreview}
+            aria-label={effectivePreview ? "Switch back to write mode" : "Preview formatted math"}
           >
-            {isPreview ? (
+            {effectivePreview ? (
               <>
                 <PenLine className="size-3.5" aria-hidden="true" />
                 <span>Write</span>
@@ -308,7 +554,7 @@ export function CommentComposerShell({
 
         <div className="cm-composer-actions">
           <span className="cm-kbd-hint" aria-hidden="true">
-            Ctrl+Enter
+            {isApple ? "⌘+Enter" : "Ctrl+Enter"}
           </span>
           {onCancel && (
             <button
@@ -341,9 +587,14 @@ export function CommentComposerShell({
 export interface CommentItemShellProps {
   comment: Comment;
   variant?: "top-level" | "nested";
+  depth?: number;
+  replyingToName?: string | null;
+  repliesRegionId?: string;
+  isThreadLocked?: boolean;
   isAuthor: boolean;
   canEdit?: boolean;
   renderMentions?: boolean;
+  mentionUsers?: CommentProfilePreviewUser[];
   isEditing: boolean;
   editBody: string;
   onEditBodyChange: (value: string) => void;
@@ -375,9 +626,14 @@ export interface CommentItemShellProps {
 export function CommentItemShell({
   comment,
   variant = "top-level",
+  depth = 0,
+  replyingToName,
+  repliesRegionId,
+  isThreadLocked = false,
   isAuthor,
   canEdit = true,
   renderMentions = false,
+  mentionUsers,
   isEditing,
   editBody,
   onEditBodyChange,
@@ -405,34 +661,138 @@ export function CommentItemShell({
   onToggleReplies,
   staffMenuSlot,
 }: CommentItemShellProps) {
+  const openUserProfile = useContext(CommentProfileContext);
   const author = comment.author_details;
   const authorName = author?.display_name || "Unknown";
   const authorTier =
     author?.contributor_tier ?? (author as { reputation?: { contributor_tier?: number } } | undefined)?.reputation?.contributor_tier ?? 0;
+  const authorProfile = toProfilePreviewUser(author, comment.author);
+  const resolvedMentionUsers = collectCommentParticipants([comment], [
+    ...(mentionUsers ?? []),
+    authorProfile,
+  ]);
   const edited = isCommentEdited(comment.created_at, comment.updated_at);
-  const showOverflowMenu = isAuthor || Boolean(onShare) || Boolean(onReport);
+  const isDeleted = Boolean(comment.is_deleted);
+  const isLocked = Boolean(comment.is_locked || isThreadLocked);
+  const effectiveCanEdit = canEdit && !isLocked && !isDeleted;
+  const showOverflowMenu =
+    !isDeleted && (isAuthor || Boolean(onShare) || Boolean(onReport));
+  const createdDisplay = safeFormatDate(comment.created_at);
+  const createdTitle = safeFormatDateTime(comment.created_at);
+  const updatedTitle = safeFormatDateTime(comment.updated_at);
+  const showThreadContext = Boolean(replyingToName) && depth >= 2;
+
+  if (isDeleted) {
+    return (
+      <article
+        id={`comment-${comment.id}`}
+        className="cm-card"
+        data-variant={variant}
+        data-state="deleted"
+        aria-label={variant === "nested" ? "Deleted reply" : "Deleted comment"}
+      >
+        <header className="cm-card-header">
+          <div className="cm-author-row">
+            <div className="cm-author-meta">
+              <span className="cm-author-name cm-deleted-label">
+                {variant === "nested" ? "[deleted reply]" : "[deleted comment]"}
+              </span>
+              <span className="cm-meta-dot" aria-hidden="true">
+                ·
+              </span>
+              <time
+                dateTime={comment.created_at}
+                title={createdTitle}
+                className="cm-timestamp"
+              >
+                {createdDisplay}
+              </time>
+            </div>
+          </div>
+        </header>
+
+        <p className="cm-body cm-body-deleted">
+          {variant === "nested" ? "This reply has been deleted." : "This comment has been deleted."}
+        </p>
+
+        {((replyCount > 0 && onToggleReplies) || staffMenuSlot) && (
+          <footer className="cm-actions">
+            {replyCount > 0 && onToggleReplies && (
+              <button
+                type="button"
+                className="cm-action-btn"
+                data-accent="true"
+                aria-expanded={isRepliesExpanded}
+                aria-controls={repliesRegionId}
+                onClick={onToggleReplies}
+              >
+                {isRepliesExpanded ? (
+                  <>
+                    <ChevronUp className="size-3.5" aria-hidden="true" />
+                    <span>Hide replies</span>
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="size-3.5" aria-hidden="true" />
+                    <span>
+                      View {replyCount} {replyCount === 1 ? "reply" : "replies"}
+                    </span>
+                  </>
+                )}
+              </button>
+            )}
+            {staffMenuSlot && (
+              <div className="cm-footer-controls">{staffMenuSlot}</div>
+            )}
+          </footer>
+        )}
+      </article>
+    );
+  }
 
   return (
     <article
       id={`comment-${comment.id}`}
       className="cm-card"
       data-variant={variant}
+      aria-label={`${variant === "nested" ? "Reply" : "Comment"} by ${authorName}, ${createdDisplay}`}
     >
-      {/* Header: Author Metadata, Standing, Timestamp, Edited & Overflow */}
+      {/* Header: Author Metadata, Standing, Timestamp, Edited & Status */}
       <header className="cm-card-header">
         <div className="cm-author-row">
-          <Avatar size="sm" className={variant === "nested" ? "size-5" : "size-6"}>
-            {author?.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-            <AvatarFallback
-              style={variant === "nested" ? { fontSize: "var(--cm-text-micro)" } : undefined}
+          {authorProfile && openUserProfile ? (
+            <button
+              type="button"
+              className="cm-author-trigger"
+              onClick={() => openUserProfile(authorProfile)}
+              aria-label={`View profile for ${authorName}`}
+              title={`View ${authorName}'s profile`}
             >
-              {getCommentInitials(authorName)}
-            </AvatarFallback>
-          </Avatar>
+              <Avatar size="sm" className={variant === "nested" ? "size-5" : "size-6"}>
+                {author?.profile_image_url && <AvatarImage src={author.profile_image_url} alt="" />}
+                <AvatarFallback
+                  className={variant === "nested" ? "cm-avatar-fallback-sm" : undefined}
+                >
+                  {getCommentInitials(authorName)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="cm-author-name">{authorName}</span>
+            </button>
+          ) : (
+            <>
+              <Avatar size="sm" className={variant === "nested" ? "size-5" : "size-6"}>
+                {author?.profile_image_url && <AvatarImage src={author.profile_image_url} alt="" />}
+                <AvatarFallback
+                  className={variant === "nested" ? "cm-avatar-fallback-sm" : undefined}
+                >
+                  {getCommentInitials(authorName)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="cm-author-name">{authorName}</span>
+            </>
+          )}
 
           <div className="cm-author-meta">
-            <span className="cm-author-name">{authorName}</span>
-
             {author && <ContributorBadge tier={authorTier} size="sm" />}
 
             {comment.is_hidden && (
@@ -455,16 +815,16 @@ export function CommentItemShell({
 
             <time
               dateTime={comment.created_at}
-              title={new Date(comment.created_at).toLocaleString()}
+              title={createdTitle}
               className="cm-timestamp"
             >
-              {formatDate(comment.created_at)}
+              {createdDisplay}
             </time>
 
             {edited && (
               <span
                 className="cm-badge-edited"
-                title={`Edited ${new Date(comment.updated_at).toLocaleString()}`}
+                title={updatedTitle ? `Edited ${updatedTitle}` : "Edited"}
               >
                 (edited)
               </span>
@@ -473,12 +833,22 @@ export function CommentItemShell({
         </div>
       </header>
 
+      {showThreadContext && (
+        <div
+          className="cm-thread-context"
+          data-mobile-only={depth < 4 ? "true" : "false"}
+        >
+          <CornerDownRight className="size-3 shrink-0" aria-hidden="true" />
+          <span>Replying to @{replyingToName}</span>
+        </div>
+      )}
+
       {/* Body or Inline Edit Form */}
       {isEditing ? (
         <CommentComposerShell
           compact
           autoFocus
-          label="Edit comment"
+          label={`Edit comment by ${authorName}`}
           placeholder="Update your comment..."
           value={editBody}
           onChange={onEditBodyChange}
@@ -492,7 +862,12 @@ export function CommentItemShell({
         />
       ) : (
         <div className="cm-body">
-          {renderMentions ? renderCommentBodyWithMentions(comment.body) : comment.body}
+          {renderMentions
+            ? renderCommentBodyWithMentions(comment.body, {
+                mentionUsers: resolvedMentionUsers,
+                onMentionClick: openUserProfile ?? undefined,
+              })
+            : comment.body}
         </div>
       )}
 
@@ -500,21 +875,28 @@ export function CommentItemShell({
       {!isEditing && (
         <footer className="cm-actions">
           {typeof localVoteCount === "number" && onUpvote && onDownvote && (
-            <div className="cm-vote-pill" role="group" aria-label="Comment votes">
+            <div className="cm-vote-pill" role="group" aria-label={`Votes for comment by ${authorName}`}>
               <button
                 type="button"
                 className="cm-vote-btn"
                 data-active={localUserVote === 1 ? "up" : undefined}
                 onClick={onUpvote}
                 disabled={isVotePending || isAuthor}
-                aria-label={isAuthor ? "You cannot vote on your own comment" : "Upvote comment"}
+                aria-label={
+                  isAuthor
+                    ? "You cannot vote on your own comment"
+                    : localUserVote === 1
+                      ? `Remove upvote from comment by ${authorName}`
+                      : `Upvote comment by ${authorName}`
+                }
                 aria-pressed={localUserVote === 1}
                 title={isAuthor ? "You cannot vote on your own comment" : "Upvote"}
               >
                 <ChevronUp className="size-4" aria-hidden="true" />
               </button>
 
-              <span className="cm-vote-score" aria-label={`Score ${localVoteCount}`}>
+              <span className="cm-vote-score">
+                <span className="sr-only">Score: </span>
                 {localVoteCount}
               </span>
 
@@ -524,7 +906,13 @@ export function CommentItemShell({
                 data-active={localUserVote === -1 ? "down" : undefined}
                 onClick={onDownvote}
                 disabled={isVotePending || isAuthor}
-                aria-label={isAuthor ? "You cannot vote on your own comment" : "Downvote comment"}
+                aria-label={
+                  isAuthor
+                    ? "You cannot vote on your own comment"
+                    : localUserVote === -1
+                      ? `Remove downvote from comment by ${authorName}`
+                      : `Downvote comment by ${authorName}`
+                }
                 aria-pressed={localUserVote === -1}
                 title={isAuthor ? "You cannot vote on your own comment" : "Downvote"}
               >
@@ -533,15 +921,25 @@ export function CommentItemShell({
             </div>
           )}
 
-          {onReply && (
-            <button type="button" className="cm-action-btn" onClick={onReply}>
+          {onReply && !isLocked && (
+            <button
+              type="button"
+              className="cm-action-btn"
+              onClick={onReply}
+              aria-label={`Reply to ${authorName}`}
+            >
               <CornerDownRight className="size-3.5" aria-hidden="true" />
               <span>Reply</span>
             </button>
           )}
 
           {onShare && (
-            <button type="button" className="cm-action-btn" onClick={onShare}>
+            <button
+              type="button"
+              className="cm-action-btn"
+              onClick={onShare}
+              aria-label={`Copy link to comment by ${authorName}`}
+            >
               <Share2 className="size-3.5" aria-hidden="true" />
               <span>Share</span>
             </button>
@@ -553,6 +951,7 @@ export function CommentItemShell({
               className="cm-action-btn"
               data-accent="true"
               aria-expanded={isRepliesExpanded}
+              aria-controls={repliesRegionId}
               onClick={onToggleReplies}
             >
               {isRepliesExpanded ? (
@@ -595,7 +994,7 @@ export function CommentItemShell({
                   >
                     {isAuthor && (
                       <>
-                        {canEdit && (
+                        {effectiveCanEdit && (
                           <DropdownMenuItem onClick={onEditStart} className="gap-2 cursor-pointer">
                             <Edit2 className="size-3.5" aria-hidden="true" />
                             <span>Edit comment</span>
@@ -679,15 +1078,41 @@ export function CommentItemShell({
 }
 
 export function CommentThreadRail({
+  id,
   children,
   clamped = false,
+  depth = 0,
+  ariaLabel = "Replies",
 }: {
+  id?: string;
   children: React.ReactNode;
   clamped?: boolean;
+  depth?: number;
+  ariaLabel?: string;
 }) {
   return (
-    <div className="cm-thread-rail" data-clamped={clamped ? "true" : "false"}>
+    <div
+      id={id}
+      role="list"
+      aria-label={ariaLabel}
+      className="cm-thread-rail"
+      data-mobile-clamped={depth >= 2 ? "true" : "false"}
+      data-clamped={clamped ? "true" : "false"}
+    >
       {children}
+    </div>
+  );
+}
+
+export function CommentLockedBanner({
+  message = "This discussion has been locked by moderation. New comments and replies are disabled.",
+}: {
+  message?: string;
+}) {
+  return (
+    <div className="cm-locked-banner" role="status">
+      <Lock className="size-4 shrink-0" aria-hidden="true" />
+      <span>{message}</span>
     </div>
   );
 }
@@ -779,28 +1204,32 @@ export function CommentErrorState({
 export function CommentGuestGate({
   hiddenCommentCount,
   encodedRedirect,
+  title = "Showing top 3 public comments",
+  description,
 }: {
   hiddenCommentCount: number;
   encodedRedirect: string;
+  title?: string;
+  description?: string;
 }) {
+  const resolvedDescription =
+    description ??
+    (hiddenCommentCount > 0
+      ? `${hiddenCommentCount} more ${hiddenCommentCount === 1 ? "comment" : "comments"} and nested replies are available after signing in.`
+      : "More comments and nested replies are available after signing in.");
+
   return (
     <div className="cm-guest-gate">
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 min-w-0">
         <div className="cm-guest-icon" aria-hidden="true">
           <Lock className="size-4" />
         </div>
-        <div className="space-y-1">
-          <p className="text-sm font-semibold" style={{ color: "var(--cm-ink)" }}>
-            Showing top 3 public comments
-          </p>
-          <p className="text-xs leading-relaxed" style={{ color: "var(--cm-ink-muted)" }}>
-            {hiddenCommentCount > 0
-              ? `${hiddenCommentCount} more ${hiddenCommentCount === 1 ? "comment" : "comments"} and nested replies are available after signing in.`
-              : "More comments and nested replies are available after signing in."}
-          </p>
+        <div className="cm-guest-body">
+          <p className="cm-guest-title">{title}</p>
+          <p className="cm-guest-desc">{resolvedDescription}</p>
         </div>
       </div>
-      <div className="flex items-center gap-2 shrink-0">
+      <div className="cm-guest-actions">
         <Link
           href={`/sign-up?redirect_url=${encodedRedirect}`}
           className="cm-btn"

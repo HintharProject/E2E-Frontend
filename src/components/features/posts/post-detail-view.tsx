@@ -175,7 +175,11 @@ export function PostDetailView({ postId }: { postId: string }) {
         interactions={<PostInteractions post={post} />}
       />
 
-      <PostComments postId={post.id} initialCount={post.comment_count ?? 0} />
+      <PostComments
+        postId={post.id}
+        initialCount={post.comment_count ?? 0}
+        isLocked={Boolean(post.is_locked)}
+      />
     </div>
   );
 }

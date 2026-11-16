@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useId, useState } from "react";
 import { Loader2 } from "lucide-react";
 import {
   useReplies,
@@ -8,7 +8,7 @@ import {
   useUpdateComment,
   useDeleteComment,
 } from "@/hooks/use-comments";
-import { useVoteComment } from "@/hooks/use-interactions";
+import { useReport, useVoteComment } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useCommentSort } from "./comment-sort-context";
 import { isContentAuthor } from "@/types/user";
@@ -17,9 +17,11 @@ import { toast } from "sonner";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import {
+  collectCommentParticipants,
   CommentComposerShell,
   CommentErrorState,
   CommentItemShell,
+  CommentProfilePreviewUser,
   CommentReplySkeleton,
   CommentThreadRail,
 } from "./comment-primitives";
@@ -30,14 +32,21 @@ export function ThreadedComment({
   comment,
   postId,
   depth = 0,
+  parentAuthorName = null,
+  mentionUsers,
+  isThreadLocked = false,
 }: {
   comment: Comment;
   postId: string;
   depth?: number;
+  parentAuthorName?: string | null;
+  mentionUsers?: CommentProfilePreviewUser[];
+  isThreadLocked?: boolean;
 }) {
   const { user: currentUser } = useCurrentUser();
   const { requireAuth } = useAuthGate();
   const isAuthor = isContentAuthor(currentUser, comment.author_details, comment.author);
+  const repliesRegionId = useId();
 
   const [showReplyForm, setShowReplyForm] = useState(false);
   const hasReplies = Boolean(comment.reply_count && comment.reply_count > 0);
@@ -48,17 +57,28 @@ export function ThreadedComment({
   const [editBody, setEditBody] = useState(comment.body);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const [localVoteCount, setLocalVoteCount] = useState(comment.vote_count ?? 0);
-  const [localUserVote, setLocalUserVote] = useState(comment.user_vote ?? 0);
+  const serverVoteCount = comment.vote_count ?? 0;
+  const serverUserVote = comment.user_vote ?? 0;
+  const [voteOverride, setVoteOverride] = useState<{
+    baseCount: number;
+    baseVote: number;
+    count: number;
+    vote: number;
+  } | null>(null);
 
-  useEffect(() => {
-    setLocalVoteCount(comment.vote_count ?? 0);
-    setLocalUserVote(comment.user_vote ?? 0);
-  }, [comment.vote_count, comment.user_vote]);
+  const isOverrideCurrent =
+    voteOverride !== null &&
+    voteOverride.baseCount === serverVoteCount &&
+    voteOverride.baseVote === serverUserVote;
+  const localVoteCount = isOverrideCurrent ? voteOverride.count : serverVoteCount;
+  const localUserVote = isOverrideCurrent ? voteOverride.vote : serverUserVote;
 
   const author = comment.author_details;
+  const authorName = author?.display_name || "User";
   const preloadedReplies = comment.replies;
-  const isPreloaded = Array.isArray(preloadedReplies);
+  const isPreloaded =
+    Array.isArray(preloadedReplies) &&
+    (preloadedReplies.length > 0 || (comment.reply_count ?? 0) === 0);
 
   const { sort: commentSort } = useCommentSort();
   const {
@@ -71,74 +91,111 @@ export function ThreadedComment({
     refetch: refetchReplies,
   } = useReplies(
     comment.id,
-    hasReplies && !isPreloaded && Boolean(currentUser),
+    showReplies && hasReplies && !isPreloaded && Boolean(currentUser),
     commentSort
   );
   const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();
   const voteMutation = useVoteComment();
+  const reportMutation = useReport();
 
-  const handleReplySubmit = (e: React.FormEvent) => {
+  const isCommentUnavailable = Boolean(comment.is_deleted || comment.is_locked || isThreadLocked);
+  const effectiveEditing = isEditing && !isCommentUnavailable;
+  const effectiveReplying = showReplyForm && !effectiveEditing && !isCommentUnavailable;
+
+  const handleReplySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!replyBody.trim()) return;
+    if (!replyBody.trim() || createComment.isPending) return;
+    if (!requireAuth(undefined, { actionLabel: "reply to this comment" })) return;
 
-    const currentBody = replyBody;
-    setReplyBody("");
-    setShowReplyForm(false);
-    setShowReplies(true);
+    const promise = createComment.mutateAsync({
+      body: replyBody,
+      parentId: comment.id,
+      postId,
+    });
+    toast.promise(promise, {
+      loading: "Posting reply...",
+      success: "Reply posted.",
+      error: "Failed to post reply.",
+    });
 
-    toast.promise(
-      createComment.mutateAsync({ body: currentBody, parentId: comment.id, postId }),
-      {
-        loading: "Posting reply...",
-        success: "Reply posted.",
-        error: () => {
-          setReplyBody(currentBody);
-          setShowReplyForm(true);
-          return "Failed to post reply.";
-        },
-      }
-    );
+    try {
+      await promise;
+      setReplyBody("");
+      setShowReplyForm(false);
+      setShowReplies(true);
+    } catch {
+      // Keep replyBody and open form so user can retry without losing text
+    }
   };
 
-  const handleEditSubmit = (e: React.FormEvent) => {
+  const handleEditSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editBody.trim()) return;
+    if (!editBody.trim() || updateComment.isPending) return;
 
-    const currentBody = editBody;
-    setIsEditing(false);
+    const promise = updateComment.mutateAsync({
+      commentId: comment.id,
+      body: editBody,
+    });
+    toast.promise(promise, {
+      loading: "Updating comment...",
+      success: "Comment updated.",
+      error: "Failed to update comment.",
+    });
 
-    toast.promise(
-      updateComment.mutateAsync({ commentId: comment.id, body: currentBody }),
-      {
-        loading: "Updating comment...",
-        success: "Comment updated.",
-        error: () => {
-          setEditBody(currentBody);
-          setIsEditing(true);
-          return "Failed to update comment.";
-        },
-      }
-    );
+    try {
+      await promise;
+      setIsEditing(false);
+    } catch {
+      // Keep edit form open with user's draft intact
+    }
   };
 
-  const handleDelete = () => {
-    setShowDeleteDialog(false);
-    toast.promise(deleteComment.mutateAsync(comment.id), {
+  const handleDelete = async () => {
+    if (deleteComment.isPending) return;
+    const promise = deleteComment.mutateAsync(comment.id);
+    toast.promise(promise, {
       loading: "Deleting comment...",
       success: "Comment deleted.",
       error: "Failed to delete comment.",
     });
+
+    try {
+      await promise;
+      setShowDeleteDialog(false);
+    } catch {
+      // Keep confirmation dialog open so user can retry or cancel
+    }
   };
 
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleShare = async () => {
+    try {
+      const shareUrl = `${window.location.origin}${window.location.pathname}#comment-${comment.id}`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Link copied to clipboard!");
+    } catch {
+      toast.error("Could not copy link to clipboard.");
+    }
+  };
 
-  useEffect(() => {
-    return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+  const handleReport = async () => {
+    if (!requireAuth(undefined, { actionLabel: "report comments" })) return;
+    const promise = reportMutation.mutateAsync({
+      targetId: comment.id,
+      targetType: "COMMENT",
+    });
+    toast.promise(promise, {
+      loading: "Submitting report...",
+      success: "Comment reported to moderators.",
+      error: "Failed to report. You may have already reported this comment.",
+    });
+    try {
+      await promise;
+    } catch {
+      // Error surfaced via toast.promise
+    }
+  };
 
   const userWeight =
     currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1;
@@ -152,31 +209,49 @@ export function ThreadedComment({
       toast.info("You cannot vote on your own comment.");
       return;
     }
-    if (localUserVote === value) return;
-    const diff = (value - localUserVote) * userWeight;
-    setLocalUserVote(value);
-    setLocalVoteCount((prev) => prev + diff);
+    if (comment.is_deleted || voteMutation.isPending || localUserVote === value) return;
 
-    if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      voteMutation.mutate({ commentId: comment.id, value });
-    }, 1000);
+    const diff = (value - localUserVote) * userWeight;
+    setVoteOverride({
+      baseCount: serverVoteCount,
+      baseVote: serverUserVote,
+      count: localVoteCount + diff,
+      vote: value,
+    });
+
+    voteMutation.mutate(
+      { commentId: comment.id, value },
+      {
+        onError: () => {
+          setVoteOverride(null);
+          toast.error("Failed to update vote.");
+        },
+      }
+    );
   };
 
   const replies = isPreloaded
     ? preloadedReplies
     : (data?.pages.flatMap((p) => p.data) ?? []);
+  const threadMentionUsers = collectCommentParticipants([comment, ...replies], mentionUsers);
 
   return (
     <div className="cm-item-wrap">
       <CommentItemShell
         comment={comment}
         variant={depth > 0 ? "nested" : "top-level"}
+        depth={depth}
+        replyingToName={parentAuthorName}
+        repliesRegionId={repliesRegionId}
+        isThreadLocked={isThreadLocked}
         isAuthor={isAuthor}
-        isEditing={isEditing}
+        renderMentions
+        mentionUsers={threadMentionUsers}
+        isEditing={effectiveEditing}
         editBody={editBody}
         onEditBodyChange={setEditBody}
         onEditStart={() => {
+          setShowReplyForm(false);
           setEditBody(comment.body);
           setIsEditing(true);
         }}
@@ -194,10 +269,15 @@ export function ThreadedComment({
         localUserVote={localUserVote}
         onUpvote={() => handleVote(localUserVote === 1 ? 0 : 1)}
         onDownvote={() => handleVote(localUserVote === -1 ? 0 : -1)}
+        isVotePending={voteMutation.isPending}
         onReply={() => {
+          if (isCommentUnavailable || effectiveEditing) return;
           if (!requireAuth(undefined, { actionLabel: "reply to this comment" })) return;
           setShowReplyForm((prev) => !prev);
         }}
+        onShare={handleShare}
+        onReport={!isAuthor ? handleReport : undefined}
+        isReportPending={reportMutation.isPending}
         replyCount={comment.reply_count ?? 0}
         isRepliesExpanded={showReplies}
         onToggleReplies={() => {
@@ -208,19 +288,23 @@ export function ThreadedComment({
           <StaffContentActionMenu
             targetType="COMMENT"
             targetId={comment.id}
-            targetTitle={`Comment by ${author?.display_name || "User"}`}
+            targetTitle={`Comment by ${authorName}`}
             author={author}
             isHidden={comment.is_hidden}
             isLocked={comment.is_locked}
             isDeleted={comment.is_deleted}
             variant="icon"
-            className="h-6 w-6"
+            className="cm-icon-btn min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7"
           />
         }
       />
 
-      {showReplyForm && (
-        <div className="cm-inline-reply-slot">
+      {effectiveReplying && (
+        <div
+          className="cm-inline-reply-slot"
+          data-mobile-clamped={depth >= 2 ? "true" : "false"}
+          data-clamped={depth >= MAX_VISUAL_DEPTH ? "true" : "false"}
+        >
           <CommentComposerShell
             compact
             autoFocus
@@ -235,14 +319,19 @@ export function ThreadedComment({
             isSubmitting={createComment.isPending}
             onCancel={() => setShowReplyForm(false)}
             cancelLabel="Cancel"
-            replyTarget={{ authorName: author?.display_name || "User" }}
+            replyTarget={{ authorName }}
             onCancelReply={() => setShowReplyForm(false)}
           />
         </div>
       )}
 
       {showReplies && (
-        <CommentThreadRail clamped={depth >= MAX_VISUAL_DEPTH}>
+        <CommentThreadRail
+          id={repliesRegionId}
+          depth={depth}
+          clamped={depth >= MAX_VISUAL_DEPTH}
+          ariaLabel={`Replies to ${authorName}`}
+        >
           {isLoading && <CommentReplySkeleton />}
 
           {!isLoading && isRepliesError && (
@@ -253,13 +342,21 @@ export function ThreadedComment({
             />
           )}
 
+          {!isLoading && !isRepliesError && replies.length === 0 && (
+            <p className="cm-empty-branch">No visible replies in this thread.</p>
+          )}
+
           {replies.map((reply) => (
-            <ThreadedComment
-              key={reply.id}
-              comment={reply}
-              postId={postId}
-              depth={depth + 1}
-            />
+            <div key={reply.id} role="listitem" className="min-w-0">
+              <ThreadedComment
+                comment={reply}
+                postId={postId}
+                depth={depth + 1}
+                parentAuthorName={comment.is_deleted ? null : authorName}
+                mentionUsers={threadMentionUsers}
+                isThreadLocked={isThreadLocked || Boolean(comment.is_locked)}
+              />
+            </div>
           ))}
 
           {hasNextPage && (
