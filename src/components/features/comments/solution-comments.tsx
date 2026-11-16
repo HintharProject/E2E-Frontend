@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { Loader2 } from "lucide-react";
 import {
   useSolutionComments,
   useCreateComment,
@@ -11,73 +12,94 @@ import { useVoteComment, useReport } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { Comment } from "@/types";
-import { formatDate } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { CommentSortProvider, useCommentSort } from "./comment-sort-context";
 import { CommentSortToggle } from "./comment-sort-toggle";
 import {
-  MessageSquare,
-  Share2,
-  Flag,
-  Edit2,
-  Trash2,
-  Reply,
-  ArrowUp,
-  ArrowDown,
-  X,
-  CornerDownRight,
-} from "lucide-react";
+  CommentComposerShell,
+  CommentEmptyState,
+  CommentErrorState,
+  CommentItemShell,
+  CommentModuleRoot,
+  CommentSectionHeader,
+  CommentSkeletonList,
+  CommentThreadRail,
+} from "./comment-primitives";
 
-function getInitials(name?: string | null): string {
-  if (!name) return "?";
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((p) => p[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2);
-}
-
-// Format comment body to highlight @mentions
-function renderFormattedBody(text: string) {
-  const parts = text.split(/(@\w[\w\s]{0,24}?\b(?=\s|$)|\s+)/g);
-  return parts.map((part, idx) => {
-    if (part.startsWith("@")) {
-      return (
-        <span key={idx} className="font-semibold text-primary bg-primary/10 px-1 py-0.5 rounded text-xs">
-          {part}
-        </span>
-      );
-    }
-    return <span key={idx}>{part}</span>;
-  });
-}
-
-// Single Flat Comment Item Card (with optional inline replies)
-function FlatCommentItem({
-  comment,
-  solutionId,
+// Single Level-2 Reply Item (delegates deletion confirmation safely while preserving exact handler)
+function SolutionReplyItem({
+  reply,
+  parentCommentId,
   onReply,
 }: {
-  comment: Comment;
-  solutionId: string;
+  reply: Comment;
+  parentCommentId: string;
   onReply: (parentId: string, authorName: string) => void;
 }) {
   const { user: currentUser } = useCurrentUser();
+  const deleteComment = useDeleteComment();
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const replyAuthor = reply.author_details;
+  const isReplyAuthor = isContentAuthor(currentUser, replyAuthor, reply.author);
+
+  const handleDeleteReply = () => {
+    setShowDeleteDialog(false);
+    toast.promise(deleteComment.mutateAsync(reply.id), {
+      loading: "Deleting reply...",
+      success: "Reply deleted.",
+      error: "Failed to delete reply.",
+    });
+  };
+
+  return (
+    <CommentItemShell
+      comment={reply}
+      variant="nested"
+      isAuthor={isReplyAuthor}
+      canEdit={false}
+      renderMentions
+      isEditing={false}
+      editBody=""
+      onEditBodyChange={() => {}}
+      onEditStart={() => {}}
+      onEditCancel={() => {}}
+      onEditSubmit={(e) => e.preventDefault()}
+      showDeleteDialog={showDeleteDialog}
+      onDeleteDialogChange={setShowDeleteDialog}
+      onDeleteConfirm={handleDeleteReply}
+      isDeletePending={deleteComment.isPending}
+      deleteTitle="Delete Reply"
+      deleteDescription="Are you sure you want to delete this reply? This action cannot be undone."
+      onReply={() => onReply(parentCommentId, replyAuthor?.display_name || "solver")}
+      staffMenuSlot={
+        <StaffContentActionMenu
+          targetType="COMMENT"
+          targetId={reply.id}
+          targetTitle={`Reply by ${replyAuthor?.display_name || "User"}`}
+          author={replyAuthor}
+          isHidden={reply.is_hidden}
+          isLocked={reply.is_locked}
+          isDeleted={reply.is_deleted}
+          variant="icon"
+          className="h-6 w-6"
+        />
+      }
+    />
+  );
+}
+
+// Single Flat Comment Item Card (with optional inline Level-2 replies)
+function FlatCommentItem({
+  comment,
+  solutionId,
+}: {
+  comment: Comment;
+  solutionId: string;
+}) {
+  const { user: currentUser } = useCurrentUser();
+  const createComment = useCreateComment();
   const updateComment = useUpdateComment();
   const deleteComment = useDeleteComment();
   const voteMutation = useVoteComment();
@@ -88,6 +110,11 @@ function FlatCommentItem({
   const [isEditing, setIsEditing] = useState(false);
   const [editBody, setEditBody] = useState(comment.body);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+
+  const [showReplies, setShowReplies] = useState(true);
+  const [showReplyForm, setShowReplyForm] = useState(false);
+  const [replyTargetName, setReplyTargetName] = useState<string | null>(null);
+  const [replyBody, setReplyBody] = useState("");
 
   // Local optimistic vote state
   const [localVoteCount, setLocalVoteCount] = useState(comment.vote_count ?? 0);
@@ -100,6 +127,7 @@ function FlatCommentItem({
 
   const author = comment.author_details;
   const replies = comment.replies ?? [];
+  const replyCount = replies.length || comment.reply_count || 0;
 
   const handleVote = (value: 1 | -1) => {
     if (!currentUser) {
@@ -111,7 +139,7 @@ function FlatCommentItem({
       return;
     }
     const userWeight =
-      (currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1);
+      currentUser?.contributor_tier !== undefined ? currentUser.contributor_tier + 1 : 1;
     const currentVal = localUserVote;
     const currentScore = localVoteCount;
     let newScore = currentScore;
@@ -119,11 +147,11 @@ function FlatCommentItem({
 
     if (currentVal === value) {
       newUserVote = null;
-      newScore = currentScore - (value * userWeight);
+      newScore = currentScore - value * userWeight;
     } else if (currentVal !== null) {
-      newScore = currentScore + ((value - currentVal) * userWeight);
+      newScore = currentScore + (value - currentVal) * userWeight;
     } else {
-      newScore = currentScore + (value * userWeight);
+      newScore = currentScore + value * userWeight;
     }
 
     setLocalVoteCount(newScore);
@@ -187,293 +215,145 @@ function FlatCommentItem({
     );
   };
 
+  const handleInlineReplyTrigger = (targetAuthorName: string) => {
+    if (!currentUser) {
+      toast.error("Please log in to comment.");
+      return;
+    }
+    setReplyTargetName(targetAuthorName);
+    const mention = `@${targetAuthorName} `;
+    if (!replyBody.includes(mention)) {
+      setReplyBody((prev) => (prev ? `${mention}${prev}` : mention));
+    }
+    setShowReplyForm(true);
+  };
+
+  const handleInlineReplySubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!replyBody.trim()) return;
+    if (!currentUser) {
+      toast.error("Please log in to comment.");
+      return;
+    }
+
+    const currentText = replyBody;
+    const savedTarget = replyTargetName;
+    setReplyBody("");
+    setReplyTargetName(null);
+    setShowReplyForm(false);
+    setShowReplies(true);
+
+    toast.promise(
+      createComment.mutateAsync({
+        solutionId,
+        parentId: comment.id,
+        body: currentText,
+      }),
+      {
+        loading: "Posting reply...",
+        success: "Reply posted!",
+        error: () => {
+          setReplyBody(currentText);
+          setReplyTargetName(savedTarget);
+          setShowReplyForm(true);
+          return "Failed to post comment.";
+        },
+      }
+    );
+  };
+
   return (
-    <div className="group rounded-xl border border-line bg-card/60 p-4 transition-all hover:bg-card/90">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <div className="flex items-center gap-2.5 min-w-0">
-          <Avatar className="h-7 w-7 ring-1 ring-line">
-            <AvatarImage src={author?.profile_image_url || undefined} />
-            <AvatarFallback className="text-[11px] font-bold bg-muted text-ink-muted">
-              {getInitials(author?.display_name)}
-            </AvatarFallback>
-          </Avatar>
-
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-            <span className="text-xs font-semibold text-ink truncate">
-              {author?.display_name || "Unknown"}
-            </span>
-
-            <ContributorBadge
-              tier={author?.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
-              size="sm"
-            />
-
-            <span className="text-xs text-ink-muted">·</span>
-            <span className="text-xs text-ink-muted">
-              {formatDate(comment.created_at)}
-            </span>
-          </div>
-        </div>
-
-        {/* Edit / Delete menu for author */}
-        {isAuthor && (
-          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-            {isAuthor && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-7 w-7 text-ink-muted hover:text-ink"
-                onClick={() => setIsEditing((prev) => !prev)}
-                title="Edit"
-              >
-                <Edit2 className="h-3.5 w-3.5" />
-              </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-ink-muted hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-              title="Delete"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Body / Inline Edit Form */}
-      {isEditing ? (
-        <form onSubmit={handleEditSubmit} className="space-y-2 mt-2">
-          <Textarea
-            value={editBody}
-            onChange={(e) => setEditBody(e.target.value)}
-            className="resize-none"
-            rows={3}
-            autoFocus
+    <div className="cm-item-wrap">
+      <CommentItemShell
+        comment={comment}
+        variant="top-level"
+        isAuthor={isAuthor}
+        renderMentions
+        isEditing={isEditing}
+        editBody={editBody}
+        onEditBodyChange={setEditBody}
+        onEditStart={() => {
+          setEditBody(comment.body);
+          setIsEditing(true);
+        }}
+        onEditCancel={() => {
+          setEditBody(comment.body);
+          setIsEditing(false);
+        }}
+        onEditSubmit={handleEditSubmit}
+        isEditSubmitting={updateComment.isPending}
+        showDeleteDialog={showDeleteDialog}
+        onDeleteDialogChange={setShowDeleteDialog}
+        onDeleteConfirm={handleDelete}
+        isDeletePending={deleteComment.isPending}
+        localVoteCount={localVoteCount}
+        localUserVote={localUserVote}
+        onUpvote={() => handleVote(1)}
+        onDownvote={() => handleVote(-1)}
+        isVotePending={voteMutation.isPending}
+        onReply={() => handleInlineReplyTrigger(author?.display_name || "solver")}
+        onShare={handleShare}
+        onReport={!isAuthor ? handleReport : undefined}
+        isReportPending={reportMutation.isPending}
+        replyCount={replyCount}
+        isRepliesExpanded={showReplies}
+        onToggleReplies={() => setShowReplies((prev) => !prev)}
+        staffMenuSlot={
+          <StaffContentActionMenu
+            targetType="COMMENT"
+            targetId={comment.id}
+            targetTitle={`Comment by ${author?.display_name || "User"}`}
+            author={author}
+            isHidden={comment.is_hidden}
+            isLocked={comment.is_locked}
+            isDeleted={comment.is_deleted}
+            variant="icon"
+            className="h-6 w-6"
           />
-          <div className="flex justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                setEditBody(comment.body);
-                setIsEditing(false);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" size="sm" disabled={!editBody.trim()}>
-              Save Changes
-            </Button>
-          </div>
-        </form>
-      ) : (
-        <div className="text-sm text-ink leading-relaxed whitespace-pre-wrap pl-9">
-          {renderFormattedBody(comment.body)}
+        }
+      />
+
+      {showReplyForm && (
+        <div className="cm-inline-reply-slot">
+          <CommentComposerShell
+            compact
+            autoFocus
+            label={`Reply to ${replyTargetName || author?.display_name || "comment"}`}
+            placeholder={`Reply to @${replyTargetName || author?.display_name || "solver"}...`}
+            value={replyBody}
+            onChange={setReplyBody}
+            onSubmit={handleInlineReplySubmit}
+            submitLabel="Post Reply"
+            submittingLabel="Posting..."
+            submitDisabled={!replyBody.trim()}
+            isSubmitting={createComment.isPending}
+            onCancel={() => {
+              setShowReplyForm(false);
+              setReplyTargetName(null);
+            }}
+            cancelLabel="Cancel"
+            replyTarget={{ authorName: replyTargetName || author?.display_name || "solver" }}
+            onCancelReply={() => {
+              setShowReplyForm(false);
+              setReplyTargetName(null);
+            }}
+          />
         </div>
       )}
-
-      {/* Action Bar */}
-      <div className="flex items-center gap-3 mt-3 pl-9 text-xs text-ink-muted">
-        {/* Vote Pill */}
-        <div className="flex items-center rounded-full border border-line bg-muted/30 px-1 py-0.5">
-          <button
-            type="button"
-            onClick={() => handleVote(1)}
-            disabled={voteMutation.isPending || isAuthor}
-            className={`p-1 rounded-full transition-colors ${
-              isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-            } ${
-              localUserVote === 1
-                ? "text-brand bg-brand/15 font-bold"
-                : "text-ink-muted hover:text-ink"
-            }`}
-            title={isAuthor ? "You cannot vote on your own comment" : "Upvote"}
-          >
-            <ArrowUp className="h-3 w-3" />
-          </button>
-          <span className="px-1 text-xs font-semibold text-ink min-w-[16px] text-center">
-            {localVoteCount}
-          </span>
-          <button
-            type="button"
-            onClick={() => handleVote(-1)}
-            disabled={voteMutation.isPending || isAuthor}
-            className={`p-1 rounded-full transition-colors ${
-              isAuthor ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-            } ${
-              localUserVote === -1
-                ? "text-amber-600 bg-amber-500/15 font-bold"
-                : "text-ink-muted hover:text-ink"
-            }`}
-            title={isAuthor ? "You cannot vote on your own comment" : "Downvote"}
-          >
-            <ArrowDown className="h-3 w-3" />
-          </button>
-        </div>
-
-        {/* Reply Trigger */}
-        <button
-          type="button"
-          onClick={() => onReply(comment.id, author?.display_name || "solver")}
-          className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink transition-colors cursor-pointer"
-        >
-          <Reply className="h-3.5 w-3.5" />
-          <span>Reply</span>
-        </button>
-
-        {/* Share Button */}
-        <button
-          type="button"
-          onClick={handleShare}
-          className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-ink transition-colors cursor-pointer"
-        >
-          <Share2 className="h-3.5 w-3.5" />
-          <span>Share</span>
-        </button>
-
-        {/* Report Button */}
-        {!isAuthor && (
-          <button
-            type="button"
-            onClick={handleReport}
-            disabled={reportMutation.isPending}
-            className="inline-flex items-center gap-1 text-xs font-medium text-ink-muted hover:text-destructive transition-colors cursor-pointer ml-auto"
-          >
-            <Flag className="h-3.5 w-3.5" />
-            <span>Report</span>
-          </button>
-        )}
-
-        {/* Staff Action Menu */}
-        <StaffContentActionMenu
-          targetType="COMMENT"
-          targetId={comment.id}
-          targetTitle={`Comment by ${author?.display_name || "User"}`}
-          author={author}
-          isHidden={comment.is_hidden}
-          isLocked={comment.is_locked}
-          isDeleted={comment.is_deleted}
-          variant="icon"
-          className="h-6 w-6 ml-1"
-        />
-      </div>
 
       {/* Level 2 Replies directly under this comment */}
-      {replies.length > 0 && (
-        <div className="mt-3 ml-6 pl-3 border-l-2 border-line space-y-2 pt-1">
-          {replies.map((reply) => {
-            const replyAuthor = reply.author_details;
-            const isReplyAuthor = isContentAuthor(currentUser, replyAuthor, reply.author);
-
-            return (
-              <div
-                key={reply.id}
-                className="group/reply rounded-lg bg-muted/20 border border-line/40 p-3"
-              >
-                <div className="flex items-center justify-between gap-2 mb-1.5">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Avatar className="h-5 w-5 ring-1 ring-line">
-                      <AvatarImage src={replyAuthor?.profile_image_url || undefined} />
-                      <AvatarFallback className="text-[9px] font-bold bg-muted text-ink-muted">
-                        {getInitials(replyAuthor?.display_name)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="text-xs font-semibold text-ink truncate">
-                      {replyAuthor?.display_name || "Unknown"}
-                    </span>
-                    <ContributorBadge
-                      tier={replyAuthor?.contributor_tier ?? (replyAuthor as any)?.reputation?.contributor_tier ?? 0}
-                      size="sm"
-                    />
-                    <span className="text-[10px] text-ink-muted">·</span>
-                    <span className="text-[10px] text-ink-muted">
-                      {formatDate(reply.created_at)}
-                    </span>
-                  </div>
-
-                  {/* Actions for reply author */}
-                  {isReplyAuthor && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        toast.promise(deleteComment.mutateAsync(reply.id), {
-                          loading: "Deleting reply...",
-                          success: "Reply deleted.",
-                          error: "Failed to delete reply.",
-                        });
-                      }}
-                      className="text-ink-muted hover:text-destructive opacity-0 group-hover/reply:opacity-100 transition-opacity p-1"
-                      title="Delete reply"
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Reply Body */}
-                <div className="text-xs text-ink leading-relaxed whitespace-pre-wrap pl-7">
-                  {renderFormattedBody(reply.body)}
-                </div>
-
-                {/* Sub-reply trigger: tags the replier, but attaches to the same parent comment */}
-                <div className="flex items-center gap-2 mt-2 pl-7 text-[11px] text-ink-muted">
-                  <button
-                    type="button"
-                    onClick={() => onReply(comment.id, replyAuthor?.display_name || "solver")}
-                    className="inline-flex items-center gap-1 hover:text-ink transition-colors cursor-pointer"
-                  >
-                    <CornerDownRight className="h-3 w-3" />
-                    <span>Reply</span>
-                  </button>
-
-                  <StaffContentActionMenu
-                    targetType="COMMENT"
-                    targetId={reply.id}
-                    targetTitle={`Reply by ${replyAuthor?.display_name || "User"}`}
-                    author={replyAuthor}
-                    isHidden={reply.is_hidden}
-                    isLocked={reply.is_locked}
-                    isDeleted={reply.is_deleted}
-                    variant="icon"
-                    className="h-5 w-5"
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
+      {showReplies && replies.length > 0 && (
+        <CommentThreadRail>
+          {replies.map((reply) => (
+            <SolutionReplyItem
+              key={reply.id}
+              reply={reply}
+              parentCommentId={comment.id}
+              onReply={(_parentId, targetName) => handleInlineReplyTrigger(targetName)}
+            />
+          ))}
+        </CommentThreadRail>
       )}
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Delete Comment</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this comment? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={handleDelete}
-              disabled={deleteComment.isPending}
-            >
-              {deleteComment.isPending ? "Deleting..." : "Delete"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
@@ -495,11 +375,6 @@ function SolutionCommentsContent({
   const { sort: commentSort } = useCommentSort();
 
   const [body, setBody] = useState("");
-  const [replyTarget, setReplyTarget] = useState<{
-    parentId: string;
-    authorName: string;
-  } | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch top-level comments with preloaded replies in a single request
   const {
@@ -508,23 +383,12 @@ function SolutionCommentsContent({
     hasNextPage,
     isFetchingNextPage,
     isLoading,
+    isError,
+    refetch,
   } = useSolutionComments(solutionId, commentSort);
 
   const comments = data?.pages.flatMap((p) => p.data) ?? [];
   const count = totalCount ?? initialCount ?? comments.length;
-
-  const handleReplyClick = (parentId: string, authorName: string) => {
-    setReplyTarget({ parentId, authorName });
-    const mention = `@${authorName} `;
-    if (!body.includes(mention)) {
-      setBody((prev) => (prev ? `${mention}${prev}` : mention));
-    }
-    textareaRef.current?.focus();
-  };
-
-  const handleCancelReply = () => {
-    setReplyTarget(null);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -536,20 +400,16 @@ function SolutionCommentsContent({
     }
 
     const currentText = body;
-    const parentId = replyTarget?.parentId;
-
     setBody("");
-    setReplyTarget(null);
 
     toast.promise(
       createComment.mutateAsync({
         solutionId,
-        parentId,
         body: currentText,
       }),
       {
-        loading: parentId ? "Posting reply..." : "Posting comment...",
-        success: parentId ? "Reply posted!" : "Comment posted!",
+        loading: "Posting comment...",
+        success: "Comment posted!",
         error: () => {
           setBody(currentText);
           return "Failed to post comment.";
@@ -559,114 +419,72 @@ function SolutionCommentsContent({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Section Header */}
-      <div className="flex items-center justify-between border-b border-line pb-4">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-5 w-5 text-brand" />
-          <h3 className="text-base font-semibold text-ink">
-            Comments {count > 0 && <span className="text-ink-muted">({count})</span>}
-          </h3>
+    <CommentModuleRoot>
+      <CommentSectionHeader count={count} sortSlot={<CommentSortToggle />} />
+
+      <CommentComposerShell
+        value={body}
+        onChange={setBody}
+        onSubmit={handleSubmit}
+        placeholder={
+          currentUser
+            ? "Ask a question or leave a thought on this solution..."
+            : "Log in to join the discussion..."
+        }
+        textareaDisabled={!currentUser || createComment.isPending}
+        submitDisabled={!currentUser || !body.trim() || createComment.isPending}
+        isSubmitting={createComment.isPending}
+        submitLabel="Post Comment"
+        submittingLabel="Posting..."
+        author={currentUser}
+      />
+
+      {isLoading ? (
+        <CommentSkeletonList count={3} />
+      ) : isError ? (
+        <CommentErrorState
+          title="Could not load solution comments"
+          description={
+            currentUser
+              ? "There was a problem loading comments for this solution."
+              : "Sign in to view and participate in solution comments."
+          }
+          onRetry={() => refetch()}
+        />
+      ) : comments.length === 0 ? (
+        <CommentEmptyState
+          title="No comments yet"
+          description="Be the first to ask a question or leave feedback for this solution!"
+        />
+      ) : (
+        <div className="cm-list">
+          {comments.map((comment) => (
+            <FlatCommentItem
+              key={comment.id}
+              comment={comment}
+              solutionId={solutionId}
+            />
+          ))}
+
+          {hasNextPage && (
+            <div className="cm-load-more-wrap">
+              <button
+                type="button"
+                className="cm-btn"
+                data-variant="outline"
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+              >
+                {isFetchingNextPage && (
+                  <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                )}
+                <span>{isFetchingNextPage ? "Loading comments..." : "Load More Comments"}</span>
+              </button>
+            </div>
+          )}
         </div>
-        <CommentSortToggle />
-      </div>
-
-      {/* Comment / Reply Input Box */}
-      <form onSubmit={handleSubmit} className="space-y-2.5">
-        {replyTarget && (
-          <div className="flex items-center justify-between text-xs bg-brand/10 border border-brand/20 text-brand px-3 py-1.5 rounded-lg">
-            <span>
-              Replying to <span className="font-semibold">@{replyTarget.authorName}</span>
-            </span>
-            <button
-              type="button"
-              onClick={handleCancelReply}
-              className="text-brand hover:text-ink transition-colors"
-              title="Cancel reply"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        )}
-
-        <div className="relative">
-          <Textarea
-            ref={textareaRef}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder={
-              currentUser
-                ? replyTarget
-                  ? `Reply to @${replyTarget.authorName}...`
-                  : "Ask a question or leave a thought on this solution..."
-                : "Log in to join the discussion..."
-            }
-            disabled={!currentUser || createComment.isPending}
-            rows={3}
-            className="resize-none"
-          />
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            type="submit"
-            size="sm"
-            disabled={!currentUser || !body.trim() || createComment.isPending}
-          >
-            {createComment.isPending
-              ? "Posting..."
-              : replyTarget
-              ? "Post Reply"
-              : "Post Comment"}
-          </Button>
-        </div>
-      </form>
-
-      {/* Comments List */}
-      <div className="space-y-3 pt-2">
-        {isLoading ? (
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-24 rounded-xl bg-card border border-line animate-pulse" />
-            ))}
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-line p-8 text-center">
-            <MessageSquare className="mx-auto h-8 w-8 text-ink-muted/50 mb-2" />
-            <p className="text-sm font-medium text-ink">No comments yet</p>
-            <p className="text-xs text-ink-muted mt-1">
-              Be the first to ask a question or leave feedback for this solution!
-            </p>
-          </div>
-        ) : (
-          <>
-            {comments.map((comment) => (
-              <FlatCommentItem
-                key={comment.id}
-                comment={comment}
-                solutionId={solutionId}
-                onReply={handleReplyClick}
-              />
-            ))}
-
-            {/* Load More Button */}
-            {hasNextPage && (
-              <div className="pt-2 text-center">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => fetchNextPage()}
-                  disabled={isFetchingNextPage}
-                  className="min-h-[44px] md:min-h-0"
-                >
-                  {isFetchingNextPage ? "Loading comments..." : "Load More Comments"}
-                </Button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
+      )}
+    </CommentModuleRoot>
   );
 }
 

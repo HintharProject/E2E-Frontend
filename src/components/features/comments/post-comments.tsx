@@ -1,31 +1,57 @@
 "use client";
+
 import { useState } from "react";
-import Link from "next/link";
 import { Virtuoso } from "react-virtuoso";
-import { Lock, LogIn, UserPlus } from "lucide-react";
 import { useTopLevelComments, useCreateComment } from "@/hooks/use-comments";
+import { useCurrentUser } from "@/hooks/use-current-user";
 import { ThreadedComment } from "./threaded-comment";
 import { CommentSortProvider, useCommentSort } from "./comment-sort-context";
 import { CommentSortToggle } from "./comment-sort-toggle";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+import {
+  CommentComposerShell,
+  CommentEmptyState,
+  CommentErrorState,
+  CommentGuestGate,
+  CommentModuleRoot,
+  CommentSectionHeader,
+  CommentSkeletonList,
+} from "./comment-primitives";
 
-function PostCommentsContent({ postId, initialCount }: { postId: string; initialCount: number }) {
+function PostCommentsContent({
+  postId,
+  initialCount,
+}: {
+  postId: string;
+  initialCount: number;
+}) {
   const { sort: commentSort } = useCommentSort();
-  const { data, fetchNextPage, hasNextPage, isLoading } = useTopLevelComments(postId, commentSort);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isLoading,
+    isError,
+    refetch,
+  } = useTopLevelComments(postId, commentSort);
   const createComment = useCreateComment();
+  const { user: currentUser } = useCurrentUser();
   const { isSignedIn, isLoaded, requireAuth } = useAuthGate();
   const [body, setBody] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!requireAuth(undefined, { actionLabel: "post a comment", redirectUrl: `/posts/${postId}` })) {
+    if (
+      !requireAuth(undefined, {
+        actionLabel: "post a comment",
+        redirectUrl: `/posts/${postId}`,
+      })
+    ) {
       return;
     }
     if (!body.trim()) return;
-    
+
     const currentBody = body;
     setBody("");
 
@@ -35,13 +61,16 @@ function PostCommentsContent({ postId, initialCount }: { postId: string; initial
       error: () => {
         setBody(currentBody);
         return "Failed to post comment";
-      }
+      },
     });
   };
 
   const comments = data?.pages.flatMap((p) => p.data) ?? [];
   const totalFromMeta = data?.pages?.[0]?.meta?.total_count;
-  const displayCount = typeof totalFromMeta === "number" ? totalFromMeta : Math.max(comments.length, initialCount);
+  const displayCount =
+    typeof totalFromMeta === "number"
+      ? totalFromMeta
+      : Math.max(comments.length, initialCount);
   const isGuest = isLoaded && !isSignedIn;
   const visibleComments = isGuest ? comments.slice(0, 3) : comments;
   const hiddenCommentCount = isGuest
@@ -51,37 +80,46 @@ function PostCommentsContent({ postId, initialCount }: { postId: string; initial
   const encodedRedirect = encodeURIComponent(`/posts/${postId}`);
 
   return (
-    <section className="mt-10">
-      <div className="flex items-center justify-between gap-4">
-        <h2 className="font-heading font-semibold text-xl text-foreground">
-          Comments (<span className="font-mono tabular-nums">{displayCount}</span>)
-        </h2>
-        <CommentSortToggle />
-      </div>
-      
-      <form onSubmit={handleSubmit} className="mt-4 mb-8 space-y-3 rounded-xl border border-border bg-card p-4 shadow-card">
-        <Textarea
-          className="min-h-24"
-          maxLength={1000}
-          placeholder={isGuest ? "Sign in to write a comment..." : "Write a comment..."}
-          value={body}
-          onFocus={() => {
-            if (isGuest) {
-              requireAuth(undefined, {
-                actionLabel: "comment on this thread",
-                redirectUrl: `/posts/${postId}`,
-              });
-            }
-          }}
-          onChange={(e) => setBody(e.target.value)}
-        />
-        <Button type="submit" disabled={!isGuest && !body.trim()}>
-          {isGuest ? "Sign in to comment" : "Post comment"}
-        </Button>
-      </form>
+    <CommentModuleRoot>
+      <CommentSectionHeader count={displayCount} sortSlot={<CommentSortToggle />} />
 
-      {isLoading && <div className="text-muted-foreground text-sm">Loading comments...</div>}
-      
+      <CommentComposerShell
+        value={body}
+        onChange={setBody}
+        onSubmit={handleSubmit}
+        onFocus={() => {
+          if (isGuest) {
+            requireAuth(undefined, {
+              actionLabel: "comment on this thread",
+              redirectUrl: `/posts/${postId}`,
+            });
+          }
+        }}
+        maxLength={1000}
+        placeholder={isGuest ? "Sign in to write a comment..." : "Write a comment..."}
+        submitLabel={isGuest ? "Sign in to comment" : "Post comment"}
+        submitDisabled={!isGuest && !body.trim()}
+        isSubmitting={createComment.isPending}
+        author={currentUser}
+      />
+
+      {isLoading && <CommentSkeletonList count={3} />}
+
+      {!isLoading && isError && (
+        <CommentErrorState
+          title="Could not load comments"
+          description="There was a problem fetching this discussion. Please try again."
+          onRetry={() => refetch()}
+        />
+      )}
+
+      {!isLoading && !isError && visibleComments.length === 0 && (
+        <CommentEmptyState
+          title="No comments yet"
+          description="Be the first to share a perspective or follow-up question on this thread."
+        />
+      )}
+
       {visibleComments.length > 0 && (
         <Virtuoso
           useWindowScroll
@@ -89,60 +127,31 @@ function PostCommentsContent({ postId, initialCount }: { postId: string; initial
           endReached={() => {
             if (!isGuest && hasNextPage) fetchNextPage();
           }}
-          itemContent={(index, comment) => (
-            <ThreadedComment key={comment.id} comment={comment} postId={postId} />
+          itemContent={(_index, comment) => (
+            <div className="pb-2">
+              <ThreadedComment key={comment.id} comment={comment} postId={postId} />
+            </div>
           )}
         />
       )}
 
       {hasMoreLocked && (
-        <div className="mt-4 rounded-xl border border-border bg-card p-5 shadow-card flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary border border-primary/20">
-              <Lock className="size-4" aria-hidden="true" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-foreground">
-                Showing top 3 public comments
-              </p>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {hiddenCommentCount > 0
-                  ? `${hiddenCommentCount} more ${hiddenCommentCount === 1 ? "comment" : "comments"} and nested replies are available after signing in.`
-                  : "More comments and nested replies are available after signing in."}
-              </p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              href={`/sign-up?redirect_url=${encodedRedirect}`}
-              className={buttonVariants({
-                variant: "default",
-                size: "sm",
-                className: "min-h-[40px] md:min-h-[36px] gap-1.5 font-semibold",
-              })}
-            >
-              <UserPlus className="size-3.5" aria-hidden="true" />
-              <span>Sign up free</span>
-            </Link>
-            <Link
-              href={`/sign-in?redirect_url=${encodedRedirect}`}
-              className={buttonVariants({
-                variant: "outline",
-                size: "sm",
-                className: "min-h-[40px] md:min-h-[36px] gap-1.5 font-semibold",
-              })}
-            >
-              <LogIn className="size-3.5" aria-hidden="true" />
-              <span>Log in</span>
-            </Link>
-          </div>
-        </div>
+        <CommentGuestGate
+          hiddenCommentCount={hiddenCommentCount}
+          encodedRedirect={encodedRedirect}
+        />
       )}
-    </section>
+    </CommentModuleRoot>
   );
 }
 
-export function PostComments({ postId, initialCount }: { postId: string; initialCount: number }) {
+export function PostComments({
+  postId,
+  initialCount,
+}: {
+  postId: string;
+  initialCount: number;
+}) {
   return (
     <CommentSortProvider initialSort="popular">
       <PostCommentsContent postId={postId} initialCount={initialCount} />
