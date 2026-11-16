@@ -47,6 +47,9 @@ export function ForumFeed({
     } else {
       params.set("sort", newSort);
     }
+    if (newSort !== "popular") {
+      params.delete("timeframe");
+    }
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     startTransition(() => {
       window.history.replaceState(null, "", newUrl);

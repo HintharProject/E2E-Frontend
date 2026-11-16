@@ -367,6 +367,9 @@ export function HorizontalFilterBar({
     } else {
       params.set("sort", newSort);
     }
+    if (newSort !== "popular") {
+      params.delete("timeframe");
+    }
     const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
     startTransition(() => {
       window.history.replaceState(null, "", newUrl);
@@ -447,9 +450,8 @@ export function HorizontalFilterBar({
     }
   }
 
-  const resolvedRight =
+  const sortControl =
     sortSlot ??
-    rightActions ??
     (showSort ? (
       <ContentSortToggle
         sort={currentSort}
@@ -543,9 +545,12 @@ export function HorizontalFilterBar({
           )}
         </div>
 
-        {/* Right: Sort & Timeframe Controls */}
-        {resolvedRight && (
-          <div className="flex items-center gap-2 shrink-0">{resolvedRight}</div>
+        {/* Right: Sort & Timeframe Controls + Optional Mobile/Extra Actions */}
+        {(sortControl || rightActions) && (
+          <div className="flex flex-wrap items-center gap-2 min-w-0 max-w-full">
+            {sortControl}
+            {rightActions}
+          </div>
         )}
       </div>
 
