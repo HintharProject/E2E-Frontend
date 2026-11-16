@@ -358,3 +358,32 @@
 .animate-cold-start-bar {
   animation: cold-start-bar 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
+
+/* Warm Archival Paper surface scope for public landing opening impression */
+.landing-archival-light {
+  color-scheme: light;
+  --background: oklch(0.978 0.006 85);
+  --foreground: oklch(0.19 0.015 250);
+  --card: oklch(0.996 0.003 85);
+  --card-foreground: oklch(0.19 0.015 250);
+  --popover: oklch(0.998 0.002 85);
+  --popover-foreground: oklch(0.19 0.015 250);
+  --primary: oklch(0.45 0.115 162);
+  --primary-foreground: oklch(0.99 0.004 85);
+  --secondary: oklch(0.945 0.008 85);
+  --secondary-foreground: oklch(0.24 0.015 250);
+  --muted: oklch(0.945 0.008 85);
+  --muted-foreground: oklch(0.46 0.014 250);
+  --accent: oklch(0.935 0.025 162);
+  --accent-foreground: oklch(0.25 0.04 162);
+  --border: oklch(0.895 0.009 85);
+  --input: oklch(0.88 0.009 85);
+  --ring: oklch(0.45 0.115 162);
+  --warning: oklch(0.55 0.15 62);
+  --brand: var(--primary);
+  --surface: var(--background);
+  --surface-raised: var(--card);
+  --ink: var(--foreground);
+  --ink-muted: var(--muted-foreground);
+  --line: var(--border);
+}
