@@ -1,18 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Server } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ColdStartNoticeProps {
-  /** Milliseconds before showing the Render cold-start wake-up message. */
+  /** Milliseconds before showing the slow-load feedback banner. */
   delayMs?: number;
   className?: string;
 }
 
 /**
- * Contextual feedback banner shown when an initial query exceeds 3 seconds
- * (e.g., Render free-tier 30-50s server wake-up).
+ * Contextual feedback banner shown when an initial query exceeds 3 seconds.
  */
 export function ColdStartNotice({ delayMs = 3000, className }: ColdStartNoticeProps) {
   const [isSlow, setIsSlow] = useState(false);
@@ -20,10 +19,7 @@ export function ColdStartNotice({ delayMs = 3000, className }: ColdStartNoticePr
   useEffect(() => {
     if (delayMs <= 0) return;
     const timer = setTimeout(() => setIsSlow(true), delayMs);
-    return () => {
-      clearTimeout(timer);
-      setIsSlow(false);
-    };
+    return () => clearTimeout(timer);
   }, [delayMs]);
 
   if (delayMs > 0 && !isSlow) return null;
@@ -38,15 +34,15 @@ export function ColdStartNotice({ delayMs = 3000, className }: ColdStartNoticePr
       )}
     >
       <div className="flex items-center gap-2.5 text-xs font-medium text-foreground">
-        <Server className="size-4 shrink-0 text-primary" aria-hidden="true" />
+        <Loader2 className="size-4 shrink-0 animate-loader-spin text-primary" aria-hidden="true" />
         <span>
-          Waking up the server (this may take up to 30 seconds on cold start)...
+          Still loading data — this may take a moment.
         </span>
       </div>
       <div
         role="progressbar"
-        aria-label="Connecting to server"
-        aria-valuetext="Waking up server"
+        aria-label="Loading progress"
+        aria-valuetext="Loading data"
         className="mt-2.5 h-1.5 w-full overflow-hidden rounded-full bg-muted"
       >
         <div className="h-full w-1/2 rounded-full bg-primary/70 animate-cold-start-bar" />

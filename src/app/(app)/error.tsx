@@ -21,11 +21,11 @@ export default function AppError({
   return (
     <div className="mx-auto flex max-w-lg flex-1 flex-col items-center justify-center px-4 py-16 text-center">
       <h1 className="font-heading text-2xl text-foreground">
-        {isTimeout ? "Server is waking up" : "Something went wrong"}
+        {isTimeout ? "Request timed out" : "Something went wrong"}
       </h1>
       <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
         {isTimeout
-          ? "The backend on Render may take up to a minute to respond after idle time. Please wait and try again."
+          ? "This is taking longer than expected. Please wait a moment and try again."
           : error.message || "An unexpected error occurred."}
       </p>
       <div className="mt-6 flex gap-2">
