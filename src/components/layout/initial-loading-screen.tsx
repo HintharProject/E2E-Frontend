@@ -1,59 +1,96 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { useUIStore } from "@/lib/store/ui-store";
 
-export function InitialLoadingScreen() {
-  const isAppInitialized = useUIStore((state) => state.isAppInitialized);
+/**
+ * Isolated GPU-composited circular spinner so parent state updates
+ * never interrupt or reset its animation timeline.
+ */
+const CircularLoader = memo(function CircularLoader() {
+  return (
+    <div className="relative flex size-11 shrink-0 items-center justify-center" aria-hidden="true">
+      <svg
+        viewBox="0 0 40 40"
+        className="size-11 animate-loader-spin text-primary"
+        fill="none"
+        focusable="false"
+      >
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          stroke="currentColor"
+          strokeWidth="3.25"
+          className="opacity-20"
+        />
+        <circle
+          cx="20"
+          cy="20"
+          r="16"
+          stroke="currentColor"
+          strokeWidth="3.25"
+          strokeLinecap="round"
+          strokeDasharray="72 101"
+        />
+      </svg>
+    </div>
+  );
+});
+
+function LoadingOverlay() {
   const initializationMessage = useUIStore((state) => state.initializationMessage);
-  const [isColdStartWait, setIsColdStartWait] = useState(false);
+  const [isExtendedWait, setIsExtendedWait] = useState(false);
 
   useEffect(() => {
-    if (isAppInitialized) return;
-    const timer = setTimeout(() => setIsColdStartWait(true), 3000);
-    return () => {
-      clearTimeout(timer);
-      setIsColdStartWait(false);
-    };
-  }, [isAppInitialized]);
+    const timer = setTimeout(() => setIsExtendedWait(true), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
-  if (isAppInitialized) {
-    return null;
-  }
+  const statusText = isExtendedWait
+    ? "Still loading — thanks for your patience."
+    : initializationMessage;
 
   return (
     <div
       role="status"
       aria-live="polite"
-      className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background/90 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] isolate flex flex-col items-center justify-center bg-background"
     >
       <div className="flex w-full max-w-sm flex-col items-center gap-6 p-8 text-center">
-        <h1 className="font-heading text-3xl font-bold text-foreground">
-          E2E
-        </h1>
+        <div className="space-y-1">
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-foreground">
+            E2E
+          </h1>
+          <p className="text-sm font-medium text-muted-foreground">
+            Education to Everyone
+          </p>
+        </div>
 
         <div className="flex w-full flex-col items-center gap-4">
-          <div
-            className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent"
-            aria-hidden="true"
-          />
-          <p className="text-sm font-medium text-muted-foreground">
-            {isColdStartWait
-              ? "Waking up the server (this may take up to 30 seconds on cold start)..."
-              : initializationMessage}
+          <CircularLoader />
+          <p className="flex min-h-10 items-center justify-center text-sm font-medium text-muted-foreground">
+            {statusText}
           </p>
           <div
             role="progressbar"
-            aria-label="Initializing application"
+            aria-label="Loading progress"
             className="h-1.5 w-full max-w-[240px] overflow-hidden rounded-full bg-muted"
           >
             <div className="h-full w-1/2 rounded-full bg-primary/75 animate-cold-start-bar" />
           </div>
-          <p className="mt-1 text-base font-medium text-foreground">
-            Education to Everyone
-          </p>
         </div>
       </div>
     </div>
   );
+}
+
+export function InitialLoadingScreen() {
+  const isAppInitialized = useUIStore((state) => state.isAppInitialized);
+
+  if (isAppInitialized) {
+    return null;
+  }
+
+  return <LoadingOverlay />;
 }

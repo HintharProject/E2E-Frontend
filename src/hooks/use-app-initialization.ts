@@ -13,11 +13,12 @@ export function useAppInitialization() {
   
   const isAppInitialized = useUIStore((state) => state.isAppInitialized);
   const setAppInitialized = useUIStore((state) => state.setAppInitialized);
-  const setInitializationMessage = useUIStore((state) => state.setInitializationMessage);
   
   const initStarted = useRef(false);
 
   useEffect(() => {
+    if (isAppInitialized) return;
+
     // Failsafe timeout: Never let the splash screen hang longer than 1.5s
     const failsafeTimer = setTimeout(() => {
       setAppInitialized(true);
@@ -32,30 +33,25 @@ export function useAppInitialization() {
       const lastSessionUser = sessionStorage.getItem("e2e_session_user");
 
       if (sessionInitialized && lastSessionUser === currentUserKey) {
-        if (!isAppInitialized) {
-          setAppInitialized(true);
-        }
+        setAppInitialized(true);
         return () => clearTimeout(failsafeTimer);
       }
     }
 
-    if (isAppInitialized || initStarted.current) return () => clearTimeout(failsafeTimer);
+    if (initStarted.current) return () => clearTimeout(failsafeTimer);
     initStarted.current = true;
 
     async function initializeApp() {
       try {
-        setInitializationMessage("Initializing workspace...");
         const token = isSignedIn ? await getToken() : null;
 
         if (isSignedIn && token) {
-          setInitializationMessage("Fetching user profile...");
           await queryClient.prefetchQuery({
             queryKey: ["currentUser", token],
             queryFn: () => fetchCurrentUser(token),
             staleTime: 5 * 60 * 1000,
           }).catch(() => null);
 
-          setInitializationMessage("Loading study plans...");
           await queryClient.prefetchQuery({
             queryKey: ["saved-sessions"],
             queryFn: () => apiFetch(`/saved-sessions/`, token),
@@ -63,7 +59,6 @@ export function useAppInitialization() {
           }).catch(() => null);
         }
 
-        setInitializationMessage("Fetching forum posts...");
         await queryClient.prefetchInfiniteQuery({
           queryKey: ["posts", {}, isSignedIn ? "auth" : "guest", "v2"],
           queryFn: async ({ pageParam }) => {
@@ -76,8 +71,6 @@ export function useAppInitialization() {
           },
           initialPageParam: undefined as string | undefined,
         }).catch(() => null);
-
-        setInitializationMessage("Finalizing setup...");
       } catch (error) {
         console.error("Initialization error:", error);
       } finally {
@@ -93,7 +86,7 @@ export function useAppInitialization() {
     initializeApp();
 
     return () => clearTimeout(failsafeTimer);
-  }, [isLoaded, isSignedIn, getToken, queryClient, isAppInitialized, setAppInitialized, setInitializationMessage]);
+  }, [isLoaded, isSignedIn, getToken, queryClient, isAppInitialized, setAppInitialized]);
 
   return { isAppInitialized };
 }
