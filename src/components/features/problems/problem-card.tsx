@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { TagBadge } from "@/components/ui/tag-badge";
 import { Problem } from "@/types";
 import { apiFetch } from "@/services/api-client";
+import { resolveClientAuth } from "@/lib/client-auth";
 import { formatDate } from "@/lib/utils";
 import { ProblemCardVote } from "./problem-card-vote";
 import { CardMoreMenu } from "@/components/ui/card-more-menu";
@@ -33,8 +34,9 @@ function stripProblemPreview(raw: string): string {
 
 export function ProblemCard({ problem }: { problem: Problem }) {
   const { user } = useCurrentUser();
-  const { getToken } = useAuth();
-  const { requireAuth } = useAuthGate();
+  const { getToken, isSignedIn: isClerkSignedIn } = useAuth();
+  const { requireAuth, isSignedIn } = useAuthGate();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isClerkSignedIn, getToken);
   const queryClient = useQueryClient();
   const router = useRouter();
   const prefetchedRef = useRef(false);
@@ -51,14 +53,16 @@ export function ProblemCard({ problem }: { problem: Problem }) {
     : `/problems/${problem.id}`;
 
   const handleMouseEnter = () => {
-    if (prefetchedRef.current) return;
+    if (prefetchedRef.current || !isAuthed) return;
     prefetchedRef.current = true;
     queryClient.prefetchQuery({
-      queryKey: ["problem", problem.id],
+      queryKey: ["problem", problem.id, isAuthed ? "auth" : "guest", "v2"],
       queryFn: async () => {
-        const token = await getToken();
-        if (!token) return problem;
-        return apiFetch<Problem>(`/problems/${problem.id}/?expand=attachments,author_details,subject_details,level_details,resource`, token);
+        const token = await getOptionalToken();
+        return apiFetch<Problem>(
+          `/problems/${problem.id}/?expand=attachments,author_details,subject_details,level_details,resource`,
+          token || undefined
+        );
       },
       staleTime: 5 * 60 * 1000,
     });
@@ -250,6 +254,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             {author && (
               <Link
                 href={`/users/${author.id}`}
+                prefetch={isSignedIn ? undefined : false}
                 onClick={(e) => {
                   e.stopPropagation();
                   if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {

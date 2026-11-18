@@ -77,6 +77,26 @@ export function SolutionPoolContainer({ problem, isAuthor }: SolutionPoolContain
 
   const encodedRedirect = encodeURIComponent(`/problems/${problem.id}`);
 
+  if (!isLoaded && !hasMemberAccess) {
+    return (
+      <section aria-label="Loading solutions" className="space-y-6">
+        <div className="space-y-3 pb-4 border-b border-border">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <Layers className="size-5 text-primary" aria-hidden="true" />
+              <h2 className="font-heading text-2xl font-semibold text-foreground tracking-tight">
+                Solutions &amp; Peer Consensus
+              </h2>
+            </div>
+            <div className="h-7 w-32 rounded-md bg-muted animate-pulse" />
+          </div>
+          <div className="h-2 w-full rounded-sm bg-muted animate-pulse" />
+        </div>
+        <div className="h-44 rounded-xl border border-border bg-card animate-pulse" />
+      </section>
+    );
+  }
+
   if (isLoaded && !hasMemberAccess) {
     return (
       <section aria-label="Solutions gated preview" className="space-y-6">

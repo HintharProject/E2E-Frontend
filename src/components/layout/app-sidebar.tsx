@@ -230,6 +230,7 @@ export function AppSidebar() {
                 <Link
                   key={item.href}
                   href={item.href}
+                  prefetch={user ? undefined : false}
                   onClick={(e) => {
                     if (!user) {
                       e.preventDefault();

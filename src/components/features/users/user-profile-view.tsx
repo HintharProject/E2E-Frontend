@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth, useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { apiFetch } from "@/services/api-client";
+import { resolveClientAuth } from "@/lib/client-auth";
 import type { UserPublic } from "@/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +32,8 @@ function getInitials(name?: string | null): string {
 }
 
 export function UserProfileView({ userId }: { userId: string }) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
   const { user: clerkUser } = useUser();
   const { user: appCurrentUser } = useCurrentUser();
   const queryClient = useQueryClient();
@@ -43,11 +45,9 @@ export function UserProfileView({ userId }: { userId: string }) {
   const { data: stats } = useContributionStats(userId);
 
   const { data: profile, isLoading, isError } = useQuery<UserPublic>({
-    queryKey: ["user", userId],
+    queryKey: ["user", userId, isAuthed ? "auth" : "guest"],
     queryFn: async () => {
-      const token =
-        (await getToken()) ||
-        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      const token = await getOptionalToken();
       return apiFetch<UserPublic>(`/users/${userId}/`, token || undefined);
     },
     staleTime: 5 * 60 * 1000,

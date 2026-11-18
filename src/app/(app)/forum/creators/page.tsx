@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { Plus } from "lucide-react";
 import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { parseFilterList } from "@/lib/filter-params";
 import { ForumFeed } from "@/components/features/forum-feed";
 import { ForumRightRail } from "@/components/features/forum/forum-right-rail";
 import { Button } from "@/components/ui/button";
+import { GatedLink } from "@/components/features/auth/gated-link";
 
 export default async function CreatorsFeedPage(props: {
   searchParams?: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -27,7 +27,7 @@ export default async function CreatorsFeedPage(props: {
               size="sm"
               className="xl:hidden gap-1.5"
               nativeButton={false}
-              render={<Link href="/posts/new" />}
+              render={<GatedLink href="/posts/new" actionLabel="create a forum post" />}
             >
               <Plus className="size-4" />
               New Post

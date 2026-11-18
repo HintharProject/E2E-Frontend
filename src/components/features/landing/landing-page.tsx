@@ -48,7 +48,6 @@ export function LandingPage({
     },
     initialData: initialProblems.length > 0 ? initialProblems : undefined,
     staleTime: 2 * 60 * 1000,
-    retry: 1,
   });
 
   const { data: recentLessons } = useQuery<Lesson[]>({
@@ -59,7 +58,6 @@ export function LandingPage({
     },
     initialData: initialLessons.length > 0 ? initialLessons : undefined,
     staleTime: 2 * 60 * 1000,
-    retry: 1,
   });
 
   const { data: recentPapers } = useQuery<Resource[]>({
@@ -70,7 +68,6 @@ export function LandingPage({
     },
     initialData: initialPapers.length > 0 ? initialPapers : undefined,
     staleTime: 2 * 60 * 1000,
-    retry: 1,
   });
 
   const problems = (recentProblems && recentProblems.length > 0 ? recentProblems : initialProblems).slice(0, 4);

@@ -94,6 +94,7 @@ export function PostCard({ post }: { post: Post }) {
           {author ? (
             <Link
               href={`/users/${author.id}`}
+              prefetch={isSignedIn ? undefined : false}
               onClick={(e) => {
                 if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                   e.preventDefault();
@@ -113,6 +114,7 @@ export function PostCard({ post }: { post: Post }) {
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
+                  prefetch={isSignedIn ? undefined : false}
                   onClick={(e) => {
                     if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                       e.preventDefault();
@@ -257,7 +259,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
     queryClient.prefetchQuery({
       queryKey: ["lesson", lesson.id, "v2"],
       queryFn: async () => {
-        const token = await getToken();
+        const token = await getToken().catch(() => null);
         if (!token) return lesson;
         return apiFetch<Lesson>(`/lessons/${lesson.id}/?expand=author_details,attachments`, token);
       },
@@ -357,6 +359,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
         <CardContent className="pt-3.5 space-y-3">
           <Link
             href={`/lessons/${lesson.id}`}
+            prefetch={isSignedIn ? undefined : false}
             onClick={(e) => {
               if (!requireAuth(undefined, { actionLabel: "open the full lesson", redirectUrl: `/lessons/${lesson.id}` })) {
                 e.preventDefault();
@@ -415,6 +418,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
           {author ? (
             <Link
               href={`/users/${author.id}`}
+              prefetch={isSignedIn ? undefined : false}
               onClick={(e) => {
                 if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                   e.preventDefault();
@@ -435,6 +439,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
+                  prefetch={isSignedIn ? undefined : false}
                   onClick={(e) => {
                     if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                       e.preventDefault();

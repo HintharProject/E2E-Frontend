@@ -72,7 +72,7 @@ export function BaseFeedCard({
   className = "",
   moreMenu,
 }: BaseFeedCardProps) {
-  const { requireAuth } = useAuthGate();
+  const { isSignedIn, requireAuth } = useAuthGate();
 
   return (
     <article
@@ -90,6 +90,7 @@ export function BaseFeedCard({
           {author ? (
             <Link
               href={`/users/${author.id}`}
+              prefetch={isSignedIn ? undefined : false}
               onClick={(e) => {
                 if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                   e.preventDefault();
@@ -110,6 +111,12 @@ export function BaseFeedCard({
               {author ? (
                 <Link
                   href={`/users/${author.id}`}
+                  prefetch={isSignedIn ? undefined : false}
+                  onClick={(e) => {
+                    if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
+                      e.preventDefault();
+                    }
+                  }}
                   className="text-sm font-semibold text-foreground hover:text-primary transition-colors rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   {author.display_name}
@@ -193,7 +200,7 @@ export function BaseDetailedCard({
   variant = "default",
   className = "",
 }: BaseDetailedCardProps) {
-  const { requireAuth } = useAuthGate();
+  const { isSignedIn, requireAuth } = useAuthGate();
 
   return (
     <article
@@ -211,6 +218,7 @@ export function BaseDetailedCard({
             <div className="flex items-center gap-2 flex-wrap">
               <Link
                 href={`/users/${author.id}`}
+                prefetch={isSignedIn ? undefined : false}
                 onClick={(e) => {
                   if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
                     e.preventDefault();

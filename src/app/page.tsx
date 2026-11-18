@@ -20,7 +20,7 @@ async function fetchPublicSnapshot<T>(path: string): Promise<T[]> {
   try {
     const res = await fetch(`${API_BASE_URL}${path}`, {
       headers: { "Content-Type": "application/json" },
-      signal: AbortSignal.timeout(2500),
+      signal: AbortSignal.timeout(4000),
       next: { revalidate: 120 },
     });
     if (!res.ok) return [];

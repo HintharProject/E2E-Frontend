@@ -1,15 +1,11 @@
 "use client";
 
 import { UserProfile, useAuth } from "@clerk/nextjs";
-import { useEffect, useState } from "react";
+import { useDevToken } from "@/lib/client-auth";
 
 export default function AccountSettingsPage() {
   const { isSignedIn } = useAuth();
-  const [hasDevToken, setHasDevToken] = useState(false);
-
-  useEffect(() => {
-    setHasDevToken(Boolean(localStorage.getItem("dev_token")));
-  }, []);
+  const hasDevToken = Boolean(useDevToken());
 
   if (!isSignedIn && hasDevToken) {
     return (
