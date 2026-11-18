@@ -278,6 +278,16 @@
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+
+  /* Preserve gentle non-spatial loading feedback instead of freezing indicators */
+  .animate-loader-spin {
+    animation: loader-reduced-pulse 2.2s ease-in-out infinite !important;
+  }
+
+  .animate-cold-start-bar {
+    transform: translate3d(50%, 0, 0);
+    animation: loader-reduced-pulse 2.2s ease-in-out infinite !important;
+  }
 }
 
 /* Custom scrollbar utility aligned with semantic tokens */
@@ -344,18 +354,43 @@
   animation: scholar-shimmer 3s linear infinite;
 }
 
-@keyframes cold-start-bar {
-  0% {
-    transform: translateX(-100%);
+@keyframes loader-spin {
+  from {
+    transform: rotate3d(0, 0, 1, 0deg);
+  }
+  to {
+    transform: rotate3d(0, 0, 1, 360deg);
+  }
+}
+
+@keyframes loader-reduced-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
   }
   50% {
-    transform: translateX(0%);
+    opacity: 1;
+  }
+}
+
+.animate-loader-spin {
+  animation: loader-spin 0.85s linear infinite;
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@keyframes cold-start-bar {
+  0% {
+    transform: translate3d(-100%, 0, 0);
   }
   100% {
-    transform: translateX(100%);
+    transform: translate3d(200%, 0, 0);
   }
 }
 
 .animate-cold-start-bar {
-  animation: cold-start-bar 1.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation: cold-start-bar 1.6s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  will-change: transform;
+  backface-visibility: hidden;
 }

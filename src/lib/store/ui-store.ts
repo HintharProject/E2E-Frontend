@@ -59,7 +59,7 @@ export const useUIStore = create<UIState>((set) => ({
   },
 
   isAppInitialized: false,
-  initializationMessage: "Starting up the render backend...",
+  initializationMessage: "Preparing your study space...",
   setAppInitialized: (initialized) => set({ isAppInitialized: initialized }),
   setInitializationMessage: (msg) => set({ initializationMessage: msg }),
 

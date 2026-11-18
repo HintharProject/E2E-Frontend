@@ -119,7 +119,7 @@ export async function apiFetch<T>(
       throw new ApiError(
         0,
         "TIMEOUT",
-        "The server took too long to respond. It may be waking up from a cold start — please try again in a moment."
+        "The request took too long to complete. Please try again in a moment."
       );
     }
 

@@ -6,14 +6,13 @@ import { Resource } from "@/types";
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { MediaDialogHeader } from "@/components/ui/image-lightbox";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { getFileExtension } from "@/lib/resources";
-import { ArrowUpRight, Check, Download, ExternalLink, X } from "lucide-react";
+import { ArrowUpRight, Check, Download, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export interface ViewingDocument {
@@ -46,105 +45,63 @@ export function DocumentViewerModal({ doc, onClose, onSelect }: DocumentViewerMo
         {doc && (
           <>
             {/* Modal Header */}
-            <DialogHeader className="flex flex-row items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-border bg-muted/40 shrink-0 space-y-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10 shrink-0">
-                  <DocTypeIcon filename={doc.title} resourceType={doc.paper?.resource_type} />
-                </div>
-                <div className="flex items-center gap-2 min-w-0">
-                  <DialogTitle className="font-heading font-semibold text-sm text-foreground truncate">
-                    {doc.title}
-                  </DialogTitle>
-                  {doc.paper?.paper_type && (
-                    <Badge
-                      variant="outline"
-                      className={cn(
-                        "text-xs font-semibold uppercase shrink-0",
-                        doc.paper.paper_type === "QP"
-                          ? "border-primary/35 bg-primary/10 text-primary"
-                          : "border-border bg-secondary text-secondary-foreground"
-                      )}
+            <MediaDialogHeader
+              icon={<DocTypeIcon filename={doc.title} resourceType={doc.paper?.resource_type} />}
+              title={doc.title}
+              badge={
+                doc.paper?.paper_type ? (
+                  <Badge
+                    variant="outline"
+                    className={cn(
+                      "text-xs font-semibold uppercase shrink-0",
+                      doc.paper.paper_type === "QP"
+                        ? "border-primary/35 bg-primary/10 text-primary"
+                        : "border-border bg-secondary text-secondary-foreground"
+                    )}
+                  >
+                    {doc.paper.paper_type}
+                  </Badge>
+                ) : undefined
+              }
+              extraActions={
+                <>
+                  {onSelect && doc.paper && (
+                    <Button
+                      size="sm"
+                      variant="default"
+                      className="gap-1.5 font-semibold"
+                      onClick={() => {
+                        onSelect(doc.paper!);
+                        onClose();
+                      }}
                     >
-                      {doc.paper.paper_type}
-                    </Badge>
+                      <Check className="size-3.5" aria-hidden="true" />
+                      <span>Select Paper</span>
+                    </Button>
                   )}
-                </div>
-              </div>
 
-              <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                {onSelect && doc.paper && (
-                  <Button
-                    size="sm"
-                    variant="default"
-                    className="gap-1.5 font-semibold"
-                    onClick={() => {
-                      onSelect(doc.paper!);
-                      onClose();
-                    }}
-                  >
-                    <Check className="size-3.5" aria-hidden="true" />
-                    <span>Select Paper</span>
-                  </Button>
-                )}
-
-                {doc.paper && doc.paper.resource_type === "PAST_PAPER" && (
-                  <Link
-                    href={`/train/${doc.paper.id}`}
-                    className={buttonVariants({
-                      variant: onSelect ? "outline" : "default",
-                      size: "sm",
-                      className: "gap-1 font-semibold",
-                    })}
-                    onClick={onClose}
-                  >
-                    <span>Train!</span>
-                    <ArrowUpRight className="size-3.5" aria-hidden="true" />
-                  </Link>
-                )}
-
-                <a
-                  href={doc.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={buttonVariants({
-                    variant: "outline",
-                    size: "sm",
-                    className: "hidden sm:inline-flex gap-1.5 font-medium",
-                  })}
-                  aria-label="Open document in new browser tab"
-                >
-                  <ExternalLink className="size-3.5" aria-hidden="true" />
-                  <span>New Tab</span>
-                </a>
-
-                <a
-                  href={doc.downloadUrl || doc.url}
-                  download={doc.title}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={buttonVariants({
-                    variant: "secondary",
-                    size: "sm",
-                    className: "gap-1.5 font-medium",
-                  })}
-                  aria-label={`Download ${doc.title}`}
-                >
-                  <Download className="size-3.5" aria-hidden="true" />
-                  <span className="hidden sm:inline">Download</span>
-                </a>
-
-                <Button
-                  type="button"
-                  size="icon-sm"
-                  variant="ghost"
-                  onClick={onClose}
-                  aria-label="Close document preview"
-                  className="text-muted-foreground hover:text-foreground"
-                >
-                  <X className="size-4" aria-hidden="true" />
-                </Button>
-              </div>
-            </DialogHeader>
+                  {doc.paper && doc.paper.resource_type === "PAST_PAPER" && (
+                    <Link
+                      href={`/train/${doc.paper.id}`}
+                      className={buttonVariants({
+                        variant: onSelect ? "outline" : "default",
+                        size: "sm",
+                        className: "gap-1 font-semibold",
+                      })}
+                      onClick={onClose}
+                    >
+                      <span>Train!</span>
+                      <ArrowUpRight className="size-3.5" aria-hidden="true" />
+                    </Link>
+                  )}
+                </>
+              }
+              openUrl={doc.url}
+              downloadUrl={doc.downloadUrl || doc.url}
+              downloadFilename={doc.title}
+              onClose={onClose}
+              closeLabel="Close document preview"
+            />
 
             {/* Viewer Body */}
             {isPdf ? (

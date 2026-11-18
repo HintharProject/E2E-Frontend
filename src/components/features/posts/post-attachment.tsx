@@ -1,102 +1,119 @@
 "use client";
 
-import { Dialog, DialogContent, DialogTrigger, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog";
-import { Download, File as FileIcon, Image as ImageIcon } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { useMemo, useState } from "react";
+import { Download, File as FileIcon, Loader2 } from "lucide-react";
+import {
+  ImageLightbox,
+  ImagePreviewFrame,
+  type LightboxImageItem,
+} from "@/components/ui/image-lightbox";
+import { cn, triggerFileDownload } from "@/lib/utils";
 
-function getFileInfo(url: string) {
-  try {
-    const urlObj = new URL(url);
-    const pathname = urlObj.pathname;
-    const filename = pathname.split('/').pop() || 'attachment';
-    const extension = filename.split('.').pop()?.toLowerCase() || '';
-    const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension);
-    return { filename, isImage };
-  } catch (e) {
-    return { filename: 'attachment', isImage: false };
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg"]);
+
+function getFileInfo(url: string, overrideFilename?: string) {
+  let extractedFilename = "attachment";
+  let urlExt = "";
+
+  if (url) {
+    try {
+      const rawSegment =
+        new URL(url, "https://placeholder.local").pathname.split("/").pop() || "attachment";
+      try {
+        extractedFilename = decodeURIComponent(rawSegment);
+      } catch {
+        extractedFilename = rawSegment;
+      }
+      urlExt = extractedFilename.split(".").pop()?.toLowerCase() || "";
+    } catch {
+      extractedFilename = "attachment";
+    }
   }
+
+  const filename = overrideFilename?.trim() || extractedFilename;
+  const overrideExt = filename.split("?")[0].split(".").pop()?.toLowerCase() || "";
+  const isImage = IMAGE_EXTENSIONS.has(overrideExt) || IMAGE_EXTENSIONS.has(urlExt);
+
+  return { filename, isImage };
 }
 
-export function PostAttachment({ url, downloadUrl, filename: overrideFilename }: { url: string; downloadUrl?: string; filename?: string }) {
-  const { filename: extractedFilename, isImage } = getFileInfo(url);
-  const filename = overrideFilename || extractedFilename;
+export function PostAttachment({
+  url,
+  downloadUrl,
+  filename: overrideFilename,
+}: {
+  url: string;
+  downloadUrl?: string;
+  filename?: string;
+}) {
+  const { filename, isImage } = getFileInfo(url, overrideFilename);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+
+  const lightboxImages = useMemo<LightboxImageItem[]>(
+    () => (url ? [{ url, downloadUrl: downloadUrl || url, filename, alt: filename }] : []),
+    [downloadUrl, filename, url]
+  );
 
   if (isImage) {
     return (
       <div className="mt-4 flex justify-center w-full max-w-2xl mx-auto">
-        <Dialog>
-          <DialogTrigger 
-            render={
-              <button type="button" className="relative overflow-hidden w-full aspect-video rounded-xl border border-border bg-muted/30 transition-transform hover:scale-[1.01] flex items-center justify-center cursor-zoom-in group" />
-            }
-          >
-            <Image
-              src={url}
-              alt={filename}
-              fill
-              unoptimized
-              className="object-contain"
-              sizes="(max-width: 768px) 100vw, 800px"
-            />
-            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity z-10">
-              <ImageIcon className="text-white w-8 h-8 opacity-80" />
-            </div>
-          </DialogTrigger>
-          <DialogContent 
-            className="max-w-[90vw] w-fit p-0 overflow-hidden bg-transparent border-none shadow-none flex flex-col items-center justify-center"
-            showCloseButton={false}
-          >
-            <DialogHeader className="sr-only">
-              <DialogTitle>Image Preview</DialogTitle>
-              <DialogDescription>Full size image preview of {filename}</DialogDescription>
-            </DialogHeader>
-            <div className="relative group flex w-[90vw] h-[90vh] items-center justify-center">
-              <Image 
-                src={url} 
-                alt="Attachment full size" 
-                fill
-                unoptimized
-                className="object-contain rounded-md shadow-2xl" 
-                sizes="90vw"
-              />
-              <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity z-50">
-                <a 
-                  href={downloadUrl || url} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  download 
-                  className={cn(buttonVariants({ size: "icon", variant: "secondary" }), "rounded-full shadow-lg h-10 w-10")}
-                >
-                  <Download className="w-5 h-5" />
-                </a>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <ImagePreviewFrame
+          url={url}
+          alt={filename}
+          downloadUrl={downloadUrl || url}
+          className="w-full rounded-xl border border-border shadow-card"
+          onOpen={() => setLightboxOpen(true)}
+        />
+        <ImageLightbox
+          images={lightboxImages}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+        />
       </div>
     );
   }
 
   return (
-    <div className="mt-4 inline-block w-full sm:w-auto">
-      <a 
-        href={downloadUrl || url} 
-        target="_blank" 
-        rel="noopener noreferrer"
-        download
-        className="inline-flex items-center gap-4 px-5 py-3.5 rounded-xl border border-border bg-card hover:bg-muted/40 transition-colors shadow-card w-full group text-left"
+    <div className="mt-4 inline-block w-full sm:w-auto max-w-full">
+      <a
+        href={downloadUrl || url}
+        download={filename}
+        onClick={async (e) => {
+          e.preventDefault();
+          if (downloading) return;
+          setDownloading(true);
+          try {
+            await triggerFileDownload(downloadUrl || url, filename);
+          } finally {
+            setDownloading(false);
+          }
+        }}
+        aria-busy={downloading}
+        aria-label={`Download ${filename}`}
+        className={cn(
+          "inline-flex items-center gap-4 px-5 py-3.5 min-h-[44px] rounded-xl border border-border bg-card hover:bg-muted/40 transition-colors shadow-card w-full group text-left",
+          downloading && "pointer-events-none opacity-75"
+        )}
       >
         <div className="p-2.5 bg-primary/10 text-primary rounded-lg shrink-0">
-          <FileIcon className="w-6 h-6" />
+          <FileIcon className="w-6 h-6" aria-hidden="true" />
         </div>
         <div className="flex flex-col flex-1 min-w-0 pr-2">
           <span className="text-sm font-semibold text-foreground truncate block">{filename}</span>
-          <span className="text-xs text-muted-foreground mt-0.5 font-medium">Click to view or download</span>
+          <span className="text-xs text-muted-foreground mt-0.5 font-medium">
+            {downloading ? "Downloading..." : "Click to download"}
+          </span>
         </div>
-        <div className="pl-2 border-l border-border flex items-center justify-center">
-          <Download className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors ml-2" />
+        <div className="pl-2 border-l border-border flex items-center justify-center shrink-0">
+          {downloading ? (
+            <Loader2 className="w-5 h-5 text-primary animate-spin ml-2" aria-hidden="true" />
+          ) : (
+            <Download
+              className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors ml-2"
+              aria-hidden="true"
+            />
+          )}
         </div>
       </a>
     </div>
