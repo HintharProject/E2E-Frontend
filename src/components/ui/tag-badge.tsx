@@ -3,6 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { cn } from "@/lib/utils";
 
 export interface TagBadgeProps {
@@ -18,6 +19,7 @@ export interface TagBadgeProps {
  * Routes to the unified Tag Hub view at /tags/[name].
  */
 export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
+  const { isSignedIn } = useAuthGate();
   const cleanName = (name || "").replace(/^#/, "").trim().toLowerCase();
 
   if (!cleanName) return null;
@@ -25,6 +27,7 @@ export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
   return (
     <Link
       href={`/tags/${encodeURIComponent(cleanName)}`}
+      prefetch={isSignedIn ? undefined : false}
       onClick={(e) => {
         // Prevent triggering parent card navigation (e.g., BaseFeedCard, PostCard)
         e.stopPropagation();

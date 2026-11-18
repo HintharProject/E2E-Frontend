@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
 import { ArrowRight, Lock, LogIn, UserPlus } from "lucide-react";
+import { getDevTokenIfEnabled, useDevToken } from "@/lib/client-auth";
 import {
   Dialog,
   DialogContent,
@@ -50,6 +51,9 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [options, setOptions] = useState<AuthGateOptions>({});
+  const devToken = useDevToken();
+
+  const effectiveSignedIn = Boolean(isSignedIn || devToken);
 
   const currentRelativeUrl = useMemo(() => {
     if (!pathname) return "/";
@@ -70,7 +74,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
 
   const requireAuth = useCallback(
     (onAuthed?: () => void, gateOptions?: AuthGateOptions): boolean => {
-      if (isSignedIn) {
+      if (isSignedIn || getDevTokenIfEnabled()) {
         onAuthed?.();
         return true;
       }
@@ -87,13 +91,13 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo<AuthGateContextValue>(
     () => ({
-      isSignedIn: Boolean(isSignedIn),
+      isSignedIn: effectiveSignedIn,
       isLoaded,
       openAuthGate,
       closeAuthGate,
       requireAuth,
     }),
-    [isSignedIn, isLoaded, openAuthGate, closeAuthGate, requireAuth]
+    [effectiveSignedIn, isLoaded, openAuthGate, closeAuthGate, requireAuth]
   );
 
   return (

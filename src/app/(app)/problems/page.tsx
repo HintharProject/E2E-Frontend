@@ -1,20 +1,26 @@
 "use client";
 
 import { Suspense } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ProblemCardSkeleton } from "@/components/features/skeletons";
+import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
 import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { useProblems } from "@/hooks/use-problems";
 import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
+import { GatedLink } from "@/components/features/auth/gated-link";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { parseFilterList } from "@/lib/filter-params";
 import type { ContentSortMode, TimeframeFilter } from "@/types";
 
 function ProblemsFeed() {
   const searchParams = useSearchParams();
+  const { isSignedIn } = useAuthGate();
 
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
@@ -29,6 +35,7 @@ function ProblemsFeed() {
     isFetchingNextPage,
     isLoading,
     isError,
+    error,
     refetch,
     isRefetching,
   } = useProblems({
@@ -40,6 +47,7 @@ function ProblemsFeed() {
   });
 
   const problems = data?.pages.flatMap((p) => p.data) ?? [];
+  const errStatus = (error as { status?: number } | null)?.status;
 
   return (
     <TopmostScrollRefresh
@@ -55,10 +63,41 @@ function ProblemsFeed() {
           <ProblemCardSkeleton />
         </div>
       ) : isError ? (
-        <EmptyState
-          title="Failed to load problems"
-          description="We ran into an issue retrieving the data. Please try again."
-        />
+        !isSignedIn && (errStatus === 401 || errStatus === 403) ? (
+          <EmptyState
+            title="Sign in to browse Solve!"
+            description="Sign up free or log in to explore peer questions, worked solutions, and past-paper discussions."
+            action={
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href="/sign-up?redirect_url=%2Fproblems" />}
+                >
+                  Sign up free
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href="/sign-in?redirect_url=%2Fproblems" />}
+                >
+                  Log in
+                </Button>
+              </div>
+            }
+          />
+        ) : (
+          <EmptyState
+            title="Failed to load problems"
+            description="We ran into an issue retrieving the data. Please try again."
+            action={
+              <Button variant="outline" onClick={() => refetch()}>
+                Try again
+              </Button>
+            }
+          />
+        )
       ) : problems.length === 0 ? (
         <EmptyState
           title="No problems found"
@@ -87,10 +126,6 @@ function ProblemsFeed() {
     </TopmostScrollRefresh>
   );
 }
-
-import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
-import { Plus } from "lucide-react";
-import { GatedLink } from "@/components/features/auth/gated-link";
 
 export default function ProblemsPage() {
   return (

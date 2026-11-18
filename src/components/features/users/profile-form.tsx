@@ -13,6 +13,7 @@ import { Select } from "@/components/ui/select";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { useAuth, useUser } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
+import { getMutationAuthToken } from "@/lib/client-auth";
 import { useQueryClient } from "@tanstack/react-query";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { AppUser } from "@/types/user";
@@ -91,9 +92,7 @@ export function ProfileForm({
     setIsSubmitting(true);
 
     try {
-      const token =
-        (await getToken()) ||
-        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Please log in to update your profile.");
 
       // We only send custom_level if "more" is selected

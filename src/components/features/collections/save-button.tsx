@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useAuth } from "@clerk/nextjs";
+import { useDevToken } from "@/lib/client-auth";
 import {
   Bookmark,
   BookmarkCheck,
@@ -79,12 +79,10 @@ export function SaveButton({
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
 
-  const { isSignedIn } = useAuth();
-  const { requireAuth } = useAuthGate();
-  const isAuthed =
-    isSignedIn ||
-    (typeof window !== "undefined" &&
-      Boolean(localStorage.getItem("dev_token")));
+  const { isSignedIn: isGateSignedIn, requireAuth } = useAuthGate();
+  const devToken = useDevToken();
+
+  const isAuthed = Boolean(isGateSignedIn || devToken);
 
   // Saved Sessions queries/mutations
   const { data: sessionsResponse, isLoading: isSessionsLoading } =
@@ -152,8 +150,23 @@ export function SaveButton({
   const planCount = plans.length;
   const isPlanAtCap = planCount >= 12;
 
+  const handleUnauthorizedError = (err: unknown, fallbackMessage: string) => {
+    const status = (err as { status?: number } | null)?.status;
+    const message = (err as { message?: string } | null)?.message;
+    if (status === 401 || message === "Unauthorized") {
+      setOpen(false);
+      requireAuth(undefined, { actionLabel: "save items to your library" });
+      return;
+    }
+    toast.error(message || fallbackMessage);
+  };
+
   // Toggle Session Item
   const handleToggleSession = async (session: SavedSession) => {
+    if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
+      setOpen(false);
+      return;
+    }
     const existingItem = getItemInSession(session);
     setTogglingSessionId(session.id);
 
@@ -171,8 +184,8 @@ export function SaveButton({
         });
         toast.success(`Saved to "${session.title}"`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update session item.");
+    } catch (err: unknown) {
+      handleUnauthorizedError(err, "Failed to update session item.");
     } finally {
       setTogglingSessionId(null);
     }
@@ -180,6 +193,10 @@ export function SaveButton({
 
   // Toggle Study Plan Item
   const handleTogglePlan = async (plan: StudyPlan) => {
+    if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
+      setOpen(false);
+      return;
+    }
     const existingItem = getItemInPlan(plan);
     setTogglingPlanId(plan.id);
 
@@ -197,8 +214,8 @@ export function SaveButton({
         });
         toast.success(`Added to "${plan.title}"`);
       }
-    } catch (err: any) {
-      toast.error(err.message || "Failed to update study plan.");
+    } catch (err: unknown) {
+      handleUnauthorizedError(err, "Failed to update study plan.");
     } finally {
       setTogglingPlanId(null);
     }
@@ -207,6 +224,10 @@ export function SaveButton({
   // Create new session & save
   const handleCreateSessionAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
+      setOpen(false);
+      return;
+    }
     if (!newSessionTitle.trim() || isSessionAtCap) return;
 
     setIsCreatingSession(true);
@@ -223,8 +244,8 @@ export function SaveButton({
 
       toast.success(`Created "${newSession.title}" and saved item!`);
       setNewSessionTitle("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create session and save item.");
+    } catch (err: unknown) {
+      handleUnauthorizedError(err, "Failed to create session and save item.");
     } finally {
       setIsCreatingSession(false);
     }
@@ -233,6 +254,10 @@ export function SaveButton({
   // Create new plan & save
   const handleCreatePlanAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
+      setOpen(false);
+      return;
+    }
     if (!newPlanTitle.trim() || isPlanAtCap) return;
 
     setIsCreatingPlan(true);
@@ -249,8 +274,8 @@ export function SaveButton({
 
       toast.success(`Created "${newPlan.title}" and added to plan!`);
       setNewPlanTitle("");
-    } catch (err: any) {
-      toast.error(err.message || "Failed to create study plan.");
+    } catch (err: unknown) {
+      handleUnauthorizedError(err, "Failed to create study plan.");
     } finally {
       setIsCreatingPlan(false);
     }
@@ -266,6 +291,30 @@ export function SaveButton({
     }
     setOpen(nextOpen);
   };
+
+  if (!isAuthed) {
+    return (
+      <Button
+        type="button"
+        variant={buttonVariant}
+        size={buttonSize}
+        className={cn("transition-colors", className)}
+        aria-label="Save to session or study plan"
+        aria-pressed={false}
+        title="Save to session or study plan"
+        onClick={(e) => {
+          e.stopPropagation();
+          requireAuth(undefined, { actionLabel: "save items to your library" });
+        }}
+      >
+        <Bookmark
+          className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground"
+          aria-hidden="true"
+        />
+        {showLabel && <span className="ml-1.5">{label}</span>}
+      </Button>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -284,10 +333,6 @@ export function SaveButton({
             title={isSaved ? "Saved in collections" : "Save to session or study plan"}
             onClick={(e) => {
               e.stopPropagation();
-              if (!isAuthed) {
-                e.preventDefault();
-                requireAuth(undefined, { actionLabel: "save items to your library" });
-              }
             }}
           />
         }

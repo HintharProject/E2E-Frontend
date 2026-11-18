@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch, buildQueryString } from "@/services/api-client";
+import { resolveClientAuth } from "@/lib/client-auth";
 import type { PaginatedResponse, Problem, Solution } from "@/types";
 
 /**
@@ -11,23 +12,22 @@ import type { PaginatedResponse, Problem, Solution } from "@/types";
  * solutions from recent problems and keep those written by `userId`.
  */
 export function useUserContributions(userId: string) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useQuery<Solution[]>({
-    queryKey: ["contributions", userId],
+    queryKey: ["contributions", userId, isAuthed ? "auth" : "guest"],
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
     queryFn: async () => {
-      const token =
-        (await getToken()) ||
-        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      const token = await getOptionalToken();
 
       const problemsPage = await apiFetch<PaginatedResponse<Problem>>(
         `/problems/${buildQueryString({
           page: 1,
           expand: "author_details,subject_details,level_details",
         })}`,
-        token
+        token || undefined
       );
 
       const problems = problemsPage.data ?? [];
@@ -42,7 +42,7 @@ export function useUserContributions(userId: string) {
                 page: 1,
                 expand: "attachments,author_details",
               })}`,
-              token
+              token || undefined
             );
             const solutions = Array.isArray(solutionsPage)
               ? solutionsPage

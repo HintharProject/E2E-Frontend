@@ -22,15 +22,18 @@ export function GatedLink({
   actionLabel,
   redirectUrl,
   onClick,
+  prefetch,
   children,
   ...rest
 }: GatedLinkProps) {
-  const { requireAuth } = useAuthGate();
+  const { isSignedIn, requireAuth } = useAuthGate();
   const resolvedHref = typeof href === "string" ? href : href.pathname || "/";
+  const resolvedPrefetch = prefetch !== undefined ? prefetch : isSignedIn ? undefined : false;
 
   return (
     <Link
       href={href}
+      prefetch={resolvedPrefetch}
       onClick={(e) => {
         onClick?.(e);
         if (e.defaultPrevented) return;

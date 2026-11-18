@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Calendar, ExternalLink, GraduationCap, Loader2, Shield } from "lucide-react";
 import { apiFetch } from "@/services/api-client";
+import { resolveClientAuth } from "@/lib/client-auth";
 import type { UserPublic } from "@/types";
 import { isStaffRole, type Role } from "@/types/user";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
@@ -47,17 +48,16 @@ export function CommentUserProfileDialog({
   onOpenChange: (open: boolean) => void;
 }) {
   const { getToken, isSignedIn } = useAuth();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
   const userId = user?.id ?? "";
 
   const { data: fullProfile, isLoading } = useQuery<UserPublic>({
-    queryKey: ["user", userId],
+    queryKey: ["user", userId, isAuthed ? "auth" : "guest"],
     queryFn: async () => {
-      const token =
-        (await getToken()) ||
-        (typeof window !== "undefined" ? localStorage.getItem("dev_token") : null);
+      const token = await getOptionalToken();
       return apiFetch<UserPublic>(`/users/${userId}/`, token || undefined);
     },
-    enabled: open && Boolean(userId) && Boolean(isSignedIn),
+    enabled: open && Boolean(userId) && isAuthed,
     staleTime: 5 * 60 * 1000,
   });
 

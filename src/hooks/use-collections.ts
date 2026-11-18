@@ -18,23 +18,11 @@ import {
   addStudyPlanItem,
   removeStudyPlanItem,
 } from "@/services/collections-service";
-import type { SaveTargetPayload, SavedSession, StudyPlan } from "@/types";
-
-function getAuthTokenWithDevFallback(token: string | null): string | null {
-  if (process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && typeof window !== "undefined") {
-    const devToken = localStorage.getItem("dev_token");
-    if (devToken) return devToken;
-  }
-  return token;
-}
-
-function isClientAuthenticated(isSignedIn: boolean | undefined): boolean {
-  if (isSignedIn) return true;
-  if (process.env.NEXT_PUBLIC_ALLOW_DEV_LOGIN === "true" && typeof window !== "undefined") {
-    return Boolean(localStorage.getItem("dev_token"));
-  }
-  return false;
-}
+import type { SaveTargetPayload } from "@/types";
+import {
+  getMutationAuthToken,
+  resolveClientAuth,
+} from "@/lib/client-auth";
 
 // ============================================================================
 // Saved Sessions Hooks
@@ -42,26 +30,28 @@ function isClientAuthenticated(isSignedIn: boolean | undefined): boolean {
 
 export function useSavedSessions() {
   const { getToken, isSignedIn } = useAuth();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useQuery({
     queryKey: ["saved-sessions"],
     queryFn: async () => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getOptionalToken();
       if (!token) throw new Error("Unauthorized");
       return fetchSavedSessions(token);
     },
-    enabled: isClientAuthenticated(isSignedIn),
+    enabled: isAuthed,
     staleTime: 60 * 1000,
   });
 }
 
 export function useSavedSession(id: string) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const { getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useQuery({
     queryKey: ["saved-session", id],
     queryFn: async () => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getOptionalToken();
       return fetchSavedSession(id, token);
     },
     enabled: !!id,
@@ -75,7 +65,7 @@ export function useCreateSavedSession() {
 
   return useMutation({
     mutationFn: async (data: { title: string; is_public?: boolean }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return createSavedSession(data, token);
     },
@@ -97,7 +87,7 @@ export function useUpdateSavedSession() {
       id: string;
       data: { title?: string; is_public?: boolean };
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return updateSavedSession(id, data, token);
     },
@@ -114,7 +104,7 @@ export function useDeleteSavedSession() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return deleteSavedSession(id, token);
     },
@@ -136,7 +126,7 @@ export function useAddSessionItem() {
       sessionId: string;
       target: SaveTargetPayload;
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return addSavedSessionItem(sessionId, target, token);
     },
@@ -159,7 +149,7 @@ export function useRemoveSessionItem() {
       sessionId: string;
       itemId: string;
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return removeSavedSessionItem(sessionId, itemId, token);
     },
@@ -208,26 +198,28 @@ export function useAddSavedSessionItem() {
 
 export function useStudyPlans() {
   const { getToken, isSignedIn } = useAuth();
+  const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useQuery({
     queryKey: ["study-plans"],
     queryFn: async () => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getOptionalToken();
       if (!token) throw new Error("Unauthorized");
       return fetchStudyPlans(token);
     },
-    enabled: isClientAuthenticated(isSignedIn),
+    enabled: isAuthed,
     staleTime: 60 * 1000,
   });
 }
 
 export function useStudyPlan(id: string) {
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
+  const { getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useQuery({
     queryKey: ["study-plan", id],
     queryFn: async () => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getOptionalToken();
       return fetchStudyPlan(id, token);
     },
     enabled: !!id,
@@ -241,7 +233,7 @@ export function useCreateStudyPlan() {
 
   return useMutation({
     mutationFn: async (data: { title: string; is_public?: boolean }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return createStudyPlan(data, token);
     },
@@ -263,7 +255,7 @@ export function useUpdateStudyPlan() {
       id: string;
       data: { title?: string; is_public?: boolean };
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return updateStudyPlan(id, data, token);
     },
@@ -280,7 +272,7 @@ export function useDeleteStudyPlan() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return deleteStudyPlan(id, token);
     },
@@ -304,7 +296,7 @@ export function useAddStudyPlanItem() {
       lessonId?: string;
       target?: SaveTargetPayload;
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       const payload: SaveTargetPayload = target || (lessonId ? { lesson: lessonId } : {});
       return addStudyPlanItem(planId, payload, token);
@@ -328,7 +320,7 @@ export function useRemoveStudyPlanItem() {
       planId: string;
       itemId: string;
     }) => {
-      const token = getAuthTokenWithDevFallback(await getToken());
+      const token = await getMutationAuthToken(getToken);
       if (!token) throw new Error("Unauthorized");
       return removeStudyPlanItem(planId, itemId, token);
     },

@@ -15,7 +15,16 @@ export function Providers({ children }: { children: React.ReactNode }) {
           staleTime: 5 * 60 * 1000, // 5 minutes
           gcTime: 15 * 60 * 1000, // 15 minutes
           refetchOnWindowFocus: false,
-          retry: 1, // Retry once for transient errors
+          retry: (failureCount, error) => {
+            const status = (error as { status?: number } | null)?.status;
+            // Fail fast on 4xx client/auth/not-found errors.
+            if (typeof status === "number" && status >= 400 && status < 500) {
+              return false;
+            }
+            // Retry up to 2 times for transient network, timeout (status 0), or 5xx cold-start responses.
+            return failureCount < 2;
+          },
+          retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
         },
       },
     });

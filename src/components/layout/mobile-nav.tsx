@@ -223,16 +223,7 @@ export function MobileNav({ user }: MobileNavProps) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={(e) => {
-                      closeMobileNav();
-                      if (!user) {
-                        e.preventDefault();
-                        requireAuth(undefined, {
-                          actionLabel: `access ${item.label}`,
-                          redirectUrl: item.href,
-                        });
-                      }
-                    }}
+                    onClick={closeMobileNav}
                     aria-current={active ? "page" : undefined}
                     className={cn(
                       "flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -269,6 +260,7 @@ export function MobileNav({ user }: MobileNavProps) {
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={user ? undefined : false}
                     onClick={(e) => {
                       closeMobileNav();
                       if (!user) {

@@ -30,6 +30,7 @@ import {
   TimeframeFilter,
 } from "@/types";
 import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { cn } from "@/lib/utils";
 
 const POPULAR_TOPICS = [
@@ -48,6 +49,7 @@ export default function SearchPage(props: {
   const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
+  const { isSignedIn } = useAuthGate();
 
   const initialQ = (resolvedParams?.q as string) || "";
   const initialType = (resolvedParams?.type as SearchCategoryFilter) || "all";
@@ -591,6 +593,7 @@ export default function SearchPage(props: {
                       <Link
                         key={lesson.id}
                         href={`/lessons/${lesson.id}`}
+                        prefetch={isSignedIn ? undefined : false}
                         className="group flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 rounded-xl border border-border bg-card shadow-card hover:border-primary/50 hover:shadow-card-hover transition-all"
                       >
                         <div className="space-y-1.5 flex-1 min-w-0">
