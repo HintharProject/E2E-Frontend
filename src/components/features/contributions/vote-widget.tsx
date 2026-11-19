@@ -17,9 +17,8 @@ export interface VoteWidgetProps {
   initialUserVote?: 1 | -1 | 0 | null;
   authorId?: string;
   authorClerkId?: string;
-  problemAuthorId?: string;      // For solutions: locks author peer votes
-  problemAuthorClerkId?: string; // Clerk ID support for author lock
-  isActivePool?: boolean;        // If false, locks voting (archived attempt)
+  problemAuthorId?: string;      // For solutions: grants 3x author upvote boost
+  problemAuthorClerkId?: string; // Clerk ID support for author boost
   variant?: "stack" | "pill";
   size?: "sm" | "md" | "lg";
   disabled?: boolean;
@@ -35,7 +34,6 @@ export function VoteWidget({
   authorClerkId,
   problemAuthorId,
   problemAuthorClerkId,
-  isActivePool = true,
   variant = "pill",
   size = "md",
   disabled = false,
@@ -45,6 +43,8 @@ export function VoteWidget({
   const { requireAuth } = useAuthGate();
   const [score, setScore] = useState(initialScore);
   const [userVote, setUserVote] = useState<1 | -1 | 0>((initialUserVote ?? 0) as 1 | -1 | 0);
+  const [prevInitialScore, setPrevInitialScore] = useState(initialScore);
+  const [prevInitialUserVote, setPrevInitialUserVote] = useState(initialUserVote);
   const [floatingFeedback, setFloatingFeedback] = useState<{
     text: string;
     key: number;
@@ -53,10 +53,12 @@ export function VoteWidget({
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
+  if (initialScore !== prevInitialScore || initialUserVote !== prevInitialUserVote) {
+    setPrevInitialScore(initialScore);
+    setPrevInitialUserVote(initialUserVote);
     setScore(initialScore);
     setUserVote((initialUserVote ?? 0) as 1 | -1 | 0);
-  }, [initialScore, initialUserVote]);
+  }
 
   useEffect(() => {
     return () => {
@@ -78,21 +80,25 @@ export function VoteWidget({
       (problemAuthorId && user?.id === problemAuthorId) ||
       (problemAuthorClerkId && user?.clerk_id === problemAuthorClerkId)
     );
-  const isArchived = isActivePool === false;
   const writeLocked = user ? isWriteLocked(user.ban_state) : false;
-  const isActionDisabled = disabled || isSelf || isProblemAuthor || isArchived || writeLocked;
-
+  const isActionDisabled = disabled || isSelf || writeLocked;
 
   const voterMultiplier =
     user?.dynamic_vote_weight ??
     user?.reputation?.dynamic_vote_weight ??
     (user?.contributor_tier !== undefined ? user.contributor_tier + 1 : 1);
 
+  const upvoteWeight = isProblemAuthor ? voterMultiplier * 3 : voterMultiplier;
+  const downvoteWeight = voterMultiplier;
+  const getWeightForVote = (v: 1 | -1 | 0) =>
+    v === 1 ? upvoteWeight : v === -1 ? downvoteWeight : 0;
+
   const voteMutation = useVoteContribution({
     contentType,
     contentId,
     currentScore: score,
     currentUserVote: userVote,
+    isProblemAuthor,
     onOptimisticChange: (newScore, newVote) => {
       setScore(newScore);
       setUserVote(newVote);
@@ -113,16 +119,6 @@ export function VoteWidget({
       return;
     }
 
-    if (isProblemAuthor) {
-      toast.info("Problem authors review solutions via the Author Endorse button.");
-      return;
-    }
-
-    if (isArchived) {
-      toast.info("Voting is locked on archived solution attempts.");
-      return;
-    }
-
     if (writeLocked) {
       toast.error(`Your account is restricted from voting (${user.ban_state}).`);
       return;
@@ -131,15 +127,8 @@ export function VoteWidget({
     // Toggle unvote if clicking already active vote
     const nextVote: 1 | -1 | 0 = userVote === targetValue ? 0 : targetValue;
 
-    // Calculate score delta
-    let delta = 0;
-    if (nextVote === 0) {
-      delta = -(userVote * voterMultiplier);
-    } else if (userVote === 0) {
-      delta = nextVote * voterMultiplier;
-    } else {
-      delta = (nextVote - userVote) * voterMultiplier;
-    }
+    const delta =
+      nextVote * getWeightForVote(nextVote) - userVote * getWeightForVote(userVote);
 
     const nextScore = score + delta;
     setScore(nextScore);
@@ -147,7 +136,9 @@ export function VoteWidget({
 
     // Trigger floating multiplier micro-feedback
     if (nextVote !== 0) {
-      const feedbackText = nextVote === 1 ? `+${voterMultiplier}x Impact` : `-${voterMultiplier}x Impact`;
+      const appliedWeight = nextVote === 1 ? upvoteWeight : downvoteWeight;
+      const feedbackText =
+        nextVote === 1 ? `+${appliedWeight}x Impact` : `-${appliedWeight}x Impact`;
       setFloatingFeedback({
         text: feedbackText,
         key: Date.now(),
@@ -169,8 +160,6 @@ export function VoteWidget({
 
   const getDisabledTooltip = () => {
     if (isSelf) return "You cannot vote on your own content";
-    if (isProblemAuthor) return "Problem authors review solutions via the Author Endorse button";
-    if (isArchived) return "Voting is locked on archived solution attempts";
     if (writeLocked) return "Account restricted from voting";
     if (!user) return "Sign in to vote";
     return undefined;

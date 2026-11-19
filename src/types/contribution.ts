@@ -54,8 +54,8 @@ export interface LifetimeTotals {
   total_points_deducted: number;
   total_upvotes_received: number;
   total_downvotes_received: number;
-  solutions_accepted_count: number;
-  problems_solved_count: number;
+  solutions_count: number;
+  high_confidence_problems_count: number;
 }
 
 export interface ActivityTotals {
@@ -113,7 +113,7 @@ export interface ContributionTransaction {
     voter_weight?: number;
     ordinal_upvote_count?: number;
     reason?: string;
-    [key: string]: any;
+    [key: string]: unknown;
   };
   created_at: string;
 }
@@ -127,7 +127,7 @@ export interface VoteMutationResponse {
   content_score: number;
   author_points_awarded?: number;
   author_points_reverted?: number;
-  solution_pruned?: boolean;
+  problem_confidence?: number;
 }
 
 export const TIER_CONFIG: Record<

@@ -18,9 +18,7 @@ import { Solution } from "@/types";
 import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
 import { applyFieldErrorsToForm, extractApiFieldErrors } from "@/lib/form-errors";
 import { generateProblemUploadUrl } from "@/hooks/use-problems";
-import { AlertCircle, Info, Sparkles, Video } from "lucide-react";
-
-
+import { Video } from "lucide-react";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -46,22 +44,14 @@ type FormValues = z.infer<typeof formSchema>;
 
 export interface CreateSolutionFormProps {
   problemId: string;
-  isSolved: boolean;
-  isClosed?: boolean;
-  activePoolCount?: number;
-  canEvict?: boolean;
-  isPoolLocked?: boolean;
+  isLocked?: boolean;
   onSuccess?: () => void;
   onCancel?: () => void;
 }
 
 export function CreateSolutionForm({
   problemId,
-  isSolved,
-  isClosed = false,
-  activePoolCount = 0,
-  canEvict = false,
-  isPoolLocked = false,
+  isLocked = false,
   onSuccess,
   onCancel,
 }: CreateSolutionFormProps) {
@@ -71,8 +61,12 @@ export function CreateSolutionForm({
   const { getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [serverError, setServerError] = useState("");
-  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
+  const [serverError, setServerError] = useState(
+    () => getFailedSubmission(submissionKey)?.serverMessage ?? ""
+  );
+  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>(
+    () => getFailedSubmission(submissionKey)?.fieldErrors ?? {}
+  );
 
   const {
     register,
@@ -99,52 +93,19 @@ export function CreateSolutionForm({
       if (failed.files && failed.files.length > 0) {
         setValue("attachments", failed.files, { shouldValidate: true });
       }
-      if (failed.serverMessage) {
-        setServerError(failed.serverMessage);
-      }
       if (failed.fieldErrors) {
-        setServerFieldErrors(failed.fieldErrors);
         applyFieldErrorsToForm(failed.fieldErrors, setError);
       }
       clearFailedSubmission(submissionKey);
     }
   }, [getFailedSubmission, clearFailedSubmission, submissionKey, reset, setValue, setError]);
 
-  if (isClosed) {
+  if (isLocked) {
     return (
       <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
-        This discussion thread has been closed by moderation. New solutions cannot be posted.
+        This problem thread has been locked by moderation. New solutions cannot be posted.
       </div>
     );
-  }
-
-  // Capacity Gating UI when 7/7 active slots are filled
-  if (activePoolCount >= 7) {
-    if (!canEvict) {
-      return (
-        <div className="rounded-xl border border-border bg-card p-6 text-center shadow-card">
-          <AlertCircle className="size-8 text-warning mx-auto mb-2" />
-          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Capacity Reached (7/7)</h4>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            The active solution pool is full. Submissions are temporarily reserved for Contributor Tier 2+
-            to review or replace stale attempts with higher-quality working.
-          </p>
-        </div>
-      );
-    }
-
-    if (isPoolLocked) {
-      return (
-        <div className="rounded-xl border border-warning/30 bg-warning/10 p-6 text-center shadow-card">
-          <Info className="size-8 text-warning mx-auto mb-2" />
-          <h4 className="font-heading font-semibold text-foreground text-sm">Solution Pool Locked (High Quality)</h4>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            All 7 active solutions currently have positive peer ratings (S &gt; 0) or author endorsements.
-            The pool is locked until community consensus shifts.
-          </p>
-        </div>
-      );
-    }
   }
 
   const onSubmit = async (data: FormValues) => {
@@ -199,20 +160,16 @@ export function CreateSolutionForm({
 
       queryClient.invalidateQueries({ queryKey: ["solutions", problemId] });
       queryClient.invalidateQueries({ queryKey: ["problem", problemId] });
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
       toast.success("Solution posted successfully!");
       reset({ body: "", video_url: "" });
       setValue("attachments", undefined);
       onSuccess?.();
-    } catch (err: any) {
-      if (err.code === "POOL_CAPACITY_EXCEEDED") {
-        setServerError("Active solution pool is full (7/7). Contributor Tier 2+ required to evict stale attempts.");
-        toast.error("Pool capacity exceeded.");
-      } else if (err.code === "POOL_LOCKED_HIGH_QUALITY") {
-        setServerError("All 7 active solutions currently have positive peer ratings. The pool is locked.");
-        toast.error("Solution pool is locked.");
-      } else if (err.code === "THREAD_CLOSED") {
-        setServerError("This discussion thread has been closed.");
-        toast.error("Thread is closed.");
+    } catch (err: unknown) {
+      const apiErr = err as { code?: string };
+      if (apiErr?.code === "THREAD_LOCKED") {
+        setServerError("This problem thread has been locked by moderation.");
+        toast.error("Thread is locked.");
       } else {
         const { serverMessage, fieldErrors, failedFieldLabels } = extractApiFieldErrors(
           err,
@@ -229,9 +186,10 @@ export function CreateSolutionForm({
         setServerFieldErrors(fieldErrors);
         applyFieldErrorsToForm(fieldErrors, setError);
 
-        const errorLabel = failedFieldLabels.length > 0
-          ? `Please fix errors in ${failedFieldLabels.join(", ")}`
-          : serverMessage;
+        const errorLabel =
+          failedFieldLabels.length > 0
+            ? `Please fix errors in ${failedFieldLabels.join(", ")}`
+            : serverMessage;
         toast.error(`Validation failed: ${errorLabel}`);
       }
     } finally {
@@ -241,25 +199,9 @@ export function CreateSolutionForm({
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="font-heading text-lg font-semibold text-foreground">Submit a Worked Solution</h3>
-        {activePoolCount >= 7 && canEvict && (
-          <span className="inline-flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20">
-            <Sparkles className="size-3" /> Tier 2+ Eviction Enabled
-          </span>
-        )}
-      </div>
+      <h3 className="font-heading text-lg font-semibold text-foreground">Submit a Worked Solution</h3>
 
       <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
-
-      {activePoolCount >= 7 && canEvict && (
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-foreground flex items-start gap-2">
-          <Info className="size-4 shrink-0 text-primary mt-0.5" />
-          <span>
-            The active pool is at capacity (7/7). Submitting your solution will automatically archive the lowest-scoring unendorsed attempt (S &le; 0).
-          </span>
-        </div>
-      )}
 
       <Field label="Your Worked Steps & Reasoning" error={errors.body?.message}>
         <Textarea
@@ -278,11 +220,11 @@ export function CreateSolutionForm({
             className="pl-8"
             aria-invalid={!!errors.video_url}
           />
-          <Video className="size-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Video className="size-4 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" aria-hidden="true" />
         </div>
       </Field>
 
-      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)" error={(errors as any).attachments?.message}>
+      <Field label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)" error={errors.attachments?.message as string | undefined}>
         <FileDropzone
           onFilesSelected={(files) => {
             setValue("attachments", files, { shouldValidate: true });

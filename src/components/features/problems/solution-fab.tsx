@@ -1,9 +1,8 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState } from "react";
 import { Problem } from "@/types";
 import { useCurrentUser } from "@/hooks/use-current-user";
-import { useSolutions } from "@/hooks/use-problems";
 import { isWriteLocked } from "@/types/user";
 import { CreateSolutionForm } from "./create-solution-form";
 import {
@@ -25,30 +24,10 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
   const { user } = useCurrentUser();
   const [open, setOpen] = useState(false);
 
-  // Active pool solutions
-  const { data: activeData } = useSolutions(problem.id, true);
-  const activeSolutions = useMemo(
-    () => activeData?.pages.flatMap((p) => p.data) ?? [],
-    [activeData]
-  );
-  const activeCount = activeSolutions.length;
+  const isLocked = Boolean(problem.is_locked);
 
-  const contributorTier = user?.contributor_tier ?? 0;
-  const isAdmin = user?.role === "ADMIN" || user?.role === "SUPERADMIN";
-  const canEvict = contributorTier >= 2 || isAdmin;
-
-  const isPoolLocked = useMemo(() => {
-    if (activeCount < 7) return false;
-    return !activeSolutions.some(
-      (s) => !s.is_author_endorsed && !s.is_accepted && (s.vote_score ?? 0) <= 0
-    );
-  }, [activeCount, activeSolutions]);
-
-  const isClosed = problem.status === "CLOSED";
-  const isFinal = problem.status === "FINAL";
-
-  // Hide if write locked or thread finalized/closed
-  if (!user || isWriteLocked(user.ban_state) || isClosed || isFinal) {
+  // Hide if unauthenticated, write-locked, or thread locked by moderation
+  if (!user || isWriteLocked(user.ban_state) || isLocked) {
     return null;
   }
 
@@ -61,8 +40,8 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
           onClick={() => setOpen(true)}
           className="gap-1.5 min-h-[40px] sm:min-h-0"
         >
-          <PenTool className="size-3.5" />
-          <span>Submit Solution</span>
+          <PenTool className="size-3.5" aria-hidden="true" />
+          <span>Add Solution</span>
         </Button>
       ) : (
         <div className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 pointer-events-none flex items-center">
@@ -73,8 +52,8 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
               aria-label="Submit a worked solution"
               className="relative flex h-12 items-center gap-2 rounded-full bg-primary px-4 text-sm font-semibold text-primary-foreground shadow-card-hover transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
             >
-              <Lightbulb className="size-4" />
-              <span>Submit Solution</span>
+              <Lightbulb className="size-4" aria-hidden="true" />
+              <span>Add Solution</span>
             </button>
           </div>
         </div>
@@ -86,7 +65,7 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
           <div className="p-6 pb-2">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-xl font-heading font-semibold text-foreground">
-                <PenTool className="size-5 text-primary" />
+                <PenTool className="size-5 text-primary" aria-hidden="true" />
                 <span>Submit a Worked Solution</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
@@ -99,11 +78,7 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
           <div className="p-6 pt-0">
             <CreateSolutionForm
               problemId={problem.id}
-              isSolved={problem.status === "SOLVED"}
-              isClosed={isClosed}
-              activePoolCount={activeCount}
-              canEvict={canEvict}
-              isPoolLocked={isPoolLocked}
+              isLocked={isLocked}
               onSuccess={() => setOpen(false)}
               onCancel={() => setOpen(false)}
             />

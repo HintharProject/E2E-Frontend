@@ -1,6 +1,7 @@
 "use client";
 
-import { Plus, FileText, PenLine, ShieldCheck, Layers, Sparkles, Clock } from "lucide-react";
+import Link from "next/link";
+import { Plus, FileText, PenLine, ShieldCheck, Layers, Sparkles, ArrowUpRight, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GatedLink } from "@/components/features/auth/gated-link";
 
@@ -20,7 +21,7 @@ export function ProblemsRightRail() {
 
         <div className="space-y-2 text-xs">
           <div className="flex items-start gap-2.5 rounded-lg bg-muted/50 px-3 py-2.5">
-            <PenLine className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <PenLine className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
             <div>
               <p className="font-semibold text-foreground">Path A · Original Question</p>
               <p className="text-muted-foreground leading-snug">
@@ -29,7 +30,7 @@ export function ProblemsRightRail() {
             </div>
           </div>
           <div className="flex items-start gap-2.5 rounded-lg bg-muted/50 px-3 py-2.5">
-            <FileText className="mt-0.5 size-3.5 shrink-0 text-warning" />
+            <FileText className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
             <div>
               <p className="font-semibold text-foreground">Path B · Past Paper Cite</p>
               <p className="text-muted-foreground leading-snug">
@@ -45,58 +46,66 @@ export function ProblemsRightRail() {
           nativeButton={false}
           render={<GatedLink href="/problems/new" actionLabel="post a problem in Solve!" />}
         >
-          <Plus className="size-4" />
+          <Plus className="size-4" aria-hidden="true" />
           New Problem Thread
         </Button>
       </div>
 
-      {/* How Solve! Consensus Works Reference Card */}
+      {/* How Confidence & Solutions Work Reference Card */}
       <div className="rounded-xl border border-border bg-card p-5 shadow-card space-y-3.5">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="size-4 text-primary" />
+          <ShieldCheck className="size-4 text-primary" aria-hidden="true" />
           <h2 className="font-heading text-sm font-semibold text-foreground tracking-tight">
-            How Solve! Consensus Works
+            How Confidence &amp; Solutions Work
           </h2>
         </div>
 
         <ul className="space-y-2.5 text-xs text-muted-foreground">
           <li className="flex items-start gap-2.5">
-            <Layers className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <Layers className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" />
             <span>
-              <strong className="font-medium text-foreground">
-                <span className="font-mono tabular-nums">7</span>-Slot Solution Pool:
-              </strong>{" "}
-              Only the top active solutions stay pinned per thread.
+              <strong className="font-medium text-foreground">Unlimited Solutions:</strong>{" "}
+              Any member can submit worked solutions. Heavily downvoted entries (&le; -5) collapse cleanly.
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-primary" />
+            <TrendingUp className="mt-0.5 size-3.5 shrink-0 text-emerald-500" aria-hidden="true" />
             <span>
-              <strong className="font-medium text-foreground">Tier 2+ Eviction:</strong>{" "}
-              Full pools replace lowest zero-vote, unendorsed entries via Tier 2+ contributors.
+              <strong className="font-medium text-foreground">
+                <span className="font-mono tabular-nums">0–100%</span> Confidence:
+              </strong>{" "}
+              Combines top distinct-author solution scores, peer corroboration, and thread stability.
             </span>
           </li>
           <li className="flex items-start gap-2.5">
-            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-warning" />
+            <Sparkles className="mt-0.5 size-3.5 shrink-0 text-warning" aria-hidden="true" />
             <span>
               <strong className="font-medium text-foreground">
-                <span className="font-mono tabular-nums">+10</span> pt Reward:
+                <span className="font-mono tabular-nums">3×</span> Author Upvote:
               </strong>{" "}
-              Awarded when an author endorses or consensus marks a worked solution.
-            </span>
-          </li>
-          <li className="flex items-start gap-2.5">
-            <Clock className="mt-0.5 size-3.5 shrink-0 text-muted-foreground" />
-            <span>
-              <strong className="font-medium text-foreground">
-                <span className="font-mono tabular-nums">48h</span> FINAL Lock:
-              </strong>{" "}
-              Endorsed solutions lock into canonical archive after 48 hours.
+              Problem authors boost helpful community solutions at{" "}
+              <span className="font-mono tabular-nums">3×</span> their tier weight (+3 to +15).
             </span>
           </li>
         </ul>
+
+        <div className="pt-2 border-t border-border/60 flex flex-col gap-1.5 text-xs">
+          <Link
+            href="/problems?confidence=needs_help"
+            className="inline-flex items-center justify-between text-muted-foreground hover:text-primary transition-colors py-0.5"
+          >
+            <span>Browse Needs Help (&lt;50%)</span>
+            <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          </Link>
+          <Link
+            href="/problems?confidence=high"
+            className="inline-flex items-center justify-between text-muted-foreground hover:text-primary transition-colors py-0.5"
+          >
+            <span>Browse High Confidence (80%+)</span>
+            <ArrowUpRight className="size-3.5" aria-hidden="true" />
+          </Link>
+        </div>
       </div>
     </aside>
   );
 }
-

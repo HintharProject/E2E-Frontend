@@ -16,7 +16,7 @@ import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { GatedLink } from "@/components/features/auth/gated-link";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { parseFilterList } from "@/lib/filter-params";
-import type { ContentSortMode, TimeframeFilter } from "@/types";
+import type { ConfidenceFilterValue, ContentSortMode, TimeframeFilter } from "@/types";
 
 function ProblemsFeed() {
   const searchParams = useSearchParams();
@@ -24,7 +24,7 @@ function ProblemsFeed() {
 
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
-  const status = searchParams.get("status") || "";
+  const confidence = (searchParams.get("confidence") as ConfidenceFilterValue) || "";
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
   const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
 
@@ -41,7 +41,7 @@ function ProblemsFeed() {
   } = useProblems({
     subject: subjects.length > 0 ? subjects[0] : "",
     level: levels.length > 0 ? levels[0] : "",
-    status: status,
+    confidence,
     sort: currentSort,
     timeframe: currentTimeframe,
   });
@@ -133,7 +133,7 @@ export default function ProblemsPage() {
       <Suspense fallback={<div className="h-12 rounded-xl bg-card border border-border animate-pulse" />}>
         <HorizontalFilterBar
           hideTags
-          showProblemStatus
+          showConfidenceFilter
           showSort
           rightActions={
             <Button

@@ -24,7 +24,7 @@ export interface HorizontalFilterBarProps {
   showPostType?: boolean;
   showStateFilter?: boolean;
   hideTags?: boolean;
-  showProblemStatus?: boolean;
+  showConfidenceFilter?: boolean;
   postTypeOptions?: { value: string; label: string }[];
   /** Built-in URL-synced Default / Popular / Newest sort toggle in the right slot. */
   showSort?: boolean;
@@ -264,12 +264,13 @@ function SingleFilterChip({
   );
 }
 
-const PROBLEM_STATUS_OPTIONS = [
+const CONFIDENCE_OPTIONS = [
   { value: "", label: "All" },
-  { value: "OPEN", label: "Open" },
-  { value: "SOLVED", label: "Solved" },
-  { value: "FINAL", label: "Verified Consensus" },
-  { value: "CLOSED", label: "Closed" },
+  { value: "unanswered", label: "Unanswered (0%)" },
+  { value: "developing", label: "Developing (1–49%)" },
+  { value: "likely_solved", label: "Likely Solved (50–79%)" },
+  { value: "high", label: "High Confidence (80%+)" },
+  { value: "needs_help", label: "Needs Help (<50%)" },
 ];
 
 const LESSON_STATE_OPTIONS = [
@@ -282,7 +283,7 @@ export function HorizontalFilterBar({
   showPostType = false,
   showStateFilter = false,
   hideTags = false,
-  showProblemStatus = false,
+  showConfidenceFilter = false,
   postTypeOptions = [
     { value: "QUESTION", label: "Question" },
     { value: "SHARING", label: "Sharing" },
@@ -308,7 +309,7 @@ export function HorizontalFilterBar({
   const selectedLevels = parseFilterList(searchParams.get("level"));
   const selectedTypes = parseFilterList(searchParams.get("post_type"));
   const selectedTags = parseFilterList(searchParams.get("tags"));
-  const selectedStatus = searchParams.get("status") || "";
+  const selectedConfidence = searchParams.get("confidence") || "";
   const selectedState = searchParams.get("state") || "PUBLISHED";
 
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
@@ -319,7 +320,7 @@ export function HorizontalFilterBar({
     selectedLevels.length > 0 ||
     (showPostType && selectedTypes.length > 0) ||
     (!hideTags && selectedTags.length > 0) ||
-    (showProblemStatus && Boolean(selectedStatus)) ||
+    (showConfidenceFilter && Boolean(selectedConfidence)) ||
     (effectiveShowStateFilter && Boolean(searchParams.get("state")) && selectedState !== "PUBLISHED");
 
   function setListParam(key: string, values: string[]) {
@@ -354,7 +355,7 @@ export function HorizontalFilterBar({
     next.delete("level");
     next.delete("post_type");
     next.delete("tags");
-    next.delete("status");
+    next.delete("confidence");
     if (effectiveShowStateFilter) next.delete("state");
     const qs = next.toString();
     router.push(qs ? `${pathname}?${qs}` : pathname);
@@ -421,12 +422,12 @@ export function HorizontalFilterBar({
     }
   }
 
-  if (showProblemStatus && selectedStatus) {
-    const found = PROBLEM_STATUS_OPTIONS.find((s) => s.value === selectedStatus);
+  if (showConfidenceFilter && selectedConfidence) {
+    const found = CONFIDENCE_OPTIONS.find((s) => s.value === selectedConfidence);
     activePills.push({
-      key: `status-${selectedStatus}`,
-      label: found ? found.label : selectedStatus,
-      onRemove: () => setSingleParam("status", ""),
+      key: `confidence-${selectedConfidence}`,
+      label: found ? found.label : selectedConfidence,
+      onRemove: () => setSingleParam("confidence", ""),
     });
   }
 
@@ -510,13 +511,13 @@ export function HorizontalFilterBar({
             />
           )}
 
-          {showProblemStatus && (
+          {showConfidenceFilter && (
             <SingleFilterChip
-              label="Status"
-              options={PROBLEM_STATUS_OPTIONS}
-              value={selectedStatus}
+              label="Confidence"
+              options={CONFIDENCE_OPTIONS}
+              value={selectedConfidence}
               defaultValue=""
-              onChange={(v) => setSingleParam("status", v)}
+              onChange={(v) => setSingleParam("confidence", v)}
             />
           )}
 
