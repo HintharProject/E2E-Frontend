@@ -7,6 +7,7 @@ import { buttonVariants } from "@/components/ui/button";
 import { GatedLink } from "@/components/features/auth/gated-link";
 import { stripHtml } from "@/components/ui/base-card";
 import type { Lesson, Problem, Resource } from "@/types";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 
 interface LandingPreviewProps {
   problems: Problem[];
@@ -61,7 +62,7 @@ export function LandingPreview({ problems, lessons, papers }: LandingPreviewProp
                   Solve! Problems
                 </h3>
               </div>
-              <span className="font-mono text-xs text-muted-foreground">7-slot pool</span>
+              <span className="font-mono text-xs text-muted-foreground">Peer confidence</span>
             </div>
 
             {problems.length === 0 ? (
@@ -85,17 +86,16 @@ export function LandingPreview({ problems, lessons, papers }: LandingPreviewProp
               <div className="divide-y divide-border">
                 {problems.map((prob) => {
                   const snippet = stripHtml(prob.body || "");
-                  const poolCount = Math.min(prob.solution_count ?? 0, 7);
+                  const solutionCount = prob.solution_count ?? 0;
                   return (
                     <article key={prob.id} className="py-4 first:pt-1 last:pb-1 space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-medium border-primary/30 bg-accent text-primary"
-                          >
-                            {prob.status}
-                          </Badge>
+                          <ConfidenceBadge
+                            confidence={prob.resolution_confidence}
+                            band={prob.confidence_band}
+                            size="sm"
+                          />
                           {prob.subject_details?.name && (
                             <Badge variant="secondary" className="text-xs">
                               {prob.subject_details.name}
@@ -108,7 +108,7 @@ export function LandingPreview({ problems, lessons, papers }: LandingPreviewProp
                           )}
                         </div>
                         <span className="font-mono tabular-nums text-xs font-semibold text-muted-foreground">
-                          {poolCount}/7 solutions
+                          {solutionCount} {solutionCount === 1 ? "solution" : "solutions"}
                         </span>
                       </div>
 

@@ -21,13 +21,12 @@ import {
   PlusCircle,
   Loader2,
   BookOpen,
-  CheckCircle2,
-  Lock,
   ArrowUpRight,
   Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 
 interface AskInSolveModalProps {
   isOpen: boolean;
@@ -351,8 +350,6 @@ export function AskInSolveModal({
               <div className="grid grid-cols-1 gap-2.5">
                 {filteredProblems.map((prob: Problem) => {
                   const solutionCount = prob.solution_count ?? 0;
-                  const isFinal = prob.status === "FINAL";
-                  const isSolved = prob.status === "SOLVED";
 
                   return (
                     <div
@@ -376,22 +373,11 @@ export function AskInSolveModal({
                               {prob.title}
                             </span>
 
-                            {isFinal ? (
-                              <Badge className="text-[10px] font-semibold bg-indigo-600 hover:bg-indigo-600 text-white gap-1 py-0 h-4.5">
-                                <Lock className="size-2.5" aria-hidden="true" /> Consensus Verified
-                              </Badge>
-                            ) : isSolved ? (
-                              <Badge className="text-[10px] font-semibold bg-primary hover:bg-primary text-primary-foreground gap-1 py-0 h-4.5">
-                                <CheckCircle2 className="size-2.5" aria-hidden="true" /> Solved
-                              </Badge>
-                            ) : (
-                              <Badge
-                                variant="warning"
-                                className="text-[10px] font-semibold py-0 h-4.5"
-                              >
-                                Open
-                              </Badge>
-                            )}
+                            <ConfidenceBadge
+                              confidence={prob.resolution_confidence}
+                              band={prob.confidence_band}
+                              size="sm"
+                            />
                           </div>
 
                           {prob.body && (

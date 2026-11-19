@@ -12,9 +12,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CheckCircle2, Star, ArrowUpRight, BookOpen, ExternalLink, X } from "lucide-react";
+import { ArrowUpRight, BookOpen, UserCheck } from "lucide-react";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
-import { ContributorTier } from "@/types/contribution";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import type { ConfidenceBand } from "@/types";
 
 export interface PreCreationPreviewDrawerProps {
   isOpen: boolean;
@@ -24,10 +25,11 @@ export interface PreCreationPreviewDrawerProps {
   existingProblem: {
     id: string;
     title: string;
-    status: string;
     is_feed_visible: boolean;
     vote_score?: number;
     solution_count?: number;
+    resolution_confidence?: number;
+    confidence_band?: ConfidenceBand;
   } | null;
   existingSolutions: Array<{
     id: string;
@@ -39,8 +41,7 @@ export interface PreCreationPreviewDrawerProps {
     };
     body: string;
     vote_score: number;
-    is_author_endorsed?: boolean;
-    is_accepted?: boolean;
+    is_author_solution?: boolean;
   }>;
   onPromoteToPublic?: () => void;
 }
@@ -77,6 +78,13 @@ export function PreCreationPreviewDrawer({
               <Badge variant="secondary" className="text-xs">
                 Proactive Solutions Available
               </Badge>
+            )}
+            {typeof existingProblem.resolution_confidence === "number" && (
+              <ConfidenceBadge
+                confidence={existingProblem.resolution_confidence}
+                band={existingProblem.confidence_band}
+                size="sm"
+              />
             )}
           </div>
 
@@ -118,11 +126,7 @@ export function PreCreationPreviewDrawer({
             existingSolutions.map((sol) => (
               <div
                 key={sol.id}
-                className={`p-4 rounded-xl border transition-all ${
-                  sol.is_accepted
-                    ? "border-emerald-500/50 bg-emerald-500/5 shadow-2xs"
-                    : "border-line bg-card"
-                }`}
+                className="p-4 rounded-xl border border-line bg-card transition-all"
               >
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="flex items-center gap-2">
@@ -133,14 +137,9 @@ export function PreCreationPreviewDrawer({
                     />
                   </div>
                   <div className="flex items-center gap-1.5">
-                    {sol.is_accepted && (
-                      <Badge variant="default" className="bg-emerald-600 text-white text-[10px] h-5 gap-1">
-                        <CheckCircle2 className="size-3" /> Accepted
-                      </Badge>
-                    )}
-                    {sol.is_author_endorsed && (
-                      <Badge variant="outline" className="border-amber-500/40 text-amber-600 text-[10px] h-5 gap-1">
-                        <Star className="size-3 fill-amber-500 text-amber-500" /> Endorsed (+5)
+                    {sol.is_author_solution && (
+                      <Badge variant="outline" className="border-primary/40 text-primary text-[10px] h-5 gap-1">
+                        <UserCheck className="size-3" /> Problem Author
                       </Badge>
                     )}
                     <span className="text-xs font-bold tabular-nums text-ink-muted">

@@ -568,7 +568,7 @@ export function AdminCurriculumHealth({
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                          <CheckCircle2 className="size-3" /> All Solved
+                          <CheckCircle2 className="size-3" /> All Answered
                         </span>
                       )}
                     </td>
@@ -693,11 +693,11 @@ export function AdminCurriculumHealth({
 
             <div className="flex flex-col gap-2 pt-2 border-t border-line">
               <Link
-                href={`/problems?subject=${selectedCell.subject_id}&level=${selectedCell.level_id}&status=OPEN`}
+                href={`/problems?subject=${selectedCell.subject_id}&level=${selectedCell.level_id}&confidence=needs_help`}
                 className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold text-xs hover:bg-amber-500/20 transition-colors"
               >
                 <span className="flex items-center gap-2">
-                  <Eye className="size-4" /> View Unanswered Challenges ({selectedCell.unanswered_problems_count || 0})
+                  <Eye className="size-4" /> View Needing Help ({selectedCell.unanswered_problems_count || 0} unanswered)
                 </span>
                 <ArrowRight className="size-3.5" />
               </Link>

@@ -8,7 +8,6 @@ import {
   Lightbulb,
   BookOpen,
   FileText,
-  CheckCircle2,
   ThumbsUp,
   X,
   ArrowRight,
@@ -16,6 +15,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -410,14 +410,11 @@ export function CommandPalette() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <p className="text-xs font-medium truncate">{problem.title}</p>
-                            {problem.is_verified && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 px-1 text-[9px] border-primary/30 text-primary bg-primary/10 shrink-0"
-                              >
-                                Verified
-                              </Badge>
-                            )}
+                            <ConfidenceBadge
+                              confidence={problem.resolution_confidence}
+                              band={problem.confidence_band}
+                              size="sm"
+                            />
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {problem.subject && <span>{problem.subject.name}</span>}
