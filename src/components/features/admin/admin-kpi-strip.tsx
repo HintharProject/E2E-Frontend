@@ -86,11 +86,11 @@ export function AdminKpiStrip({ summary }: AdminKpiStripProps) {
         </div>
       </div>
 
-      {/* 3. Problem Solved Rate */}
+      {/* 3. High Confidence Problem Rate */}
       <div className="relative overflow-hidden rounded-xl border border-border bg-card p-5 shadow-card transition-all duration-200 hover:shadow-card-hover">
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-muted-foreground">
-            Problem Resolution
+            Resolution Confidence
           </span>
           <div className="flex size-8 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3">
             <CheckCircle2 className="size-4" />
@@ -98,22 +98,22 @@ export function AdminKpiStrip({ summary }: AdminKpiStripProps) {
         </div>
         <div className="mt-3 flex items-baseline gap-2">
           <span className="font-mono tabular-nums text-3xl font-bold tracking-tight text-foreground">
-            {summary.problem_solved_rate_pct.toFixed(0)}%
+            {summary.high_confidence_rate_pct.toFixed(0)}%
           </span>
           <span className="font-mono tabular-nums text-xs text-muted-foreground">
-            ({summary.solved_problems_count} of {summary.total_problems} solved)
+            ({summary.high_confidence_problems_count} of {summary.total_problems} high conf.)
           </span>
         </div>
         <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full bg-chart-3 transition-all duration-500"
-            style={{ width: `${Math.min(summary.problem_solved_rate_pct, 100)}%` }}
+            style={{ width: `${Math.min(summary.high_confidence_rate_pct, 100)}%` }}
           />
         </div>
         <div className="mt-2 flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>Resolved challenges</span>
+          <span>Avg {summary.avg_confidence_score.toFixed(0)}% confidence</span>
           <span className="font-mono tabular-nums font-medium text-chart-3">
-            {summary.total_problems - summary.solved_problems_count} Open
+            {summary.unanswered_problems_count} Unanswered
           </span>
         </div>
       </div>

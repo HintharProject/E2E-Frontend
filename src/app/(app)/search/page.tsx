@@ -16,8 +16,8 @@ import {
   Filter,
   SlidersHorizontal,
   RotateCcw,
-  CheckCircle2,
 } from "lucide-react";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 import { useUnifiedSearch } from "@/hooks/use-unified-search";
 import { useSubjects, useLevels } from "@/hooks/use-metadata";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -526,14 +526,11 @@ export default function SearchPage(props: {
                             >
                               Solve!
                             </Badge>
-                            {prob.is_verified && (
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] h-4.5 px-1.5 font-semibold border-primary/30 text-primary bg-primary/10 flex items-center gap-1"
-                              >
-                                <CheckCircle2 className="size-3" /> Solved
-                              </Badge>
-                            )}
+                            <ConfidenceBadge
+                              confidence={prob.resolution_confidence}
+                              band={prob.confidence_band}
+                              size="sm"
+                            />
                             {prob.subject && (
                               <span className="text-[11px] font-medium text-muted-foreground">
                                 {prob.subject.name}

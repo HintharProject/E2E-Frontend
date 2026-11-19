@@ -1,4 +1,4 @@
-import { Subject, Level } from "./index";
+import { Subject, Level, ConfidenceBand } from "./index";
 
 export interface SearchAuthor {
   id: string;
@@ -25,8 +25,8 @@ export interface SearchProblemItem {
   level: Level | null;
   author: SearchAuthor | null;
   solutions_count: number;
-  is_verified: boolean;
-  status: string;
+  resolution_confidence: number;
+  confidence_band: ConfidenceBand;
   vote_score: number;
   created_at: string;
 }

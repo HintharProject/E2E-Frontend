@@ -124,7 +124,7 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           <div className="mt-2 rounded-xl border border-border bg-muted/35 p-3.5 text-xs text-muted-foreground space-y-1.5">
             <div className="font-semibold text-foreground">Included with your free E2E account:</div>
             <ul className="space-y-1 list-disc pl-4">
-              <li>Inspect all 7-slot community solutions &amp; accepted consensus markers</li>
+              <li>Inspect all community worked solutions &amp; live confidence ratings</li>
               <li>Open complete step-by-step Lessons &amp; all threaded Forum replies</li>
               <li>Vote, comment, save past papers to Study Sessions, and ask in Solve!</li>
             </ul>

@@ -78,7 +78,7 @@ export function LandingTour() {
                   Solve! Problems
                 </Badge>
                 <Badge variant="secondary" className="text-xs">
-                  7-slot solution pool
+                  Peer confidence scoring
                 </Badge>
               </div>
 
@@ -87,13 +87,13 @@ export function LandingTour() {
               </h2>
 
               <p className="text-sm text-muted-foreground leading-relaxed max-w-[65ch]">
-                Upload a photo of a homework question or link a past paper directly. Up to 7 clear solutions compete in one focused pool instead of getting buried in long comment chains.
+                Upload a photo of a homework question or link a past paper directly. Unlimited worked solutions rank by community votes and surface a continuous resolution confidence score.
               </p>
 
               <div className="rounded-xl border border-border bg-background p-4 sm:p-5 space-y-2.5">
                 <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
                   <span className="font-medium text-foreground">Sample Problem · Physics</span>
-                  <span className="font-mono tabular-nums text-primary font-semibold">3 / 7 slots</span>
+                  <span className="font-mono tabular-nums text-primary font-semibold">4 worked solutions</span>
                 </div>
                 <p className="text-sm font-medium text-foreground">
                   Finding acceleration and tension on an inclined pulley system
@@ -105,21 +105,13 @@ export function LandingTour() {
             </div>
 
             <div className="lg:col-span-5 rounded-xl border border-border bg-background p-5 sm:p-6 space-y-4">
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <div className="flex items-center justify-between text-xs font-mono tabular-nums">
-                  <span className="font-semibold text-foreground">SOLUTION POOL</span>
-                  <span className="font-semibold text-primary">3 / 7</span>
+                  <span className="font-semibold text-foreground">RESOLUTION CONFIDENCE</span>
+                  <span className="font-semibold text-primary">86% · High</span>
                 </div>
-                <div className="grid grid-cols-7 gap-1.5 h-2" aria-hidden="true">
-                  {Array.from({ length: 7 }).map((_, idx) => (
-                    <span
-                      key={idx}
-                      className={cn(
-                        "rounded-sm",
-                        idx < 3 ? "bg-primary" : "bg-muted border border-border/70"
-                      )}
-                    />
-                  ))}
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden border border-border/70" aria-hidden="true">
+                  <div className="h-full w-[86%] rounded-full bg-primary" />
                 </div>
               </div>
 

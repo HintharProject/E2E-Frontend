@@ -8,9 +8,6 @@ import {
   revokeVote,
   fetchContributionStats,
   fetchContributionLedger,
-  endorseSolution,
-  acceptSolution,
-  unacceptSolution,
   adjustPointsAdmin,
   ContentVoteType,
 } from "@/services/contribution-service";
@@ -29,12 +26,14 @@ export function useVoteContribution({
   contentId,
   currentScore = 0,
   currentUserVote = 0,
+  isProblemAuthor = false,
   onOptimisticChange,
 }: {
   contentType: ContentVoteType;
   contentId: string;
   currentScore?: number;
   currentUserVote?: 1 | -1 | 0 | null;
+  isProblemAuthor?: boolean;
   onOptimisticChange?: (newScore: number, newVote: 1 | -1 | 0, voterWeight: number) => void;
 }) {
   const { getToken } = useAuth();
@@ -46,6 +45,10 @@ export function useVoteContribution({
     user?.dynamic_vote_weight ??
     user?.reputation?.dynamic_vote_weight ??
     (user?.contributor_tier !== undefined ? user.contributor_tier + 1 : 1);
+
+  const upvoteWeight = contentType === "solutions" && isProblemAuthor ? voterMultiplier * 3 : voterMultiplier;
+  const downvoteWeight = voterMultiplier;
+  const getWeightForVote = (v: 1 | -1 | 0) => (v === 1 ? upvoteWeight : v === -1 ? downvoteWeight : 0);
 
   return useMutation({
     mutationFn: async ({ targetValue }: { targetValue: 1 | -1 | 0 }) => {
@@ -63,23 +66,16 @@ export function useVoteContribution({
       const prevVote = (currentUserVote ?? 0) as 1 | -1 | 0;
       const prevScore = currentScore;
 
-      // Calculate optimistic score delta
-      let optimisticDelta = 0;
-      if (targetValue === 0) {
-        optimisticDelta = -(prevVote * voterMultiplier);
-      } else if (prevVote === 0) {
-        optimisticDelta = targetValue * voterMultiplier;
-      } else {
-        optimisticDelta = (targetValue - prevVote) * voterMultiplier;
-      }
-
+      const appliedWeight = getWeightForVote(targetValue) || voterMultiplier;
+      const optimisticDelta =
+        targetValue * getWeightForVote(targetValue) - prevVote * getWeightForVote(prevVote);
       const optimisticScore = prevScore + optimisticDelta;
 
       if (onOptimisticChange) {
-        onOptimisticChange(optimisticScore, targetValue, voterMultiplier);
+        onOptimisticChange(optimisticScore, targetValue, appliedWeight);
       }
 
-      return { prevVote, prevScore, optimisticScore, targetValue, voterMultiplier };
+      return { prevVote, prevScore, optimisticScore, targetValue, voterMultiplier: appliedWeight };
     },
     onSuccess: () => {
       // Invalidate relevant query caches
@@ -96,12 +92,13 @@ export function useVoteContribution({
       queryClient.invalidateQueries({ queryKey: ["lesson"] });
       queryClient.invalidateQueries({ queryKey: ["comments"] });
     },
-    onError: (err: any, variables, context) => {
+    onError: (err: unknown, _variables, context) => {
       if (context && onOptimisticChange) {
         onOptimisticChange(context.prevScore, context.prevVote, context.voterMultiplier);
       }
+      const apiErr = err as { message?: string; code?: string } | undefined;
       const errorMessage =
-        err?.message || (err?.code === "SELF_VOTE_FORBIDDEN" ? "You cannot vote on your own content." : "Failed to register vote.");
+        apiErr?.message || (apiErr?.code === "SELF_VOTE_FORBIDDEN" ? "You cannot vote on your own content." : "Failed to register vote.");
       toast.error(errorMessage);
     },
   });
@@ -148,94 +145,6 @@ export function useContributionLedger(
   });
 }
 
-export function useAcceptSolution() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-  const devToken = getDevToken();
-
-  return useMutation({
-    mutationFn: async ({
-      problemId,
-      solutionId,
-      action = "accept",
-    }: {
-      problemId: string;
-      solutionId: string;
-      action?: "accept" | "unaccept";
-    }) => {
-      const token = (await getToken()) || devToken;
-      if (!token) throw new Error("Authentication required");
-
-      if (action === "unaccept") {
-        return unacceptSolution(problemId, solutionId, token);
-      } else {
-        return acceptSolution(problemId, solutionId, token);
-      }
-    },
-    onSuccess: (data, variables) => {
-      if (variables.action === "unaccept") {
-        toast.info("Solution unaccepted. Problem reopened.");
-      } else {
-        toast.success("🎉 Problem solved! +10 Milestone points awarded.", {
-          duration: 4000,
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["problem", variables.problemId] });
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
-      queryClient.invalidateQueries({ queryKey: ["solution", variables.solutionId] });
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-    },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to update solution status.");
-    },
-  });
-}
-
-export function useEndorseSolution() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-  const devToken = getDevToken();
-
-  return useMutation({
-    mutationFn: async ({
-      solutionId,
-      problemId,
-    }: {
-      solutionId: string;
-      problemId: string;
-    }) => {
-      const token = (await getToken()) || devToken;
-      if (!token) throw new Error("Authentication required");
-      return endorseSolution(solutionId, token);
-    },
-    onSuccess: (data, variables) => {
-      if (data.is_author_endorsed) {
-        toast.success("Solution endorsed! +5 Solved Score boost applied.");
-      } else {
-        toast.info("Author endorsement removed.");
-      }
-
-      if (data.dynamic_acceptance_triggered) {
-        toast.success("🎉 Problem Solved! +10 Milestone Contribution Points awarded.", {
-          duration: 5000,
-        });
-      }
-
-      queryClient.invalidateQueries({ queryKey: ["problem", variables.problemId] });
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
-      queryClient.invalidateQueries({ queryKey: ["solution", variables.solutionId] });
-      queryClient.invalidateQueries({ queryKey: ["solutions", variables.problemId] });
-      queryClient.invalidateQueries({ queryKey: ["currentUser"] });
-    },
-    onError: (err: any) => {
-      const msg = err?.message || err?.detail || "Failed to update endorsement.";
-      toast.error(msg);
-    },
-  });
-}
-
-
 export function useAdminAdjustPoints() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -261,8 +170,8 @@ export function useAdminAdjustPoints() {
       queryClient.invalidateQueries({ queryKey: ["user", variables.user_id] });
       queryClient.invalidateQueries({ queryKey: ["adminUsers"] });
     },
-    onError: (err: any) => {
-      toast.error(err?.message || "Failed to adjust user points.");
+    onError: (err: unknown) => {
+      toast.error((err as { message?: string } | undefined)?.message || "Failed to adjust user points.");
     },
   });
 }

@@ -108,8 +108,8 @@ const TIER_DETAILS: Record<ContributorTier, TierDetail> = {
         isHighlight: true,
       },
       {
-        title: "Anti-Gridlock Pool Eviction",
-        description: "When a problem's 7-slot solution pool is full, you can still submit by automatically evicting stale or low-scoring attempts (S ≤ 0).",
+        title: "Confidence Band Authority",
+        description: "3x dynamic vote weight significantly strengthens peer solution rankings and problem resolution confidence.",
         isHighlight: true,
       },
     ],
@@ -130,7 +130,7 @@ const TIER_DETAILS: Record<ContributorTier, TierDetail> = {
       },
       {
         title: "All Tier 2 Privileges Included",
-        description: "Proactive Past Paper authoring and 7-slot anti-gridlock eviction privileges.",
+        description: "Includes proactive Past Paper authoring and boosted governance weight on solution confidence.",
       },
     ],
   },
@@ -150,12 +150,12 @@ const TIER_DETAILS: Record<ContributorTier, TierDetail> = {
         isHighlight: true,
       },
       {
-        title: "Consensus Finality Weight",
-        description: "Decisive peer influence on rapid consensus acceptance gates and solution verification.",
+        title: "High-Weight Confidence Impact",
+        description: "Decisive peer voting power that rapidly elevates verified worked solutions and problem confidence.",
       },
       {
-        title: "Full Authoring & Eviction Privileges",
-        description: "Unrestricted proactive past-paper solutions and anti-gridlock replacement capabilities.",
+        title: "Proactive Past Paper Authoring",
+        description: "Unrestricted proactive worked solutions across curated exam papers in Train!.",
       },
     ],
   },
@@ -168,13 +168,13 @@ const POINTS_ACTIVITIES = [
     accent: "text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border-emerald-500/20",
     items: [
       { action: "Solution Upvoted by Peer", delta: "+10 pts", type: "positive" },
-      { action: "Solution Downvoted by Peer", delta: "-3 pts", type: "negative" },
       {
-        action: "Solution Auto-Pruned by Consensus",
-        detail: "Triggered if Score ≤ -5 with ≥ 3 unique downvoters",
-        delta: "-15 pts",
-        type: "negative",
+        action: "Solution Upvoted by Problem Author (3x Weight)",
+        detail: "Problem Author upvote carries 3x score weight (+3 to +15) and yields standard diminishing solver points",
+        delta: "+10 pts base",
+        type: "positive",
       },
+      { action: "Solution Downvoted by Peer", delta: "-3 pts", type: "negative" },
     ],
   },
   {
@@ -184,12 +184,6 @@ const POINTS_ACTIVITIES = [
     items: [
       { action: "Problem Upvoted by Peer", delta: "+5 pts", type: "positive" },
       { action: "Problem Downvoted by Peer", delta: "-2 pts", type: "negative" },
-      {
-        action: "Problem Solved Milestone",
-        detail: "Awarded to problem author when an answer is accepted",
-        delta: "+10 pts",
-        type: "positive",
-      },
     ],
   },
   {

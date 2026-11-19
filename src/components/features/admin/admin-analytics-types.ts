@@ -7,10 +7,11 @@ export interface PlatformSummary {
   total_assets: number;
   pending_reports_count: number;
   unanswered_problems_count: number;
-  solved_problems_count: number;
+  high_confidence_problems_count: number;
   avg_solutions_per_problem: number;
   avg_comments_per_post: number;
-  problem_solved_rate_pct: number;
+  high_confidence_rate_pct: number;
+  avg_confidence_score: number;
 }
 
 export interface SubjectAnalytics {
@@ -23,10 +24,11 @@ export interface SubjectAnalytics {
   solutions_count: number;
   comments_count: number;
   unanswered_problems_count: number;
-  solved_problems_count: number;
+  high_confidence_problems_count: number;
   avg_solutions_per_problem: number;
   avg_comments_per_post: number;
-  solved_rate_pct: number;
+  high_confidence_rate_pct: number;
+  avg_confidence_score: number;
   total_activity: number;
 }
 
@@ -40,10 +42,11 @@ export interface LevelAnalytics {
   solutions_count: number;
   comments_count: number;
   unanswered_problems_count: number;
-  solved_problems_count: number;
+  high_confidence_problems_count: number;
   avg_solutions_per_problem: number;
   avg_comments_per_post: number;
-  solved_rate_pct: number;
+  high_confidence_rate_pct: number;
+  avg_confidence_score: number;
   total_activity: number;
 }
 

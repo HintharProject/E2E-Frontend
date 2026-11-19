@@ -126,7 +126,7 @@ export function ReportedItemInspector({
     ban_status: target.ban_status || "ACTIVE",
     ban_expires_at: target.ban_expires_at || null,
     lifetime_reports_received: (target.lifetime_reports_received ?? target.author?.lifetime_reports_received) ?? 0,
-    contributor_tier: target.contributor_tier ?? 1,
+    contributor_tier: target.contributor_tier ?? 0,
     profile_image_url: target.profile_image_url,
   } : target?.author);
   const reporter = report.reporter_details;
@@ -458,9 +458,10 @@ export function ReportedItemInspector({
                       Q{target.question_number}
                     </Badge>
                   )}
-                  {target?.is_accepted && (
-                    <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white text-xs gap-1">
-                      <CheckCircle2 className="size-3" /> Accepted Solution
+                  {typeof target?.vote_score === "number" && (
+                    <Badge variant="outline" className="text-xs font-mono tabular-nums">
+                      Score: {target.vote_score >= 0 ? "+" : ""}
+                      {target.vote_score}
                     </Badge>
                   )}
                   {target?.state && (
@@ -472,10 +473,15 @@ export function ReportedItemInspector({
 
                 {/* Parent Link if Solution or Comment */}
                 {target?.parent_problem && (
-                  <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs flex items-center justify-between">
-                    <div>
+                  <div className="rounded-xl border border-line bg-muted/30 p-3 text-xs flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-ink-muted font-medium">Parent Problem: </span>
                       <span className="font-semibold text-ink">{target.parent_problem.title}</span>
+                      {typeof target.parent_problem.resolution_confidence === "number" && (
+                        <Badge variant="outline" className="font-mono text-[10px]">
+                          {Math.round(target.parent_problem.resolution_confidence)}% conf.
+                        </Badge>
+                      )}
                     </div>
                     <a
                       href={`/problems/${target.parent_problem.id}`}

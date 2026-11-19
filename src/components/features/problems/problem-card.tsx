@@ -23,6 +23,7 @@ import { getInitials } from "@/components/ui/base-card";
 import { BookOpen, ExternalLink, Image as ImageIcon, Lock, MessageSquare } from "lucide-react";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+import { ConfidenceBadge } from "./confidence-badge";
 
 function stripProblemPreview(raw: string): string {
   return raw
@@ -46,7 +47,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const subject = problem.subject_details;
   const level = problem.level_details;
   const isAuthor = isContentAuthor(user, author, problem.author);
-  const isFinal = problem.status === "FINAL";
+  const isLocked = Boolean(problem.is_locked);
 
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/problems/${problem.id}`
@@ -69,8 +70,8 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   };
 
   const handleDelete = async () => {
-    if (isFinal) {
-      toast.error("Finalized problems cannot be deleted by users. Contact staff moderation.");
+    if (isLocked) {
+      toast.error("Locked problems cannot be deleted by users. Contact staff moderation.");
       return;
     }
 
@@ -80,7 +81,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
         router.push("/problems");
         return "Problem deleted successfully";
       },
-      error: (err: any) => err?.message || "Failed to delete problem. Please try again.",
+      error: (err: unknown) => (err as { message?: string } | undefined)?.message || "Failed to delete problem. Please try again.",
     });
   };
 
@@ -114,41 +115,31 @@ export function ProblemCard({ problem }: { problem: Problem }) {
 
         <div
           className="flex sm:flex-col items-center gap-1 sm:gap-0.5 text-center"
-          title={`${solutionCount} of 7 active solution pool slots filled`}
+          title={`${solutionCount} submitted ${solutionCount === 1 ? "solution" : "solutions"}`}
         >
           <span className="inline-flex items-center gap-1 font-mono tabular-nums text-xs font-semibold text-foreground">
-            <MessageSquare className="size-3 text-muted-foreground sm:hidden" />
-            {Math.min(solutionCount, 7)}/7
+            <MessageSquare className="size-3 text-muted-foreground sm:hidden" aria-hidden="true" />
+            {solutionCount}
           </span>
           <span className="text-[10px] font-medium text-muted-foreground hidden sm:block">
-            {solutionCount === 1 ? "slot" : "slots"}
+            {solutionCount === 1 ? "solution" : "solutions"}
           </span>
         </div>
       </div>
 
       {/* Main Challenge Ticket Body */}
       <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col gap-3">
-        {/* Top Row: Status Pill + Subject/Level + Timestamp + More Menu */}
+        {/* Top Row: Confidence Pill + Subject/Level + Timestamp + More Menu */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-2 min-w-0">
-            {problem.status === "FINAL" && (
-              <Badge variant="outline" className="border-chart-3/40 bg-chart-3/10 text-chart-3 font-medium text-xs gap-1">
-                <Lock className="size-3" /> Final Consensus
-              </Badge>
-            )}
-            {problem.status === "SOLVED" && (
-              <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs">
-                Solved (+10 pts)
-              </Badge>
-            )}
-            {problem.status === "OPEN" && (
-              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-xs">
-                Active Pool
-              </Badge>
-            )}
-            {problem.status === "CLOSED" && (
-              <Badge variant="secondary" className="text-xs">
-                Closed
+            <ConfidenceBadge
+              confidence={problem.resolution_confidence}
+              band={problem.confidence_band}
+              size="sm"
+            />
+            {isLocked && (
+              <Badge variant="secondary" className="text-[11px] gap-1 h-5">
+                <Lock className="size-3" aria-hidden="true" /> Locked
               </Badge>
             )}
 
@@ -177,10 +168,9 @@ export function ProblemCard({ problem }: { problem: Problem }) {
                     }
                   : null
               }
-              isHidden={(problem as any).is_hidden}
-              isLocked={(problem as any).is_locked}
-              isFinal={problem.status === "FINAL"}
-              onDelete={isAuthor ? handleDelete : undefined}
+              isHidden={problem.is_hidden}
+              isLocked={problem.is_locked}
+              onDelete={isAuthor && !isLocked ? handleDelete : undefined}
               deleteLabel="this problem"
             />
           </div>
@@ -219,12 +209,12 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               </span>
             )}
 
-            {Boolean(problem.resource || (problem as any).resource_id || pastPaperDetails?.id) && (
+            {Boolean(problem.resource || problem.resource_id || pastPaperDetails?.id) && (
               <button
                 type="button"
                 onClick={(e) => {
                   e.stopPropagation();
-                  const resId = problem.resource || (problem as any).resource_id || pastPaperDetails?.id;
+                  const resId = problem.resource || problem.resource_id || pastPaperDetails?.id;
                   router.push(`/train/${resId}`);
                 }}
                 className="inline-flex items-center gap-1 ml-auto text-xs font-semibold text-primary hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1"
@@ -271,7 +261,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
                   {author.display_name || "Unknown"}
                 </span>
                 <ContributorBadge
-                  tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                  tier={author.contributor_tier ?? author.reputation?.contributor_tier ?? 0}
                   size="sm"
                   showWeightTooltip={false}
                 />

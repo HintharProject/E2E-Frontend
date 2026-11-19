@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
-import { SolutionPoolContainer } from "@/components/features/problems/solution-pool-container";
+import { SolutionListContainer } from "@/components/features/problems/solution-pool-container";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import { MathRenderer } from "@/components/ui/math-renderer";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -77,19 +79,19 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
   const author = problem.author_details;
   const isAuthor = isContentAuthor(user, author, problem.author);
-  const isFinal = problem.status === "FINAL";
+  const isLocked = Boolean(problem.is_locked);
   const pastPaperDetails = problem.resource_details;
 
   const imageAttachments =
     problem.attachments?.filter((att) => {
-      const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const name = att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
   const otherAttachments =
     problem.attachments?.filter((att) => {
-      const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const name = att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
@@ -109,7 +111,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           description={`Asked ${formatDate(problem.created_at)}`}
           actions={
             <div className="flex items-center gap-2">
-              {isAuthor && <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />}
+              {isAuthor && <ProblemAuthorActions problemId={problem.id} isLocked={isLocked} />}
               <StaffContentActionMenu
                 targetType="PROBLEM"
                 targetId={problem.id}
@@ -118,7 +120,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 isHidden={problem.is_hidden}
                 isLocked={problem.is_locked}
                 isDeleted={problem.is_deleted}
-                isFinal={isFinal}
                 variant="button"
               />
             </div>
@@ -144,9 +145,9 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {Boolean(problem.resource || (problem as any).resource_id || pastPaperDetails?.id) && (
+          {Boolean(problem.resource || problem.resource_id || pastPaperDetails?.id) && (
             <Link
-              href={`/train/${problem.resource || (problem as any).resource_id || pastPaperDetails?.id}`}
+              href={`/train/${problem.resource || problem.resource_id || pastPaperDetails?.id}`}
               className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
               title="Open this past paper in Train practice workspace"
             >
@@ -165,30 +166,19 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 id: author.id || "",
                 display_name: author.display_name || "Unknown",
                 profile_image_url: author.profile_image_url,
-                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
+                contributor_tier: author.contributor_tier ?? author.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
-            {problem.status === "FINAL" && (
-              <Badge variant="outline" className="border-chart-3/40 bg-chart-3/10 text-chart-3 font-medium text-xs gap-1">
-                <Lock className="size-3" /> Final Consensus
-              </Badge>
-            )}
-            {problem.status === "SOLVED" && (
-              <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs">
-                Solved (+10 pts)
-              </Badge>
-            )}
-            {problem.status === "OPEN" && (
-              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-xs">
-                Active Pool
-              </Badge>
-            )}
-            {problem.status === "CLOSED" && (
-              <Badge variant="secondary" className="text-xs">
-                Closed
+            <ConfidenceBadge
+              confidence={problem.resolution_confidence}
+              band={problem.confidence_band}
+            />
+            {isLocked && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Lock className="size-3" aria-hidden="true" /> Locked
               </Badge>
             )}
 
@@ -199,7 +189,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         }
-        body={problem.body}
+        body={problem.body ? <MathRenderer content={problem.body} /> : ""}
         mediaImages={
           imageAttachments.length > 0 ? (
             <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
@@ -238,8 +228,8 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      {/* Solutions Section with 7-Slot Pool & Eviction Engine */}
-      <SolutionPoolContainer problem={problem} isAuthor={isAuthor} />
+      {/* Unlimited Solutions List */}
+      <SolutionListContainer problem={problem} isAuthor={isAuthor} />
     </div>
   );
 }
