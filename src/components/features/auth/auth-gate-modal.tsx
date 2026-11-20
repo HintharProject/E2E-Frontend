@@ -133,6 +133,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
           <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
             <Link
               href={signUpHref}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setOpen(false)}
               className={buttonVariants({
                 variant: "default",
@@ -145,6 +147,8 @@ export function AuthGateProvider({ children }: { children: React.ReactNode }) {
             </Link>
             <Link
               href={signInHref}
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setOpen(false)}
               className={buttonVariants({
                 variant: "outline",

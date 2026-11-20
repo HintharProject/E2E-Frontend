@@ -213,63 +213,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* --- Sort Toggle --- */
-.comment-module-v2 .cm-sort-group {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  padding: 3px;
-  border-radius: var(--cm-radius-sm);
-  border: 1px solid var(--cm-border);
-  background-color: var(--cm-surface-subtle);
-}
-
-.comment-module-v2 .cm-sort-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 var(--cm-space-3);
-  border: none;
-  border-radius: calc(var(--cm-radius-sm) - 2px);
-  background: transparent;
-  color: var(--cm-ink-muted);
-  font-family: var(--cm-font-sans);
-  font-size: var(--cm-text-meta);
-  font-weight: 500;
-  white-space: nowrap;
-  cursor: pointer;
-  touch-action: manipulation;
-  transition:
-    background-color var(--cm-duration-fast) var(--cm-ease-out),
-    color var(--cm-duration-fast) var(--cm-ease-out),
-    box-shadow var(--cm-duration-fast) var(--cm-ease-out);
-}
-
-@media (min-width: 640px) {
-  .comment-module-v2 .cm-sort-btn {
-    min-height: 28px;
-    padding: 0 10px;
-  }
-}
-
-.comment-module-v2 .cm-sort-btn:hover {
-  color: var(--cm-ink);
-  background-color: var(--cm-surface-hover);
-}
-
-.comment-module-v2 .cm-sort-btn[data-active="true"] {
-  background-color: var(--cm-surface);
-  color: var(--cm-ink);
-  font-weight: 600;
-  box-shadow: var(--cm-shadow-control);
-}
-
-.comment-module-v2 .cm-sort-btn[data-active="true"] .cm-sort-icon {
-  color: var(--cm-accent);
-}
-
 /* --- Composer --- */
 .comment-module-v2 .cm-composer {
   display: flex;
@@ -1349,7 +1292,6 @@
     transform: none;
   }
 
-  .comment-module-v2 .cm-sort-btn,
   .comment-module-v2 .cm-composer,
   .comment-module-v2 .cm-btn,
   .comment-module-v2 .cm-card,

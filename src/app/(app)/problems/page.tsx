@@ -72,7 +72,7 @@ function ProblemsFeed() {
                 <Button
                   size="sm"
                   nativeButton={false}
-                  render={<Link href="/sign-up?redirect_url=%2Fproblems" />}
+                  render={<Link href="/sign-up?redirect_url=%2Fproblems" target="_blank" rel="noopener noreferrer" />}
                 >
                   Sign up free
                 </Button>
@@ -80,7 +80,7 @@ function ProblemsFeed() {
                   variant="outline"
                   size="sm"
                   nativeButton={false}
-                  render={<Link href="/sign-in?redirect_url=%2Fproblems" />}
+                  render={<Link href="/sign-in?redirect_url=%2Fproblems" target="_blank" rel="noopener noreferrer" />}
                 >
                   Log in
                 </Button>

@@ -436,10 +436,10 @@ export function LessonsFeed({
             action={
               <div className="flex items-center gap-2">
                 <Button asChild size="sm">
-                  <Link href="/sign-up?redirect_url=%2Flessons">Sign up free</Link>
+                  <Link href="/sign-up?redirect_url=%2Flessons" target="_blank" rel="noopener noreferrer">Sign up free</Link>
                 </Button>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/sign-in?redirect_url=%2Flessons">Log in</Link>
+                  <Link href="/sign-in?redirect_url=%2Flessons" target="_blank" rel="noopener noreferrer">Log in</Link>
                 </Button>
               </div>
             }

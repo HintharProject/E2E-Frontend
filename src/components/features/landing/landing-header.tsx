@@ -52,6 +52,8 @@ export function LandingHeader() {
 
           <Link
             href="/sign-in"
+            target="_blank"
+            rel="noopener noreferrer"
             className={buttonVariants({
               variant: "outline",
               size: "sm",
@@ -63,6 +65,8 @@ export function LandingHeader() {
 
           <Link
             href="/sign-up"
+            target="_blank"
+            rel="noopener noreferrer"
             className={buttonVariants({
               variant: "default",
               size: "sm",
@@ -107,6 +111,8 @@ export function LandingHeader() {
           <div className="pt-2 flex gap-2">
             <Link
               href="/sign-in"
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
               className={buttonVariants({
                 variant: "outline",
@@ -117,6 +123,8 @@ export function LandingHeader() {
             </Link>
             <Link
               href="/sign-up"
+              target="_blank"
+              rel="noopener noreferrer"
               onClick={() => setMobileMenuOpen(false)}
               className={buttonVariants({
                 variant: "default",

@@ -37,6 +37,7 @@ import {
 import type { SaveTargetType, SavedSession, StudyPlan } from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export interface SaveButtonProps {
@@ -145,10 +146,10 @@ export function SaveButton({
   const isSaved = isSavedInAnySession || (canSaveToPlan && isSavedInAnyPlan);
 
   const sessionCount = sessions.length;
-  const isSessionAtCap = sessionCount >= 12;
+  const isSessionAtCap = sessionCount >= MAX_SAVED_SESSIONS;
 
   const planCount = plans.length;
-  const isPlanAtCap = planCount >= 12;
+  const isPlanAtCap = planCount >= MAX_STUDY_PLANS;
 
   const handleUnauthorizedError = (err: unknown, fallbackMessage: string) => {
     const status = (err as { status?: number } | null)?.status;
@@ -368,8 +369,8 @@ export function SaveButton({
 
             <Badge variant="outline" className="text-xs">
               {activeTab === "plan"
-                ? `${planCount} / 12 Plans`
-                : `${sessionCount} / 12 Sessions`}
+                ? `${planCount} / ${MAX_STUDY_PLANS} Plans`
+                : `${sessionCount} / ${MAX_SAVED_SESSIONS} Sessions`}
             </Badge>
           </div>
 
@@ -428,7 +429,7 @@ export function SaveButton({
             <p className="mb-4 text-sm text-ink-muted">
               Please sign in to save items to your collections.
             </p>
-            <Button nativeButton={false} render={<Link href="/sign-in" />}>
+            <Button nativeButton={false} render={<Link href="/sign-in" target="_blank" rel="noopener noreferrer" />}>
               Sign In
             </Button>
           </div>
@@ -511,7 +512,7 @@ export function SaveButton({
             <div className="border-t border-line pt-3">
               {isSessionAtCap ? (
                 <p className="text-center text-xs text-ink-muted">
-                  Maximum limit of 12 saved sessions reached.
+                  Maximum limit of {MAX_SAVED_SESSIONS} saved sessions reached.
                 </p>
               ) : (
                 <form onSubmit={handleCreateSessionAndSave} className="flex gap-2">
@@ -624,7 +625,7 @@ export function SaveButton({
             <div className="border-t border-line pt-3">
               {isPlanAtCap ? (
                 <p className="text-center text-xs text-ink-muted">
-                  Maximum limit of 12 study plans reached.
+                  Maximum limit of {MAX_STUDY_PLANS} study plans reached.
                 </p>
               ) : (
                 <form onSubmit={handleCreatePlanAndSave} className="flex gap-2">

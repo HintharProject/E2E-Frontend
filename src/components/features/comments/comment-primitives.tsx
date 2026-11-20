@@ -1232,6 +1232,8 @@ export function CommentGuestGate({
       <div className="cm-guest-actions">
         <Link
           href={`/sign-up?redirect_url=${encodedRedirect}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="cm-btn"
           data-variant="primary"
         >
@@ -1240,6 +1242,8 @@ export function CommentGuestGate({
         </Link>
         <Link
           href={`/sign-in?redirect_url=${encodedRedirect}`}
+          target="_blank"
+          rel="noopener noreferrer"
           className="cm-btn"
           data-variant="outline"
         >

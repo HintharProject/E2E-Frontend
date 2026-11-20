@@ -285,6 +285,8 @@ export function AppTopBar() {
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/sign-in"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={buttonVariants({
                     variant: "ghost",
                     size: "sm",
@@ -295,6 +297,8 @@ export function AppTopBar() {
                 </Link>
                 <Link
                   href="/sign-up"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={buttonVariants({
                     variant: "default",
                     size: "sm",

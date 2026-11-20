@@ -157,10 +157,10 @@ export function ForumFeed({
           action={
             <div className="flex items-center gap-2">
               <Button asChild size="sm">
-                <Link href="/sign-up?redirect_url=%2Fforum">Sign up free</Link>
+                <Link href="/sign-up?redirect_url=%2Fforum" target="_blank" rel="noopener noreferrer">Sign up free</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link href="/sign-in?redirect_url=%2Fforum">Log in</Link>
+                <Link href="/sign-in?redirect_url=%2Fforum" target="_blank" rel="noopener noreferrer">Log in</Link>
               </Button>
             </div>
           }

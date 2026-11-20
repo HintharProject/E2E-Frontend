@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useStudyPlans, useSavedSessions } from "@/hooks/use-collections";
-import { isNavActive } from "@/lib/constants";
+import { isNavActive, MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
 import { isAdminOrSuperAdmin, isStaffRole, type AppUser } from "@/types/user";
 import { cn } from "@/lib/utils";
@@ -61,11 +61,13 @@ export function MobileNav({ user }: MobileNavProps) {
 
   const getLibraryCount = (item: ShellNavItem): string | null => {
     if (!user) return null;
-    if (item.libraryKey === "plans" && Array.isArray(studyPlans)) {
-      return `${studyPlans.length}/3`;
+    const plansList = Array.isArray(studyPlans) ? studyPlans : studyPlans?.data;
+    const sessionsList = Array.isArray(savedSessions) ? savedSessions : savedSessions?.data;
+    if (item.libraryKey === "plans" && Array.isArray(plansList)) {
+      return `${plansList.length}/${MAX_STUDY_PLANS}`;
     }
-    if (item.libraryKey === "sessions" && Array.isArray(savedSessions)) {
-      return `${savedSessions.length}/3`;
+    if (item.libraryKey === "sessions" && Array.isArray(sessionsList)) {
+      return `${sessionsList.length}/${MAX_SAVED_SESSIONS}`;
     }
     return null;
   };
@@ -184,6 +186,8 @@ export function MobileNav({ user }: MobileNavProps) {
               <div className="grid grid-cols-2 gap-2">
                 <Link
                   href="/sign-up"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={closeMobileNav}
                   className={buttonVariants({
                     variant: "default",
@@ -196,6 +200,8 @@ export function MobileNav({ user }: MobileNavProps) {
                 </Link>
                 <Link
                   href="/sign-in"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   onClick={closeMobileNav}
                   className={buttonVariants({
                     variant: "outline",

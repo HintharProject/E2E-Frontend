@@ -12,7 +12,7 @@
   1. Top Newsreader greeting + standing pill (`<ContributorBadge />`, `contribution_points`, vote weight).
   2. Quick launch tiles (**Ask a Problem**, **Practice Past Papers**, **Write a Lesson**).
   3. Main bento column: **Open `Solve!` Bounties** (with `X/7` pool slots) and **Fresh Lessons**.
-  4. Side column: **Resume `Train!` Practice** (hydrated from `e2e_last_train_paper` in `localStorage`), **My Library** live slot meters (`X/3`), and latest **Announcements**.
+  4. Side column: **Resume `Train!` Practice** (hydrated from `e2e_last_train_paper` in `localStorage`), **My Library** live slot meters (`X/12`), and latest **Announcements**.
 
 ---
 
@@ -50,7 +50,7 @@
 
 ## 6. Curated Binders (`/study-plans`, `/saved-sessions`)
 
-- Both collection hubs feature `<CollectionCapacityStrip />` (`3`-slot capacity binder `X / 3 slots used`) and retain the empty-collection guard disabling `+ New Plan` / `+ New Session` when slot cap is reached or an empty collection exists.
+- Both collection hubs feature `<CollectionCapacityStrip />` (`12`-slot capacity binder `X / 12 slots used`) and retain the empty-collection guard disabling `+ New Plan` / `+ New Session` when slot cap is reached or an empty collection exists.
 - `/saved-sessions/[id]` renders mixed saved content cleanly without nested cards, keeping `Remove` buttons inline in card meta headers.
 
 ---

@@ -83,7 +83,7 @@ All agents must adhere to the rules in `.agents/UI_UX_GUIDELINES.md` and `DESIGN
 * **Idempotent Toggles**: Follow, Vote, and Report actions are idempotent. Do not implement toggle logic by repeatedly calling `POST`. Use `DELETE` to undo actions.
 * **Threaded Comments**: Fetch top-level comments, and provide a "View Replies" button that calls the `/replies/` endpoint. Do not render deep trees immediately.
 * **30-Day TTL**: Forum posts and problems expire after 30 days. Display countdown warning badges.
-* **Resource Limits**: Users are strictly limited to 3 Study Plans and 3 Saved Sessions. Proactively disable creation buttons when limits are reached or an empty collection exists.
+* **Resource Limits**: Users are strictly limited to 12 Study Plans and 12 Saved Sessions. Proactively disable creation buttons when limits are reached or an empty collection exists.
 * **File Uploads**: Max 5MB for posts (1 file), Max 20MB for lessons (5 files). Do not build video upload UI; use URL inputs for YouTube links.
 * **Search**: Do not use a unified global search endpoint. Search is context-dependent via query parameters on respective list endpoints.
 

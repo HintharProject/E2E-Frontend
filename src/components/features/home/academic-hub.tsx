@@ -33,6 +33,7 @@ import { useAnnouncements } from "@/hooks/use-announcements";
 import { TIER_CONFIG, type ContributorTier } from "@/types/contribution";
 import { isWriteLocked } from "@/types/user";
 import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import { MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
 import { cn, formatDate } from "@/lib/utils";
 
 interface LastTrainPaper {
@@ -45,7 +46,7 @@ interface LastTrainPaper {
 function LibrarySlotMeter({
   label,
   count,
-  max = 3,
+  max = MAX_STUDY_PLANS,
   href,
   icon: Icon,
 }: {
@@ -68,12 +69,12 @@ function LibrarySlotMeter({
           <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
             {label}
           </div>
-          <div className="mt-1 flex items-center gap-1" aria-hidden="true">
+          <div className="mt-1 flex items-center gap-0.5" aria-hidden="true">
             {Array.from({ length: max }).map((_, i) => (
               <span
                 key={i}
                 className={cn(
-                  "h-1.5 w-6 rounded-full transition-colors",
+                  "h-1.5 w-2 rounded-full transition-colors",
                   i < filled ? "bg-primary" : "bg-muted"
                 )}
               />
@@ -565,7 +566,7 @@ export function AcademicHub() {
                 <span>My Library</span>
               </h2>
               <span className="font-mono text-xs text-muted-foreground">
-                3/3 slots
+                12/12 slots
               </span>
             </div>
 
@@ -579,14 +580,14 @@ export function AcademicHub() {
                 <LibrarySlotMeter
                   label="Study Plans"
                   count={studyPlansCount}
-                  max={3}
+                  max={MAX_STUDY_PLANS}
                   href="/study-plans"
                   icon={Bookmark}
                 />
                 <LibrarySlotMeter
                   label="Saved Sessions"
                   count={savedSessionsCount}
-                  max={3}
+                  max={MAX_SAVED_SESSIONS}
                   href="/saved-sessions"
                   icon={Clock}
                 />

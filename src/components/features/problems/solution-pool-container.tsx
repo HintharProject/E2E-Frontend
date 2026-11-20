@@ -9,8 +9,14 @@ import { SolutionItem } from "./solution-item";
 import { SolutionFAB } from "./solution-fab";
 import { ConfidenceBadge } from "./confidence-badge";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { SortToggle, SortToggleOption } from "@/components/ui/sort-toggle";
 import { Layers, Lock, LogIn, UserPlus, ArrowRight, Award, Clock } from "lucide-react";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+
+const SOLUTION_SORT_OPTIONS: readonly SortToggleOption<SolutionSortMode>[] = [
+  { id: "score", label: "Top Score", icon: Award, title: "Sort by Top Score" },
+  { id: "newest", label: "Newest", icon: Clock, title: "Sort by Newest" },
+];
 
 export interface SolutionListContainerProps {
   problem: Problem;
@@ -112,6 +118,8 @@ export function SolutionListContainer({ problem, isAuthor }: SolutionListContain
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
             <Link
               href={`/sign-up?redirect_url=${encodedRedirect}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={buttonVariants({
                 variant: "default",
                 size: "sm",
@@ -124,6 +132,8 @@ export function SolutionListContainer({ problem, isAuthor }: SolutionListContain
             </Link>
             <Link
               href={`/sign-in?redirect_url=${encodedRedirect}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={buttonVariants({
                 variant: "outline",
                 size: "sm",
@@ -151,30 +161,12 @@ export function SolutionListContainer({ problem, isAuthor }: SolutionListContain
         </div>
 
         <div className="flex flex-wrap items-center gap-2.5">
-          <div role="group" aria-label="Sort solutions" className="cm-sort-group">
-            <button
-              type="button"
-              onClick={() => setSort("score")}
-              data-active={sort === "score" ? "true" : "false"}
-              aria-pressed={sort === "score"}
-              className="cm-sort-btn"
-              title="Sort by Top Score"
-            >
-              <Award className="cm-sort-icon size-3.5" aria-hidden="true" />
-              <span>Top Score</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setSort("newest")}
-              data-active={sort === "newest" ? "true" : "false"}
-              aria-pressed={sort === "newest"}
-              className="cm-sort-btn"
-              title="Sort by Newest"
-            >
-              <Clock className="cm-sort-icon size-3.5" aria-hidden="true" />
-              <span>Newest</span>
-            </button>
-          </div>
+          <SortToggle
+            aria-label="Sort solutions"
+            value={sort}
+            onChange={setSort}
+            options={SOLUTION_SORT_OPTIONS}
+          />
 
           <SolutionFAB problem={problem} variant="inline" />
         </div>

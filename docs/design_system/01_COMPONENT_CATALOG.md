@@ -84,7 +84,7 @@ src/components/layout/
 4. **`PostCard` (`components/features/content-cards.tsx`) & `ForumRightRail` (`components/features/forum/forum-right-rail.tsx`):**
    - Distinct treatment for `QUESTION`, `SHARING`, and `ANNOUNCEMENT`, 30-day TTL remaining/warning badges, attachment chip, and `ForumRightRail` displaying quick CTAs and the latest 3 active notices.
 5. **`CollectionCapacityStrip` (`components/features/collections/collection-capacity-strip.tsx`):**
-   - Visual `3`-slot binder indicator used at the top of `/study-plans` and `/saved-sessions` reflecting `X / 3 slots used` plus empty-collection creation guard guidance.
+   - Visual `12`-slot binder indicator used at the top of `/study-plans` and `/saved-sessions` reflecting `X / 12 slots used` plus empty-collection creation guard guidance.
 6. **Comment Section Module (`components/features/comments/` — `.comment-module-v2`):**
    - Scoped via `comment-module-v2.css` and unified through `comment-primitives.tsx` (`CommentModuleRoot`, `CommentSectionHeader`, `CommentComposerShell`, `CommentItemShell`, `CommentThreadRail`, `CommentSkeletonList`, `CommentReplySkeleton`, `CommentEmptyState`, `CommentErrorState`, `CommentGuestGate`) plus `CommentSortToggle`, `PostComments`, `ThreadedComment`, and `SolutionComments`.
    - Features compact single-layer cards, a `1.5px` thread guide rail (visual indent clamped after depth 4 in Discussions; 2-level hierarchy in Solutions), inline reply composer with `@mention` prefill, collapse/expand reply toggles, `Write | Preview` LaTeX math preview (`MathRenderer`), `0/1000` mono telemetry, `font-mono tabular-nums` vote pills, and right-aligned footer controls (`.cm-footer-controls`) housing `<StaffContentActionMenu />` and the overflow `DropdownMenu` (`Edit`, `Delete` confirmation `Dialog`, `Copy link`, `Report`).
@@ -95,5 +95,5 @@ src/components/layout/
 
 1. **No Nested Cards or Floating Corner Deletes:** Saved collection items and tag hubs render native cards cleanly with inline metadata rows rather than card-inside-card wrappers or floating negative-margin delete icons.
 2. **No Decorative Emoji Icons:** All UI indicators come from `lucide-react` (even warning/ban statuses in profiles and star badges in solutions).
-3. **Tabular Numerics:** Vote counts, `X/7` slot gauges, `X/3` binder meters, countdown timers, and admin KPIs use `font-mono tabular-nums`.
+3. **Tabular Numerics:** Vote counts, `X/7` slot gauges, `X/12` binder meters, countdown timers, and admin KPIs use `font-mono tabular-nums`.
 4. **No Raw Hex/OKLCH in JSX:** Use semantic Tailwind tokens or `var(--chart-*)` variables (including inside Recharts components).
