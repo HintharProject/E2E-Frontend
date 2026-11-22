@@ -21,14 +21,7 @@ import { BaseFeedCard } from "@/components/ui/base-card";
 import { ArrowRight, BookOpen, ExternalLink, Image as ImageIcon, Lock, MessageSquare } from "lucide-react";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { ConfidenceBadge } from "./confidence-badge";
-
-function stripProblemPreview(raw: string): string {
-  return raw
-    .replace(/<[^>]*>?/gm, "")
-    .replace(/[#*_`~]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
 
 export function ProblemCard({ problem }: { problem: Problem }) {
   const { user } = useCurrentUser();
@@ -99,9 +92,12 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const allTags = problem.tags_data ?? [];
   const displayTags = allTags.slice(0, 2);
   const overflowTagCount = Math.max(0, allTags.length - displayTags.length);
-  const previewText = stripProblemPreview(problem.body || "");
   const syllabusMeta = [subject?.name, level?.name].filter(Boolean).join(" · ");
   const hasTaxonomy = Boolean(displayTags.length > 0 || primaryThumbnailUrl);
+  const isExpiringProblem =
+    problem.origin !== "PAST_PAPER" &&
+    (problem.resolution_confidence ?? 0) < 80 &&
+    problem.confidence_band !== "high";
 
   return (
     <BaseFeedCard
@@ -143,9 +139,17 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           : null
       }
       subtitle={
-        syllabusMeta
-          ? `Asked ${formatDate(problem.created_at)} · ${syllabusMeta}`
-          : `Asked ${formatDate(problem.created_at)}`
+        <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
+          <span>Asked {formatDate(problem.created_at)}</span>
+          {isExpiringProblem && (
+            <PostExpirationBadge
+              createdAt={problem.created_at}
+              entityType="problem"
+              showSeparator
+            />
+          )}
+          {syllabusMeta ? <span>· {syllabusMeta}</span> : null}
+        </div>
       }
       topRight={
         <>
@@ -184,7 +188,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
       }
       title={problem.title}
       titleAs="h3"
-      body={previewText}
+      body={problem.body || ""}
       extraContent={
         problem.origin === "PAST_PAPER" ? (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-border">

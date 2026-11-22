@@ -16,7 +16,14 @@ export function getInitials(name?: string | null): string {
 }
 
 export function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>?/gm, "");
+  return html
+    .replace(/<[^>]*>?/gm, "")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/```[\s\S]*?```/g, (block) => block.replace(/```[^\n]*\n?|```/g, ""))
+    .replace(/[#*_`~>]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export type BaseCardVariant = "default" | "editorial" | "flat";
@@ -113,7 +120,7 @@ export function BaseFeedCard({
       data-slot="base-feed-card"
       data-variant={variant}
       className={cn(
-        "group relative rounded-xl border border-border transition-all duration-200",
+        "group relative rounded-xl border border-border transition-all duration-200 data-[keyboard-active=true]:border-primary data-[keyboard-active=true]:ring-2 data-[keyboard-active=true]:ring-primary/30",
         leftRail
           ? "flex flex-col sm:flex-row overflow-hidden bg-card shadow-card hover:border-primary/35 hover:shadow-card-hover"
           : cn("flex flex-col justify-between", feedCardVariantStyles[variant]),
@@ -235,6 +242,7 @@ export function BaseFeedCard({
           ) : href ? (
             <Link
               href={href}
+              data-feed-primary-link="true"
               prefetch={contentPrefetch}
               onClick={onContentLinkClick}
               className="mt-3 block min-w-0 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
@@ -390,5 +398,37 @@ export function BaseDetailedCard({
         </div>
       )}
     </article>
+  );
+}
+
+/**
+ * Quiet desktop-only legend for feed keyboard navigation shortcuts.
+ */
+export function FeedKeyboardHint({ className }: { className?: string }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={cn(
+        "hidden lg:flex items-center justify-end gap-3 text-xs text-muted-foreground",
+        className
+      )}
+    >
+      <span className="inline-flex items-center gap-1">
+        <kbd className="rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-foreground">
+          j
+        </kbd>
+        <span>/</span>
+        <kbd className="rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-foreground">
+          k
+        </kbd>
+        <span className="ml-0.5">step cards</span>
+      </span>
+      <span className="inline-flex items-center gap-1">
+        <kbd className="rounded-sm border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs text-foreground">
+          Enter
+        </kbd>
+        <span className="ml-0.5">open</span>
+      </span>
+    </div>
   );
 }

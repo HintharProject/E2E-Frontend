@@ -28,7 +28,11 @@ import {
 // Saved Sessions Hooks
 // ============================================================================
 
-export function useSavedSessions() {
+export interface CollectionQueryOptions {
+  enabled?: boolean;
+}
+
+export function useSavedSessions(options?: CollectionQueryOptions) {
   const { getToken, isSignedIn } = useAuth();
   const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
@@ -39,7 +43,7 @@ export function useSavedSessions() {
       if (!token) throw new Error("Unauthorized");
       return fetchSavedSessions(token);
     },
-    enabled: isAuthed,
+    enabled: isAuthed && (options?.enabled ?? true),
     staleTime: 60 * 1000,
   });
 }
@@ -196,7 +200,7 @@ export function useAddSavedSessionItem() {
 // Study Plans Hooks
 // ============================================================================
 
-export function useStudyPlans() {
+export function useStudyPlans(options?: CollectionQueryOptions) {
   const { getToken, isSignedIn } = useAuth();
   const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
@@ -207,7 +211,7 @@ export function useStudyPlans() {
       if (!token) throw new Error("Unauthorized");
       return fetchStudyPlans(token);
     },
-    enabled: isAuthed,
+    enabled: isAuthed && (options?.enabled ?? true),
     staleTime: 60 * 1000,
   });
 }

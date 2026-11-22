@@ -24,16 +24,19 @@ export function daysUntilExpiration(createdAt: string): number {
 
 export interface PostExpirationBadgeProps {
   createdAt: string;
+  entityType?: "post" | "problem";
   showSeparator?: boolean;
   className?: string;
 }
 
 /**
- * Renders a warning badge only within the final 5 days before a post expires,
- * paired with an accessible popover explaining the 30-day removal policy.
+ * Renders a warning badge only within the final 5 days before a post or
+ * expiring upload problem reaches the 30-day retention limit, paired with
+ * an accessible popover explaining the removal policy.
  */
 export function PostExpirationBadge({
   createdAt,
+  entityType = "post",
   showSeparator = false,
   className,
 }: PostExpirationBadgeProps) {
@@ -44,6 +47,7 @@ export function PostExpirationBadge({
   }
 
   const label = expiresIn === 0 ? "Expires today" : `Expires in ${expiresIn}d`;
+  const isProblem = entityType === "problem";
 
   return (
     <>
@@ -52,7 +56,11 @@ export function PostExpirationBadge({
         <PopoverTrigger
           type="button"
           onClick={(e) => e.stopPropagation()}
-          aria-label={`${label}. View 30-day post retention policy`}
+          aria-label={
+            isProblem
+              ? `${label}. View 30-day problem retention policy`
+              : `${label}. View 30-day post retention policy`
+          }
           className={cn(
             "inline-flex items-center min-h-[44px] sm:min-h-0 -my-2.5 sm:my-0 rounded-full cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             className
@@ -76,16 +84,34 @@ export function PostExpirationBadge({
           className="w-72 p-3.5 text-xs leading-relaxed"
         >
           <p className="font-heading font-semibold text-foreground">
-            Posts expire after 30 days
+            {isProblem
+              ? "Unresolved problems expire after 30 days"
+              : "Posts expire after 30 days"}
           </p>
           <p className="mt-1.5 text-muted-foreground">
-            Forum posts—including comments and attachments—are permanently removed 30 days after posting.
+            {isProblem
+              ? "Community-uploaded problems under 80% confidence—including their solutions and attachments—are permanently removed 30 days after posting."
+              : "Forum posts—including comments and attachments—are permanently removed 30 days after posting."}
           </p>
           <p className="mt-1.5 text-muted-foreground">
-            <span className="font-medium text-foreground">
-              Saving does not preserve access
-            </span>{" "}
-            after day 30; saved posts are removed from your collections too. Download files or copy notes you want to keep.
+            {isProblem ? (
+              <>
+                Past Paper threads and{" "}
+                <span className="font-medium text-foreground">
+                  High Confidence (80%+)
+                </span>{" "}
+                problems are kept permanently. Saving does not preserve expiring
+                threads after day 30.
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-foreground">
+                  Saving does not preserve access
+                </span>{" "}
+                after day 30; saved posts are removed from your collections too.
+                Download files or copy notes you want to keep.
+              </>
+            )}
           </p>
         </PopoverContent>
       </Popover>

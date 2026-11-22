@@ -7,6 +7,7 @@ import "katex/dist/katex.min.css";
 interface MathRendererProps {
   content: string;
   className?: string;
+  compact?: boolean;
 }
 
 interface Segment {
@@ -14,7 +15,11 @@ interface Segment {
   value: string;
 }
 
-export function MathRenderer({ content, className = "" }: MathRendererProps) {
+export function MathRenderer({
+  content,
+  className = "",
+  compact = false,
+}: MathRendererProps) {
   const renderedContent = useMemo(() => {
     if (!content) return null;
 
@@ -48,19 +53,35 @@ export function MathRenderer({ content, className = "" }: MathRendererProps) {
       if (seg.type === "math-block") {
         try {
           const html = katex.renderToString(seg.value, {
-            displayMode: true,
+            displayMode: !compact,
             throwOnError: false,
           });
+          if (compact) {
+            return (
+              <span
+                key={idx}
+                className="mx-1 inline-block max-w-full overflow-x-auto align-middle text-foreground"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            );
+          }
           return (
             <div
               key={idx}
-              className="my-3 overflow-x-auto py-2 text-center text-ink"
+              className="my-3 overflow-x-auto py-2 text-center text-foreground"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           );
         } catch {
+          if (compact) {
+            return (
+              <code key={idx} className="mx-1 rounded bg-muted/60 px-1 font-mono text-xs text-foreground">
+                $${seg.value}$$
+              </code>
+            );
+          }
           return (
-            <pre key={idx} className="my-2 rounded bg-muted/60 p-2 font-mono text-sm text-ink">
+            <pre key={idx} className="my-2 rounded bg-muted/60 p-2 font-mono text-sm text-foreground">
               {seg.value}
             </pre>
           );
@@ -76,13 +97,13 @@ export function MathRenderer({ content, className = "" }: MathRendererProps) {
           return (
             <span
               key={idx}
-              className="inline-block px-1 align-baseline text-ink"
+              className="inline-block px-1 align-baseline text-foreground"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           );
         } catch {
           return (
-            <code key={idx} className="rounded bg-muted/50 px-1 font-mono text-xs text-ink">
+            <code key={idx} className="rounded bg-muted/50 px-1 font-mono text-xs text-foreground">
               ${seg.value}$
             </code>
           );
@@ -96,9 +117,9 @@ export function MathRenderer({ content, className = "" }: MathRendererProps) {
         </span>
       );
     });
-  }, [content]);
+  }, [content, compact]);
 
-  return <div className={`text-sm text-ink ${className}`}>{renderedContent}</div>;
+  return <div className={`text-sm text-foreground ${className}`}>{renderedContent}</div>;
 }
 
 function parseInlineMath(text: string, segments: Segment[]) {

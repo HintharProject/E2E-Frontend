@@ -395,6 +395,7 @@ export function AcademicHub() {
                             confidence={problem.resolution_confidence}
                             band={problem.confidence_band}
                             size="sm"
+                            interactive={false}
                           />
                           <span className="font-mono text-xs tabular-nums text-muted-foreground">
                             {slotCount} {slotCount === 1 ? "sol" : "sols"}

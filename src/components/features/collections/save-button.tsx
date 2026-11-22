@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useDevToken } from "@/lib/client-auth";
 import {
   Bookmark,
@@ -22,7 +21,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   useSavedSessions,
@@ -34,7 +32,14 @@ import {
   useRemoveStudyPlanItem,
   useCreateStudyPlan,
 } from "@/hooks/use-collections";
-import type { SaveTargetType, SavedSession, StudyPlan } from "@/types";
+import { useOptionalSavedCollectionsLookup } from "@/components/providers/saved-collections-provider";
+import type {
+  SaveTargetType,
+  SavedSession,
+  SavedSessionItem,
+  StudyPlan,
+  StudyPlanItem,
+} from "@/types";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
@@ -51,99 +56,243 @@ export interface SaveButtonProps {
   defaultTab?: "session" | "plan";
 }
 
-export function SaveButton({
+function getCollectionItem(
+  items: Array<SavedSessionItem | StudyPlanItem> | undefined,
+  entityType: SaveTargetType,
+  entityId: string
+) {
+  return items?.find((item) => {
+    if (entityType === "post" && "post" in item) {
+      return item.post === entityId || item.post_details?.id === entityId;
+    }
+    if (entityType === "problem") {
+      return item.problem === entityId || item.problem_details?.id === entityId;
+    }
+    if (entityType === "solution") {
+      return item.solution === entityId || item.solution_details?.id === entityId;
+    }
+    if (entityType === "lesson") {
+      return item.lesson === entityId || item.lesson_details?.id === entityId;
+    }
+    if (entityType === "resource") {
+      return item.resource === entityId || item.resource_details?.id === entityId;
+    }
+    return false;
+  });
+}
+
+interface CollectionListPanelProps<T extends { id: string; title: string; name?: string; is_public: boolean; items: Array<SavedSessionItem | StudyPlanItem> }> {
+  collections: T[];
+  isLoading: boolean;
+  togglingId: string | null;
+  isAtCap: boolean;
+  entityType: SaveTargetType;
+  entityId: string;
+  emptyText: string;
+  capText: string;
+  untitledLabel: string;
+  inputPlaceholder: string;
+  newTitle: string;
+  isCreating: boolean;
+  onNewTitleChange: (value: string) => void;
+  onToggle: (collection: T) => void;
+  onCreateAndSave: (e: React.FormEvent) => void;
+}
+
+function CollectionListPanel<
+  T extends {
+    id: string;
+    title: string;
+    name?: string;
+    is_public: boolean;
+    items: Array<SavedSessionItem | StudyPlanItem>;
+  },
+>({
+  collections,
+  isLoading,
+  togglingId,
+  isAtCap,
   entityType,
   entityId,
-  variant = "ghost",
-  size = "sm",
-  className,
-  showLabel = false,
-  label = "Save",
-  defaultTab,
-}: SaveButtonProps) {
-  const [open, setOpen] = useState(false);
+  emptyText,
+  capText,
+  untitledLabel,
+  inputPlaceholder,
+  newTitle,
+  isCreating,
+  onNewTitleChange,
+  onToggle,
+  onCreateAndSave,
+}: CollectionListPanelProps<T>) {
+  return (
+    <div className="flex flex-col gap-4 py-2">
+      {isLoading ? (
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : collections.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-4 text-center">
+          <p className="text-xs text-muted-foreground">{emptyText}</p>
+        </div>
+      ) : (
+        <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
+          {collections.map((collection) => {
+            const isItemPresent = Boolean(
+              getCollectionItem(collection.items, entityType, entityId)
+            );
+            const isToggling = togglingId === collection.id;
 
-  // Tab switcher: 'session' | 'plan'
-  // Posts can only be saved to Sessions. Lessons, problems, solutions, and resources can be saved to both.
-  const canSaveToPlan = entityType !== "post";
+            return (
+              <button
+                key={collection.id}
+                type="button"
+                onClick={() => onToggle(collection)}
+                disabled={isToggling}
+                className={cn(
+                  "w-full min-h-[44px] sm:min-h-0 flex items-center justify-between rounded-lg border p-2.5 text-left text-xs transition cursor-pointer",
+                  isItemPresent
+                    ? "border-primary/50 bg-primary/5 text-foreground"
+                    : "border-border bg-card hover:border-primary/40 hover:bg-muted/50 text-foreground"
+                )}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition",
+                      isItemPresent
+                        ? "border-primary bg-primary text-primary-foreground"
+                        : "border-border bg-background"
+                    )}
+                  >
+                    {isItemPresent && <Check className="h-3 w-3 stroke-[3]" />}
+                  </div>
+                  <span className="truncate font-medium">
+                    {collection.title || collection.name || untitledLabel}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                  <span className="font-mono text-xs tabular-nums">
+                    {collection.items?.length || 0} items
+                  </span>
+                  {collection.is_public ? (
+                    <span title="Public">
+                      <Globe className="h-3.5 w-3.5 text-muted-foreground" />
+                    </span>
+                  ) : (
+                    <span title="Private">
+                      <Lock className="h-3.5 w-3.5 text-muted-foreground" />
+                    </span>
+                  )}
+                  {isToggling && (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                  )}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="border-t border-border pt-3">
+        {isAtCap ? (
+          <p className="text-center text-xs text-muted-foreground">{capText}</p>
+        ) : (
+          <form onSubmit={onCreateAndSave} className="flex gap-2">
+            <Input
+              value={newTitle}
+              onChange={(e) => onNewTitleChange(e.target.value)}
+              placeholder={inputPlaceholder}
+              className="h-9 sm:h-8 text-base sm:text-xs"
+              disabled={isCreating || isLoading}
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="h-9 sm:h-8 shrink-0 text-xs gap-1"
+              disabled={isCreating || !newTitle.trim() || isLoading}
+            >
+              {isCreating ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <>
+                  <Plus className="h-3.5 w-3.5" />
+                  Save
+                </>
+              )}
+            </Button>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface SaveCollectionsDialogProps {
+  open: boolean;
+  onOpenChange: (nextOpen: boolean) => void;
+  entityType: SaveTargetType;
+  entityId: string;
+  canSaveToPlan: boolean;
+  defaultTab?: "session" | "plan";
+  initialSavedInSession?: boolean;
+  initialSavedInPlan?: boolean;
+}
+
+function SaveCollectionsDialog({
+  open,
+  onOpenChange,
+  entityType,
+  entityId,
+  canSaveToPlan,
+  defaultTab,
+  initialSavedInSession = false,
+  initialSavedInPlan = false,
+}: SaveCollectionsDialogProps) {
   const [activeTab, setActiveTab] = useState<"session" | "plan">(
-    defaultTab || "session"
+    canSaveToPlan &&
+      (defaultTab === "plan" || (!defaultTab && initialSavedInPlan && !initialSavedInSession))
+      ? "plan"
+      : "session"
   );
 
-  // Sessions state
   const [newSessionTitle, setNewSessionTitle] = useState("");
   const [isCreatingSession, setIsCreatingSession] = useState(false);
-  const [togglingSessionId, setTogglingSessionId] = useState<string | null>(null);
+  const [togglingSessionId, setTogglingSessionId] = useState<string | null>(
+    null
+  );
 
-  // Study plans state
   const [newPlanTitle, setNewPlanTitle] = useState("");
   const [isCreatingPlan, setIsCreatingPlan] = useState(false);
   const [togglingPlanId, setTogglingPlanId] = useState<string | null>(null);
 
-  const { isSignedIn: isGateSignedIn, requireAuth } = useAuthGate();
-  const devToken = useDevToken();
+  const { requireAuth } = useAuthGate();
 
-  const isAuthed = Boolean(isGateSignedIn || devToken);
-
-  // Saved Sessions queries/mutations
   const { data: sessionsResponse, isLoading: isSessionsLoading } =
-    useSavedSessions();
+    useSavedSessions({ enabled: open });
   const addSessionMutation = useAddSessionItem();
   const removeSessionMutation = useRemoveSessionItem();
   const createSessionMutation = useCreateSavedSession();
   const sessions: SavedSession[] = sessionsResponse?.data || [];
 
-  // Study Plans queries/mutations
-  const { data: plansResponse, isLoading: isPlansLoading } = useStudyPlans();
+  const { data: plansResponse, isLoading: isPlansLoading } = useStudyPlans({
+    enabled: open && canSaveToPlan,
+  });
   const addPlanMutation = useAddStudyPlanItem();
   const removePlanMutation = useRemoveStudyPlanItem();
   const createPlanMutation = useCreateStudyPlan();
-  const plans: StudyPlan[] = plansResponse?.data || [];
+  const plans: StudyPlan[] = canSaveToPlan ? plansResponse?.data || [] : [];
 
-  // Helper: check if item is in a session
-  const getItemInSession = (session: SavedSession) => {
-    return session.items?.find((item) => {
-      if (entityType === "post") {
-        return item.post === entityId || item.post_details?.id === entityId;
-      }
-      if (entityType === "problem") {
-        return item.problem === entityId || item.problem_details?.id === entityId;
-      }
-      if (entityType === "solution") {
-        return item.solution === entityId || item.solution_details?.id === entityId;
-      }
-      if (entityType === "lesson") {
-        return item.lesson === entityId || item.lesson_details?.id === entityId;
-      }
-      if (entityType === "resource") {
-        return item.resource === entityId || item.resource_details?.id === entityId;
-      }
-      return false;
-    });
-  };
+  const effectiveTab = canSaveToPlan ? activeTab : "session";
 
-  // Helper: check if item is in a study plan
-  const getItemInPlan = (plan: StudyPlan) => {
-    return plan.items?.find((item) => {
-      if (entityType === "lesson") {
-        return item.lesson === entityId || item.lesson_details?.id === entityId;
-      }
-      if (entityType === "problem") {
-        return item.problem === entityId || item.problem_details?.id === entityId;
-      }
-      if (entityType === "solution") {
-        return item.solution === entityId || item.solution_details?.id === entityId;
-      }
-      if (entityType === "resource") {
-        return item.resource === entityId || item.resource_details?.id === entityId;
-      }
-      return false;
-    });
-  };
-
-  const isSavedInAnySession = sessions.some((s) => Boolean(getItemInSession(s)));
-  const isSavedInAnyPlan = plans.some((p) => Boolean(getItemInPlan(p)));
-  const isSaved = isSavedInAnySession || (canSaveToPlan && isSavedInAnyPlan);
+  const isSavedInAnySession = sessions.some((s) =>
+    Boolean(getCollectionItem(s.items, entityType, entityId))
+  );
+  const isSavedInAnyPlan =
+    canSaveToPlan &&
+    plans.some((p) =>
+      Boolean(getCollectionItem(p.items, entityType, entityId))
+    );
 
   const sessionCount = sessions.length;
   const isSessionAtCap = sessionCount >= MAX_SAVED_SESSIONS;
@@ -155,20 +304,19 @@ export function SaveButton({
     const status = (err as { status?: number } | null)?.status;
     const message = (err as { message?: string } | null)?.message;
     if (status === 401 || message === "Unauthorized") {
-      setOpen(false);
+      onOpenChange(false);
       requireAuth(undefined, { actionLabel: "save items to your library" });
       return;
     }
     toast.error(message || fallbackMessage);
   };
 
-  // Toggle Session Item
   const handleToggleSession = async (session: SavedSession) => {
     if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
-      setOpen(false);
+      onOpenChange(false);
       return;
     }
-    const existingItem = getItemInSession(session);
+    const existingItem = getCollectionItem(session.items, entityType, entityId);
     setTogglingSessionId(session.id);
 
     try {
@@ -192,13 +340,12 @@ export function SaveButton({
     }
   };
 
-  // Toggle Study Plan Item
   const handleTogglePlan = async (plan: StudyPlan) => {
     if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
-      setOpen(false);
+      onOpenChange(false);
       return;
     }
-    const existingItem = getItemInPlan(plan);
+    const existingItem = getCollectionItem(plan.items, entityType, entityId);
     setTogglingPlanId(plan.id);
 
     try {
@@ -222,11 +369,10 @@ export function SaveButton({
     }
   };
 
-  // Create new session & save
   const handleCreateSessionAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
-      setOpen(false);
+      onOpenChange(false);
       return;
     }
     if (!newSessionTitle.trim() || isSessionAtCap) return;
@@ -252,11 +398,10 @@ export function SaveButton({
     }
   };
 
-  // Create new plan & save
   const handleCreatePlanAndSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!requireAuth(undefined, { actionLabel: "save items to your library" })) {
-      setOpen(false);
+      onOpenChange(false);
       return;
     }
     if (!newPlanTitle.trim() || isPlanAtCap) return;
@@ -282,72 +427,8 @@ export function SaveButton({
     }
   };
 
-  const buttonVariant = variant === "icon" ? "ghost" : variant;
-  const buttonSize = variant === "icon" ? "icon" : size;
-
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (nextOpen && !isAuthed) {
-      requireAuth(undefined, { actionLabel: "save items to your library" });
-      return;
-    }
-    setOpen(nextOpen);
-  };
-
-  if (!isAuthed) {
-    return (
-      <Button
-        type="button"
-        variant={buttonVariant}
-        size={buttonSize}
-        className={cn("transition-colors", className)}
-        aria-label="Save to session or study plan"
-        aria-pressed={false}
-        title="Save to session or study plan"
-        onClick={(e) => {
-          e.stopPropagation();
-          requireAuth(undefined, { actionLabel: "save items to your library" });
-        }}
-      >
-        <Bookmark
-          className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground"
-          aria-hidden="true"
-        />
-        {showLabel && <span className="ml-1.5">{label}</span>}
-      </Button>
-    );
-  }
-
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogTrigger
-        render={
-          <Button
-            variant={buttonVariant}
-            size={buttonSize}
-            className={cn(
-              "transition-colors",
-              isSaved && "text-primary hover:text-primary",
-              className
-            )}
-            aria-label={isSaved ? "Saved in study plan or session" : "Save to session or study plan"}
-            aria-pressed={isSaved}
-            title={isSaved ? "Saved in collections" : "Save to session or study plan"}
-            onClick={(e) => {
-              e.stopPropagation();
-            }}
-          />
-        }
-      >
-        {isSaved ? (
-          <BookmarkCheck className="h-4 w-4 fill-current text-primary" aria-hidden="true" />
-        ) : (
-          <Bookmark className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground" aria-hidden="true" />
-        )}
-        {showLabel && (
-          <span className="ml-1.5">{isSaved ? "Saved" : label}</span>
-        )}
-      </DialogTrigger>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className="sm:max-w-md"
         onClick={(e) => e.stopPropagation()}
@@ -355,310 +436,289 @@ export function SaveButton({
         <DialogHeader>
           <div className="flex items-center justify-between pr-6">
             <DialogTitle className="flex items-center gap-2 font-heading text-base">
-              {activeTab === "plan" ? (
+              {effectiveTab === "plan" ? (
                 <BookOpen className="h-4 w-4 text-primary" aria-hidden="true" />
               ) : (
                 <Bookmark className="h-4 w-4 text-primary" aria-hidden="true" />
               )}
-              {canSaveToPlan
-                ? activeTab === "plan"
-                  ? "Add to Study Plan"
-                  : "Save to Session"
-                : "Save to Session"}
+              {effectiveTab === "plan" ? "Add to Study Plan" : "Save to Session"}
             </DialogTitle>
 
-            <Badge variant="outline" className="text-xs">
-              {activeTab === "plan"
+            <Badge variant="outline" className="font-mono tabular-nums text-xs">
+              {effectiveTab === "plan"
                 ? `${planCount} / ${MAX_STUDY_PLANS} Plans`
                 : `${sessionCount} / ${MAX_SAVED_SESSIONS} Sessions`}
             </Badge>
           </div>
 
           <DialogDescription className="text-xs text-muted-foreground">
-            {activeTab === "plan"
-              ? "Curate into structured, sequential syllabi and study plans."
-              : "Bookmark for later reference across your saved collections."}
+            {canSaveToPlan
+              ? "Choose between quick Saved Sessions and ordered Study Plans."
+              : "Saved Sessions are quick bookmarks for revisiting forum posts later."}
           </DialogDescription>
 
-          {/* Tab Switcher for Lessons, Solve, and Resources */}
           {canSaveToPlan && (
-            <div role="tablist" aria-label="Save collection type" className="mt-3 flex rounded-xl border border-border bg-muted/40 p-1">
+            <div
+              role="tablist"
+              aria-label="Save collection type"
+              className="mt-3 grid grid-cols-2 gap-1 rounded-xl border border-border bg-muted/40 p-1"
+            >
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === "session"}
+                aria-selected={effectiveTab === "session"}
                 onClick={() => setActiveTab("session")}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg min-h-[44px] md:min-h-0 py-1.5 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                  activeTab === "session"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                  "flex flex-col items-start gap-0.5 rounded-lg min-h-[44px] px-2.5 py-2 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                  effectiveTab === "session"
+                    ? "bg-card text-foreground shadow-xs border border-border/60"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
                 )}
               >
-                <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Saved Sessions</span>
-                {isSavedInAnySession && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-                )}
+                <span className="flex w-full items-center justify-between gap-1.5 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5">
+                    <Bookmark className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>Saved Sessions</span>
+                  </span>
+                  {isSavedInAnySession && (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium leading-none text-primary">
+                      Saved
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs font-normal text-muted-foreground leading-tight">
+                  Quick bookmarks
+                </span>
               </button>
 
               <button
                 type="button"
                 role="tab"
-                aria-selected={activeTab === "plan"}
+                aria-selected={effectiveTab === "plan"}
                 onClick={() => setActiveTab("plan")}
                 className={cn(
-                  "flex flex-1 items-center justify-center gap-1.5 rounded-lg min-h-[44px] md:min-h-0 py-1.5 text-xs font-semibold transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
-                  activeTab === "plan"
-                    ? "bg-card text-foreground shadow-xs"
-                    : "text-muted-foreground hover:text-foreground"
+                  "flex flex-col items-start gap-0.5 rounded-lg min-h-[44px] px-2.5 py-2 text-left transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1",
+                  effectiveTab === "plan"
+                    ? "bg-card text-foreground shadow-xs border border-border/60"
+                    : "text-muted-foreground hover:text-foreground border border-transparent"
                 )}
               >
-                <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
-                <span>Study Plans</span>
-                {isSavedInAnyPlan && (
-                  <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
-                )}
+                <span className="flex w-full items-center justify-between gap-1.5 text-xs font-semibold">
+                  <span className="inline-flex items-center gap-1.5">
+                    <BookOpen className="h-3.5 w-3.5 shrink-0 text-primary" aria-hidden="true" />
+                    <span>Study Plans</span>
+                  </span>
+                  {isSavedInAnyPlan && (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-xs font-medium leading-none text-primary">
+                      Saved
+                    </span>
+                  )}
+                </span>
+                <span className="text-xs font-normal text-muted-foreground leading-tight">
+                  Ordered syllabus path
+                </span>
               </button>
             </div>
           )}
         </DialogHeader>
 
-        {!isAuthed ? (
-          <div className="flex flex-col items-center justify-center py-6 text-center">
-            <p className="mb-4 text-sm text-ink-muted">
-              Please sign in to save items to your collections.
-            </p>
-            <Button nativeButton={false} render={<Link href="/sign-in" target="_blank" rel="noopener noreferrer" />}>
-              Sign In
-            </Button>
-          </div>
-        ) : activeTab === "session" ? (
-          /* ======================================================== */
-          /* SAVED SESSIONS TAB                                       */
-          /* ======================================================== */
-          <div className="flex flex-col gap-4 py-2">
-            {isSessionsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-ink-muted" />
-              </div>
-            ) : sessions.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <p className="text-xs text-ink-muted">
-                  You have not created any saved sessions yet.
-                </p>
-              </div>
-            ) : (
-              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-                {sessions.map((session) => {
-                  const isItemInSession = Boolean(getItemInSession(session));
-                  const isToggling = togglingSessionId === session.id;
-
-                  return (
-                    <button
-                      key={session.id}
-                      type="button"
-                      onClick={() => handleToggleSession(session)}
-                      disabled={isToggling}
-                      className={cn(
-                        "w-full flex items-center justify-between rounded-lg border p-2.5 text-left text-xs transition cursor-pointer",
-                        isItemInSession
-                          ? "border-brand/50 bg-brand/5 text-ink"
-                          : "border-line bg-card hover:border-line-strong hover:bg-muted/50 text-ink"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={cn(
-                            "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition",
-                            isItemInSession
-                              ? "border-brand bg-brand text-white"
-                              : "border-line bg-background"
-                          )}
-                        >
-                          {isItemInSession && (
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          )}
-                        </div>
-                        <span className="truncate font-medium">
-                          {session.title || (session as any).name || "Untitled Session"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 text-ink-muted">
-                        <span className="text-[11px]">
-                          {session.items?.length || 0} items
-                        </span>
-                        {session.is_public ? (
-                          <span title="Public">
-                            <Globe className="h-3.5 w-3.5 text-ink-muted" />
-                          </span>
-                        ) : (
-                          <span title="Private">
-                            <Lock className="h-3.5 w-3.5 text-ink-muted" />
-                          </span>
-                        )}
-                        {isToggling && (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Inline New Session Form */}
-            <div className="border-t border-line pt-3">
-              {isSessionAtCap ? (
-                <p className="text-center text-xs text-ink-muted">
-                  Maximum limit of {MAX_SAVED_SESSIONS} saved sessions reached.
-                </p>
-              ) : (
-                <form onSubmit={handleCreateSessionAndSave} className="flex gap-2">
-                  <Input
-                    value={newSessionTitle}
-                    onChange={(e) => setNewSessionTitle(e.target.value)}
-                    placeholder="Create new session..."
-                    className="h-8 text-xs"
-                    disabled={isCreatingSession || isSessionsLoading}
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="h-8 shrink-0 text-xs gap-1"
-                    disabled={
-                      isCreatingSession ||
-                      !newSessionTitle.trim() ||
-                      isSessionsLoading
-                    }
-                  >
-                    {isCreatingSession ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="h-3.5 w-3.5" />
-                        Save
-                      </>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </div>
-          </div>
+        {effectiveTab === "session" ? (
+          <CollectionListPanel
+            collections={sessions}
+            isLoading={isSessionsLoading}
+            togglingId={togglingSessionId}
+            isAtCap={isSessionAtCap}
+            entityType={entityType}
+            entityId={entityId}
+            emptyText="You have not created any saved sessions yet."
+            capText={`Maximum limit of ${MAX_SAVED_SESSIONS} saved sessions reached.`}
+            untitledLabel="Untitled Session"
+            inputPlaceholder="Create new session..."
+            newTitle={newSessionTitle}
+            isCreating={isCreatingSession}
+            onNewTitleChange={setNewSessionTitle}
+            onToggle={handleToggleSession}
+            onCreateAndSave={handleCreateSessionAndSave}
+          />
         ) : (
-          /* ======================================================== */
-          /* STUDY PLANS TAB                                          */
-          /* ======================================================== */
-          <div className="flex flex-col gap-4 py-2">
-            {isPlansLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-5 w-5 animate-spin text-ink-muted" />
-              </div>
-            ) : plans.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-4 text-center">
-                <p className="text-xs text-ink-muted">
-                  You have not created any study plans yet.
-                </p>
-              </div>
-            ) : (
-              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
-                {plans.map((plan) => {
-                  const isItemInPlan = Boolean(getItemInPlan(plan));
-                  const isToggling = togglingPlanId === plan.id;
-
-                  return (
-                    <button
-                      key={plan.id}
-                      type="button"
-                      onClick={() => handleTogglePlan(plan)}
-                      disabled={isToggling}
-                      className={cn(
-                        "w-full flex items-center justify-between rounded-lg border p-2.5 text-left text-xs transition cursor-pointer",
-                        isItemInPlan
-                          ? "border-brand/50 bg-brand/5 text-ink"
-                          : "border-line bg-card hover:border-line-strong hover:bg-muted/50 text-ink"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <div
-                          className={cn(
-                            "flex h-4 w-4 shrink-0 items-center justify-center rounded border transition",
-                            isItemInPlan
-                              ? "border-brand bg-brand text-white"
-                              : "border-line bg-background"
-                          )}
-                        >
-                          {isItemInPlan && (
-                            <Check className="h-3 w-3 stroke-[3]" />
-                          )}
-                        </div>
-                        <span className="truncate font-medium">
-                          {plan.title || (plan as any).name || "Untitled Plan"}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 text-ink-muted">
-                        <span className="text-[11px]">
-                          {plan.items?.length || 0} items
-                        </span>
-                        {plan.is_public ? (
-                          <span title="Public">
-                            <Globe className="h-3.5 w-3.5 text-ink-muted" />
-                          </span>
-                        ) : (
-                          <span title="Private">
-                            <Lock className="h-3.5 w-3.5 text-ink-muted" />
-                          </span>
-                        )}
-                        {isToggling && (
-                          <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* Inline New Plan Form */}
-            <div className="border-t border-line pt-3">
-              {isPlanAtCap ? (
-                <p className="text-center text-xs text-ink-muted">
-                  Maximum limit of {MAX_STUDY_PLANS} study plans reached.
-                </p>
-              ) : (
-                <form onSubmit={handleCreatePlanAndSave} className="flex gap-2">
-                  <Input
-                    value={newPlanTitle}
-                    onChange={(e) => setNewPlanTitle(e.target.value)}
-                    placeholder="Create new study plan..."
-                    className="h-8 text-xs"
-                    disabled={isCreatingPlan || isPlansLoading}
-                  />
-                  <Button
-                    type="submit"
-                    size="sm"
-                    className="h-8 shrink-0 text-xs gap-1"
-                    disabled={
-                      isCreatingPlan || !newPlanTitle.trim() || isPlansLoading
-                    }
-                  >
-                    {isCreatingPlan ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <>
-                        <Plus className="h-3.5 w-3.5" />
-                        Save
-                      </>
-                    )}
-                  </Button>
-                </form>
-              )}
-            </div>
-          </div>
+          <CollectionListPanel
+            collections={plans}
+            isLoading={isPlansLoading}
+            togglingId={togglingPlanId}
+            isAtCap={isPlanAtCap}
+            entityType={entityType}
+            entityId={entityId}
+            emptyText="You have not created any study plans yet."
+            capText={`Maximum limit of ${MAX_STUDY_PLANS} study plans reached.`}
+            untitledLabel="Untitled Plan"
+            inputPlaceholder="Create new study plan..."
+            newTitle={newPlanTitle}
+            isCreating={isCreatingPlan}
+            onNewTitleChange={setNewPlanTitle}
+            onToggle={handleTogglePlan}
+            onCreateAndSave={handleCreatePlanAndSave}
+          />
         )}
       </DialogContent>
     </Dialog>
+  );
+}
+
+interface SaveButtonShellProps extends SaveButtonProps {
+  isSavedInSession: boolean;
+  isSavedInPlan: boolean;
+  canSaveToPlan: boolean;
+}
+
+function SaveButtonShell({
+  entityType,
+  entityId,
+  variant = "ghost",
+  size = "sm",
+  className,
+  showLabel = false,
+  label = "Save",
+  defaultTab,
+  isSavedInSession,
+  isSavedInPlan,
+  canSaveToPlan,
+}: SaveButtonShellProps) {
+  const [open, setOpen] = useState(false);
+  const { isSignedIn: isGateSignedIn, requireAuth } = useAuthGate();
+  const devToken = useDevToken();
+  const isAuthed = Boolean(isGateSignedIn || devToken);
+  const isSaved = isSavedInSession || isSavedInPlan;
+
+  const buttonVariant = variant === "icon" ? "ghost" : variant;
+  const buttonSize = variant === "icon" ? "icon" : size;
+
+  const savedWhereLabel =
+    isSavedInSession && isSavedInPlan
+      ? "In Session & Plan"
+      : isSavedInPlan
+        ? "In Study Plan"
+        : isSavedInSession
+          ? canSaveToPlan
+            ? "In Session"
+            : "Saved"
+          : label;
+
+  const unsavedLabel = canSaveToPlan
+    ? "Save to Session (quick bookmark) or Study Plan (ordered study)"
+    : "Save to Saved Session (quick bookmark)";
+  const savedLabel =
+    isSavedInSession && isSavedInPlan
+      ? "Saved in Session & Study Plan — manage collections"
+      : isSavedInPlan
+        ? "Saved in Study Plan — manage Sessions or Study Plans"
+        : isSavedInSession
+          ? canSaveToPlan
+            ? "Saved in Session — manage Sessions or Study Plans"
+            : "Saved in Sessions — manage Saved Sessions"
+          : unsavedLabel;
+
+  const handleTriggerClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isAuthed) {
+      requireAuth(undefined, { actionLabel: "save items to your library" });
+      return;
+    }
+    setOpen(true);
+  };
+
+  return (
+    <>
+      <Button
+        type="button"
+        variant={buttonVariant}
+        size={buttonSize}
+        className={cn(
+          "transition-colors",
+          isAuthed && isSaved && "text-primary hover:text-primary",
+          className
+        )}
+        aria-label={isAuthed && isSaved ? savedLabel : unsavedLabel}
+        aria-pressed={isAuthed ? isSaved : false}
+        title={isAuthed && isSaved ? savedLabel : unsavedLabel}
+        onClick={handleTriggerClick}
+      >
+        {isAuthed && isSaved ? (
+          <BookmarkCheck
+            className="h-4 w-4 fill-current text-primary"
+            aria-hidden="true"
+          />
+        ) : (
+          <Bookmark
+            className="h-4 w-4 text-muted-foreground transition group-hover:text-foreground"
+            aria-hidden="true"
+          />
+        )}
+        {showLabel && (
+          <span className="ml-1.5">
+            {isAuthed && isSaved ? savedWhereLabel : label}
+          </span>
+        )}
+      </Button>
+
+      {open && isAuthed && (
+        <SaveCollectionsDialog
+          open={open}
+          onOpenChange={setOpen}
+          entityType={entityType}
+          entityId={entityId}
+          canSaveToPlan={canSaveToPlan}
+          defaultTab={defaultTab}
+          initialSavedInSession={isSavedInSession}
+          initialSavedInPlan={isSavedInPlan}
+        />
+      )}
+    </>
+  );
+}
+
+function SaveButtonStandalone(props: SaveButtonProps) {
+  const canSaveToPlan = props.entityType !== "post";
+  const { data: sessionsResponse } = useSavedSessions();
+  const { data: plansResponse } = useStudyPlans({ enabled: canSaveToPlan });
+
+  const isSavedInSession = (sessionsResponse?.data || []).some((s) =>
+    Boolean(getCollectionItem(s.items, props.entityType, props.entityId))
+  );
+  const isSavedInPlan =
+    canSaveToPlan &&
+    (plansResponse?.data || []).some((p) =>
+      Boolean(getCollectionItem(p.items, props.entityType, props.entityId))
+    );
+
+  return (
+    <SaveButtonShell
+      {...props}
+      isSavedInSession={isSavedInSession}
+      isSavedInPlan={isSavedInPlan}
+      canSaveToPlan={canSaveToPlan}
+    />
+  );
+}
+
+/**
+ * Bookmark trigger and modal for Saved Sessions and Study Plans.
+ * Reads saved status from the shared SavedCollectionsProvider when mounted in the app shell,
+ * and lazily mounts dialog queries and mutations only when opened.
+ */
+export function SaveButton(props: SaveButtonProps) {
+  const sharedLookup = useOptionalSavedCollectionsLookup();
+  const canSaveToPlan = props.entityType !== "post";
+
+  if (!sharedLookup) {
+    return <SaveButtonStandalone {...props} />;
+  }
+
+  return (
+    <SaveButtonShell
+      {...props}
+      isSavedInSession={sharedLookup.isSavedInSession(props.entityType, props.entityId)}
+      isSavedInPlan={sharedLookup.isSavedInPlan(props.entityType, props.entityId)}
+      canSaveToPlan={canSaveToPlan}
+    />
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useTransition } from "react";
+import { useEffect, useMemo, useRef, useTransition } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,8 @@ import { LessonCardSkeleton } from "./skeletons";
 import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { ContentSortToggle } from "@/components/ui/content-sort-toggle";
+import { FeedKeyboardHint } from "@/components/ui/base-card";
+import { useFeedKeyboardNavigation } from "@/hooks/use-feed-keyboard-navigation";
 import { parseFilterList } from "@/lib/filter-params";
 import { cn } from "@/lib/utils";
 import type { ContentSortMode, Lesson, TimeframeFilter } from "@/types";
@@ -79,6 +81,11 @@ export function LessonsFeed({
 
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
   const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  useFeedKeyboardNavigation({
+    containerRef: feedRef,
+  });
 
   const isShelfMode =
     effectiveSubjects.length === 0 && effectiveTags.length === 0 && !onlyMine;
@@ -498,16 +505,20 @@ export function LessonsFeed({
       isRefreshing={isRefetching}
       label="lessons"
     >
-      {!hideSort && (
-        <div className="mb-4 flex items-center justify-between pb-1">
-          <ContentSortToggle
-            sort={currentSort}
-            timeframe={currentTimeframe}
-            onSortChange={handleSortChange}
-            onTimeframeChange={handleTimeframeChange}
-          />
-        </div>
-      )}
+      <div ref={feedRef}>
+        {!hideSort ? (
+          <div className="mb-4 flex items-center justify-between pb-1">
+            <ContentSortToggle
+              sort={currentSort}
+              timeframe={currentTimeframe}
+              onSortChange={handleSortChange}
+              onTimeframeChange={handleTimeframeChange}
+            />
+            <FeedKeyboardHint />
+          </div>
+        ) : (
+          <FeedKeyboardHint className="mb-3" />
+        )}
 
       {isShelfMode ? (
         /* ================================================================= */
@@ -644,6 +655,7 @@ export function LessonsFeed({
           )}
         </div>
       )}
+      </div>
     </TopmostScrollRefresh>
   );
 }

@@ -35,6 +35,7 @@ export function ProblemCardVote({
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
   const [userVote, setUserVote] = useState<number>(initialUserVote ?? 0);
+  const [isPending, setIsPending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Prevents the useEffect prop-sync from overwriting optimistic state
   // while a mutation is debounced or in-flight
@@ -94,6 +95,7 @@ export function ProblemCardVote({
     setVoteCount(nextCount);
 
     isPendingRef.current = true;
+    setIsPending(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -105,6 +107,7 @@ export function ProblemCardVote({
           },
           onSettled: () => {
             isPendingRef.current = false;
+            setIsPending(false);
           },
           onError: () => {
             setUserVote(lastConfirmedRef.current.userVote);
@@ -116,12 +119,16 @@ export function ProblemCardVote({
     }, 400);
   };
 
+  const isSyncing = isPending || voteMutation.isPending;
+
   if (variant === "rail") {
     return (
       <button
         type="button"
         onClick={handleVote}
         disabled={isSelf}
+        aria-busy={isSyncing}
+        data-pending={isSyncing ? "true" : undefined}
         aria-label={
           isSelf
             ? "Cannot vote on your own question"
@@ -139,8 +146,8 @@ export function ProblemCardVote({
             : "border-transparent bg-background/60 text-muted-foreground hover:border-border hover:text-foreground"
         )}
       >
-        <ChevronUp className="size-4 shrink-0" aria-hidden="true" />
-        <span className="font-mono tabular-nums text-base font-semibold leading-tight text-foreground">
+        <ChevronUp className={cn("size-4 shrink-0", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+        <span className={cn("font-mono tabular-nums text-base font-semibold leading-tight text-foreground transition-opacity", isSyncing && "opacity-75")}>
           {voteCount}
         </span>
       </button>
@@ -152,6 +159,8 @@ export function ProblemCardVote({
       type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-busy={isSyncing}
+      data-pending={isSyncing ? "true" : undefined}
       aria-label={
         isSelf
           ? "Cannot vote on your own question"
@@ -167,8 +176,10 @@ export function ProblemCardVote({
         userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
     >
-      <ChevronUp className="size-3.5" aria-hidden="true" />
-      <span className="font-mono tabular-nums">{voteCount}</span>
+      <ChevronUp className={cn("size-3.5", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+      <span className={cn("font-mono tabular-nums transition-opacity", isSyncing && "opacity-75")}>
+        {voteCount}
+      </span>
     </button>
   );
 }

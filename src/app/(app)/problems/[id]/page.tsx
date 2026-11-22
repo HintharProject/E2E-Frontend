@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { SolutionListContainer } from "@/components/features/problems/solution-pool-container";
 import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
 import { MathRenderer } from "@/components/ui/math-renderer";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
@@ -81,6 +82,10 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   const isAuthor = isContentAuthor(user, author, problem.author);
   const isLocked = Boolean(problem.is_locked);
   const pastPaperDetails = problem.resource_details;
+  const isExpiringProblem =
+    problem.origin !== "PAST_PAPER" &&
+    (problem.resolution_confidence ?? 0) < 80 &&
+    problem.confidence_band !== "high";
 
   const imageAttachments =
     problem.attachments?.filter((att) => {
@@ -176,6 +181,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               confidence={problem.resolution_confidence}
               band={problem.confidence_band}
             />
+            {isExpiringProblem && (
+              <PostExpirationBadge
+                createdAt={problem.created_at}
+                entityType="problem"
+              />
+            )}
             {isLocked && (
               <Badge variant="secondary" className="text-xs gap-1">
                 <Lock className="size-3" aria-hidden="true" /> Locked

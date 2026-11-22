@@ -414,6 +414,7 @@ export function CommandPalette() {
                               confidence={problem.resolution_confidence}
                               band={problem.confidence_band}
                               size="sm"
+                              interactive={false}
                             />
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">

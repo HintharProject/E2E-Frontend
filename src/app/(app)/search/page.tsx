@@ -529,6 +529,7 @@ export default function SearchPage(props: {
                               confidence={prob.resolution_confidence}
                               band={prob.confidence_band}
                               size="sm"
+                              interactive={false}
                             />
                             {prob.subject && (
                               <span className="text-xs font-medium text-muted-foreground">

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,21 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
   const { user } = useCurrentUser();
   const deleteMutation = useDeleteSolution();
   const [isExpanded, setIsExpanded] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    const el = previewRef.current;
+    if (!el) return;
+    const checkOverflow = () => {
+      setIsOverflowing(el.scrollHeight > el.clientHeight + 2);
+    };
+    checkOverflow();
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [solution.body]);
 
   const author = solution.author_details;
   const authorId = author?.id;
@@ -192,8 +207,17 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
         />
       }
       renderBody={
-        <div className="text-sm leading-relaxed text-foreground line-clamp-4 overflow-hidden [overflow-wrap:anywhere]">
-          <MathRenderer content={solution.body || ""} />
+        <div
+          ref={previewRef}
+          className="relative max-h-28 overflow-hidden text-sm leading-relaxed text-foreground [overflow-wrap:anywhere]"
+        >
+          <MathRenderer content={solution.body || ""} compact />
+          {isOverflowing && (
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-card via-card/75 to-transparent"
+            />
+          )}
         </div>
       }
       extraContent={
@@ -230,6 +254,7 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
         <>
           <Link
             href={solutionUrl}
+            data-feed-primary-link="true"
             className="inline-flex items-center gap-1 min-h-[44px] sm:min-h-0 px-1.5 -mx-1.5 sm:px-0 sm:mx-0 font-semibold text-primary opacity-90 hover:opacity-100 group-hover:opacity-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background after:absolute after:inset-0 after:rounded-xl after:z-0"
           >
             <span>

@@ -26,6 +26,7 @@ export function LessonCardVote({
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
   const [userVote, setUserVote] = useState(initialUserVote ?? 0);
+  const [isPending, setIsPending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Prevents the useEffect prop-sync from overwriting optimistic state
   // while a mutation is in-flight (triggered by onMutate cache patch re-renders)
@@ -88,6 +89,7 @@ export function LessonCardVote({
 
     // Mark pending immediately so onMutate cache patch re-renders won't reset local state
     isPendingRef.current = true;
+    setIsPending(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
@@ -99,6 +101,7 @@ export function LessonCardVote({
           },
           onSettled: () => {
             isPendingRef.current = false;
+            setIsPending(false);
           },
           onError: () => {
             setUserVote(lastConfirmedRef.current.userVote);
@@ -107,14 +110,18 @@ export function LessonCardVote({
           },
         }
       );
-    }, 1000);
+    }, 350);
   };
+
+  const isSyncing = isPending || voteMutation.isPending;
 
   return (
     <button
       type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-busy={isSyncing}
+      data-pending={isSyncing ? "true" : undefined}
       aria-label={
         isSelf
           ? "Cannot vote on your own lesson"
@@ -130,8 +137,10 @@ export function LessonCardVote({
         userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
     >
-      <ChevronUp className="size-3.5" aria-hidden="true" />
-      <span className="font-mono tabular-nums">{voteCount}</span>
+      <ChevronUp className={cn("size-3.5", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+      <span className={cn("font-mono tabular-nums transition-opacity", isSyncing && "opacity-75")}>
+        {voteCount}
+      </span>
     </button>
   );
 }

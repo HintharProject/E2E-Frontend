@@ -3,10 +3,7 @@
 import Link from "next/link";
 import type { Solution } from "@/types";
 import { formatDate } from "@/lib/utils";
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>?/gm, "");
-}
+import { stripHtml } from "@/components/ui/base-card";
 
 export function ContributionCard({ solution }: { solution: Solution }) {
   const title = solution.problem_title ?? "Solution";

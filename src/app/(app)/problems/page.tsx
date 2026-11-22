@@ -1,16 +1,18 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { FeedKeyboardHint } from "@/components/ui/base-card";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ProblemCardSkeleton } from "@/components/features/skeletons";
 import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
 import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { useProblems } from "@/hooks/use-problems";
+import { useFeedKeyboardNavigation } from "@/hooks/use-feed-keyboard-navigation";
 import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { GatedLink } from "@/components/features/auth/gated-link";
@@ -48,6 +50,12 @@ function ProblemsFeed() {
 
   const problems = data?.pages.flatMap((p) => p.data) ?? [];
   const errStatus = (error as { status?: number } | null)?.status;
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  useFeedKeyboardNavigation({
+    containerRef: feedRef,
+    enabled: !isLoading && !isError && problems.length > 0,
+  });
 
   return (
     <TopmostScrollRefresh
@@ -104,7 +112,8 @@ function ProblemsFeed() {
           description="Try adjusting your filters or be the first to post a problem."
         />
       ) : (
-        <div className="flex flex-col gap-4">
+        <div ref={feedRef} className="flex flex-col gap-4">
+          <FeedKeyboardHint />
           {problems.map((problem) => (
             <ProblemCard key={problem.id} problem={problem} />
           ))}

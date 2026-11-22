@@ -1,11 +1,11 @@
 "use client";
 
-import { ThemeProvider } from "./theme-provider";
+import { SavedCollectionsProvider } from "./saved-collections-provider";
 
 /**
- * Composes all client-side providers needed inside the (app) layout.
- * Currently wraps ThemeProvider. (QueryProvider is handled at the RootLayout).
+ * Composes all client-side providers needed inside the (app) and (workspace) layouts.
+ * (QueryProvider and ThemeProvider are handled at the RootLayout.)
  */
 export function AppProviders({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return <SavedCollectionsProvider>{children}</SavedCollectionsProvider>;
 }
