@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useTransition, use } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import {
   Search,
   X,
@@ -46,7 +46,6 @@ export default function SearchPage(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedParams = use(props.searchParams);
-  const router = useRouter();
   const pathname = usePathname();
   const [, startTransition] = useTransition();
   const { isSignedIn } = useAuthGate();
@@ -125,17 +124,17 @@ export default function SearchPage(props: {
         <div className="flex items-center gap-2 text-primary font-semibold text-xs tracking-wider uppercase">
           <Sparkles className="size-4" /> Global Discovery Portal
         </div>
-        <h1 className="text-3xl font-extrabold font-heading text-ink sm:text-4xl tracking-tight">
+        <h1 className="font-display text-3xl font-semibold text-foreground sm:text-4xl tracking-tight">
           Unified Search
         </h1>
-        <p className="text-sm text-ink-muted max-w-2xl">
+        <p className="text-sm text-muted-foreground max-w-2xl">
           Search across forum discussions, community past-paper problems in Solve!, structured lessons, and Cambridge/Edexcel past papers in Train!.
         </p>
       </div>
 
       {/* Prominent Search Bar */}
       <form onSubmit={handleSearchSubmit} className="relative mb-6">
-        <div className="relative flex items-center shadow-sm rounded-2xl border border-border bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
+        <div className="relative flex items-center shadow-sm rounded-xl border border-border bg-card focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all">
           <Search className="absolute left-4 size-5 text-muted-foreground pointer-events-none" aria-hidden="true" />
           <input
             type="text"
@@ -143,7 +142,7 @@ export default function SearchPage(props: {
             onChange={(e) => setQuery(e.target.value)}
             aria-label="Search keywords, topics, or syllabi"
             placeholder="Search keywords, topics, or syllabi (e.g. Calculus, 9702, Mechanics)..."
-            className="w-full h-13 pl-12 pr-28 rounded-2xl bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
+            className="w-full h-13 pl-12 pr-28 rounded-xl bg-transparent text-base sm:text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="absolute right-3 flex items-center gap-2">
@@ -186,20 +185,20 @@ export default function SearchPage(props: {
                 type="button"
                 onClick={() => setCategory(tab.id as SearchCategoryFilter)}
                 className={cn(
-                  "flex items-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold transition-all whitespace-nowrap cursor-pointer",
+                  "flex items-center gap-1.5 min-h-[44px] sm:min-h-0 px-3.5 py-2 rounded-xl font-semibold transition-all whitespace-nowrap cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-xs"
-                    : "bg-card border border-line text-ink-muted hover:text-ink hover:bg-muted"
+                    : "bg-card border border-border text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
               >
                 <span>{tab.label}</span>
                 {query.trim().length >= 2 && (
                   <span
                     className={cn(
-                      "text-[10px] px-1.5 py-0.5 rounded-full",
+                      "font-mono text-xs tabular-nums px-1.5 py-0.5 rounded-full",
                       isActive
                         ? "bg-primary-foreground/20 text-primary-foreground"
-                        : "bg-muted text-ink-muted"
+                        : "bg-muted text-muted-foreground"
                     )}
                   >
                     {tab.count}
@@ -214,7 +213,7 @@ export default function SearchPage(props: {
         <button
           type="button"
           onClick={() => setShowFiltersMobile(!showFiltersMobile)}
-          className="md:hidden flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground"
+          className="md:hidden flex items-center gap-1.5 min-h-[44px] px-3 py-1.5 rounded-xl border border-border bg-card text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <SlidersHorizontal className="size-3.5" />
           <span>Filters</span>
@@ -239,7 +238,7 @@ export default function SearchPage(props: {
               <button
                 type="button"
                 onClick={clearFacets}
-                className="flex items-center gap-1 text-[11px] text-primary hover:underline cursor-pointer font-medium"
+                className="flex items-center gap-1 min-h-[44px] md:min-h-0 text-xs text-primary hover:underline cursor-pointer font-medium rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <RotateCcw className="size-3" /> Reset
               </button>
@@ -298,7 +297,7 @@ export default function SearchPage(props: {
           </div>
 
           {/* Quick Help Tip */}
-          <div className="rounded-lg bg-muted/60 p-3 text-[11px] text-muted-foreground leading-relaxed">
+          <div className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground leading-relaxed">
             <p className="font-semibold text-foreground mb-1">Search Tip</p>
             You can search by subject code (e.g. <span className="font-mono text-foreground">9702</span> for Physics) or paper component (e.g. <span className="font-mono text-foreground">42</span>).
           </div>
@@ -357,31 +356,31 @@ export default function SearchPage(props: {
                 >
                   <MessageSquare className="size-4 text-primary mx-auto mb-1" />
                   <span className="text-xs font-semibold text-foreground block">Forum</span>
-                  <span className="text-[10px] text-muted-foreground">Q&amp;A Feed</span>
+                  <span className="text-xs text-muted-foreground">Q&amp;A Feed</span>
                 </Link>
                 <Link
                   href="/problems"
-                  className="p-3 rounded-xl border border-line bg-surface hover:border-primary/40 text-center transition-colors"
+                  className="p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 text-center transition-colors"
                 >
-                  <Lightbulb className="size-4 text-violet-500 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-ink block">Solve!</span>
-                  <span className="text-[10px] text-ink-muted">Practice</span>
+                  <Lightbulb className="size-4 text-chart-3 mx-auto mb-1" />
+                  <span className="text-xs font-semibold text-foreground block">Solve!</span>
+                  <span className="text-xs text-muted-foreground">Practice</span>
                 </Link>
                 <Link
                   href="/lessons"
-                  className="p-3 rounded-xl border border-line bg-surface hover:border-primary/40 text-center transition-colors"
+                  className="p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 text-center transition-colors"
                 >
-                  <BookOpen className="size-4 text-emerald-500 mx-auto mb-1" />
-                  <span className="text-xs font-semibold text-ink block">Lessons</span>
-                  <span className="text-[10px] text-ink-muted">Guides</span>
+                  <BookOpen className="size-4 text-primary mx-auto mb-1" />
+                  <span className="text-xs font-semibold text-foreground block">Lessons</span>
+                  <span className="text-xs text-muted-foreground">Guides</span>
                 </Link>
                 <Link
                   href="/resources"
-                  className="p-3 rounded-xl border border-border bg-card hover:border-primary/40 text-center transition-colors"
+                  className="p-3 rounded-xl border border-border bg-muted/30 hover:border-primary/40 text-center transition-colors"
                 >
-                  <FileText className="size-4 text-primary mx-auto mb-1" />
+                  <FileText className="size-4 text-warning mx-auto mb-1" />
                   <span className="text-xs font-semibold text-foreground block">Resources</span>
-                  <span className="text-[10px] text-muted-foreground">Past Papers</span>
+                  <span className="text-xs text-muted-foreground">Past Papers</span>
                 </Link>
               </div>
             </div>
@@ -389,15 +388,15 @@ export default function SearchPage(props: {
 
           {/* State: No Results */}
           {query.trim().length >= 2 && !isLoading && counts.total === 0 && (
-            <div className="rounded-2xl border border-line bg-card p-12 text-center space-y-4">
-              <div className="mx-auto size-12 rounded-full bg-muted flex items-center justify-center text-ink-muted">
+            <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center space-y-4">
+              <div className="mx-auto size-12 rounded-full bg-muted flex items-center justify-center text-muted-foreground">
                 <Search className="size-6" />
               </div>
               <div className="space-y-1">
-                <h3 className="text-base font-bold font-heading text-ink">
+                <h3 className="font-display text-lg font-semibold text-foreground">
                   No matching results found
                 </h3>
-                <p className="text-xs text-ink-muted max-w-sm mx-auto">
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
                   We couldn&apos;t find anything matching &ldquo;{query}&rdquo;
                   {hasActiveFacets ? " with the current active filters." : "."}
                 </p>
@@ -443,7 +442,7 @@ export default function SearchPage(props: {
                             <Badge
                               variant="outline"
                               className={cn(
-                                "text-[10px] h-4.5 px-1.5 font-semibold",
+                                "text-xs px-2 font-semibold",
                                 post.post_type === "QUESTION"
                                   ? "border-primary/30 text-primary bg-primary/10"
                                   : "border-warning/30 text-warning bg-warning/10"
@@ -452,13 +451,13 @@ export default function SearchPage(props: {
                               {post.post_type}
                             </Badge>
                             {post.subject && (
-                              <span className="text-[11px] font-medium text-muted-foreground">
+                              <span className="text-xs font-medium text-muted-foreground">
                                 {post.subject.name}
                               </span>
                             )}
                             {post.level && (
-                              <span className="text-[11px] text-muted-foreground">
-                                • {post.level.name}
+                              <span className="text-xs text-muted-foreground">
+                                · {post.level.name}
                               </span>
                             )}
                           </div>
@@ -468,9 +467,9 @@ export default function SearchPage(props: {
                           </h3>
 
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <Avatar className="size-4 border border-border">
+                            <Avatar size="sm" className="size-5 border border-border">
                               {post.author?.image_url && <AvatarImage src={post.author.image_url} />}
-                              <AvatarFallback className="text-[8px]">
+                              <AvatarFallback className="text-xs">
                                 {post.author?.display_name?.slice(0, 2).toUpperCase() || "?"}
                               </AvatarFallback>
                             </Avatar>
@@ -522,7 +521,7 @@ export default function SearchPage(props: {
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold border-chart-3/30 text-chart-3 bg-chart-3/10"
+                              className="text-xs px-2 font-semibold border-chart-3/30 text-chart-3 bg-chart-3/10"
                             >
                               Solve!
                             </Badge>
@@ -532,13 +531,13 @@ export default function SearchPage(props: {
                               size="sm"
                             />
                             {prob.subject && (
-                              <span className="text-[11px] font-medium text-muted-foreground">
+                              <span className="text-xs font-medium text-muted-foreground">
                                 {prob.subject.name}
                               </span>
                             )}
                             {prob.level && (
-                              <span className="text-[11px] text-muted-foreground">
-                                • {prob.level.name}
+                              <span className="text-xs text-muted-foreground">
+                                · {prob.level.name}
                               </span>
                             )}
                           </div>
@@ -597,18 +596,18 @@ export default function SearchPage(props: {
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant="outline"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold border-primary/30 text-primary bg-primary/10"
+                              className="text-xs px-2 font-semibold border-primary/30 text-primary bg-primary/10"
                             >
                               Study Guide
                             </Badge>
                             {lesson.subject && (
-                              <span className="text-[11px] font-medium text-muted-foreground">
+                              <span className="text-xs font-medium text-muted-foreground">
                                 {lesson.subject.name}
                               </span>
                             )}
                             {lesson.level && (
-                              <span className="text-[11px] text-muted-foreground">
-                                • {lesson.level.name}
+                              <span className="text-xs text-muted-foreground">
+                                · {lesson.level.name}
                               </span>
                             )}
                           </div>
@@ -663,7 +662,7 @@ export default function SearchPage(props: {
                           <div className="flex items-center gap-2 flex-wrap">
                             <Badge
                               variant="warning"
-                              className="text-[10px] h-4.5 px-1.5 font-semibold"
+                              className="text-xs px-2 font-semibold"
                             >
                               {res.paper_type === "QP"
                                 ? "Question Paper"
@@ -672,18 +671,18 @@ export default function SearchPage(props: {
                                 : res.paper_type || "Exam Paper"}
                             </Badge>
                             {res.year && (
-                              <span className="font-mono tabular-nums text-[11px] font-semibold text-foreground">
+                              <span className="font-mono tabular-nums text-xs font-semibold text-foreground">
                                 {res.year}
                               </span>
                             )}
                             {res.session && (
-                              <span className="text-[11px] text-muted-foreground">
-                                • {res.session}
+                              <span className="text-xs text-muted-foreground">
+                                · {res.session}
                               </span>
                             )}
                             {res.paper_code && (
-                              <span className="font-mono tabular-nums text-[11px] text-muted-foreground">
-                                • Variant {res.paper_code}
+                              <span className="font-mono tabular-nums text-xs text-muted-foreground">
+                                · Variant {res.paper_code}
                               </span>
                             )}
                           </div>

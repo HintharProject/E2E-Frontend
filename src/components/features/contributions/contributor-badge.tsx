@@ -41,19 +41,19 @@ export function ContributorBadge({
   const IconComponent = TIER_ICONS[safeTier];
 
   const sizeClasses = {
-    sm: "h-[18px] px-1.5 text-[10px] gap-1",
+    sm: "h-5 px-2 text-xs gap-1",
     md: "h-[22px] px-2 text-xs gap-1.5",
     lg: "h-7 px-3 text-sm gap-2 font-medium",
   }[size];
 
   const iconSizes = {
-    sm: "size-2.5",
+    sm: "size-3",
     md: "size-3.5",
     lg: "size-4",
   }[size];
 
   const infoIconSizes = {
-    sm: "size-2.5",
+    sm: "size-3",
     md: "size-3",
     lg: "size-3.5",
   }[size];

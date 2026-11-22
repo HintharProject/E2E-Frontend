@@ -210,7 +210,7 @@ export function VoteWidget({
           aria-live="polite"
           aria-atomic="true"
           className={cn(
-            "my-0.5 font-heading text-xs font-semibold tabular-nums",
+            "my-0.5 font-mono text-xs font-semibold tabular-nums",
             userVote === 1 && "text-emerald-600 dark:text-emerald-400",
             userVote === -1 && "text-rose-600 dark:text-rose-400",
             userVote === 0 && "text-foreground"
@@ -245,7 +245,7 @@ export function VoteWidget({
     <div
       className={cn(
         "relative inline-flex items-center rounded-full border border-border bg-card shadow-2xs select-none transition-colors",
-        size === "sm" && "min-h-[44px] md:min-h-0 md:h-6 px-1 text-[11px]",
+        size === "sm" && "min-h-[44px] md:min-h-0 md:h-6 px-1.5 text-xs",
         size === "md" && "min-h-[44px] md:min-h-0 md:h-7 px-1.5 text-xs",
         size === "lg" && "min-h-[44px] md:min-h-0 md:h-8 px-2 text-sm",
         className
@@ -287,7 +287,7 @@ export function VoteWidget({
         aria-live="polite"
         aria-atomic="true"
         className={cn(
-          "mx-1 font-heading font-semibold tabular-nums",
+          "mx-1 font-mono text-xs font-semibold tabular-nums",
           userVote === 1 && "text-emerald-600 dark:text-emerald-400",
           userVote === -1 && "text-rose-600 dark:text-rose-400",
           userVote === 0 && "text-foreground"

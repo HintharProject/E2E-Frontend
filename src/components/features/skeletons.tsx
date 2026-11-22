@@ -10,9 +10,9 @@ export function PostCardSkeleton() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
               <Skeleton className="h-4 w-24" />
-              <Skeleton className="h-[18px] w-16 rounded-full" />
+              <Skeleton className="h-5 w-16 rounded-full" />
             </div>
-            <Skeleton className="h-3.5 w-36" />
+            <Skeleton className="h-3.5 w-44" />
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -26,11 +26,9 @@ export function PostCardSkeleton() {
           <Skeleton className="h-4 w-full" />
           <Skeleton className="h-4 w-5/6" />
         </div>
-        <div className="mt-4 flex flex-wrap items-center gap-1.5">
-          <Skeleton className="h-5 w-20 rounded-full" />
-          <Skeleton className="h-5 w-16 rounded-full" />
-          <Skeleton className="h-5 w-16 rounded-md" />
-          <Skeleton className="h-5 w-20 rounded-md" />
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          <Skeleton className="h-4 w-14 rounded" />
+          <Skeleton className="h-4 w-16 rounded" />
         </div>
       </CardContent>
       <CardFooter className="justify-between pt-4 mt-1 border-t border-border/50">
@@ -68,9 +66,9 @@ export function ProblemCardSkeleton() {
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-[18px] w-16 rounded-full" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
                 </div>
-                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-3.5 w-40" />
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -85,10 +83,9 @@ export function ProblemCardSkeleton() {
             <Skeleton className="h-4 w-5/6" />
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-1.5">
-            <Skeleton className="h-5 w-20 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <Skeleton className="h-4 w-14 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
           </div>
         </div>
 
@@ -111,9 +108,9 @@ export function LessonCardSkeleton() {
             <div className="space-y-1.5">
               <div className="flex items-center gap-1.5">
                 <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-[18px] w-14 rounded-full" />
+                <Skeleton className="h-5 w-16 rounded-full" />
               </div>
-              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3.5 w-36" />
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
@@ -127,10 +124,9 @@ export function LessonCardSkeleton() {
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
           </div>
-          <div className="flex flex-wrap items-center gap-1.5">
-            <Skeleton className="h-5 w-24 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
-            <Skeleton className="h-5 w-16 rounded-full" />
+          <div className="flex flex-wrap items-center gap-2">
+            <Skeleton className="h-4 w-14 rounded" />
+            <Skeleton className="h-4 w-16 rounded" />
           </div>
         </CardContent>
       </div>

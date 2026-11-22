@@ -46,8 +46,8 @@ export function ConfidenceBadge({
     }
   > = {
     unanswered: {
-      label: "0% · Unanswered",
-      shortLabel: "0% Unanswered",
+      label: "Needs Solution",
+      shortLabel: "Needs Solution",
       variant: "outline",
       toneClass: "text-muted-foreground border-border bg-card",
       Icon: HelpCircle,
@@ -84,8 +84,8 @@ export function ConfidenceBadge({
       variant={variant}
       title={tooltip}
       className={cn(
-        "font-medium tabular-nums gap-1",
-        size === "sm" ? "text-[11px] px-2 h-5" : "text-xs px-2.5 h-6",
+        "font-medium tabular-nums gap-1 text-xs",
+        size === "sm" ? "px-2 h-5" : "px-2.5 h-6",
         toneClass,
         className
       )}

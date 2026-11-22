@@ -47,8 +47,11 @@ export function PostCard({ post }: { post: Post }) {
   const isAuthor = isContentAuthor(user, author, post.author);
   const subject = post.subject_details;
   const level = post.level_details;
-  const tags = (post.tags_data || []).slice(0, 3);
+  const allTags = post.tags_data || [];
+  const visibleTags = allTags.slice(0, 2);
+  const overflowTagCount = Math.max(0, allTags.length - visibleTags.length);
   const expiresIn = daysUntilExpiration(post.created_at);
+  const syllabusMeta = [subject?.name, level?.name].filter(Boolean).join(" · ");
 
   const shareUrl = typeof window !== "undefined"
     ? `${window.location.origin}/posts/${post.id}`
@@ -79,7 +82,7 @@ export function PostCard({ post }: { post: Post }) {
     });
   };
 
-  const hasTaxonomy = Boolean(subject || level || tags.length > 0 || post.attachment_url);
+  const hasTaxonomy = visibleTags.length > 0;
 
   return (
     <BaseFeedCard
@@ -97,17 +100,21 @@ export function PostCard({ post }: { post: Post }) {
           : null
       }
       subtitle={
-        <div className="flex items-center gap-1.5 flex-wrap">
+        <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
           <span>{formatDateStr(post.created_at)}</span>
           {expiresIn <= 3 ? (
-            <Badge variant="warning" className="font-mono tabular-nums text-[10px] px-1.5 py-0 leading-tight">
-              Expires in {expiresIn}d
-            </Badge>
+            <>
+              <span aria-hidden="true">·</span>
+              <Badge variant="warning" className="font-mono tabular-nums">
+                Expires in {expiresIn}d
+              </Badge>
+            </>
           ) : (
             <span>
               · <span className="font-mono tabular-nums">{expiresIn}d</span> left
             </span>
           )}
+          {syllabusMeta ? <span>· {syllabusMeta}</span> : null}
         </div>
       }
       topRight={
@@ -156,15 +163,20 @@ export function PostCard({ post }: { post: Post }) {
       taxonomy={
         hasTaxonomy ? (
           <>
-            {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-            {level ? <Badge variant="outline">{level.name}</Badge> : null}
-            {tags.map((t) => (
-              <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+            {visibleTags.map((t) => (
+              <TagBadge
+                key={t.id || t.name}
+                name={t.name}
+                id={t.id}
+                variant="quiet"
+              />
             ))}
-            {post.attachment_url && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
-                <Paperclip className="size-3" aria-hidden="true" />
-                {post.attachment_name || "Attachment"}
+            {overflowTagCount > 0 && (
+              <span
+                className="font-mono text-xs tabular-nums text-muted-foreground"
+                title={allTags.slice(2).map((t) => `#${t.name}`).join(", ")}
+              >
+                +{overflowTagCount}
               </span>
             )}
           </>
@@ -173,18 +185,33 @@ export function PostCard({ post }: { post: Post }) {
       bottomLeft={
         <>
           {post.post_type !== "ANNOUNCEMENT" ? (
-            <PostCardVote
-              postId={post.id}
-              initialVoteCount={post.vote_count ?? 0}
-              initialUserVote={post.user_vote}
-              authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
-              authorClerkId={author?.clerk_id}
-            />
+            <>
+              <PostCardVote
+                postId={post.id}
+                initialVoteCount={post.vote_count ?? 0}
+                initialUserVote={post.user_vote}
+                authorId={author?.id || (typeof post.author === "string" ? post.author : undefined)}
+                authorClerkId={author?.clerk_id}
+              />
+              <span aria-hidden="true">·</span>
+            </>
           ) : null}
-          <span className="font-mono tabular-nums">
-            {post.post_type !== "ANNOUNCEMENT" ? "· " : ""}
-            {post.comment_count ?? 0} comments
+          <span>
+            <span className="font-mono tabular-nums">{post.comment_count ?? 0}</span>{" "}
+            {(post.comment_count ?? 0) === 1 ? "comment" : "comments"}
           </span>
+          {post.attachment_url && (
+            <span
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground min-w-0"
+              title={post.attachment_name || "Attachment"}
+            >
+              <span aria-hidden="true">·</span>
+              <Paperclip className="size-3 shrink-0" aria-hidden="true" />
+              <span className="truncate max-w-[140px] sm:max-w-[180px]">
+                {post.attachment_name || "Attachment"}
+              </span>
+            </span>
+          )}
         </>
       }
       bottomRight={<SaveButton entityType="post" entityId={post.id} variant="icon" />}
@@ -262,12 +289,19 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
 
   const hasVideo = Boolean(lesson.embedded_video_url);
   const attachmentCount = lesson.attachments?.length ?? 0;
-  const visibleTags = tags.slice(0, 3);
+  const visibleTags = tags.slice(0, 2);
+  const overflowTagCount = Math.max(0, tags.length - visibleTags.length);
   const subjectLabel = subject
     ? subject.code
       ? `${subject.name} (${subject.code})`
       : subject.name
     : null;
+  const syllabusMeta = [
+    subjectLabel || (!level ? "General Courseware" : null),
+    level?.name,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <BaseFeedCard
@@ -296,7 +330,11 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
             }
           : null
       }
-      subtitle={formatDateStr(lesson.created_at)}
+      subtitle={
+        syllabusMeta
+          ? `${formatDateStr(lesson.created_at)} · ${syllabusMeta}`
+          : formatDateStr(lesson.created_at)
+      }
       topRight={
         <Badge
           variant={
@@ -339,7 +377,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
       body={lesson.body}
       extraContent={
         hasVideo || attachmentCount > 0 ? (
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             {hasVideo && (
               <Badge
                 variant="default"
@@ -350,31 +388,38 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
               </Badge>
             )}
             {attachmentCount > 0 && (
-              <Badge
-                variant="outline"
-                className="text-xs font-medium gap-1 px-2 py-0.5 h-5 bg-muted/40"
-              >
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
                 <Paperclip className="size-3" aria-hidden="true" />
                 <span>
-                  {attachmentCount} {attachmentCount === 1 ? "Resource" : "Resources"}
+                  <span className="font-mono tabular-nums">{attachmentCount}</span>{" "}
+                  {attachmentCount === 1 ? "Resource" : "Resources"}
                 </span>
-              </Badge>
+              </span>
             )}
           </div>
         ) : undefined
       }
       taxonomy={
-        <>
-          {subjectLabel ? (
-            <Badge variant="outline">{subjectLabel}</Badge>
-          ) : !level ? (
-            <Badge variant="outline">General Courseware</Badge>
-          ) : null}
-          {level ? <Badge variant="outline">{level.name}</Badge> : null}
-          {visibleTags.map((t) => (
-            <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
-          ))}
-        </>
+        visibleTags.length > 0 ? (
+          <>
+            {visibleTags.map((t) => (
+              <TagBadge
+                key={t.id || t.name}
+                name={t.name}
+                id={t.id}
+                variant="quiet"
+              />
+            ))}
+            {overflowTagCount > 0 && (
+              <span
+                className="font-mono text-xs tabular-nums text-muted-foreground"
+                title={tags.slice(2).map((t) => `#${t.name}`).join(", ")}
+              >
+                +{overflowTagCount}
+              </span>
+            )}
+          </>
+        ) : undefined
       }
       bottomLeft={
         <LessonCardVote

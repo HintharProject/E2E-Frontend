@@ -128,7 +128,7 @@ export default async function StudyPlansPage() {
                     <div className="flex items-center gap-1.5">
                       <Badge
                         variant={plan.is_public ? "default" : "outline"}
-                        className="gap-1 text-[11px] font-normal"
+                        className="gap-1 text-xs font-medium"
                       >
                         {plan.is_public ? (
                           <>
@@ -156,7 +156,7 @@ export default async function StudyPlansPage() {
                   <span
                     className={
                       isEmpty
-                        ? "text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1"
+                        ? "text-warning font-medium flex items-center gap-1"
                         : "text-muted-foreground font-medium"
                     }
                   >
@@ -167,7 +167,7 @@ export default async function StudyPlansPage() {
                       </>
                     ) : (
                       <>
-                        <strong className="text-foreground font-semibold">{itemCount}</strong>{" "}
+                        <strong className="font-mono tabular-nums text-foreground font-semibold">{itemCount}</strong>{" "}
                         {itemCount === 1 ? "lesson" : "lessons"}
                       </>
                     )}

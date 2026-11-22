@@ -139,7 +139,7 @@ export function PreCreationPreviewDrawer({
                   </div>
                   <div className="flex items-center gap-1.5">
                     {sol.is_author_solution && (
-                      <Badge variant="outline" className="border-primary/40 text-primary text-[10px] h-5 gap-1">
+                      <Badge variant="outline" className="border-primary/40 text-primary text-xs h-5 gap-1">
                         <UserCheck className="size-3" /> Problem Author
                       </Badge>
                     )}

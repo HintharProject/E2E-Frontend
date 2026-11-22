@@ -90,9 +90,12 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   // Past Paper Ribbon for Path B
   const pastPaperDetails = problem.resource_details;
   const solutionCount = problem.solution_count ?? 0;
-  const displayTags = (problem.tags_data ?? []).slice(0, 3);
+  const allTags = problem.tags_data ?? [];
+  const displayTags = allTags.slice(0, 2);
+  const overflowTagCount = Math.max(0, allTags.length - displayTags.length);
   const previewText = stripProblemPreview(problem.body || "");
-  const hasTaxonomy = Boolean(subject || level || displayTags.length > 0 || primaryThumbnailUrl);
+  const syllabusMeta = [subject?.name, level?.name].filter(Boolean).join(" · ");
+  const hasTaxonomy = Boolean(displayTags.length > 0 || primaryThumbnailUrl);
 
   return (
     <BaseFeedCard
@@ -117,7 +120,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               <MessageSquare className="size-3 text-muted-foreground sm:hidden" aria-hidden="true" />
               {solutionCount}
             </span>
-            <span className="text-[10px] font-medium text-muted-foreground hidden sm:block">
+            <span className="text-xs font-medium text-muted-foreground hidden sm:block leading-tight">
               {solutionCount === 1 ? "solution" : "solutions"}
             </span>
           </div>
@@ -133,7 +136,11 @@ export function ProblemCard({ problem }: { problem: Problem }) {
             }
           : null
       }
-      subtitle={`Asked ${formatDate(problem.created_at)}`}
+      subtitle={
+        syllabusMeta
+          ? `Asked ${formatDate(problem.created_at)} · ${syllabusMeta}`
+          : `Asked ${formatDate(problem.created_at)}`
+      }
       topRight={
         <>
           <ConfidenceBadge
@@ -211,13 +218,25 @@ export function ProblemCard({ problem }: { problem: Problem }) {
       taxonomy={
         hasTaxonomy ? (
           <>
-            {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
-            {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {displayTags.map((t) => (
-              <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
+              <TagBadge
+                key={t.id || t.name}
+                name={t.name}
+                id={t.id}
+                variant="quiet"
+              />
             ))}
+            {overflowTagCount > 0 && (
+              <span
+                className="font-mono text-xs tabular-nums text-muted-foreground"
+                title={allTags.slice(2).map((t) => `#${t.name}`).join(", ")}
+              >
+                +{overflowTagCount}
+              </span>
+            )}
             {primaryThumbnailUrl && (
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
+              <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                {displayTags.length > 0 && <span aria-hidden="true">·</span>}
                 <ImageIcon className="size-3" aria-hidden="true" /> Image
               </span>
             )}
@@ -230,7 +249,10 @@ export function ProblemCard({ problem }: { problem: Problem }) {
           className="inline-flex items-center gap-1 min-h-[44px] sm:min-h-0 px-2 -mx-2 sm:px-0 sm:mx-0 text-xs font-semibold text-primary hover:underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span>View problem</span>
-          <ArrowRight className="size-3.5" aria-hidden="true" />
+          <ArrowRight
+            className="size-3.5 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+            aria-hidden="true"
+          />
         </Link>
       }
       bottomRight={<SaveButton entityType="problem" entityId={problem.id} variant="icon" />}
