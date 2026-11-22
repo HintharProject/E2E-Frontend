@@ -257,8 +257,13 @@ export function useDeleteProblem() {
         body: reason ? JSON.stringify({ reason }) : undefined,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, args) => {
+      const problemId = typeof args === "string" ? args : args.problemId;
       queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["problem", problemId] });
+      queryClient.invalidateQueries({ queryKey: ["tag-content"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-session"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-sessions"] });
     },
   });
 }

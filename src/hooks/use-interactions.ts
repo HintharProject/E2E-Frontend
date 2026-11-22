@@ -238,8 +238,12 @@ export function useDeletePost() {
       if (!token) throw new Error("Unauthorized");
       await apiFetch(`/posts/${postId}/`, token, { method: "DELETE" });
     },
-    onSuccess: () => {
+    onSuccess: (_data, postId) => {
       queryClient.invalidateQueries({ queryKey: ["posts"] });
+      queryClient.invalidateQueries({ queryKey: ["post", postId] });
+      queryClient.invalidateQueries({ queryKey: ["tag-content"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-session"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-sessions"] });
     },
   });
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { BaseFeedCard } from "@/components/ui/base-card";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { Video, Paperclip, MessageSquareText, BookOpenText, Megaphone } from "lucide-react";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+import { PostExpirationBadge } from "./posts/post-expiration-badge";
 
 
 function formatDateStr(dateStr: string): string {
@@ -26,19 +27,12 @@ function formatDateStr(dateStr: string): string {
   return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function daysUntilExpiration(createdAt: string): number {
-  const createdDate = new Date(createdAt);
-  const expirationDate = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const diffTime = expirationDate.getTime() - new Date().getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
-}
-
 export function PostCard({ post }: { post: Post }) {
   const { user } = useCurrentUser();
   const { getToken } = useAuth();
   const { isSignedIn } = useAuthGate();
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const router = useRouter();
   const prefetchedRef = useRef(false);
   const deleteMutation = useDeletePost();
@@ -50,7 +44,6 @@ export function PostCard({ post }: { post: Post }) {
   const allTags = post.tags_data || [];
   const visibleTags = allTags.slice(0, 2);
   const overflowTagCount = Math.max(0, allTags.length - visibleTags.length);
-  const expiresIn = daysUntilExpiration(post.created_at);
   const syllabusMeta = [subject?.name, level?.name].filter(Boolean).join(" · ");
 
   const shareUrl = typeof window !== "undefined"
@@ -72,10 +65,15 @@ export function PostCard({ post }: { post: Post }) {
   };
 
   const handleDelete = async () => {
+    const detailPath = `/posts/${post.id}`;
+    const isDetailRoute = pathname === detailPath || pathname?.startsWith(`${detailPath}/`);
+
     toast.promise(deleteMutation.mutateAsync(post.id), {
       loading: "Deleting post...",
       success: () => {
-        router.push("/forum");
+        if (isDetailRoute) {
+          router.push("/forum");
+        }
         return "Post deleted successfully";
       },
       error: "Failed to delete post. Please try again.",
@@ -102,17 +100,8 @@ export function PostCard({ post }: { post: Post }) {
       subtitle={
         <div className="flex items-center gap-x-1.5 gap-y-1 flex-wrap">
           <span>{formatDateStr(post.created_at)}</span>
-          {expiresIn <= 3 ? (
-            <>
-              <span aria-hidden="true">·</span>
-              <Badge variant="warning" className="font-mono tabular-nums">
-                Expires in {expiresIn}d
-              </Badge>
-            </>
-          ) : (
-            <span>
-              · <span className="font-mono tabular-nums">{expiresIn}d</span> left
-            </span>
+          {post.post_type !== "ANNOUNCEMENT" && (
+            <PostExpirationBadge createdAt={post.created_at} showSeparator />
           )}
           {syllabusMeta ? <span>· {syllabusMeta}</span> : null}
         </div>

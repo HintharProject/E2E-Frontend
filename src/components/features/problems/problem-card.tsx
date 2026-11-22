@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +35,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const { getToken, isSignedIn: isClerkSignedIn } = useAuth();
   const { isAuthed, getOptionalToken } = resolveClientAuth(isClerkSignedIn, getToken);
   const queryClient = useQueryClient();
+  const pathname = usePathname();
   const router = useRouter();
   const prefetchedRef = useRef(false);
   const deleteMutation = useDeleteProblem();
@@ -71,10 +72,15 @@ export function ProblemCard({ problem }: { problem: Problem }) {
       return;
     }
 
+    const detailPath = `/problems/${problem.id}`;
+    const isDetailRoute = pathname === detailPath || pathname?.startsWith(`${detailPath}/`);
+
     toast.promise(deleteMutation.mutateAsync(problem.id), {
       loading: "Deleting problem...",
       success: () => {
-        router.push("/problems");
+        if (isDetailRoute) {
+          router.push("/problems");
+        }
         return "Problem deleted successfully";
       },
       error: (err: unknown) => (err as { message?: string } | undefined)?.message || "Failed to delete problem. Please try again.",

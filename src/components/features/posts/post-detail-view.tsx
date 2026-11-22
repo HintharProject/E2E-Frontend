@@ -15,20 +15,13 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
+import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
 import dynamic from "next/dynamic";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
   loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-border animate-pulse"></div>,
   ssr: false
 });
 import { BaseDetailedCard } from "@/components/ui/base-card";
-
-function daysUntilExpiration(createdAt: string): number {
-  const createdDate = new Date(createdAt);
-  const expirationDate = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const diffTime = expirationDate.getTime() - new Date().getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
-}
 
 function PostDetailSkeleton() {
   return (
@@ -119,7 +112,6 @@ export function PostDetailView({ postId }: { postId: string }) {
   const level = post.level_details;
   const tagNames = post.tags_data?.map(t => t.name) ?? [];
   const isAuthor = isContentAuthor(user || (clerkUser ? { clerk_id: clerkUser.id } : null), author, post.author);
-  const expiresIn = daysUntilExpiration(post.created_at);
 
   const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
 
@@ -140,14 +132,8 @@ export function PostDetailView({ postId }: { postId: string }) {
         badges={
           <>
             <Badge variant="default">{post.post_type}</Badge>
-            {expiresIn <= 3 ? (
-              <Badge variant="warning" className="border-warning/30 bg-warning/10 text-warning">
-                Expires in {expiresIn}d
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-muted-foreground">
-                Expires in {expiresIn}d
-              </Badge>
+            {post.post_type !== "ANNOUNCEMENT" && (
+              <PostExpirationBadge createdAt={post.created_at} />
             )}
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}
