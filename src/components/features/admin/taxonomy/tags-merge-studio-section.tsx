@@ -3,6 +3,15 @@
 import { useState, useEffect, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Plus,
@@ -11,7 +20,6 @@ import {
   Search,
   GitMerge,
   Tag as TagIcon,
-  X,
 } from "lucide-react";
 import {
   useTagsWithMetrics,
@@ -150,16 +158,18 @@ export function TagsMergeStudioSection() {
   return (
     <div className="flex flex-col gap-4">
       {/* Studio Header & Search */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl border border-line bg-card">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-4 rounded-2xl border border-border bg-card">
         <div className="flex items-center gap-3 flex-1 max-w-md">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-2.5 size-4 text-ink-muted" />
-            <input
+            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" aria-hidden="true" />
+            <Input
               type="text"
+              sizeVariant="sm"
+              aria-label="Search tags by name"
               placeholder="Search tags by name..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full pl-9 pr-4 py-2 rounded-xl border border-line bg-surface text-xs focus:outline-none focus:border-primary"
+              className="pl-9"
             />
           </div>
         </div>
@@ -173,43 +183,44 @@ export function TagsMergeStudioSection() {
             }}
             className="h-9 gap-1.5 text-xs"
           >
-            <Plus className="size-4" /> Add Tag
+            <Plus className="size-4" aria-hidden="true" /> Add Tag
           </Button>
         </div>
       </div>
 
       {/* Tags Data Table */}
-      <div className="rounded-2xl border border-line bg-card overflow-hidden">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
         {isLoading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="size-6 animate-spin text-ink-muted" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden="true" />
           </div>
         ) : tags.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-12 text-center">
-            <TagIcon className="size-8 text-ink-muted/50 mb-2" />
-            <p className="text-sm font-medium text-ink">No tags found</p>
-            <p className="text-xs text-ink-muted mt-1">Try a different search query or create a new tag.</p>
+            <TagIcon className="size-8 text-muted-foreground/50 mb-2" aria-hidden="true" />
+            <p className="text-sm font-medium text-foreground">No tags found</p>
+            <p className="text-xs text-muted-foreground mt-1">Try a different search query or create a new tag.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-surface border-b border-line text-ink-muted uppercase font-semibold text-[10px] tracking-wider">
+              <thead className="bg-muted/30 border-b border-border text-muted-foreground uppercase font-semibold text-[10px] tracking-wider">
                 <tr>
-                  <th className="p-3 w-10 text-center">
+                  <th scope="col" className="p-3 w-10 text-center">
                     <input
                       type="checkbox"
-                      className="rounded border-line"
+                      aria-label="Select all tags"
+                      className="rounded border-border"
                       checked={selectedTagIds.length === tags.length && tags.length > 0}
                       onChange={handleSelectAll}
                     />
                   </th>
-                  <th className="p-3">Tag Name</th>
-                  <th className="p-3 text-center">Forum Posts</th>
-                  <th className="p-3 text-center">Lessons</th>
-                  <th className="p-3 text-right">Actions</th>
+                  <th scope="col" className="p-3">Tag Name</th>
+                  <th scope="col" className="p-3 text-center">Forum Posts</th>
+                  <th scope="col" className="p-3 text-center">Lessons</th>
+                  <th scope="col" className="p-3 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-line">
+              <tbody className="divide-y divide-border">
                 {tags.map((tag) => {
                   const isSelected = selectedTagIds.includes(tag.id);
                   const isPrimary = tag.id === primaryTagId;
@@ -224,28 +235,29 @@ export function TagsMergeStudioSection() {
                       <td className="p-3 text-center">
                         <input
                           type="checkbox"
-                          className="rounded border-line"
+                          aria-label={`Select tag #${tag.name}`}
+                          className="rounded border-border"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(tag)}
                         />
                       </td>
                       <td className="p-3">
                         <div className="flex items-center gap-2">
-                          <span className="font-semibold text-ink">#{tag.name}</span>
+                          <span className="font-semibold text-foreground">#{tag.name}</span>
                           {isPrimary && selectedTagIds.length > 1 && (
-                            <Badge className="text-[10px] py-0 bg-primary/10 text-primary border-primary/20">
+                            <Badge variant="default" className="text-[10px] py-0">
                               Primary Target
                             </Badge>
                           )}
                         </div>
                       </td>
                       <td className="p-3 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface text-ink border border-line">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full font-mono tabular-nums text-[11px] font-medium bg-muted/40 text-foreground border border-border">
                           {tag.post_count || 0}
                         </span>
                       </td>
                       <td className="p-3 text-center">
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-surface text-ink border border-line">
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full font-mono tabular-nums text-[11px] font-medium bg-muted/40 text-foreground border border-border">
                           {tag.lesson_count || 0}
                         </span>
                       </td>
@@ -254,18 +266,20 @@ export function TagsMergeStudioSection() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="size-7 text-ink-muted hover:text-ink"
+                            aria-label={`Rename tag #${tag.name}`}
+                            className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-muted-foreground hover:text-foreground"
                             onClick={() => {
                               setEditingTag(tag);
                               setTagNameInput(tag.name);
                             }}
                           >
-                            <Edit2 className="size-3.5" />
+                            <Edit2 className="size-3.5" aria-hidden="true" />
                           </Button>
                           <Button
                             size="icon"
                             variant="ghost"
-                            className="size-7 text-danger hover:text-danger hover:bg-danger/10"
+                            aria-label={`Delete tag #${tag.name}`}
+                            className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                             onClick={() => {
                               setConfirmModal({
                                 isOpen: true,
@@ -279,7 +293,7 @@ export function TagsMergeStudioSection() {
                               });
                             }}
                           >
-                            <Trash2 className="size-3.5" />
+                            <Trash2 className="size-3.5" aria-hidden="true" />
                           </Button>
                         </div>
                       </td>
@@ -294,33 +308,37 @@ export function TagsMergeStudioSection() {
 
       {/* Floating Interactive Merge Studio Dock */}
       {selectedTagIds.length >= 2 && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-3xl rounded-2xl border border-line bg-card/95 backdrop-blur-md shadow-2xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-11/12 max-w-3xl rounded-2xl border border-border bg-card shadow-modal p-4 flex flex-col md:flex-row items-center justify-between gap-4 animate-in slide-in-from-bottom-5">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-primary/10 text-primary">
-              <GitMerge className="size-5" />
+              <GitMerge className="size-5" aria-hidden="true" />
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-bold text-ink">
-                  Merge Studio ({selectedTagIds.length} tags selected)
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-xs font-bold text-foreground">
+                  Merge Studio (<span className="font-mono tabular-nums">{selectedTagIds.length}</span> tags selected)
                 </span>
-                <Badge variant="outline" className="text-[10px]">
+                <Badge variant="outline" className="font-mono tabular-nums text-[10px]">
                   Consolidating {totalAffectedPosts} posts, {totalAffectedLessons} lessons
                 </Badge>
               </div>
               <div className="flex items-center gap-2 mt-1">
-                <span className="text-[11px] text-ink-muted">Designate Target Tag:</span>
-                <select
+                <label htmlFor="merge-target-tag" className="text-[11px] text-muted-foreground shrink-0">
+                  Designate Target Tag:
+                </label>
+                <Select
+                  id="merge-target-tag"
+                  sizeVariant="sm"
                   value={primaryTagId}
                   onChange={(e) => setPrimaryTagId(e.target.value)}
-                  className="rounded-lg border border-line bg-surface px-2 py-0.5 text-xs font-semibold text-ink focus:outline-none focus:border-primary"
+                  className="w-auto min-w-[140px] h-8 min-h-[32px] font-semibold"
                 >
                   {selectedTags.map((t) => (
                     <option key={t.id} value={t.id}>
                       #{t.name}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
           </div>
@@ -346,9 +364,9 @@ export function TagsMergeStudioSection() {
               disabled={mergeTagsMutation.isPending || !primaryTagId}
             >
               {mergeTagsMutation.isPending ? (
-                <Loader2 className="size-3.5 animate-spin" />
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
               ) : (
-                <GitMerge className="size-3.5" />
+                <GitMerge className="size-3.5" aria-hidden="true" />
               )}
               Execute Merge
             </Button>
@@ -357,107 +375,89 @@ export function TagsMergeStudioSection() {
       )}
 
       {/* Add Tag Modal */}
-      {isAddOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-card shadow-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <h4 className="font-semibold text-sm text-ink">Create New Tag</h4>
-              <button
-                type="button"
-                onClick={() => setIsAddOpen(false)}
-                className="text-ink-muted hover:text-ink p-1"
-              >
-                <X className="size-4" />
-              </button>
+      <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+        <DialogContent className="sm:max-w-sm rounded-2xl border-border bg-card p-5 shadow-modal">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="font-semibold text-sm text-foreground">Create New Tag</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 text-xs">
+            <div>
+              <label htmlFor="create-tag-name" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Tag Name (lowercase, no spaces)
+              </label>
+              <Input
+                id="create-tag-name"
+                type="text"
+                placeholder="e.g. thermodynamics"
+                value={tagNameInput}
+                onChange={(e) => setTagNameInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                required
+                autoFocus
+              />
             </div>
-            <form onSubmit={handleCreateSubmit} className="flex flex-col gap-4 text-xs">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Tag Name (lowercase, no spaces)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. thermodynamics"
-                  value={tagNameInput}
-                  onChange={(e) => setTagNameInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsAddOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={createTagMutation.isPending || !tagNameInput.trim()}
-                >
-                  {createTagMutation.isPending ? <Loader2 className="size-3.5 animate-spin mr-1" /> : null}
-                  Create Tag
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setIsAddOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={createTagMutation.isPending || !tagNameInput.trim()}
+              >
+                {createTagMutation.isPending ? <Loader2 className="size-3.5 animate-spin mr-1" aria-hidden="true" /> : null}
+                Create Tag
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit Tag Modal */}
-      {editingTag && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-card shadow-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <h4 className="font-semibold text-sm text-ink">Rename Tag</h4>
-              <button
-                type="button"
-                onClick={() => setEditingTag(null)}
-                className="text-ink-muted hover:text-ink p-1"
-              >
-                <X className="size-4" />
-              </button>
+      <Dialog open={Boolean(editingTag)} onOpenChange={(nextOpen) => !nextOpen && setEditingTag(null)}>
+        <DialogContent className="sm:max-w-sm rounded-2xl border-border bg-card p-5 shadow-modal">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="font-semibold text-sm text-foreground">Rename Tag</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleUpdateSubmit} className="flex flex-col gap-4 text-xs">
+            <div>
+              <label htmlFor="rename-tag-name" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Tag Name
+              </label>
+              <Input
+                id="rename-tag-name"
+                type="text"
+                value={tagNameInput}
+                onChange={(e) => setTagNameInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
+                required
+                autoFocus
+              />
             </div>
-            <form onSubmit={handleUpdateSubmit} className="flex flex-col gap-4 text-xs">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Tag Name
-                </label>
-                <input
-                  type="text"
-                  value={tagNameInput}
-                  onChange={(e) => setTagNameInput(e.target.value.toLowerCase().replace(/\s+/g, "-"))}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingTag(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={updateTagMutation.isPending || !tagNameInput.trim()}
-                >
-                  {updateTagMutation.isPending ? <Loader2 className="size-3.5 animate-spin mr-1" /> : null}
-                  Save Changes
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setEditingTag(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={updateTagMutation.isPending || !tagNameInput.trim()}
+              >
+                {updateTagMutation.isPending ? <Loader2 className="size-3.5 animate-spin mr-1" aria-hidden="true" /> : null}
+                Save Changes
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm Action Dialog */}
       <ConfirmDialog

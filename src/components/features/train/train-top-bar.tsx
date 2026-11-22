@@ -129,7 +129,7 @@ export function TrainTopBar({
                 className="font-mono tabular-nums text-[11px] font-semibold border-primary/40 bg-primary/8 text-primary px-2 py-0.5 shrink-0 flex items-center gap-1"
                 title={`Left Document: ${leftPaper.file_name}`}
               >
-                <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
+                <span className="font-bold text-[10px] bg-primary text-primary-foreground px-1 rounded leading-none py-0.5">
                   L
                 </span>
                 <span>
@@ -144,7 +144,7 @@ export function TrainTopBar({
                 className="font-mono tabular-nums text-[11px] font-semibold border-border bg-secondary text-secondary-foreground px-2 py-0.5 shrink-0 flex items-center gap-1"
                 title={`Right Document: ${rightPaper.file_name}`}
               >
-                <span className="font-bold text-[9px] bg-foreground/80 text-background px-1 rounded leading-none py-0.5">
+                <span className="font-bold text-[10px] bg-foreground/80 text-background px-1 rounded leading-none py-0.5">
                   R
                 </span>
                 <span>
@@ -202,7 +202,7 @@ export function TrainTopBar({
               className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-primary/30 bg-primary/5 text-xs text-primary font-medium max-w-[150px] xl:max-w-[180px]"
               title={`Left: ${leftPaper.file_name}`}
             >
-              <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded shrink-0">
+              <span className="font-bold text-[10px] bg-primary text-primary-foreground px-1 rounded shrink-0">
                 L
               </span>
               <span className="truncate">{leftPaper.file_name}</span>
@@ -211,7 +211,7 @@ export function TrainTopBar({
                   type="button"
                   onClick={onCloseLeft}
                   aria-label="Close Left Panel"
-                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[20px] md:min-w-[20px] p-0.5 text-primary/80 hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[24px] md:min-w-[24px] p-0.5 text-primary/80 hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
                   title="Close Left Panel"
                 >
                   <X className="size-3" aria-hidden="true" />
@@ -226,7 +226,7 @@ export function TrainTopBar({
               className="flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-secondary text-xs text-secondary-foreground font-medium max-w-[150px] xl:max-w-[180px]"
               title={`Right: ${rightPaper.file_name}`}
             >
-              <span className="font-bold text-[9px] bg-primary text-primary-foreground px-1 rounded shrink-0">
+              <span className="font-bold text-[10px] bg-primary text-primary-foreground px-1 rounded shrink-0">
                 R
               </span>
               <span className="truncate">{rightPaper.file_name}</span>
@@ -235,7 +235,7 @@ export function TrainTopBar({
                   type="button"
                   onClick={onCloseRight}
                   aria-label="Close Right Panel"
-                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[20px] md:min-w-[20px] p-0.5 text-muted-foreground hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[24px] md:min-w-[24px] p-0.5 text-muted-foreground hover:text-destructive rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary transition-colors cursor-pointer shrink-0"
                   title="Close Right Panel"
                 >
                   <X className="size-3" aria-hidden="true" />

@@ -122,15 +122,15 @@ export function ReportModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md sm:max-w-lg p-6 bg-card border-line shadow-2xl">
+      <DialogContent className="max-w-md sm:max-w-lg p-6 bg-card border-border shadow-modal">
         <DialogHeader className="space-y-1.5 pb-2">
-          <div className="flex items-center gap-2 text-rose-600">
-            <ShieldAlert className="size-5" />
-            <DialogTitle className="text-lg font-bold text-ink">
+          <div className="flex items-center gap-2 text-destructive">
+            <ShieldAlert className="size-5" aria-hidden="true" />
+            <DialogTitle className="text-lg font-bold text-foreground">
               Report Content
             </DialogTitle>
           </div>
-          <DialogDescription className="text-xs text-ink-muted">
+          <DialogDescription className="text-xs text-muted-foreground">
             Help maintain our academic integrity and community standards. Select the
             primary reason for flagging this {targetType.toLowerCase()}
             {targetTitle ? ` ("${targetTitle}")` : ""}.
@@ -138,75 +138,81 @@ export function ReportModal({
         </DialogHeader>
 
         <div className="space-y-3 py-2">
-          <div className="space-y-2">
+          <fieldset className="space-y-2" role="radiogroup" aria-label="Reason for reporting">
+            <legend className="sr-only">Select a reason for reporting</legend>
             {activeReasons.map((r) => {
               const isSelected = selectedReason === r.value;
 
               return (
-                <div
+                <button
                   key={r.value}
+                  type="button"
+                  role="radio"
+                  aria-checked={isSelected}
                   onClick={() => setSelectedReason(r.value)}
                   className={cn(
-                    "flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all",
+                    "w-full text-left flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                     isSelected
-                      ? "border-rose-500 bg-rose-500/5 ring-1 ring-rose-500/20"
-                      : "border-line bg-muted/20 hover:bg-muted/40 hover:border-line/80"
+                      ? "border-destructive bg-destructive/5 ring-1 ring-destructive/20"
+                      : "border-border bg-muted/20 hover:bg-muted/40 hover:border-border/80"
                   )}
                 >
-                  <div
+                  <span
+                    aria-hidden="true"
                     className={cn(
                       "size-4 rounded-full border mt-0.5 flex items-center justify-center shrink-0 transition-colors",
                       isSelected
-                        ? "border-rose-600 bg-rose-600 text-white"
-                        : "border-line bg-background"
+                        ? "border-destructive bg-destructive text-destructive-foreground"
+                        : "border-border bg-background"
                     )}
                   >
                     {isSelected && <Check className="size-2.5 stroke-[3]" />}
-                  </div>
-                  <div className="space-y-0.5 select-none">
-                    <div className="text-xs font-semibold text-ink">
+                  </span>
+                  <span className="space-y-0.5 select-none">
+                    <span className="block text-xs font-semibold text-foreground">
                       {r.label}
-                    </div>
-                    <div className="text-[11px] text-ink-muted leading-relaxed">
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground leading-relaxed">
                       {r.description}
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  </span>
+                </button>
               );
             })}
-          </div>
+          </fieldset>
 
           {/* Conditional Description for "Other" */}
           {selectedReason === "OTHER" && (
             <div className="space-y-1.5 pt-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-ink">
-                  Reason Description <span className="text-rose-500">*</span>
-                </span>
+                <label htmlFor="report-other-reason" className="font-semibold text-foreground">
+                  Reason Description <span className="text-destructive">*</span>
+                </label>
                 <span
                   className={cn(
-                    "text-[11px]",
+                    "font-mono tabular-nums text-[11px]",
                     otherDescription.length > 120
-                      ? "text-rose-500 font-bold"
-                      : "text-ink-muted"
+                      ? "text-destructive font-bold"
+                      : "text-muted-foreground"
                   )}
                 >
                   {otherDescription.length}/120
                 </span>
               </div>
               <textarea
+                id="report-other-reason"
                 value={otherDescription}
                 onChange={(e) => setOtherDescription(e.target.value.slice(0, 120))}
                 rows={3}
                 placeholder="Briefly describe what makes this content problematic..."
-                className="w-full rounded-xl border border-line bg-background p-3 text-xs text-ink placeholder:text-ink-muted/60 focus:outline-hidden focus:ring-1 focus:ring-rose-500 resize-none"
+                className="w-full rounded-xl border border-input bg-background p-3 text-base sm:text-sm text-foreground placeholder:text-muted-foreground/70 outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
               />
             </div>
           )}
         </div>
 
-        <DialogFooter className="flex items-center justify-between pt-3 border-t border-line">
-          <p className="text-[11px] text-ink-muted">
+        <DialogFooter className="flex items-center justify-between pt-3 border-t border-border">
+          <p className="text-[11px] text-muted-foreground">
             Reports are confidential and reviewed by staff.
           </p>
           <div className="flex items-center gap-2">

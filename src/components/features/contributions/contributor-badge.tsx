@@ -63,7 +63,7 @@ export function ContributorBadge({
     1: "border-tier-1/30 bg-tier-1-bg text-tier-1 font-medium",
     2: "border-tier-2/30 bg-tier-2-bg text-tier-2 font-medium",
     3: "border-tier-3/30 bg-tier-3-bg text-tier-3 font-semibold",
-    4: "border-tier-4/40 animate-scholar-shimmer text-white font-bold shadow-sm",
+    4: "border-tier-4/40 animate-scholar-shimmer text-tier-4-foreground font-bold shadow-sm",
   }[safeTier];
 
   const tooltipText = showWeightTooltip
@@ -83,7 +83,7 @@ export function ContributorBadge({
     <span
       title={!interactive ? tooltipText : undefined}
       className={cn(
-        "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none",
+        "inline-flex items-center justify-center shrink-0 rounded-full border transition-colors select-none",
         interactive
           ? "group-hover/contributor-badge:shadow-xs group-hover/contributor-badge:brightness-105 group-active/contributor-badge:scale-[0.98] group-focus-visible/contributor-badge:ring-2 group-focus-visible/contributor-badge:ring-primary group-focus-visible/contributor-badge:ring-offset-2"
           : "cursor-default",
@@ -100,9 +100,9 @@ export function ContributorBadge({
       {showInfoIcon && (
         <span
           className={cn(
-            "inline-flex items-center justify-center transition-all",
+            "inline-flex items-center justify-center transition-opacity",
             interactive
-              ? "opacity-70 group-hover/contributor-badge:opacity-100 group-hover/contributor-badge:scale-110"
+              ? "opacity-70 group-hover/contributor-badge:opacity-100"
               : "opacity-70"
           )}
           aria-hidden="true"

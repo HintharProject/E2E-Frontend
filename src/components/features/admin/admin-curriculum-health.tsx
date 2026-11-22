@@ -25,6 +25,13 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface AdminCurriculumHealthProps {
@@ -216,20 +223,20 @@ export function AdminCurriculumHealth({
   const activeLevelMeta = levelTabs.find((l) => l.id === selectedLevelId);
 
   return (
-    <div className="rounded-2xl border border-line bg-card p-6 shadow-xs transition-all flex flex-col gap-6">
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-xs flex flex-col gap-6">
       {/* Header & Strategic Health KPIs */}
-      <div className="flex flex-col gap-4 border-b border-line/60 pb-5">
+      <div className="flex flex-col gap-4 border-b border-border/60 pb-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <Zap className="size-4" />
+              <div className="flex size-8 items-center justify-center rounded-lg bg-chart-3/10 text-chart-3">
+                <Zap className="size-4" aria-hidden="true" />
               </div>
-              <h3 className="text-lg font-semibold text-ink">
+              <h3 className="text-lg font-semibold text-foreground">
                 Curriculum Operational Triage Board
               </h3>
             </div>
-            <p className="mt-1 text-xs text-ink-muted">
+            <p className="mt-1 text-xs text-muted-foreground">
               Live operational triage across Subject × Level catalog. Select an education level to focus triage, or filter by specific bottlenecks.
             </p>
           </div>
@@ -237,20 +244,20 @@ export function AdminCurriculumHealth({
           {/* Quick Health Summary KPIs */}
           <div className="flex flex-wrap items-center gap-2">
             {unansweredGaps.length > 0 && (
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="size-3.5" />
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-warning/30 bg-warning/10 px-3 py-1.5 font-mono tabular-nums text-xs font-semibold text-warning">
+                <AlertTriangle className="size-3.5" aria-hidden="true" />
                 {totalUnansweredProblems} Unanswered Across {unansweredGaps.length} Topics
               </div>
             )}
             {zeroLessonGaps.length > 0 && (
-              <div className="inline-flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3 py-1.5 text-xs font-medium text-ink-muted">
-                <BookOpen className="size-3.5 text-primary" />
+              <div className="inline-flex items-center gap-1.5 rounded-xl border border-border bg-muted/30 px-3 py-1.5 font-mono tabular-nums text-xs font-medium text-muted-foreground">
+                <BookOpen className="size-3.5 text-primary" aria-hidden="true" />
                 {zeroLessonGaps.length} Missing Lessons
               </div>
             )}
-            <div className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-              <CheckCircle2 className="size-3.5" />
-              {healthyCount} Active & Balanced
+            <div className="inline-flex items-center gap-1.5 rounded-xl border border-primary/30 bg-primary/10 px-3 py-1.5 font-mono tabular-nums text-xs font-semibold text-primary">
+              <CheckCircle2 className="size-3.5" aria-hidden="true" />
+              {healthyCount} Active &amp; Balanced
             </div>
           </div>
         </div>
@@ -258,37 +265,37 @@ export function AdminCurriculumHealth({
         {/* PRIMARY CONTROLS: Education Level Tabs */}
         <div className="flex flex-col gap-2 pt-2">
           <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5 text-xs font-semibold text-ink uppercase tracking-wider">
-              <GraduationCap className="size-3.5 text-primary" /> Education Level Scope
+            <span className="flex items-center gap-1.5 text-xs font-semibold text-foreground uppercase tracking-wider">
+              <GraduationCap className="size-3.5 text-primary" aria-hidden="true" /> Education Level Scope
             </span>
             {selectedLevelId !== "ALL" && (
               <button
                 type="button"
                 onClick={() => setSelectedLevelId("ALL")}
-                className="text-[11px] font-medium text-primary hover:underline transition-colors"
+                className="text-[11px] font-medium text-primary hover:underline transition-colors cursor-pointer"
               >
                 Reset to All Levels ({matrix.length})
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1.5 p-1 rounded-xl border border-line bg-surface/70 overflow-x-auto custom-scrollbar">
+          <div className="flex items-center gap-1.5 p-1 rounded-xl border border-border bg-muted/30 overflow-x-auto custom-scrollbar">
             <button
               type="button"
               onClick={() => setSelectedLevelId("ALL")}
               className={cn(
-                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                "flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer",
                 selectedLevelId === "ALL"
-                  ? "bg-card text-ink font-semibold shadow-xs border border-line"
-                  : "text-ink-muted hover:text-ink hover:bg-card/50"
+                  ? "bg-card text-foreground font-semibold shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground hover:bg-card/50"
               )}
             >
               <span>All Levels</span>
               <span
                 className={cn(
-                  "px-1.5 py-0.2 rounded-full text-[10px]",
+                  "px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px]",
                   selectedLevelId === "ALL"
-                    ? "bg-muted text-ink font-bold"
-                    : "bg-muted/50 text-ink-muted"
+                    ? "bg-muted text-foreground font-bold"
+                    : "bg-muted/50 text-muted-foreground"
                 )}
               >
                 {matrix.length}
@@ -302,21 +309,21 @@ export function AdminCurriculumHealth({
                   type="button"
                   onClick={() => setSelectedLevelId(lvl.id)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0",
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors shrink-0 cursor-pointer",
                     isSelected
-                      ? "bg-card text-ink font-semibold shadow-xs border border-line"
-                      : "text-ink-muted hover:text-ink hover:bg-card/50"
+                      ? "bg-card text-foreground font-semibold shadow-xs border border-border"
+                      : "text-muted-foreground hover:text-foreground hover:bg-card/50"
                   )}
                 >
                   <span>{lvl.name}</span>
-                  <span className="text-[10px] text-ink-muted font-mono">({lvl.code})</span>
+                  <span className="text-[10px] text-muted-foreground font-mono">({lvl.code})</span>
                   {lvl.unansweredCount > 0 ? (
-                    <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-500/15 text-amber-700 dark:text-amber-400 font-bold border border-amber-500/30">
-                      <AlertTriangle className="size-2.5" />
+                    <span className="flex items-center gap-0.5 px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-warning/15 text-warning font-bold border border-warning/30">
+                      <AlertTriangle className="size-2.5" aria-hidden="true" />
                       {lvl.unansweredCount}
                     </span>
                   ) : (
-                    <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-muted/60 text-ink-muted">
+                    <span className="px-1.5 py-0.2 rounded-full font-mono tabular-nums text-[10px] bg-muted/60 text-muted-foreground">
                       {lvl.totalTopics}
                     </span>
                   )}
@@ -329,63 +336,63 @@ export function AdminCurriculumHealth({
         {/* SECONDARY CONTROLS: Deficit Filters & Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
           {/* Deficit Filter Pills */}
-          <div className="inline-flex rounded-xl border border-line bg-surface/60 p-1 text-xs font-medium overflow-x-auto shrink-0">
+          <div className="inline-flex rounded-xl border border-border bg-muted/30 p-1 text-xs font-medium overflow-x-auto shrink-0">
             <button
               type="button"
               onClick={() => setFilterView("all")}
               className={cn(
-                "px-3 py-1.5 rounded-lg transition-all",
+                "px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
                 filterView === "all"
-                  ? "bg-card text-ink font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  ? "bg-card text-foreground font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              All Topics ({scopedMatrix.length})
+              All Topics (<span className="font-mono tabular-nums">{scopedMatrix.length}</span>)
             </button>
             <button
               type="button"
               onClick={() => setFilterView("gaps")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
                 filterView === "gaps"
-                  ? "bg-card text-amber-600 dark:text-amber-400 font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  ? "bg-card text-warning font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <AlertTriangle className="size-3 text-amber-500" />
-              Needs Attention ({unansweredGaps.length + zeroLessonGaps.length})
+              <AlertTriangle className="size-3 text-warning" aria-hidden="true" />
+              Needs Attention (<span className="font-mono tabular-nums">{unansweredGaps.length + zeroLessonGaps.length}</span>)
             </button>
             <button
               type="button"
               onClick={() => setFilterView("unanswered")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
                 filterView === "unanswered"
-                  ? "bg-card text-amber-600 dark:text-amber-400 font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  ? "bg-card text-warning font-semibold shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Unanswered ({unansweredGaps.length})
+              Unanswered (<span className="font-mono tabular-nums">{unansweredGaps.length}</span>)
             </button>
             <button
               type="button"
               onClick={() => setFilterView("missing_lessons")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
                 filterView === "missing_lessons"
                   ? "bg-card text-primary font-semibold shadow-xs"
-                  : "text-ink-muted hover:text-ink"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              Missing Lessons ({zeroLessonGaps.length})
+              Missing Lessons (<span className="font-mono tabular-nums">{zeroLessonGaps.length}</span>)
             </button>
             <button
               type="button"
               onClick={() => setFilterView("dormant")}
               className={cn(
-                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all",
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors cursor-pointer",
                 filterView === "dormant"
-                  ? "bg-card text-ink-muted font-semibold shadow-xs"
+                  ? "bg-card text-muted-foreground font-semibold shadow-xs"
                   : "text-ink-muted hover:text-ink"
               )}
             >
@@ -546,7 +553,7 @@ export function AdminCurriculumHealth({
                         <button
                           type="button"
                           onClick={() => setSelectedCell(item)}
-                          className="font-semibold text-ink hover:text-primary hover:underline text-left text-xs"
+                          className="font-semibold text-foreground hover:text-primary hover:underline text-left text-xs cursor-pointer"
                         >
                           {item.subject_name}
                         </button>
@@ -554,7 +561,7 @@ export function AdminCurriculumHealth({
                           {item.level_code}
                         </Badge>
                       </div>
-                      <div className="text-[10px] text-ink-muted mt-0.5">
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
                         {item.level_name} • #{item.subject_code}
                       </div>
                     </td>
@@ -562,13 +569,13 @@ export function AdminCurriculumHealth({
                     {/* Unanswered Problems */}
                     <td className="p-3 text-center">
                       {hasUnanswered ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                          <AlertTriangle className="size-3" />
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full font-mono tabular-nums text-xs font-bold bg-warning/10 text-warning border border-warning/20">
+                          <AlertTriangle className="size-3" aria-hidden="true" />
                           {item.unanswered_problems_count} Unanswered
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                          <CheckCircle2 className="size-3" /> All Answered
+                        <span className="inline-flex items-center gap-1 text-[11px] text-primary font-medium">
+                          <CheckCircle2 className="size-3" aria-hidden="true" /> All Answered
                         </span>
                       )}
                     </td>
@@ -576,10 +583,10 @@ export function AdminCurriculumHealth({
                     {/* Problems & Solutions */}
                     <td className="p-3 text-center">
                       <div className="flex flex-col items-center">
-                        <span className="font-semibold text-ink">
+                        <span className="font-mono tabular-nums font-semibold text-foreground">
                           {item.problems_count} problems / {item.solutions_count} sols
                         </span>
-                        <span className="text-[10px] text-ink-muted">
+                        <span className="font-mono tabular-nums text-[10px] text-muted-foreground">
                           {(item.avg_solutions_per_problem || 0).toFixed(1)}x ratio
                         </span>
                       </div>
@@ -588,12 +595,12 @@ export function AdminCurriculumHealth({
                     {/* Lessons */}
                     <td className="p-3 text-center">
                       {hasZeroLessons ? (
-                        <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-[10px] py-0">
+                        <Badge variant="destructive" className="font-mono tabular-nums text-[10px] py-0">
                           0 Lessons
                         </Badge>
                       ) : (
-                        <span className="inline-flex items-center gap-1 text-[11px] font-medium text-ink">
-                          <BookOpen className="size-3 text-primary" />
+                        <span className="inline-flex items-center gap-1 font-mono tabular-nums text-[11px] font-medium text-foreground">
+                          <BookOpen className="size-3 text-primary" aria-hidden="true" />
                           {item.lessons_count}
                         </span>
                       )}
@@ -601,7 +608,7 @@ export function AdminCurriculumHealth({
 
                     {/* Forum Activity */}
                     <td className="p-3 text-center">
-                      <span className="text-[11px] text-ink-muted">
+                      <span className="font-mono tabular-nums text-[11px] text-muted-foreground">
                         {item.posts_count} posts
                       </span>
                     </td>
@@ -609,19 +616,19 @@ export function AdminCurriculumHealth({
                     {/* Health Status */}
                     <td className="p-3 text-center">
                       {hasUnanswered ? (
-                        <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300 border-amber-500/30 text-[10px] py-0">
+                        <Badge variant="warning" className="text-[10px] py-0">
                           Bottleneck
                         </Badge>
                       ) : hasZeroLessons ? (
-                        <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] py-0">
+                        <Badge variant="outline" className="border-chart-3/30 bg-chart-3/10 text-chart-3 text-[10px] py-0">
                           Needs Lesson
                         </Badge>
                       ) : isDormant ? (
-                        <Badge variant="secondary" className="text-[10px] py-0 text-ink-muted">
+                        <Badge variant="secondary" className="text-[10px] py-0 text-muted-foreground">
                           Dormant
                         </Badge>
                       ) : (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0">
+                        <Badge variant="default" className="text-[10px] py-0">
                           Balanced
                         </Badge>
                       )}
@@ -635,96 +642,92 @@ export function AdminCurriculumHealth({
       </div>
 
       {/* Drilldown Modal */}
-      {selectedCell && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-card shadow-2xl p-6">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <div>
-                <h4 className="font-bold text-base text-ink">{selectedCell.subject_name}</h4>
-                <p className="text-xs text-ink-muted">
+      <Dialog open={Boolean(selectedCell)} onOpenChange={(nextOpen) => !nextOpen && setSelectedCell(null)}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-border bg-card p-6 shadow-modal">
+          {selectedCell && (
+            <>
+              <DialogHeader className="pb-3 border-b border-border mb-1">
+                <DialogTitle className="font-bold text-base text-foreground">
+                  {selectedCell.subject_name}
+                </DialogTitle>
+                <DialogDescription className="text-xs text-muted-foreground">
                   {selectedCell.level_name} ({selectedCell.level_code})
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setSelectedCell(null)}
-                className="text-ink-muted hover:text-ink p-1 rounded-lg hover:bg-muted"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="grid grid-cols-2 gap-3 text-xs mb-4">
-              <div className="p-3 rounded-xl border border-line bg-surface">
-                <span className="text-[11px] text-ink-muted block mb-1">Unanswered Challenges</span>
-                <span
-                  className={cn(
-                    "text-xl font-bold",
-                    (selectedCell.unanswered_problems_count || 0) > 0
-                      ? "text-amber-600 dark:text-amber-400"
-                      : "text-emerald-600 dark:text-emerald-400"
-                  )}
+              <div className="grid grid-cols-2 gap-3 text-xs my-2">
+                <div className="p-3 rounded-xl border border-border bg-muted/30">
+                  <span className="text-[11px] text-muted-foreground block mb-1">Unanswered Challenges</span>
+                  <span
+                    className={cn(
+                      "font-mono tabular-nums text-xl font-bold",
+                      (selectedCell.unanswered_problems_count || 0) > 0
+                        ? "text-warning"
+                        : "text-primary"
+                    )}
+                  >
+                    {selectedCell.unanswered_problems_count || 0}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/30">
+                  <span className="text-[11px] text-muted-foreground block mb-1">Published Lessons</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-foreground">
+                    {selectedCell.lessons_count || 0}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/30">
+                  <span className="text-[11px] text-muted-foreground block mb-1">Total Problems</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-foreground">
+                    {selectedCell.problems_count || 0}
+                  </span>
+                </div>
+
+                <div className="p-3 rounded-xl border border-border bg-muted/30">
+                  <span className="text-[11px] text-muted-foreground block mb-1">Total Solutions</span>
+                  <span className="font-mono tabular-nums text-xl font-bold text-foreground">
+                    {selectedCell.solutions_count || 0}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 pt-3 border-t border-border">
+                <Link
+                  href={`/problems?subject=${selectedCell.subject_id}&level=${selectedCell.level_id}&confidence=needs_help`}
+                  className="flex items-center justify-between p-2.5 rounded-xl bg-warning/10 text-warning font-semibold text-xs hover:bg-warning/20 transition-colors"
                 >
-                  {selectedCell.unanswered_problems_count || 0}
-                </span>
+                  <span className="flex items-center gap-2">
+                    <Eye className="size-4" aria-hidden="true" /> View Needing Help (
+                    <span className="font-mono tabular-nums">{selectedCell.unanswered_problems_count || 0}</span> unanswered)
+                  </span>
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
+
+                <Link
+                  href={`/lessons/new?level=${selectedCell.level_id}&subject=${selectedCell.subject_id}`}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-border hover:bg-muted text-foreground font-semibold text-xs transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <PlusCircle className="size-4 text-primary" aria-hidden="true" /> Create Lesson for this Topic
+                  </span>
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
+
+                <Link
+                  href={`/admin/resources?level=${selectedCell.level_code}&subject=${selectedCell.subject_code}`}
+                  className="flex items-center justify-between p-2.5 rounded-xl border border-border hover:bg-muted text-foreground font-semibold text-xs transition-colors"
+                >
+                  <span className="flex items-center gap-2">
+                    <FileUp className="size-4 text-chart-3" aria-hidden="true" /> Ingest Past Papers & Textbooks
+                  </span>
+                  <ArrowRight className="size-3.5" aria-hidden="true" />
+                </Link>
               </div>
-
-              <div className="p-3 rounded-xl border border-line bg-surface">
-                <span className="text-[11px] text-ink-muted block mb-1">Published Lessons</span>
-                <span className="text-xl font-bold text-ink">
-                  {selectedCell.lessons_count || 0}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl border border-line bg-surface">
-                <span className="text-[11px] text-ink-muted block mb-1">Total Problems</span>
-                <span className="text-xl font-bold text-ink">
-                  {selectedCell.problems_count || 0}
-                </span>
-              </div>
-
-              <div className="p-3 rounded-xl border border-line bg-surface">
-                <span className="text-[11px] text-ink-muted block mb-1">Total Solutions</span>
-                <span className="text-xl font-bold text-ink">
-                  {selectedCell.solutions_count || 0}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-2 pt-2 border-t border-line">
-              <Link
-                href={`/problems?subject=${selectedCell.subject_id}&level=${selectedCell.level_id}&confidence=needs_help`}
-                className="flex items-center justify-between p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-300 font-semibold text-xs hover:bg-amber-500/20 transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <Eye className="size-4" /> View Needing Help ({selectedCell.unanswered_problems_count || 0} unanswered)
-                </span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-
-              <Link
-                href={`/lessons/new?level=${selectedCell.level_id}&subject=${selectedCell.subject_id}`}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-line hover:bg-muted text-ink font-semibold text-xs transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <PlusCircle className="size-4 text-primary" /> Create Lesson for this Topic
-                </span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-
-              <Link
-                href={`/admin/resources?level=${selectedCell.level_code}&subject=${selectedCell.subject_code}`}
-                className="flex items-center justify-between p-2.5 rounded-xl border border-line hover:bg-muted text-ink font-semibold text-xs transition-colors"
-              >
-                <span className="flex items-center gap-2">
-                  <FileUp className="size-4 text-blue-500" /> Ingest Past Papers & Textbooks
-                </span>
-                <ArrowRight className="size-3.5" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

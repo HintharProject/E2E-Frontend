@@ -12,6 +12,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Loader2, Pencil, AlertCircle } from "lucide-react";
 import {
   YEARS,
@@ -153,12 +155,12 @@ export function EditResourceDialog({
           <form onSubmit={handleSaveEdit} className="flex flex-col gap-3.5 text-xs py-2">
             {/* Document Name */}
             <div>
-              <label className="block font-medium text-ink-muted mb-1">
+              <label htmlFor="edit-resource-name" className="block font-medium text-muted-foreground mb-1">
                 Document / File Name
               </label>
-              <input
+              <Input
+                id="edit-resource-name"
                 type="text"
-                className="w-full rounded-lg border border-line px-3 py-2 bg-surface text-sm focus:outline-primary"
                 value={editFileName}
                 onChange={(e) => setEditFileName(e.target.value)}
                 placeholder="e.g. 0580_s23_qp_21.pdf"
@@ -168,16 +170,17 @@ export function EditResourceDialog({
 
             {/* Resource Type */}
             <div>
-              <label className="block font-medium text-ink-muted mb-1">
+              <span className="block font-medium text-muted-foreground mb-1">
                 Resource Type
-              </label>
-              <div className="flex rounded-lg border border-line p-0.5 bg-surface">
+              </span>
+              <div className="flex rounded-lg border border-border p-0.5 bg-muted/30">
                 <button
                   type="button"
-                  className={`flex-1 py-1.5 font-semibold rounded-md transition-colors ${
+                  aria-pressed={editResourceType === "PAST_PAPER"}
+                  className={`flex-1 py-1.5 font-semibold rounded-md transition-colors cursor-pointer ${
                     editResourceType === "PAST_PAPER"
                       ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "text-ink-muted hover:text-ink"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => setEditResourceType("PAST_PAPER")}
                 >
@@ -185,10 +188,11 @@ export function EditResourceDialog({
                 </button>
                 <button
                   type="button"
-                  className={`flex-1 py-1.5 font-semibold rounded-md transition-colors ${
+                  aria-pressed={editResourceType === "TEXTBOOK"}
+                  className={`flex-1 py-1.5 font-semibold rounded-md transition-colors cursor-pointer ${
                     editResourceType === "TEXTBOOK"
                       ? "bg-primary text-primary-foreground shadow-2xs"
-                      : "text-ink-muted hover:text-ink"
+                      : "text-muted-foreground hover:text-foreground"
                   }`}
                   onClick={() => setEditResourceType("TEXTBOOK")}
                 >
@@ -200,11 +204,12 @@ export function EditResourceDialog({
             {/* Level & Subject */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block font-medium text-ink-muted mb-1">
+                <label htmlFor="edit-resource-level" className="block font-medium text-muted-foreground mb-1">
                   Level
                 </label>
-                <select
-                  className="w-full rounded-lg border border-line px-2.5 py-1.5 bg-surface text-xs focus:outline-primary"
+                <Select
+                  id="edit-resource-level"
+                  sizeVariant="sm"
                   value={editLevel}
                   onChange={(e) => setEditLevel(e.target.value)}
                 >
@@ -213,15 +218,16 @@ export function EditResourceDialog({
                       {l.name} ({l.code})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
-                <label className="block font-medium text-ink-muted mb-1">
+                <label htmlFor="edit-resource-subject" className="block font-medium text-muted-foreground mb-1">
                   Subject
                 </label>
-                <select
-                  className="w-full rounded-lg border border-line px-2.5 py-1.5 bg-surface text-xs focus:outline-primary"
+                <Select
+                  id="edit-resource-subject"
+                  sizeVariant="sm"
                   value={editSubject}
                   onChange={(e) => setEditSubject(e.target.value)}
                 >
@@ -230,19 +236,20 @@ export function EditResourceDialog({
                       {s.name} ({s.code})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
 
             {/* Past Paper Fields */}
             {editResourceType === "PAST_PAPER" && (
-              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-line bg-surface/50">
+              <div className="grid grid-cols-3 gap-2 p-2.5 rounded-xl border border-border bg-muted/25">
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                  <label htmlFor="edit-resource-year" className="block text-[11px] font-medium text-muted-foreground mb-1">
                     Exam Year
                   </label>
-                  <select
-                    className="w-full rounded-lg border border-line px-2 py-1.5 bg-card text-xs focus:outline-primary"
+                  <Select
+                    id="edit-resource-year"
+                    sizeVariant="sm"
                     value={editYear}
                     onChange={(e) => setEditYear(e.target.value)}
                   >
@@ -251,15 +258,16 @@ export function EditResourceDialog({
                         {formatYear(y)}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                  <label htmlFor="edit-resource-session" className="block text-[11px] font-medium text-muted-foreground mb-1">
                     Session
                   </label>
-                  <select
-                    className="w-full rounded-lg border border-line px-2 py-1.5 bg-card text-xs focus:outline-primary"
+                  <Select
+                    id="edit-resource-session"
+                    sizeVariant="sm"
                     value={editSession}
                     onChange={(e) => setEditSession(e.target.value)}
                   >
@@ -268,38 +276,39 @@ export function EditResourceDialog({
                         {s.label}
                       </option>
                     ))}
-                  </select>
+                  </Select>
                 </div>
 
-
                 <div>
-                  <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                  <label htmlFor="edit-resource-paper-type" className="block text-[11px] font-medium text-muted-foreground mb-1">
                     Paper Type
                   </label>
-                  <select
-                    className="w-full rounded-lg border border-line px-2 py-1.5 bg-card text-xs focus:outline-primary"
+                  <Select
+                    id="edit-resource-paper-type"
+                    sizeVariant="sm"
                     value={editPaperType}
                     onChange={(e) => setEditPaperType(e.target.value)}
                   >
                     <option value="QP">Question Paper (QP)</option>
                     <option value="MS">Mark Scheme (MS)</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
             )}
 
             {/* Optional Replacement File */}
             <div>
-              <label className="block font-medium text-ink-muted mb-1">
+              <label htmlFor="edit-resource-file" className="block font-medium text-muted-foreground mb-1">
                 Replace Attachment (Optional)
               </label>
               <input
+                id="edit-resource-file"
                 type="file"
                 accept={ACCEPT_STRING}
-                className="w-full rounded-lg border border-line px-3 py-1.5 bg-surface text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary file:text-primary-foreground"
+                className="w-full rounded-lg border border-input px-3 py-1.5 bg-card text-xs file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:bg-primary file:text-primary-foreground"
                 onChange={(e) => setEditReplacementFile(e.target.files?.[0] || null)}
               />
-              <span className="text-[10px] text-ink-muted mt-0.5 block">
+              <span className="text-[10px] text-muted-foreground mt-0.5 block">
                 Leave empty to keep the current file attached.
               </span>
             </div>

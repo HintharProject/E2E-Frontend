@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -221,28 +223,32 @@ export function UnclassifiedTriageSection() {
           {/* Filters & Search */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted pointer-events-none" />
-              <select
+              <Filter className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
+              <Select
+                sizeVariant="sm"
+                aria-label="Filter by issue type"
                 value={issueType}
                 onChange={(e) => setIssueType(e.target.value)}
-                className="pl-8 pr-3 py-1.5 rounded-xl border border-line bg-surface text-xs focus:outline-none focus:border-primary text-ink"
+                className="pl-8 pr-3 w-auto min-w-[155px]"
               >
                 <option value="all">All Issues</option>
                 <option value="undefined_subject">Undefined Subject</option>
                 <option value="undefined_level">Undefined Level</option>
                 <option value="other_year">Other Year</option>
                 <option value="other_session">Other Session</option>
-              </select>
+              </Select>
             </div>
 
             <div className="relative flex-1 md:w-56">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-ink-muted pointer-events-none" />
-              <input
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
+              <Input
                 type="text"
+                sizeVariant="sm"
+                aria-label="Search unclassified content by title"
                 placeholder="Search title..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 rounded-xl border border-line bg-surface text-xs focus:outline-none focus:border-primary text-ink"
+                className="pl-8"
               />
             </div>
           </div>
@@ -472,13 +478,14 @@ export function ReassignTaxonomyDialog({
           {/* Subject & Level Selectors */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-medium text-ink-muted mb-1">
+              <label htmlFor="triage-subject-select" className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Subject
               </label>
-              <select
+              <Select
+                id="triage-subject-select"
+                sizeVariant="sm"
                 value={subjectId}
                 onChange={(e) => setSubjectId(e.target.value)}
-                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary text-ink"
               >
                 <option value="">-- Select Subject --</option>
                 {subjects.map((sub) => (
@@ -486,17 +493,18 @@ export function ReassignTaxonomyDialog({
                     {sub.name} ({sub.code})
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
 
             <div>
-              <label className="block text-[11px] font-medium text-ink-muted mb-1">
+              <label htmlFor="triage-level-select" className="block text-[11px] font-medium text-muted-foreground mb-1">
                 Level
               </label>
-              <select
+              <Select
+                id="triage-level-select"
+                sizeVariant="sm"
                 value={levelId}
                 onChange={(e) => setLevelId(e.target.value)}
-                className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary text-ink"
               >
                 <option value="">-- Select Level --</option>
                 {levels.map((lvl) => (
@@ -504,45 +512,47 @@ export function ReassignTaxonomyDialog({
                     {lvl.name} ({lvl.code})
                   </option>
                 ))}
-              </select>
+              </Select>
             </div>
           </div>
 
           {/* Resource Specific: Year and Session */}
           {item.content_type === "resource" && (
-            <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-surface border border-line">
+            <div className="grid grid-cols-2 gap-3 p-3 rounded-xl bg-muted/30 border border-border">
               <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                <label htmlFor="triage-year-select" className="block text-[11px] font-medium text-muted-foreground mb-1">
                   Exam Year
                 </label>
-                <select
+                <Select
+                  id="triage-year-select"
+                  sizeVariant="sm"
                   value={year}
                   onChange={(e) => setYear(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs focus:outline-none focus:border-primary text-ink"
                 >
                   {years.map((y) => (
                     <option key={y.id} value={y.year}>
                       {formatYear(y.year)}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
+                <label htmlFor="triage-session-select" className="block text-[11px] font-medium text-muted-foreground mb-1">
                   Exam Session
                 </label>
-                <select
+                <Select
+                  id="triage-session-select"
+                  sizeVariant="sm"
                   value={session}
                   onChange={(e) => setSession(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-card px-3 py-2 text-xs focus:outline-none focus:border-primary text-ink"
                 >
                   {sessions.map((s) => (
                     <option key={s.id} value={s.code}>
                       {s.name} ({s.code})
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </div>
           )}

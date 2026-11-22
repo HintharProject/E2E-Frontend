@@ -96,15 +96,16 @@ export function ModerationBatchDock({
   return (
     <>
       {/* Floating Action Dock */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card/95 backdrop-blur-md border border-line shadow-2xl rounded-2xl px-5 py-3.5 flex items-center gap-4 animate-in slide-in-from-bottom duration-200">
-        <div className="flex items-center gap-2 pr-3 border-r border-line text-sm">
-          <span className="flex size-6 items-center justify-center rounded-full bg-brand text-xs font-bold text-white">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-card border border-border shadow-modal rounded-2xl px-5 py-3.5 flex flex-wrap items-center gap-4 animate-in slide-in-from-bottom duration-200">
+        <div className="flex items-center gap-2 pr-3 border-r border-border text-sm">
+          <span className="flex size-6 items-center justify-center rounded-full bg-primary font-mono tabular-nums text-xs font-bold text-primary-foreground">
             {selectedIds.length}
           </span>
-          <span className="font-semibold text-ink">Selected</span>
+          <span className="font-semibold text-foreground">Selected</span>
           <button
+            type="button"
             onClick={onClearSelection}
-            className="text-xs text-ink-muted hover:text-ink underline ml-1"
+            className="text-xs text-muted-foreground hover:text-foreground underline ml-1 cursor-pointer"
           >
             Clear
           </button>
@@ -118,7 +119,7 @@ export function ModerationBatchDock({
             disabled={batchMutation.isPending}
             className="h-9 px-3 text-xs"
           >
-            <XCircle className="size-3.5 mr-1.5 text-ink-muted" /> Bulk Dismiss
+            <XCircle className="size-3.5 mr-1.5 text-muted-foreground" aria-hidden="true" /> Bulk Dismiss
           </Button>
 
           <Button
@@ -128,7 +129,7 @@ export function ModerationBatchDock({
             disabled={batchMutation.isPending}
             className="h-9 px-3 text-xs font-medium"
           >
-            <Trash2 className="size-3.5 mr-1.5" /> Bulk Takedown
+            <Trash2 className="size-3.5 mr-1.5" aria-hidden="true" /> Bulk Takedown
           </Button>
 
           <Button
@@ -136,9 +137,9 @@ export function ModerationBatchDock({
             variant="default"
             onClick={() => openActionDialog("RESOLVE")}
             disabled={batchMutation.isPending}
-            className="h-9 px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium"
+            className="h-9 px-3 text-xs font-medium"
           >
-            <CheckCircle2 className="size-3.5 mr-1.5" /> Bulk Resolve
+            <CheckCircle2 className="size-3.5 mr-1.5" aria-hidden="true" /> Bulk Resolve
           </Button>
         </div>
       </div>

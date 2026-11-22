@@ -52,27 +52,27 @@ export function StaffUserIntelButton({
           variant="outline"
           size="icon"
           className={cn(
-            "size-7 border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400",
+            "min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 border-warning/40 bg-warning/10 text-warning hover:bg-warning/20",
             className
           )}
           onClick={() => setOpen(true)}
           title="Staff Intel"
           aria-label="Open Staff Intel"
         >
-          <Shield className="size-3.5 text-amber-500" />
+          <Shield className="size-3.5 text-warning" aria-hidden="true" />
         </Button>
       ) : variant === "compact" ? (
         <Button
           variant="outline"
           size="xs"
           className={cn(
-            "h-7 px-2 text-[11px] font-semibold border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400 gap-1",
+            "min-h-[36px] md:min-h-[28px] h-7 px-2 text-[11px] font-semibold border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 gap-1",
             className
           )}
           onClick={() => setOpen(true)}
           aria-label="Open Staff Intel"
         >
-          <Shield className="size-3 text-amber-500" />
+          <Shield className="size-3 text-warning" aria-hidden="true" />
           <span>Intel</span>
         </Button>
       ) : (
@@ -80,14 +80,14 @@ export function StaffUserIntelButton({
           variant="outline"
           size="sm"
           className={cn(
-            "h-8 px-2.5 text-xs font-semibold border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400 gap-1.5",
+            "h-8 px-2.5 text-xs font-semibold border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 gap-1.5",
             className
           )}
           onClick={() => setOpen(true)}
           id="staff-intel-trigger"
           aria-label="Open Staff Intel"
         >
-          <Shield className="size-3.5 text-amber-500" />
+          <Shield className="size-3.5 text-warning" aria-hidden="true" />
           <span>Staff Intel</span>
         </Button>
       )}

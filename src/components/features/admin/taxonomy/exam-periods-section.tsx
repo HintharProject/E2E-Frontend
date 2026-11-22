@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Plus,
@@ -10,7 +18,6 @@ import {
   Edit2,
   Calendar,
   Layers3,
-  X,
 } from "lucide-react";
 import {
   useExamYears,
@@ -81,12 +88,12 @@ export function ExamPeriodsSection() {
   return (
     <div className="grid md:grid-cols-2 gap-6">
       {/* Exam Years */}
-      <div className="rounded-2xl border border-line bg-card overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-line bg-surface">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Calendar className="size-4 text-emerald-500" />
-            <h3 className="font-semibold text-ink text-sm">Exam Years</h3>
-            <Badge variant="outline" className="text-[10px]">
+            <Calendar className="size-4 text-primary" aria-hidden="true" />
+            <h3 className="font-semibold text-foreground text-sm">Exam Years</h3>
+            <Badge variant="outline" className="font-mono tabular-nums text-[10px]">
               {years.length}
             </Badge>
           </div>
@@ -99,97 +106,101 @@ export function ExamPeriodsSection() {
               setIsAddYearOpen(true);
             }}
           >
-            <Plus className="size-3.5" /> Add Year
+            <Plus className="size-3.5" aria-hidden="true" /> Add Year
           </Button>
         </div>
 
         {isYearsLoading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="size-6 animate-spin text-ink-muted" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden="true" />
           </div>
         ) : (
-          <table className="w-full text-left text-xs">
-            <thead className="bg-surface/50 border-b border-line text-ink-muted uppercase font-semibold text-[10px]">
-              <tr>
-                <th className="p-3">Year</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {years.map((y) => {
-                const isFallbackYear = String(y.year).toLowerCase() === "others" || y.year === 0;
-                return (
-                  <tr key={y.id} className="hover:bg-muted/40 transition-colors">
-                    <td className="p-3 font-semibold text-ink text-sm">
-                      <div className="flex items-center gap-2">
-                        <span>{formatYear(y.year)}</span>
-                        {isFallbackYear && (
-                          <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 font-medium">
-                            Fallback
-                          </Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="p-3 text-center">
-                      <button
-                        type="button"
-                        onClick={() => updateYearMutation.mutate({ id: y.id, data: { is_active: !y.is_active } })}
-                        className="inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        {y.is_active ? (
-                          <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0 hover:bg-emerald-500/20">
-                            Active
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-muted/20 border-b border-border text-muted-foreground uppercase font-semibold text-[10px]">
+                <tr>
+                  <th scope="col" className="p-3">Year</th>
+                  <th scope="col" className="p-3 text-center">Status</th>
+                  <th scope="col" className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {years.map((y) => {
+                  const isFallbackYear = String(y.year).toLowerCase() === "others" || y.year === 0;
+                  return (
+                    <tr key={y.id} className="hover:bg-muted/40 transition-colors">
+                      <td className="p-3 font-mono tabular-nums font-semibold text-foreground text-sm">
+                        <div className="flex items-center gap-2">
+                          <span>{formatYear(y.year)}</span>
+                          {isFallbackYear && (
+                            <Badge variant="warning" className="text-[10px] font-medium">
+                              Fallback
+                            </Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => updateYearMutation.mutate({ id: y.id, data: { is_active: !y.is_active } })}
+                          aria-label={`Toggle year ${formatYear(y.year)} status`}
+                          className="inline-flex items-center gap-1 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        >
+                          {y.is_active ? (
+                            <Badge variant="default" className="text-[10px] py-0">
+                              Active
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary" className="text-[10px] py-0 text-muted-foreground hover:bg-muted">
+                              Inactive
+                            </Badge>
+                          )}
+                        </button>
+                      </td>
+                      <td className="p-3 text-right">
+                        {isFallbackYear ? (
+                          <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+                            Protected
                           </Badge>
                         ) : (
-                          <Badge variant="secondary" className="text-[10px] py-0 text-ink-muted hover:bg-muted">
-                            Inactive
-                          </Badge>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Delete year ${formatYear(y.year)}`}
+                            className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: `Delete exam year ${y.year}?`,
+                                description: `Deleting this exam year will reassign any associated past papers to the "Others" fallback year. This action is irreversible.`,
+                                confirmLabel: "Delete Year",
+                                onConfirm: async () => {
+                                  await deleteYearMutation.mutateAsync(y.id);
+                                  setConfirmModal(null);
+                                },
+                              });
+                            }}
+                          >
+                            <Trash2 className="size-3.5" aria-hidden="true" />
+                          </Button>
                         )}
-                      </button>
-                    </td>
-                    <td className="p-3 text-right">
-                      {isFallbackYear ? (
-                        <Badge variant="secondary" className="text-[10px] text-ink-muted">
-                          Protected
-                        </Badge>
-                      ) : (
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7 text-danger hover:text-danger hover:bg-danger/10"
-                          onClick={() => {
-                            setConfirmModal({
-                              isOpen: true,
-                              title: `Delete exam year ${y.year}?`,
-                              description: `Deleting this exam year will reassign any associated past papers to the "Others" fallback year. This action is irreversible.`,
-                              confirmLabel: "Delete Year",
-                              onConfirm: async () => {
-                                await deleteYearMutation.mutateAsync(y.id);
-                                setConfirmModal(null);
-                              },
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* Exam Sessions */}
-      <div className="rounded-2xl border border-line bg-card overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-line bg-surface">
+      <div className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
           <div className="flex items-center gap-2">
-            <Layers3 className="size-4 text-cyan-500" />
-            <h3 className="font-semibold text-ink text-sm">Exam Sessions</h3>
-            <Badge variant="outline" className="text-[10px]">
+            <Layers3 className="size-4 text-chart-4" aria-hidden="true" />
+            <h3 className="font-semibold text-foreground text-sm">Exam Sessions</h3>
+            <Badge variant="outline" className="font-mono tabular-nums text-[10px]">
               {sessions.length}
             </Badge>
           </div>
@@ -203,202 +214,192 @@ export function ExamPeriodsSection() {
               setSessionName("");
             }}
           >
-            <Plus className="size-3.5" /> Add Session
+            <Plus className="size-3.5" aria-hidden="true" /> Add Session
           </Button>
         </div>
 
         {isSessionsLoading ? (
           <div className="flex h-48 items-center justify-center">
-            <Loader2 className="size-6 animate-spin text-ink-muted" />
+            <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden="true" />
           </div>
         ) : (
-          <table className="w-full text-left text-xs">
-            <thead className="bg-surface/50 border-b border-line text-ink-muted uppercase font-semibold text-[10px]">
-              <tr>
-                <th className="p-3">Code</th>
-                <th className="p-3">Display Name</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {sessions.map((sess) => (
-                <tr key={sess.id} className="hover:bg-muted/40 transition-colors">
-                  <td className="p-3 font-mono font-bold text-ink-muted text-[11px]">
-                    <div className="flex items-center gap-2">
-                      <span>{sess.code}</span>
-                      {sess.code === "OTHERS" && (
-                        <Badge variant="outline" className="text-[10px] bg-amber-500/10 text-amber-600 border-amber-500/20 font-medium">
-                          Fallback
-                        </Badge>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-3 font-medium text-ink">{sess.name}</td>
-                  <td className="p-3 text-center">
-                    <button
-                      type="button"
-                      onClick={() => updateSessionMutation.mutate({ id: sess.id, data: { is_active: !sess.is_active } })}
-                      className="inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      {sess.is_active ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0 hover:bg-emerald-500/20">
-                          Active
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-muted/20 border-b border-border text-muted-foreground uppercase font-semibold text-[10px]">
+                <tr>
+                  <th scope="col" className="p-3">Code</th>
+                  <th scope="col" className="p-3">Display Name</th>
+                  <th scope="col" className="p-3 text-center">Status</th>
+                  <th scope="col" className="p-3 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {sessions.map((sess) => (
+                  <tr key={sess.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="p-3 font-mono font-bold text-muted-foreground text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <span>{sess.code}</span>
+                        {sess.code === "OTHERS" && (
+                          <Badge variant="warning" className="text-[10px] font-medium">
+                            Fallback
+                          </Badge>
+                        )}
+                      </div>
+                    </td>
+                    <td className="p-3 font-medium text-foreground">{sess.name}</td>
+                    <td className="p-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => updateSessionMutation.mutate({ id: sess.id, data: { is_active: !sess.is_active } })}
+                        aria-label={`Toggle session ${sess.name} status`}
+                        className="inline-flex items-center gap-1 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      >
+                        {sess.is_active ? (
+                          <Badge variant="default" className="text-[10px] py-0">
+                            Active
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary" className="text-[10px] py-0 text-muted-foreground hover:bg-muted">
+                            Inactive
+                          </Badge>
+                        )}
+                      </button>
+                    </td>
+                    <td className="p-3 text-right">
+                      {sess.code === "OTHERS" ? (
+                        <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+                          Protected
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px] py-0 text-ink-muted hover:bg-muted">
-                          Inactive
-                        </Badge>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Edit session ${sess.name}`}
+                            className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-muted-foreground hover:text-foreground"
+                            onClick={() => {
+                              setSessionModal({ mode: "edit", item: sess });
+                              setSessionCode(sess.code);
+                              setSessionName(sess.name);
+                            }}
+                          >
+                            <Edit2 className="size-3.5" aria-hidden="true" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            aria-label={`Delete session ${sess.name}`}
+                            className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: `Delete session "${sess.name}"?`,
+                                description: `Deleting this session will reassign any associated past papers to the "Others" fallback session. This action is irreversible.`,
+                                confirmLabel: "Delete Session",
+                                onConfirm: async () => {
+                                  await deleteSessionMutation.mutateAsync(sess.id);
+                                  setConfirmModal(null);
+                                },
+                              });
+                            }}
+                          >
+                            <Trash2 className="size-3.5" aria-hidden="true" />
+                          </Button>
+                        </div>
                       )}
-                    </button>
-                  </td>
-                  <td className="p-3 text-right">
-                    {sess.code === "OTHERS" ? (
-                      <Badge variant="secondary" className="text-[10px] text-ink-muted">
-                        Protected
-                      </Badge>
-                    ) : (
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7 text-ink-muted hover:text-ink"
-                          onClick={() => {
-                            setSessionModal({ mode: "edit", item: sess });
-                            setSessionCode(sess.code);
-                            setSessionName(sess.name);
-                          }}
-                        >
-                          <Edit2 className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7 text-danger hover:text-danger hover:bg-danger/10"
-                          onClick={() => {
-                            setConfirmModal({
-                              isOpen: true,
-                              title: `Delete session "${sess.name}"?`,
-                              description: `Deleting this session will reassign any associated past papers to the "Others" fallback session. This action is irreversible.`,
-                              confirmLabel: "Delete Session",
-                              onConfirm: async () => {
-                                await deleteSessionMutation.mutateAsync(sess.id);
-                                setConfirmModal(null);
-                              },
-                            });
-                          }}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
       {/* Add Year Modal */}
-      {isAddYearOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-xs rounded-2xl border border-line bg-card shadow-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <h4 className="font-semibold text-sm text-ink">Add Exam Year</h4>
-              <button
-                type="button"
-                onClick={() => setIsAddYearOpen(false)}
-                className="text-ink-muted hover:text-ink p-1"
-              >
-                <X className="size-4" />
-              </button>
+      <Dialog open={isAddYearOpen} onOpenChange={setIsAddYearOpen}>
+        <DialogContent className="sm:max-w-xs rounded-2xl border-border bg-card p-5 shadow-modal">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="font-semibold text-sm text-foreground">Add Exam Year</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleAddYear} className="flex flex-col gap-3 text-xs">
+            <div>
+              <label htmlFor="exam-year-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Year (e.g. 2027 or others)
+              </label>
+              <Input
+                id="exam-year-input"
+                type="text"
+                placeholder="e.g. 2027"
+                value={yearInput}
+                onChange={(e) => setYearInput(e.target.value)}
+                required
+                autoFocus
+              />
             </div>
-            <form onSubmit={handleAddYear} className="flex flex-col gap-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">Year (e.g. 2027 or others)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. 2027"
-                  value={yearInput}
-                  onChange={(e) => setYearInput(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setIsAddYearOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" size="sm" disabled={createYearMutation.isPending || !yearInput}>
-                  Save Year
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setIsAddYearOpen(false)}>
+                Cancel
+              </Button>
+              <Button type="submit" size="sm" disabled={createYearMutation.isPending || !yearInput}>
+                Save Year
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Session Modal */}
-      {sessionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-sm rounded-2xl border border-line bg-card shadow-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <h4 className="font-semibold text-sm text-ink">
-                {sessionModal.mode === "edit" ? "Edit Exam Session" : "Add Exam Session"}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setSessionModal(null)}
-                className="text-ink-muted hover:text-ink p-1"
-              >
-                <X className="size-4" />
-              </button>
+      <Dialog open={Boolean(sessionModal)} onOpenChange={(nextOpen) => !nextOpen && setSessionModal(null)}>
+        <DialogContent className="sm:max-w-sm rounded-2xl border-border bg-card p-5 shadow-modal">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="font-semibold text-sm text-foreground">
+              {sessionModal?.mode === "edit" ? "Edit Exam Session" : "Add Exam Session"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSessionSubmit} className="flex flex-col gap-3 text-xs">
+            <div>
+              <label htmlFor="session-code-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Session Code (e.g. MAY_JUNE)
+              </label>
+              <Input
+                id="session-code-input"
+                type="text"
+                placeholder="e.g. FEB_MARCH"
+                value={sessionCode}
+                onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
+                className="font-mono"
+                required
+              />
             </div>
-            <form onSubmit={handleSessionSubmit} className="flex flex-col gap-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Session Code (e.g. MAY_JUNE)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. FEB_MARCH"
-                  value={sessionCode}
-                  onChange={(e) => setSessionCode(e.target.value.toUpperCase())}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Display Label (e.g. May / June)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Feb / March"
-                  value={sessionName}
-                  onChange={(e) => setSessionName(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                  required
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setSessionModal(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={createSessionMutation.isPending || updateSessionMutation.isPending}
-                >
-                  Save Session
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="session-name-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Display Label (e.g. May / June)
+              </label>
+              <Input
+                id="session-name-input"
+                type="text"
+                placeholder="e.g. Feb / March"
+                value={sessionName}
+                onChange={(e) => setSessionName(e.target.value)}
+                required
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setSessionModal(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={createSessionMutation.isPending || updateSessionMutation.isPending}
+              >
+                Save Session
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm Dialog */}
       {confirmModal && (

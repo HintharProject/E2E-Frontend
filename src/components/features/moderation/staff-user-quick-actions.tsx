@@ -201,7 +201,7 @@ export function StaffUserQuickActions({
                 className="text-xs"
                 onClick={openPointModal}
               >
-                <Coins className="size-3.5 mr-1 text-amber-500" />
+                <Coins className="size-3.5 mr-1 text-warning" aria-hidden="true" />
                 Points
               </Button>
             </>
@@ -211,22 +211,22 @@ export function StaffUserQuickActions({
           <Button
             variant="outline"
             size="sm"
-            className="border-amber-500/40 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20 hover:text-amber-700 dark:text-amber-400 text-xs font-semibold gap-1.5"
+            className="border-warning/40 bg-warning/10 text-warning hover:bg-warning/20 text-xs font-semibold gap-1.5"
             onClick={() => setIntelDrawerOpen(true)}
             id="staff-intel-dock-trigger"
           >
-            <Shield className="size-3.5 text-amber-500" />
+            <Shield className="size-3.5 text-warning" aria-hidden="true" />
             <span>Staff Intel</span>
           </Button>
 
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-ink-muted"
+            className="text-xs text-muted-foreground"
             nativeButton={false}
             render={<Link href="/admin/reports" />}
           >
-            <Flag className="size-3.5 mr-1" />
+            <Flag className="size-3.5 mr-1" aria-hidden="true" />
             Reports
           </Button>
         </div>
@@ -238,34 +238,34 @@ export function StaffUserQuickActions({
                 variant="outline"
                 size="xs"
                 className={cn(
-                  "h-7 px-2 gap-1 text-[11px] font-semibold border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20",
+                  "min-h-[36px] md:min-h-[28px] h-7 px-2 gap-1 text-[11px] font-semibold border-warning/40 text-warning bg-warning/10 hover:bg-warning/20",
                   className
                 )}
               >
-                <ShieldAlert className="size-3 text-amber-500" />
+                <ShieldAlert className="size-3 text-warning" aria-hidden="true" />
                 <span>Mod</span>
               </Button>
             }
           />
           <DropdownMenuContent align="end" className="w-52 text-xs">
-            <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-              <Shield className="size-3.5" />
+            <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-warning uppercase tracking-wider">
+              <Shield className="size-3.5" aria-hidden="true" />
               <span>Staff Actions</span>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem onClick={openWarning} className="gap-2 text-amber-600 dark:text-amber-400">
-              <AlertTriangle className="size-3.5" />
+            <DropdownMenuItem onClick={openWarning} className="gap-2 text-warning">
+              <AlertTriangle className="size-3.5" aria-hidden="true" />
               <span>Issue Warning</span>
             </DropdownMenuItem>
 
             <DropdownMenuItem onClick={openSanction} className="gap-2 text-destructive focus:text-destructive">
-              <ShieldAlert className="size-3.5" />
+              <ShieldAlert className="size-3.5" aria-hidden="true" />
               <span>Sanction / Suspend</span>
             </DropdownMenuItem>
 
-            <DropdownMenuItem onClick={() => setIntelDrawerOpen(true)} className="gap-2 text-amber-600 dark:text-amber-400">
-              <Shield className="size-3.5 text-amber-500" />
+            <DropdownMenuItem onClick={() => setIntelDrawerOpen(true)} className="gap-2 text-warning">
+              <Shield className="size-3.5 text-warning" aria-hidden="true" />
               <span>Staff Intel</span>
             </DropdownMenuItem>
 

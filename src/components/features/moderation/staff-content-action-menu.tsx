@@ -167,13 +167,13 @@ export function StaffContentActionMenu({
                 variant="outline"
                 size="xs"
                 className={cn(
-                  "h-6 px-2 gap-1 text-[11px] font-semibold border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20",
+                  "min-h-[36px] md:min-h-[26px] h-7 px-2 gap-1 text-[11px] font-semibold border-warning/40 text-warning bg-warning/10 hover:bg-warning/20",
                   className
                 )}
                 aria-label="Staff moderation actions"
                 title="Staff Moderation Actions"
               >
-                <ShieldAlert className="size-3 text-amber-500" aria-hidden="true" />
+                <ShieldAlert className="size-3 text-warning" aria-hidden="true" />
                 <span>Mod</span>
               </Button>
             ) : (
@@ -181,7 +181,7 @@ export function StaffContentActionMenu({
                 variant="ghost"
                 size="icon"
                 className={cn(
-                  "size-8 text-amber-600 dark:text-amber-400 hover:bg-amber-500/15 hover:text-amber-700 dark:hover:text-amber-300",
+                  "min-h-[44px] min-w-[44px] md:min-h-[32px] md:min-w-[32px] md:size-8 text-warning hover:bg-warning/15",
                   className
                 )}
                 aria-label={`Staff moderation controls${targetTitle ? ` for ${targetTitle}` : ""}`}
@@ -193,8 +193,8 @@ export function StaffContentActionMenu({
           }
         />
         <DropdownMenuContent align="end" className="w-56 text-xs">
-          <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-            <Shield className="size-3.5" />
+          <DropdownMenuLabel className="flex items-center gap-1.5 text-[11px] font-semibold text-warning uppercase tracking-wider">
+            <Shield className="size-3.5" aria-hidden="true" />
             <span>Staff Moderation</span>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
@@ -212,9 +212,9 @@ export function StaffContentActionMenu({
                       confirmLabel: "Unhide Item",
                     })
                   }
-                  className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
+                  className="gap-2 text-primary font-medium"
                 >
-                  <Eye className="size-3.5" />
+                  <Eye className="size-3.5" aria-hidden="true" />
                   <span>Unhide {targetType}</span>
                 </DropdownMenuItem>
               ) : (
@@ -228,9 +228,9 @@ export function StaffContentActionMenu({
                       isDestructive: true,
                     })
                   }
-                  className="gap-2 text-amber-600 dark:text-amber-400"
+                  className="gap-2 text-warning"
                 >
-                  <EyeOff className="size-3.5" />
+                  <EyeOff className="size-3.5" aria-hidden="true" />
                   <span>Hide {targetType}</span>
                 </DropdownMenuItem>
               )}
@@ -249,9 +249,9 @@ export function StaffContentActionMenu({
                     confirmLabel: "Restore Lesson",
                   })
                 }
-                className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
+                className="gap-2 text-primary font-medium"
               >
-                <Eye className="size-3.5" />
+                <Eye className="size-3.5" aria-hidden="true" />
                 <span>Restore to Published</span>
               </DropdownMenuItem>
             ) : (
@@ -265,9 +265,9 @@ export function StaffContentActionMenu({
                     isDestructive: true,
                   })
                 }
-                className="gap-2 text-amber-600 dark:text-amber-400"
+                className="gap-2 text-warning"
               >
-                <FileMinus className="size-3.5" />
+                <FileMinus className="size-3.5" aria-hidden="true" />
                 <span>Delist to Draft</span>
               </DropdownMenuItem>
             )
@@ -286,9 +286,9 @@ export function StaffContentActionMenu({
                       confirmLabel: "Unlock Thread",
                     })
                   }
-                  className="gap-2 text-emerald-600 dark:text-emerald-400"
+                  className="gap-2 text-primary"
                 >
-                  <Unlock className="size-3.5" />
+                  <Unlock className="size-3.5" aria-hidden="true" />
                   <span>Unlock Thread</span>
                 </DropdownMenuItem>
               ) : (
@@ -304,7 +304,7 @@ export function StaffContentActionMenu({
                   }
                   className="gap-2 text-muted-foreground"
                 >
-                  <Lock className="size-3.5" />
+                  <Lock className="size-3.5" aria-hidden="true" />
                   <span>Lock Discussion</span>
                 </DropdownMenuItem>
               )}
@@ -328,7 +328,7 @@ export function StaffContentActionMenu({
               }
               className="gap-2 text-destructive focus:text-destructive"
             >
-              <Trash2 className="size-3.5" />
+              <Trash2 className="size-3.5" aria-hidden="true" />
               <span>{isFinal ? "Staff Override Delete" : `Delete ${targetType}`}</span>
             </DropdownMenuItem>
           )}
@@ -337,35 +337,35 @@ export function StaffContentActionMenu({
           {targetUserForModal && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-[10px] text-ink-muted uppercase tracking-wider font-semibold">
+              <DropdownMenuLabel className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
                 Author: {author?.display_name || "Offender"}
               </DropdownMenuLabel>
 
-              <DropdownMenuItem onClick={handleOpenWarning} className="gap-2 text-amber-600 dark:text-amber-400">
-                <AlertTriangle className="size-3.5" />
+              <DropdownMenuItem onClick={handleOpenWarning} className="gap-2 text-warning">
+                <AlertTriangle className="size-3.5" aria-hidden="true" />
                 <span>Issue Warning</span>
               </DropdownMenuItem>
 
               <DropdownMenuItem onClick={handleOpenSanction} className="gap-2 text-destructive focus:text-destructive">
-                <ShieldAlert className="size-3.5" />
+                <ShieldAlert className="size-3.5" aria-hidden="true" />
                 <span>Sanction / Suspend</span>
               </DropdownMenuItem>
 
-              <DropdownMenuItem onClick={() => setIntelOpen(true)} className="gap-2 text-amber-600 dark:text-amber-400">
-                <Shield className="size-3.5 text-amber-500" />
+              <DropdownMenuItem onClick={() => setIntelOpen(true)} className="gap-2 text-warning">
+                <Shield className="size-3.5 text-warning" aria-hidden="true" />
                 <span>Staff Intel</span>
               </DropdownMenuItem>
 
               {/* Point Adjustment for Solutions or Posts (Admins Only) */}
               {isAdmin && targetUserForModal.id && (
                 <DropdownMenuItem onClick={() => setPointModalOpen(true)} className="gap-2 text-primary">
-                  <Coins className="size-3.5" />
+                  <Coins className="size-3.5" aria-hidden="true" />
                   <span>Adjust Points</span>
                 </DropdownMenuItem>
               )}
 
               <DropdownMenuItem nativeButton={false} render={<Link href={`/users/${targetUserForModal.id}`} className="gap-2" />}>
-                <User className="size-3.5" />
+                <User className="size-3.5" aria-hidden="true" />
                 <span>View Author Profile</span>
               </DropdownMenuItem>
             </>
@@ -379,25 +379,26 @@ export function StaffContentActionMenu({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <ShieldAlert
-                className={cn("size-5", confirmConfig?.isDestructive ? "text-destructive" : "text-amber-500")}
+                aria-hidden="true"
+                className={cn("size-5", confirmConfig?.isDestructive ? "text-destructive" : "text-warning")}
               />
               {confirmConfig?.title}
             </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed text-ink-muted">
+            <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
               {confirmConfig?.description}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2">
-            <div className="rounded-xl border border-line bg-muted/40 p-3 text-xs space-y-1">
-              <div className="font-semibold text-ink">{targetTitle || `${targetType} (${targetId.slice(0, 8)}...)`}</div>
+            <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs space-y-1">
+              <div className="font-semibold text-foreground">{targetTitle || `${targetType} (${targetId.slice(0, 8)}...)`}</div>
               {author?.display_name && (
-                <div className="text-ink-muted">Author: {author.display_name}</div>
+                <div className="text-muted-foreground">Author: {author.display_name}</div>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-ink">
+              <label className="text-xs font-semibold text-foreground">
                 Audit Reason {confirmConfig?.requiresReason ? "(Mandatory)" : "(Optional)"}
               </label>
               <Input

@@ -108,7 +108,7 @@ export function CurriculumTreeSidebar({
     <>
       {/* Mobile Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+        className="fixed inset-0 bg-background/80 backdrop-blur-xs z-30 lg:hidden"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -227,143 +227,116 @@ export function CurriculumTreeSidebar({
                               const isRight = rightPaperId === paper.id;
                               const isMS = paper.paper_type === "MS" || paper.file_name.toLowerCase().includes("ms");
 
-                              const content = (
+                              const paperRowInner = (
                                 <>
-                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                                    {isMS ? (
-                                      <BookOpen
-                                        className={cn(
-                                          "size-3.5 shrink-0",
-                                          isRight
-                                            ? "text-primary"
-                                            : "text-muted-foreground"
-                                        )}
-                                      />
-                                    ) : (
-                                      <FileText
-                                        className={cn(
-                                          "size-3.5 shrink-0",
-                                          isLeft ? "text-primary" : "text-primary/70"
-                                        )}
-                                      />
-                                    )}
-                                    <span className="truncate text-xs font-medium" title={paper.file_name}>
-                                      {paper.label}
-                                    </span>
-                                    <Badge
-                                      variant="outline"
+                                  {isMS ? (
+                                    <BookOpen
                                       className={cn(
-                                        "text-[9px] px-1 py-0 font-bold uppercase shrink-0 leading-none h-4",
-                                        isMS
-                                          ? "border-border text-muted-foreground bg-secondary"
-                                          : "border-primary/40 text-primary bg-primary/10"
+                                        "size-3.5 shrink-0",
+                                        isRight ? "text-primary" : "text-muted-foreground"
                                       )}
-                                    >
-                                      {paper.paper_type || (isMS ? "MS" : "QP")}
-                                    </Badge>
-                                  </div>
-
-                                  <div className="flex items-center gap-1 shrink-0">
-                                    {/* Solutions count indicator */}
-                                    {paper.solutions_count > 0 && (
-                                      <Badge
-                                        variant="secondary"
-                                        className="text-[9px] px-1 py-0 h-3.5 font-mono font-medium gap-0.5"
-                                        title={`${paper.solutions_count} community/staff solutions available`}
-                                      >
-                                        <MessageSquare className="size-2" />
-                                        <span>{paper.solutions_count}</span>
-                                      </Badge>
+                                      aria-hidden="true"
+                                    />
+                                  ) : (
+                                    <FileText
+                                      className={cn(
+                                        "size-3.5 shrink-0",
+                                        isLeft ? "text-primary" : "text-primary/70"
+                                      )}
+                                      aria-hidden="true"
+                                    />
+                                  )}
+                                  <span className="truncate text-xs font-medium text-left" title={paper.file_name}>
+                                    {paper.label}
+                                  </span>
+                                  <Badge
+                                    variant="outline"
+                                    className={cn(
+                                      "text-[10px] px-1 py-0 font-bold uppercase shrink-0 leading-none h-4",
+                                      isMS
+                                        ? "border-border text-muted-foreground bg-secondary"
+                                        : "border-primary/40 text-primary bg-primary/10"
                                     )}
-
-                                    {/* [ L ] and [ R ] toggle buttons */}
-                                    {onToggleLeft && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                          onToggleLeft(paperWithMeta);
-                                        }}
-                                        aria-label={
-                                          isLeft
-                                            ? "Active on Left. Click to close Left panel."
-                                            : "Open paper in Left panel (L)"
-                                        }
-                                        aria-pressed={isLeft}
-                                        className={cn(
-                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                          isLeft
-                                            ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
-                                            : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                                        )}
-                                        title={
-                                          isLeft
-                                            ? "Active on Left. Click to close Left panel."
-                                            : "Open paper in Left panel (L)"
-                                        }
-                                      >
-                                        L
-                                      </button>
-                                    )}
-
-                                    {onToggleRight && (
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          e.preventDefault();
-                                          onToggleRight(paperWithMeta);
-                                        }}
-                                        aria-label={
-                                          isRight
-                                            ? "Active on Right. Click to close Right panel."
-                                            : "Open paper in Right panel (R)"
-                                        }
-                                        aria-pressed={isRight}
-                                        className={cn(
-                                          "min-h-[36px] min-w-[36px] md:min-h-[20px] md:min-w-[20px] md:h-5 md:w-5 rounded text-xs font-bold flex items-center justify-center transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
-                                          isRight
-                                            ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
-                                            : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
-                                        )}
-                                        title={
-                                          isRight
-                                            ? "Active on Right. Click to close Right panel."
-                                            : "Open paper in Right panel (R)"
-                                        }
-                                      >
-                                        R
-                                      </button>
-                                    )}
-                                  </div>
+                                  >
+                                    {paper.paper_type || (isMS ? "MS" : "QP")}
+                                  </Badge>
                                 </>
+                              );
+
+                              const paperRowActions = (
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {/* Solutions count indicator */}
+                                  {paper.solutions_count > 0 && (
+                                    <Badge
+                                      variant="secondary"
+                                      className="text-[10px] px-1.5 py-0 h-4 font-mono tabular-nums font-medium gap-0.5"
+                                      title={`${paper.solutions_count} community/staff solutions available`}
+                                    >
+                                      <MessageSquare className="size-2.5" aria-hidden="true" />
+                                      <span>{paper.solutions_count}</span>
+                                    </Badge>
+                                  )}
+
+                                  {/* [ L ] and [ R ] toggle buttons */}
+                                  {onToggleLeft && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onToggleLeft(paperWithMeta)}
+                                      aria-label={
+                                        isLeft
+                                          ? `Close ${paper.label} from Left panel`
+                                          : `Open ${paper.label} in Left panel`
+                                      }
+                                      aria-pressed={isLeft}
+                                      className={cn(
+                                        "min-h-[44px] min-w-[44px] md:min-h-[24px] md:min-w-[24px] md:h-6 md:w-6 rounded text-xs font-bold flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                        isLeft
+                                          ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
+                                          : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                      )}
+                                      title={
+                                        isLeft
+                                          ? "Active on Left. Click to close Left panel."
+                                          : "Open paper in Left panel (L)"
+                                      }
+                                    >
+                                      L
+                                    </button>
+                                  )}
+
+                                  {onToggleRight && (
+                                    <button
+                                      type="button"
+                                      onClick={() => onToggleRight(paperWithMeta)}
+                                      aria-label={
+                                        isRight
+                                          ? `Close ${paper.label} from Right panel`
+                                          : `Open ${paper.label} in Right panel`
+                                      }
+                                      aria-pressed={isRight}
+                                      className={cn(
+                                        "min-h-[44px] min-w-[44px] md:min-h-[24px] md:min-w-[24px] md:h-6 md:w-6 rounded text-xs font-bold flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                                        isRight
+                                          ? "bg-primary text-primary-foreground shadow-xs border border-primary ring-1 ring-primary/40"
+                                          : "border border-border bg-muted text-muted-foreground hover:text-foreground hover:bg-muted/80"
+                                      )}
+                                      title={
+                                        isRight
+                                          ? "Active on Right. Click to close Right panel."
+                                          : "Open paper in Right panel (R)"
+                                      }
+                                    >
+                                      R
+                                    </button>
+                                  )}
+                                </div>
                               );
 
                               return onToggleLeft ? (
                                 <div
                                   key={paper.id}
-                                  role="button"
-                                  tabIndex={0}
-                                  onClick={() => {
-                                    if (isMS && onToggleRight) {
-                                      onToggleRight(paperWithMeta);
-                                    } else {
-                                      onToggleLeft(paperWithMeta);
-                                    }
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
-                                      e.preventDefault();
-                                      if (isMS && onToggleRight) {
-                                        onToggleRight(paperWithMeta);
-                                      } else {
-                                        onToggleLeft(paperWithMeta);
-                                      }
-                                    }
-                                  }}
                                   className={cn(
-                                    "group flex items-center justify-between gap-1.5 px-2 py-1.5 rounded-lg text-xs transition-colors cursor-pointer border focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                                    "group flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg text-xs transition-colors border",
                                     isLeft
                                       ? "bg-primary/10 border-primary/30 text-foreground font-semibold"
                                       : isRight
@@ -371,7 +344,20 @@ export function CurriculumTreeSidebar({
                                       : "hover:bg-muted/60 text-foreground border-transparent"
                                   )}
                                 >
-                                  {content}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (isMS && onToggleRight) {
+                                        onToggleRight(paperWithMeta);
+                                      } else {
+                                        onToggleLeft(paperWithMeta);
+                                      }
+                                    }}
+                                    className="flex items-center gap-1.5 min-w-0 flex-1 min-h-[36px] md:min-h-[24px] text-left cursor-pointer rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                  >
+                                    {paperRowInner}
+                                  </button>
+                                  {paperRowActions}
                                 </div>
                               ) : (
                                 <Link
@@ -386,7 +372,10 @@ export function CurriculumTreeSidebar({
                                       : "hover:bg-muted/60 text-foreground border-transparent"
                                   )}
                                 >
-                                  {content}
+                                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                                    {paperRowInner}
+                                  </div>
+                                  {paperRowActions}
                                 </Link>
                               );
                             })}
