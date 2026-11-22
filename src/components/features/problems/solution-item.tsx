@@ -84,6 +84,7 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
             <ContributorBadge
               tier={author.contributor_tier ?? author.reputation?.contributor_tier ?? 0}
               size="sm"
+              interactive={false}
             />
           ) : null}
           <span className="font-mono tabular-nums">
@@ -97,7 +98,7 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
           variant="ghost"
           size="sm"
           onClick={() => setIsExpanded(true)}
-          className="h-7 px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground shrink-0"
+          className="min-h-[44px] sm:min-h-0 sm:h-7 px-2.5 text-xs gap-1 text-muted-foreground hover:text-foreground shrink-0"
         >
           <span>Show low-scored solution</span>
           <ChevronDown className="size-3.5" aria-hidden="true" />
@@ -138,7 +139,7 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
               variant="ghost"
               size="sm"
               onClick={() => setIsExpanded(false)}
-              className="h-6 px-2 text-xs gap-1 shrink-0"
+              className="min-h-[44px] sm:min-h-0 sm:h-6 px-2 text-xs gap-1 shrink-0"
             >
               <span>Collapse</span>
               <ChevronUp className="size-3.5" aria-hidden="true" />
@@ -229,7 +230,7 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
         <>
           <Link
             href={solutionUrl}
-            className="inline-flex items-center gap-1 font-semibold text-primary opacity-90 hover:opacity-100 group-hover:opacity-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background after:absolute after:inset-0 after:rounded-xl after:z-0"
+            className="inline-flex items-center gap-1 min-h-[44px] sm:min-h-0 px-1.5 -mx-1.5 sm:px-0 sm:mx-0 font-semibold text-primary opacity-90 hover:opacity-100 group-hover:opacity-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background after:absolute after:inset-0 after:rounded-xl after:z-0"
           >
             <span>
               View Full Solution<span className="sr-only"> by {authorName}</span>

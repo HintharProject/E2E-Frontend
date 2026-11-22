@@ -136,7 +136,7 @@ function AnnouncementCard({
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
           <span className="font-semibold text-foreground">{author?.display_name || "Platform Admin"}</span>
           {author?.contributor_tier !== undefined && author?.contributor_tier !== null && (
-            <ContributorBadge tier={author.contributor_tier} size="sm" />
+            <ContributorBadge tier={author.contributor_tier} size="sm" interactive={false} />
           )}
           <span className="text-muted-foreground">•</span>
           <span className="text-muted-foreground">Published {formatDate(announcement.created_at)}</span>

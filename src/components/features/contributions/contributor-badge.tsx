@@ -79,60 +79,60 @@ export function ContributorBadge({
     setIsModalOpen(true);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!interactive) return;
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      e.stopPropagation();
-      setIsModalOpen(true);
-    }
-  };
+  const pillContent = (
+    <span
+      title={!interactive ? tooltipText : undefined}
+      className={cn(
+        "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none",
+        interactive
+          ? "group-hover/contributor-badge:shadow-xs group-hover/contributor-badge:brightness-105 group-active/contributor-badge:scale-[0.98] group-focus-visible/contributor-badge:ring-2 group-focus-visible/contributor-badge:ring-primary group-focus-visible/contributor-badge:ring-offset-2"
+          : "cursor-default",
+        sizeClasses,
+        tierStyleClasses,
+        className
+      )}
+    >
+      {showIcon && <IconComponent className={cn(iconSizes, "shrink-0")} />}
+      <span>{config.name}</span>
+      {points !== undefined && size === "lg" && (
+        <span className="opacity-80 font-normal">({points.toLocaleString()} pts)</span>
+      )}
+      {showInfoIcon && (
+        <span
+          className={cn(
+            "inline-flex items-center justify-center transition-all",
+            interactive
+              ? "opacity-70 group-hover/contributor-badge:opacity-100 group-hover/contributor-badge:scale-110"
+              : "opacity-70"
+          )}
+          aria-hidden="true"
+        >
+          <Info className={cn(infoIconSizes, "shrink-0")} />
+        </span>
+      )}
+    </span>
+  );
+
+  if (!interactive) {
+    return pillContent;
+  }
 
   return (
     <>
-      <span
+      <button
+        type="button"
         title={tooltipText}
-        role={interactive ? "button" : undefined}
-        tabIndex={interactive ? 0 : undefined}
-        onClick={interactive ? handleClick : undefined}
-        onKeyDown={interactive ? handleKeyDown : undefined}
-        className={cn(
-          "inline-flex items-center justify-center shrink-0 rounded-full border transition-all select-none",
-          interactive
-            ? "cursor-pointer hover:shadow-xs hover:brightness-105 active:scale-[0.98] group/contributor-badge focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
-            : "cursor-default",
-          sizeClasses,
-          tierStyleClasses,
-          className
-        )}
+        onClick={handleClick}
+        className="group/contributor-badge inline-flex items-center justify-center shrink-0 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 -my-2 sm:my-0 rounded-full cursor-pointer select-none focus-visible:outline-none"
       >
-        {showIcon && <IconComponent className={cn(iconSizes, "shrink-0")} />}
-        <span>{config.name}</span>
-        {points !== undefined && size === "lg" && (
-          <span className="opacity-80 font-normal">({points.toLocaleString()} pts)</span>
-        )}
-        {showInfoIcon && (
-          <span
-            className={cn(
-              "inline-flex items-center justify-center transition-all",
-              interactive
-                ? "opacity-70 group-hover/contributor-badge:opacity-100 group-hover/contributor-badge:scale-110"
-                : "opacity-70"
-            )}
-            aria-hidden="true"
-          >
-            <Info className={cn(infoIconSizes, "shrink-0")} />
-          </span>
-        )}
-      </span>
+        {pillContent}
+      </button>
 
-      {interactive && (
-        <ContributorTierInfoModal
-          open={isModalOpen}
-          onOpenChange={setIsModalOpen}
-          initialTier={safeTier}
-        />
-      )}
+      <ContributorTierInfoModal
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        initialTier={safeTier}
+      />
     </>
   );
 }

@@ -400,6 +400,7 @@ export function AskInSolveModal({
                                     0
                                   }
                                   size="sm"
+                                  interactive={false}
                                 />
                               </span>
                             )}

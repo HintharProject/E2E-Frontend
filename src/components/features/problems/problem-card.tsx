@@ -190,21 +190,21 @@ export function ProblemCard({ problem }: { problem: Problem }) {
               </span>
             )}
 
-            {Boolean(problem.resource || problem.resource_id || pastPaperDetails?.id) && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  const resId = problem.resource || problem.resource_id || pastPaperDetails?.id;
-                  router.push(`/train/${resId}`);
-                }}
-                className="inline-flex items-center gap-1 ml-auto text-xs font-semibold text-primary hover:underline cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1"
-                title="Open this paper in Train practice workspace"
-              >
-                <span>Open in Train!</span>
-                <ExternalLink className="size-3" aria-hidden="true" />
-              </button>
-            )}
+            {(() => {
+              const resId = problem.resource || problem.resource_id || pastPaperDetails?.id;
+              if (!resId) return null;
+              return (
+                <Link
+                  href={`/train/${resId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 ml-auto min-h-[44px] sm:min-h-0 px-2 py-1 sm:px-1 sm:py-0 -my-1.5 sm:my-0 text-xs font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
+                  title="Open this paper in Train practice workspace"
+                >
+                  <span>Open in Train!</span>
+                  <ExternalLink className="size-3" aria-hidden="true" />
+                </Link>
+              );
+            })()}
           </div>
         ) : undefined
       }
@@ -227,7 +227,7 @@ export function ProblemCard({ problem }: { problem: Problem }) {
       bottomLeft={
         <Link
           href={`/problems/${problem.id}`}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="inline-flex items-center gap-1 min-h-[44px] sm:min-h-0 px-2 -mx-2 sm:px-0 sm:mx-0 text-xs font-semibold text-primary hover:underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
           <span>View problem</span>
           <ArrowRight className="size-3.5" aria-hidden="true" />

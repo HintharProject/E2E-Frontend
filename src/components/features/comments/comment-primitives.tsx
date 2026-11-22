@@ -793,7 +793,7 @@ export function CommentItemShell({
           )}
 
           <div className="cm-author-meta">
-            {author && <ContributorBadge tier={authorTier} size="sm" />}
+            {author && <ContributorBadge tier={authorTier} size="sm" interactive={false} />}
 
             {comment.is_hidden && (
               <span className="cm-status-pill" title="Hidden from public view by moderation">

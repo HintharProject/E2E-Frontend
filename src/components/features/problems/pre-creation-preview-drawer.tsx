@@ -134,6 +134,7 @@ export function PreCreationPreviewDrawer({
                     <ContributorBadge
                       tier={sol.author.contributor_tier ?? 0}
                       size="sm"
+                      interactive={false}
                     />
                   </div>
                   <div className="flex items-center gap-1.5">

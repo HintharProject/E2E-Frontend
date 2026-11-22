@@ -33,13 +33,14 @@ export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
         e.stopPropagation();
       }}
       title={`Explore all contents tagged #${cleanName}`}
-      className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group/tag inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 -my-2 sm:my-0 rounded-full outline-none"
     >
       <Badge
         variant="outline"
         className={cn(
           "border-border bg-secondary/70 font-mono font-medium text-muted-foreground transition-colors cursor-pointer select-none",
           "hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+          "group-focus-visible/tag:ring-2 group-focus-visible/tag:ring-ring group-focus-visible/tag:ring-offset-2 group-focus-visible/tag:ring-offset-background",
           size === "sm" ? "h-5 px-2 py-0.5 text-xs" : "h-6 px-2.5 py-1 text-xs",
           className
         )}

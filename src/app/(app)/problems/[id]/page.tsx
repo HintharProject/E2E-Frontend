@@ -148,7 +148,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
           {Boolean(problem.resource || problem.resource_id || pastPaperDetails?.id) && (
             <Link
               href={`/train/${problem.resource || problem.resource_id || pastPaperDetails?.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
+              className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold text-primary hover:underline transition-colors px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
               title="Open this past paper in Train practice workspace"
             >
               <span>Open in Train!</span>
@@ -215,12 +215,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               authorClerkId={author?.clerk_id}
               variant="pill"
             />
-            <Button variant="ghost" size="sm" onClick={handleShare}>
+            <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={handleShare}>
               Share
             </Button>
-            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" showLabel label="Save" />
+            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" showLabel label="Save" />
             {user?.clerk_id !== problem.author_details?.clerk_id && (
-              <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
+              <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}
               </Button>
             )}

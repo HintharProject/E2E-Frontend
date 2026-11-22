@@ -159,7 +159,7 @@ export function BaseFeedCard({
                       e.preventDefault();
                     }
                   }}
-                  className="shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 -my-2.5 -ml-2.5 sm:my-0 sm:ml-0 shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                 >
                   <Avatar size="sm">
                     {author?.profile_image_url && (
@@ -194,7 +194,7 @@ export function BaseFeedCard({
                           e.preventDefault();
                         }
                       }}
-                      className="truncate max-w-[180px] sm:max-w-[240px] text-sm font-semibold text-foreground hover:text-primary transition-colors rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      className="inline-flex items-center min-h-[44px] sm:min-h-0 -my-2.5 sm:my-0 truncate max-w-[180px] sm:max-w-[240px] text-sm font-semibold text-foreground hover:text-primary transition-colors rounded-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                       {displayName}
                     </Link>
@@ -208,6 +208,7 @@ export function BaseFeedCard({
                       tier={author.contributor_tier ?? 0}
                       size="sm"
                       showInfoIcon={false}
+                      interactive={false}
                     />
                   ) : null}
                   {authorBadge}

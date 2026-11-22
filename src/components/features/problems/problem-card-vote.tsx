@@ -162,7 +162,7 @@ export function ProblemCardVote({
       aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own question" : "Vote on question"}
       className={cn(
-        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded px-1.5 py-0.5",
+        "flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 text-xs font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md sm:rounded px-2.5 py-1 sm:px-1.5 sm:py-0.5",
         isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
