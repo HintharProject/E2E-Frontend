@@ -3,6 +3,8 @@ import { useState, useRef, useEffect } from "react";
 import { useVoteLesson } from "@/hooks/use-interactions";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { toast } from "sonner";
+import { ChevronUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function LessonCardVote({
@@ -28,17 +30,24 @@ export function LessonCardVote({
   // Prevents the useEffect prop-sync from overwriting optimistic state
   // while a mutation is in-flight (triggered by onMutate cache patch re-renders)
   const isPendingRef = useRef(false);
+  const lastConfirmedRef = useRef({
+    voteCount: initialVoteCount,
+    userVote: initialUserVote ?? 0,
+  });
 
   useEffect(() => {
     if (!isPendingRef.current) {
+      const nextVote = initialUserVote ?? 0;
       setVoteCount(initialVoteCount);
-      setUserVote(initialUserVote ?? 0);
+      setUserVote(nextVote);
+      lastConfirmedRef.current = { voteCount: initialVoteCount, userVote: nextVote };
     }
   }, [initialVoteCount, initialUserVote]);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      isPendingRef.current = false;
     };
   }, []);
 
@@ -66,13 +75,16 @@ export function LessonCardVote({
       return;
     }
 
+    if (!isPendingRef.current) {
+      lastConfirmedRef.current = { voteCount, userVote };
+    }
+
     const targetValue = userVote === 1 ? 0 : 1;
-    const prevVote = userVote;
-    const prevCount = voteCount;
-    const diff = (targetValue - prevVote) * userWeight;
+    const diff = (targetValue - userVote) * userWeight;
+    const nextCount = voteCount + diff;
 
     setUserVote(targetValue);
-    setVoteCount((prev) => prev + diff);
+    setVoteCount(nextCount);
 
     // Mark pending immediately so onMutate cache patch re-renders won't reset local state
     isPendingRef.current = true;
@@ -82,12 +94,15 @@ export function LessonCardVote({
       voteMutation.mutate(
         { lessonId, value: targetValue, voteWeight: userWeight },
         {
+          onSuccess: () => {
+            lastConfirmedRef.current = { voteCount: nextCount, userVote: targetValue };
+          },
           onSettled: () => {
             isPendingRef.current = false;
           },
           onError: () => {
-            setUserVote(prevVote);
-            setVoteCount(prevCount);
+            setUserVote(lastConfirmedRef.current.userVote);
+            setVoteCount(lastConfirmedRef.current.voteCount);
             toast.error("Failed to register vote.");
           },
         }
@@ -97,14 +112,26 @@ export function LessonCardVote({
 
   return (
     <button
+      type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-label={
+        isSelf
+          ? "Cannot vote on your own lesson"
+          : userVote === 1
+            ? `Remove upvote (${voteCount} votes)`
+            : `Upvote lesson (${voteCount} votes)`
+      }
+      aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own lesson" : "Upvote"}
-      className={`flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 ${
-        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-      } ${userVote === 1 ? "text-brand font-bold" : "text-ink-muted hover:text-brand"}`}
+      className={cn(
+        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
+      )}
     >
-      ▲ {voteCount}
+      <ChevronUp className="size-3.5" aria-hidden="true" />
+      <span className="font-mono tabular-nums">{voteCount}</span>
     </button>
   );
 }

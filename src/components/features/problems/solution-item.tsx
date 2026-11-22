@@ -2,10 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { getInitials } from "@/components/ui/base-card";
+import { BaseFeedCard } from "@/components/ui/base-card";
 import { Solution, Problem } from "@/types";
 import { formatDate, cn } from "@/lib/utils";
 import { useCurrentUser } from "@/hooks/use-current-user";
@@ -107,159 +106,117 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
     );
   }
 
-  const authorAvatar = (
-    <Avatar size="sm">
-      {author?.profile_image_url && (
-        <AvatarImage src={author.profile_image_url} alt="" />
-      )}
-      <AvatarFallback>{getInitials(author?.display_name)}</AvatarFallback>
-    </Avatar>
-  );
+  const voteCommonProps = {
+    contentType: "solutions" as const,
+    contentId: solution.id,
+    initialScore: score,
+    initialUserVote: solution.user_vote,
+    authorId: authorId || (typeof solution.author === "string" ? solution.author : undefined),
+    authorClerkId: author?.clerk_id,
+    problemAuthorId: problem.author,
+    problemAuthorClerkId: problem.author_details?.clerk_id,
+  };
 
   return (
-    <article
+    <BaseFeedCard
       className={cn(
-        "group relative flex flex-col gap-4 rounded-xl border p-5 transition-all",
-        isLowScored
-          ? "border-dashed border-border bg-card/80 opacity-80 hover:opacity-100"
-          : "border-border bg-card hover:border-primary/40 hover:shadow-card-hover shadow-card"
+        isLowScored && "border-dashed bg-card/80 opacity-80 hover:opacity-100 shadow-none"
       )}
-    >
-      {isLowScored && isExpanded && (
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/60 text-xs text-muted-foreground">
-          <span className="font-mono tabular-nums">Low-scored solution (score: {score})</span>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsExpanded(false)}
-            className="relative z-10 h-6 px-2 text-xs gap-1 shrink-0"
-          >
-            <span>Collapse</span>
-            <ChevronUp className="size-3.5" aria-hidden="true" />
-          </Button>
-        </div>
-      )}
-
-      {/* Main Solution Row */}
-      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-        {/* Left Side: Vote Widget + Author & Content */}
-        <div className="flex flex-1 items-start gap-4 min-w-0">
-          <div className="relative z-10 shrink-0 pt-0.5">
-            <VoteWidget
-              contentType="solutions"
-              contentId={solution.id}
-              initialScore={score}
-              initialUserVote={solution.user_vote}
-              authorId={authorId || (typeof solution.author === "string" ? solution.author : undefined)}
-              authorClerkId={author?.clerk_id}
-              problemAuthorId={problem.author}
-              problemAuthorClerkId={problem.author_details?.clerk_id}
-              variant="stack"
-            />
+      leftRail={
+        <>
+          <VoteWidget {...voteCommonProps} variant="pill" size="md" className="sm:hidden" />
+          <VoteWidget {...voteCommonProps} variant="stack" className="hidden sm:flex" />
+        </>
+      }
+      leftRailClassName="justify-start sm:justify-center"
+      topBanner={
+        isLowScored && isExpanded ? (
+          <div className="flex items-center justify-between gap-2 pb-2 border-b border-border/60 text-xs text-muted-foreground">
+            <span className="font-mono tabular-nums">Low-scored solution (score: {score})</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(false)}
+              className="h-6 px-2 text-xs gap-1 shrink-0"
+            >
+              <span>Collapse</span>
+              <ChevronUp className="size-3.5" aria-hidden="true" />
+            </Button>
           </div>
-
-          <div className="flex flex-1 flex-col gap-2 min-w-0">
-            {/* Author Info & Badges */}
-            <div className="flex flex-wrap items-center gap-2 min-w-0">
-              {authorId ? (
-                <Link
-                  href={`/users/${authorId}`}
-                  className="relative z-10 flex items-center gap-2 min-w-0 max-w-full rounded-md hover:opacity-85 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                >
-                  {authorAvatar}
-                  <span className="text-sm font-semibold text-foreground truncate">
-                    {authorName}
-                  </span>
-                </Link>
-              ) : (
-                <div className="flex items-center gap-2 min-w-0 max-w-full">
-                  {authorAvatar}
-                  <span className="text-sm font-semibold text-foreground truncate">
-                    {authorName}
-                  </span>
-                </div>
-              )}
-
-              {author ? (
-                <ContributorBadge
-                  tier={author.contributor_tier ?? author.reputation?.contributor_tier ?? 0}
-                  size="sm"
-                  className="relative z-10"
-                />
-              ) : null}
-
-              {formattedDate && (
-                <span className="text-xs text-muted-foreground">· {formattedDate}</span>
-              )}
-
-              {isAuthorSolution && (
-                <Badge
-                  variant="outline"
-                  className="border-primary/40 text-primary text-xs h-5 gap-1"
-                  title="Self-solution by problem author"
-                >
-                  <UserCheck className="size-3" aria-hidden="true" /> Problem Author
-                </Badge>
-              )}
-            </div>
-
-            {/* Compact Line-Clamped Preview Body */}
-            <div className="pt-1 text-sm leading-relaxed text-foreground line-clamp-4 overflow-hidden [overflow-wrap:anywhere]">
-              <MathRenderer content={solution.body || ""} />
-            </div>
-
-            {/* Compact Media Indicators */}
-            {((solution.attachments && solution.attachments.length > 0) || solution.video_url) && (
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                {solution.attachments && solution.attachments.length > 0 && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-muted/40 text-xs text-muted-foreground">
-                    <ImageIcon className="size-3 text-primary" aria-hidden="true" />
-                    <span>
-                      <span className="font-mono tabular-nums">{solution.attachments.length}</span>{" "}
-                      {solution.attachments.length === 1 ? "diagram" : "diagrams"}
-                    </span>
-                  </span>
-                )}
-                {solution.video_url && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-muted/40 text-xs text-muted-foreground">
-                    <Video className="size-3 text-primary" aria-hidden="true" />
-                    <span>Video walkthrough</span>
-                  </span>
-                )}
-              </div>
+        ) : undefined
+      }
+      author={
+        author
+          ? {
+              id: author.id,
+              display_name: authorName,
+              profile_image_url: author.profile_image_url,
+              contributor_tier: author.contributor_tier ?? author.reputation?.contributor_tier ?? 0,
+            }
+          : null
+      }
+      authorFallbackName={authorName}
+      authorBadge={
+        isAuthorSolution ? (
+          <Badge
+            variant="outline"
+            className="border-primary/40 text-primary text-xs h-5 gap-1"
+            title="Self-solution by problem author"
+          >
+            <UserCheck className="size-3" aria-hidden="true" /> Problem Author
+          </Badge>
+        ) : undefined
+      }
+      subtitle={formattedDate}
+      moreMenu={
+        <CardMoreMenu
+          shareUrl={shareUrl}
+          contentType="SOLUTION"
+          contentId={solution.id}
+          author={
+            author
+              ? {
+                  id: author.id,
+                  display_name: author.display_name,
+                  role: author.role,
+                  contributor_tier: author.contributor_tier,
+                }
+              : null
+          }
+          isHidden={solution.is_hidden}
+          isLocked={solution.is_locked}
+          onDelete={isAuthor && !problem.is_locked && !solution.is_locked ? handleDelete : undefined}
+          deleteLabel="this solution"
+        />
+      }
+      renderBody={
+        <div className="text-sm leading-relaxed text-foreground line-clamp-4 overflow-hidden [overflow-wrap:anywhere]">
+          <MathRenderer content={solution.body || ""} />
+        </div>
+      }
+      extraContent={
+        (solution.attachments && solution.attachments.length > 0) || solution.video_url ? (
+          <div className="flex flex-wrap items-center gap-2">
+            {solution.attachments && solution.attachments.length > 0 && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-muted/40 text-xs text-muted-foreground">
+                <ImageIcon className="size-3 text-primary" aria-hidden="true" />
+                <span>
+                  <span className="font-mono tabular-nums">{solution.attachments.length}</span>{" "}
+                  {solution.attachments.length === 1 ? "diagram" : "diagrams"}
+                </span>
+              </span>
+            )}
+            {solution.video_url && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md border border-border bg-muted/40 text-xs text-muted-foreground">
+                <Video className="size-3 text-primary" aria-hidden="true" />
+                <span>Video walkthrough</span>
+              </span>
             )}
           </div>
-        </div>
-
-        {/* Right Side: Save & More Menu */}
-        <div className="relative z-10 flex items-center gap-2 shrink-0 self-end sm:self-start">
-          <SaveButton entityType="solution" entityId={solution.id} variant="icon" />
-
-          <CardMoreMenu
-            shareUrl={shareUrl}
-            contentType="SOLUTION"
-            contentId={solution.id}
-            author={
-              author
-                ? {
-                    id: author.id,
-                    display_name: author.display_name,
-                    role: author.role,
-                    contributor_tier: author.contributor_tier,
-                  }
-                : null
-            }
-            isHidden={solution.is_hidden}
-            isLocked={solution.is_locked}
-            onDelete={isAuthor && !problem.is_locked && !solution.is_locked ? handleDelete : undefined}
-            deleteLabel="this solution"
-          />
-        </div>
-      </div>
-
-      {/* Footer: Comment count and View Full Solution CTA */}
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-border/60 text-xs text-muted-foreground">
+        ) : undefined
+      }
+      bottomLeft={
         <div className="flex items-center gap-1.5 font-medium text-muted-foreground group-hover:text-foreground transition-colors">
           <MessageSquare className="size-3.5 text-primary" aria-hidden="true" />
           <span>
@@ -267,20 +224,26 @@ export function SolutionItem({ solution, problem }: SolutionItemProps) {
             {solution.comment_count === 1 ? "comment" : "comments"}
           </span>
         </div>
-
-        <Link
-          href={solutionUrl}
-          className="inline-flex items-center gap-1 font-semibold text-primary opacity-90 hover:opacity-100 group-hover:opacity-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background after:absolute after:inset-0 after:rounded-xl after:z-0"
-        >
-          <span>
-            View Full Solution<span className="sr-only"> by {authorName}</span>
-          </span>
-          <ArrowRight
-            className="size-3.5 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
-            aria-hidden="true"
-          />
-        </Link>
-      </div>
-    </article>
+      }
+      bottomRight={
+        <>
+          <Link
+            href={solutionUrl}
+            className="inline-flex items-center gap-1 font-semibold text-primary opacity-90 hover:opacity-100 group-hover:opacity-100 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background after:absolute after:inset-0 after:rounded-xl after:z-0"
+          >
+            <span>
+              View Full Solution<span className="sr-only"> by {authorName}</span>
+            </span>
+            <ArrowRight
+              className="size-3.5 transition-transform group-hover:translate-x-0.5 rtl:rotate-180 rtl:group-hover:-translate-x-0.5"
+              aria-hidden="true"
+            />
+          </Link>
+          <div className="relative z-10">
+            <SaveButton entityType="solution" entityId={solution.id} variant="icon" />
+          </div>
+        </>
+      }
+    />
   );
 }

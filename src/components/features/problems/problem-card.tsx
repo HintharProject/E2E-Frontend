@@ -16,13 +16,10 @@ import { CardMoreMenu } from "@/components/ui/card-more-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { useDeleteProblem } from "@/hooks/use-problems";
-import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { getInitials } from "@/components/ui/base-card";
-import { BookOpen, ExternalLink, Image as ImageIcon, Lock, MessageSquare } from "lucide-react";
+import { BaseFeedCard } from "@/components/ui/base-card";
+import { ArrowRight, BookOpen, ExternalLink, Image as ImageIcon, Lock, MessageSquare } from "lucide-react";
 import { SaveButton } from "@/components/features/collections/save-button";
-import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { ConfidenceBadge } from "./confidence-badge";
 
 function stripProblemPreview(raw: string): string {
@@ -36,7 +33,6 @@ function stripProblemPreview(raw: string): string {
 export function ProblemCard({ problem }: { problem: Problem }) {
   const { user } = useCurrentUser();
   const { getToken, isSignedIn: isClerkSignedIn } = useAuth();
-  const { requireAuth, isSignedIn } = useAuthGate();
   const { isAuthed, getOptionalToken } = resolveClientAuth(isClerkSignedIn, getToken);
   const queryClient = useQueryClient();
   const router = useRouter();
@@ -96,105 +92,90 @@ export function ProblemCard({ problem }: { problem: Problem }) {
   const solutionCount = problem.solution_count ?? 0;
   const displayTags = (problem.tags_data ?? []).slice(0, 3);
   const previewText = stripProblemPreview(problem.body || "");
+  const hasTaxonomy = Boolean(subject || level || displayTags.length > 0 || primaryThumbnailUrl);
 
   return (
-    <article
+    <BaseFeedCard
+      href={`/problems/${problem.id}`}
       onMouseEnter={handleMouseEnter}
-      className="group relative flex flex-col sm:flex-row rounded-xl border border-border bg-card shadow-card transition-all duration-200 hover:border-primary/40 hover:shadow-card-hover overflow-hidden"
-    >
-      {/* Left Status & Vote Rail */}
-      <div className="flex sm:flex-col items-center justify-between sm:justify-center gap-2 sm:w-20 shrink-0 border-b sm:border-b-0 sm:border-r border-border bg-muted/25 px-4 py-2.5 sm:px-2 sm:py-4">
-        <ProblemCardVote
-          variant="rail"
-          problemId={problem.id}
-          initialVoteCount={problem.vote_score ?? problem.vote_count ?? 0}
-          initialUserVote={problem.user_vote}
-          authorId={author?.id || (typeof problem.author === "string" ? problem.author : undefined)}
-          authorClerkId={author?.clerk_id}
-        />
+      leftRail={
+        <>
+          <ProblemCardVote
+            variant="rail"
+            problemId={problem.id}
+            initialVoteCount={problem.vote_score ?? problem.vote_count ?? 0}
+            initialUserVote={problem.user_vote}
+            authorId={author?.id || (typeof problem.author === "string" ? problem.author : undefined)}
+            authorClerkId={author?.clerk_id}
+          />
 
-        <div
-          className="flex sm:flex-col items-center gap-1 sm:gap-0.5 text-center"
-          title={`${solutionCount} submitted ${solutionCount === 1 ? "solution" : "solutions"}`}
-        >
-          <span className="inline-flex items-center gap-1 font-mono tabular-nums text-xs font-semibold text-foreground">
-            <MessageSquare className="size-3 text-muted-foreground sm:hidden" aria-hidden="true" />
-            {solutionCount}
-          </span>
-          <span className="text-[10px] font-medium text-muted-foreground hidden sm:block">
-            {solutionCount === 1 ? "solution" : "solutions"}
-          </span>
-        </div>
-      </div>
-
-      {/* Main Challenge Ticket Body */}
-      <div className="flex-1 min-w-0 p-4 sm:p-5 flex flex-col gap-3">
-        {/* Top Row: Confidence Pill + Subject/Level + Timestamp + More Menu */}
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2 min-w-0">
-            <ConfidenceBadge
-              confidence={problem.resolution_confidence}
-              band={problem.confidence_band}
-              size="sm"
-            />
-            {isLocked && (
-              <Badge variant="secondary" className="text-[11px] gap-1 h-5">
-                <Lock className="size-3" aria-hidden="true" /> Locked
-              </Badge>
-            )}
-
-            {(subject || level) && (
-              <span className="text-xs font-medium text-muted-foreground truncate">
-                {[subject?.name, level?.name].filter(Boolean).join(" • ")}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="text-xs text-muted-foreground">
-              Asked {formatDate(problem.created_at)}
+          <div
+            className="flex sm:flex-col items-center gap-1 sm:gap-0.5 text-center"
+            title={`${solutionCount} submitted ${solutionCount === 1 ? "solution" : "solutions"}`}
+          >
+            <span className="inline-flex items-center gap-1 font-mono tabular-nums text-xs font-semibold text-foreground">
+              <MessageSquare className="size-3 text-muted-foreground sm:hidden" aria-hidden="true" />
+              {solutionCount}
             </span>
-            <CardMoreMenu
-              shareUrl={shareUrl}
-              contentType="PROBLEM"
-              contentId={problem.id}
-              author={
-                author
-                  ? {
-                      id: author.id,
-                      display_name: author.display_name,
-                      role: author.role,
-                      contributor_tier: author.contributor_tier,
-                    }
-                  : null
-              }
-              isHidden={problem.is_hidden}
-              isLocked={problem.is_locked}
-              onDelete={isAuthor && !isLocked ? handleDelete : undefined}
-              deleteLabel="this problem"
-            />
+            <span className="text-[10px] font-medium text-muted-foreground hidden sm:block">
+              {solutionCount === 1 ? "solution" : "solutions"}
+            </span>
           </div>
-        </div>
-
-        {/* Title + 2-Line Body Preview */}
-        <Link
-          href={`/problems/${problem.id}`}
-          className="block space-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md"
-        >
-          <h3 className="font-heading text-lg font-semibold leading-snug tracking-tight text-foreground group-hover:text-primary transition-colors line-clamp-2">
-            {problem.title}
-          </h3>
-          {previewText && (
-            <p className="text-sm leading-relaxed text-muted-foreground line-clamp-2">
-              {previewText}
-            </p>
+        </>
+      }
+      author={
+        author
+          ? {
+              id: author.id,
+              display_name: author.display_name,
+              profile_image_url: author.profile_image_url,
+              contributor_tier: author.contributor_tier ?? author.reputation?.contributor_tier ?? 0,
+            }
+          : null
+      }
+      subtitle={`Asked ${formatDate(problem.created_at)}`}
+      topRight={
+        <>
+          <ConfidenceBadge
+            confidence={problem.resolution_confidence}
+            band={problem.confidence_band}
+            size="sm"
+          />
+          {isLocked && (
+            <Badge variant="secondary" className="text-xs gap-1 h-5">
+              <Lock className="size-3" aria-hidden="true" /> Locked
+            </Badge>
           )}
-        </Link>
-
-        {/* Path B Past Paper Citation Ticket */}
-        {problem.origin === "PAST_PAPER" && (
+        </>
+      }
+      moreMenu={
+        <CardMoreMenu
+          shareUrl={shareUrl}
+          contentType="PROBLEM"
+          contentId={problem.id}
+          author={
+            author
+              ? {
+                  id: author.id,
+                  display_name: author.display_name,
+                  role: author.role,
+                  contributor_tier: author.contributor_tier,
+                }
+              : null
+          }
+          isHidden={problem.is_hidden}
+          isLocked={problem.is_locked}
+          onDelete={isAuthor && !isLocked ? handleDelete : undefined}
+          deleteLabel="this problem"
+        />
+      }
+      title={problem.title}
+      titleAs="h3"
+      body={previewText}
+      extraContent={
+        problem.origin === "PAST_PAPER" ? (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-xs text-muted-foreground bg-muted/50 px-3 py-2 rounded-lg border border-border">
-            <BookOpen className="size-3.5 text-primary shrink-0" />
+            <BookOpen className="size-3.5 text-primary shrink-0" aria-hidden="true" />
             <span className="font-semibold text-foreground">
               {pastPaperDetails?.title || "Cambridge Past Paper"}
             </span>
@@ -221,56 +202,38 @@ export function ProblemCard({ problem }: { problem: Problem }) {
                 title="Open this paper in Train practice workspace"
               >
                 <span>Open in Train!</span>
-                <ExternalLink className="size-3" />
+                <ExternalLink className="size-3" aria-hidden="true" />
               </button>
             )}
           </div>
-        )}
-
-        {/* Bottom Metadata Bar: Tags (max 3), Photo Indicator, Author + Tier, Save */}
-        <div className="mt-auto pt-1 flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+        ) : undefined
+      }
+      taxonomy={
+        hasTaxonomy ? (
+          <>
+            {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
+            {level ? <Badge variant="outline">{level.name}</Badge> : null}
             {displayTags.map((t) => (
               <TagBadge key={t.id || t.name} name={t.name} id={t.id} />
             ))}
             {primaryThumbnailUrl && (
-              <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
-                <ImageIcon className="size-3" /> Image
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground border border-border bg-muted/30 rounded-md px-2 py-0.5">
+                <ImageIcon className="size-3" aria-hidden="true" /> Image
               </span>
             )}
-          </div>
-
-          <div className="flex items-center gap-2.5 ml-auto text-xs text-muted-foreground">
-            {author && (
-              <Link
-                href={`/users/${author.id}`}
-                prefetch={isSignedIn ? undefined : false}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!requireAuth(undefined, { actionLabel: "view contributor profiles", redirectUrl: `/users/${author.id}` })) {
-                    e.preventDefault();
-                  }
-                }}
-                className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
-              >
-                <Avatar size="sm">
-                  {author.profile_image_url && <AvatarImage src={author.profile_image_url} />}
-                  <AvatarFallback>{getInitials(author.display_name)}</AvatarFallback>
-                </Avatar>
-                <span className="font-medium text-foreground truncate max-w-[120px]">
-                  {author.display_name || "Unknown"}
-                </span>
-                <ContributorBadge
-                  tier={author.contributor_tier ?? author.reputation?.contributor_tier ?? 0}
-                  size="sm"
-                  showWeightTooltip={false}
-                />
-              </Link>
-            )}
-            <SaveButton entityType="problem" entityId={problem.id} variant="icon" />
-          </div>
-        </div>
-      </div>
-    </article>
+          </>
+        ) : undefined
+      }
+      bottomLeft={
+        <Link
+          href={`/problems/${problem.id}`}
+          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span>View problem</span>
+          <ArrowRight className="size-3.5" aria-hidden="true" />
+        </Link>
+      }
+      bottomRight={<SaveButton entityType="problem" entityId={problem.id} variant="icon" />}
+    />
   );
 }

@@ -30,17 +30,24 @@ export function PostCardVote({
   // Prevents the useEffect prop-sync from overwriting optimistic state
   // while a mutation is in-flight (triggered by onMutate cache patch re-renders)
   const isPendingRef = useRef(false);
+  const lastConfirmedRef = useRef({
+    voteCount: initialVoteCount,
+    userVote: initialUserVote ?? 0,
+  });
 
   useEffect(() => {
     if (!isPendingRef.current) {
+      const nextVote = initialUserVote ?? 0;
       setVoteCount(initialVoteCount);
-      setUserVote(initialUserVote ?? 0);
+      setUserVote(nextVote);
+      lastConfirmedRef.current = { voteCount: initialVoteCount, userVote: nextVote };
     }
   }, [initialVoteCount, initialUserVote]);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      isPendingRef.current = false;
     };
   }, []);
 
@@ -68,11 +75,16 @@ export function PostCardVote({
       return;
     }
 
+    if (!isPendingRef.current) {
+      lastConfirmedRef.current = { voteCount, userVote };
+    }
+
     const targetValue = userVote === 1 ? 0 : 1;
     const diff = (targetValue - userVote) * userWeight;
+    const nextCount = voteCount + diff;
 
     setUserVote(targetValue);
-    setVoteCount((prev) => prev + diff);
+    setVoteCount(nextCount);
 
     // Mark pending before the debounce fires so the useEffect won't reset state
     // when the onMutate cache patch triggers a re-render
@@ -83,13 +95,16 @@ export function PostCardVote({
       voteMutation.mutate(
         { postId, value: targetValue, voteWeight: userWeight },
         {
+          onSuccess: () => {
+            lastConfirmedRef.current = { voteCount: nextCount, userVote: targetValue };
+          },
           onSettled: () => {
             isPendingRef.current = false;
           },
           onError: () => {
             // Roll back optimistic state on error
-            setUserVote(userVote);
-            setVoteCount((prev) => prev - diff);
+            setUserVote(lastConfirmedRef.current.userVote);
+            setVoteCount(lastConfirmedRef.current.voteCount);
             toast.error("Failed to register vote.");
           },
         }
@@ -102,6 +117,13 @@ export function PostCardVote({
       type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-label={
+        isSelf
+          ? "Cannot vote on your own post"
+          : userVote === 1
+            ? `Remove upvote (${voteCount} votes)`
+            : `Upvote post (${voteCount} votes)`
+      }
       aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own post" : "Upvote"}
       className={cn(
@@ -110,7 +132,7 @@ export function PostCardVote({
         userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
     >
-      <ChevronUp className="size-3.5" />
+      <ChevronUp className="size-3.5" aria-hidden="true" />
       <span className="font-mono tabular-nums">{voteCount}</span>
     </button>
   );
