@@ -295,6 +295,7 @@ export function LessonCard({ lesson }: { lesson: Lesson }) {
   return (
     <BaseFeedCard
       href={`/lessons/${lesson.id}`}
+      headerBand
       contentPrefetch={isSignedIn ? undefined : false}
       onContentLinkClick={(e) => {
         if (

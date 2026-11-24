@@ -12,6 +12,7 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { SortToggle, SortToggleOption } from "@/components/ui/sort-toggle";
 import { Layers, Lock, LogIn, UserPlus, ArrowRight, Award, Clock } from "lucide-react";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
+import { SolutionCardSkeleton } from "@/components/features/skeletons";
 
 const SOLUTION_SORT_OPTIONS: readonly SortToggleOption<SolutionSortMode>[] = [
   { id: "score", label: "Top Score", icon: Award, title: "Sort by Top Score" },
@@ -59,7 +60,7 @@ export function SolutionListContainer({ problem, isAuthor }: SolutionListContain
             <div className="h-7 w-32 rounded-md bg-muted animate-pulse" />
           </div>
         </div>
-        <div className="h-44 rounded-xl border border-border bg-card animate-pulse" />
+        <SolutionCardSkeleton />
       </section>
     );
   }
@@ -175,8 +176,8 @@ export function SolutionListContainer({ problem, isAuthor }: SolutionListContain
       {/* Loading Skeletons */}
       {isLoading ? (
         <div className="space-y-4">
-          <div className="h-28 rounded-xl bg-card border border-border animate-pulse" />
-          <div className="h-28 rounded-xl bg-card border border-border animate-pulse" />
+          <SolutionCardSkeleton />
+          <SolutionCardSkeleton />
         </div>
       ) : solutions.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">

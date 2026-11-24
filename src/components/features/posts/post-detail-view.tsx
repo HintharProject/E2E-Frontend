@@ -22,29 +22,10 @@ const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/le
   ssr: false
 });
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 
 function PostDetailSkeleton() {
-  return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-pulse">
-      <div className="h-8 w-3/4 rounded-lg bg-card border border-border mb-2" />
-      <div className="h-4 w-1/4 rounded bg-card border border-border mb-8" />
-      <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <div className="flex gap-3">
-          <div className="h-8 w-8 rounded-full bg-muted" />
-          <div className="h-4 w-32 rounded bg-muted mt-2" />
-        </div>
-        <div className="space-y-2 mt-4">
-          <div className="h-4 w-full rounded bg-muted" />
-          <div className="h-4 w-full rounded bg-muted" />
-          <div className="h-4 w-2/3 rounded bg-muted" />
-        </div>
-      </div>
-      <div className="mt-10 space-y-4">
-        <div className="h-6 w-32 rounded bg-card border border-border" />
-        <div className="h-24 w-full rounded-xl bg-card border border-border" />
-      </div>
-    </div>
-  );
+  return <DetailedArticleSkeleton headerTopPadding followUp="comments" />;
 }
 
 export function PostDetailView({ postId }: { postId: string }) {
@@ -101,7 +82,7 @@ export function PostDetailView({ postId }: { postId: string }) {
     }
 
     return (
-      <div className="mx-auto max-w-3xl py-12 text-center">
+      <div className="mx-auto max-w-[60rem] py-12 text-center">
         <p className="text-muted-foreground">Could not load this post. It may have been deleted or you may not have access.</p>
       </div>
     );
@@ -116,13 +97,15 @@ export function PostDetailView({ postId }: { postId: string }) {
   const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       <PageHeader
+        className="mb-0 border-b border-border pb-4"
         title={post.title}
         description={`Posted ${formatDate(post.created_at)}`}
         actions={isAuthor ? <PostAuthorActions postId={post.id} /> : undefined}
       />
       <BaseDetailedCard
+        headerClassName="pt-3"
         author={author ? {
           id: author.id || "",
           display_name: author.display_name || "Unknown",

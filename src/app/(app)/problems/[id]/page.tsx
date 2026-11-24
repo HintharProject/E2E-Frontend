@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
@@ -60,16 +61,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   };
 
   if (isProblemLoading) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div className="h-64 rounded-xl bg-card border border-border animate-pulse" />
-      </div>
-    );
+    return <DetailedArticleSkeleton hasBackLink followUp="solutions" />;
   }
 
   if (isProblemError || !problem) {
     return (
-      <div className="mx-auto max-w-3xl py-12 text-center">
+      <div className="mx-auto max-w-[60rem] py-12 text-center">
         <h2 className="text-xl font-heading font-semibold text-foreground">Problem not found</h2>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/problems")}>
           Back to Problems
@@ -102,16 +99,17 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       <div>
         <Link
           href="/problems"
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-3 transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to problems
         </Link>
 
         <PageHeader
+          className="mb-0 border-b border-border pb-4"
           title={problem.title}
           description={`Asked ${formatDate(problem.created_at)}`}
           actions={
@@ -132,7 +130,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         />
       </div>
 
-      {/* Path B Past Paper Sourced Ribbon */}
       {problem.origin === "PAST_PAPER" && (
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted/30">
           <div className="flex items-center gap-2 text-sm text-foreground font-medium">
@@ -163,7 +160,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Problem Detailed Card */}
       <BaseDetailedCard
         author={
           author
@@ -192,7 +188,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 <Lock className="size-3" aria-hidden="true" /> Locked
               </Badge>
             )}
-
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
             {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
             {problem.tags_data?.map((t) => (
@@ -239,7 +234,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      {/* Unlimited Solutions List */}
       <SolutionListContainer problem={problem} isAuthor={isAuthor} />
     </div>
   );

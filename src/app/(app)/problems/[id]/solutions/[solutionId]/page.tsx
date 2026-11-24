@@ -14,8 +14,6 @@ import {
   UserCheck,
   Lock,
   Video,
-  Share2,
-  Flag,
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
@@ -24,6 +22,7 @@ import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-vi
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { MathRenderer } from "@/components/ui/math-renderer";
@@ -88,15 +87,18 @@ export default function SolutionDetailPage({
 
   if (isSolLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-72 rounded-xl bg-card border border-border animate-pulse" />
-      </div>
+      <DetailedArticleSkeleton
+        hasBackLink
+        headerTopPadding
+        hasMedia={false}
+        followUp="comments"
+      />
     );
   }
 
   if (isSolError || !solution) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
+      <div className="mx-auto max-w-[60rem] px-4 py-8 sm:px-6 text-center">
         <h2 className="font-heading text-xl font-bold text-foreground">Solution not found</h2>
         <Button
           variant="outline"
@@ -131,7 +133,7 @@ export default function SolutionDetailPage({
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       {/* Breadcrumb Back Link to Problem */}
       <Link
         href={`/problems/${problemId}`}
@@ -143,12 +145,14 @@ export default function SolutionDetailPage({
 
       {/* Header */}
       <PageHeader
+        className="mb-0 border-b border-border pb-4"
         title={`Worked Solution`}
         description={`Submitted ${formatDate(solution.created_at)} by ${author?.display_name || "Community Solver"}`}
       />
 
       {/* Solution Post Card */}
       <BaseDetailedCard
+        headerClassName="pt-3"
         author={
           author
             ? {
@@ -226,6 +230,10 @@ export default function SolutionDetailPage({
                 variant="pill"
               />
 
+              <Button variant="ghost" size="sm" onClick={handleShare} className="min-h-[44px] sm:min-h-0">
+                Share
+              </Button>
+
               <SaveButton
                 entityType="solution"
                 entityId={solution.id}
@@ -233,13 +241,8 @@ export default function SolutionDetailPage({
                 size="sm"
                 showLabel
                 label="Save"
-                className="gap-1.5 text-xs text-ink-muted hover:text-ink"
+                className="min-h-[44px] sm:min-h-0"
               />
-
-              <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs text-ink-muted hover:text-ink">
-                <Share2 className="size-3.5" aria-hidden="true" />
-                <span>Share</span>
-              </Button>
 
               {!isAuthor && (
                 <Button
@@ -247,10 +250,9 @@ export default function SolutionDetailPage({
                   size="sm"
                   onClick={handleReport}
                   disabled={reportMutation.isPending}
-                  className="gap-1.5 text-xs text-ink-muted hover:text-destructive"
+                  className="min-h-[44px] sm:min-h-0"
                 >
-                  <Flag className="size-3.5" aria-hidden="true" />
-                  <span>Report</span>
+                  {reportMutation.isPending ? "Reporting..." : "Report"}
                 </Button>
               )}
 

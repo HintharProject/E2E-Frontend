@@ -20,7 +20,7 @@
 
 - Opens in **Categorized Subject Shelves Mode** when browsing broadly (`Level` pill switcher across the top + 3-card preview shelves per subject).
 - Selecting **"View all in [Subject] →"** (or choosing subject/tag/mine filters) switches smoothly into **Focused Drill-Down Mode** with a **"← Back to All Subject Shelves"** trigger.
-- Lesson reading (`/lessons/[id]`) adopts `max-w-3xl` Read Mode with clean `LessonMediaViewer`, resource attachments, and Study Plan saving.
+- Lesson reading (`/lessons/[id]`) adopts `max-w-[60rem]` Detail Read Mode (with inner prose constrained to `max-w-[70ch]`), clean `LessonMediaViewer`, resource attachments, and Study Plan saving.
 
 ---
 
@@ -35,7 +35,7 @@
 ## 4. `Solve!` Academic Challenge Flow (`/problems`, `/problems/[id]`)
 
 - **Feed (`/problems`):** Asymmetric **Academic Challenge Ticket** cards paired with `<ProblemsRightRail />` (Path A Self-Typed vs. Path B Past Paper provenance guidance and Consensus summary).
-- **Detail (`/problems/[id]`):** `max-w-3xl` reading column + `<SolutionPoolContainer />` displaying the `7`-slot meter, Tier 2+ eviction / locked pool state notice, inline `Submit Solution` dialog trigger (`SolutionFAB variant="inline"`), accepted solution banner, `<MathRenderer />` solution bodies, and `FINAL` consensus indicator (`border-chart-3/40 bg-chart-3/10 text-chart-3`).
+- **Detail (`/problems/[id]`):** `max-w-[60rem]` detail column (`space-y-6`, bordered `PageHeader`) + `<SolutionPoolContainer />` displaying the `7`-slot meter, Tier 2+ eviction / locked pool state notice, inline `Submit Solution` dialog trigger (`SolutionFAB variant="inline"`), accepted solution banner, `<MathRenderer />` solution bodies, and `FINAL` consensus indicator (`border-chart-3/40 bg-chart-3/10 text-chart-3`).
 - **Solution Threads (`/problems/[id]/solutions/[solutionId]`):** `<SolutionComments />` inside `.comment-module-v2` with `Popular`/`Newest` sorting, LaTeX-capable composer (`0/1000`), `@mention` highlighting, inline 2-level reply composer, reply collapse/expand toggle, `font-mono tabular-nums` vote pill, and footer-aligned overflow/staff controls.
 
 ---

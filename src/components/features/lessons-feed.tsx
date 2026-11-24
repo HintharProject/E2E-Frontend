@@ -408,7 +408,7 @@ export function LessonsFeed({
               <Skeleton className="h-7 w-48" />
               <Skeleton className="h-4 w-32" />
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-stretch">
               <LessonCardSkeleton />
               <LessonCardSkeleton />
               <LessonCardSkeleton />
@@ -419,7 +419,7 @@ export function LessonsFeed({
               <Skeleton className="h-7 w-40" />
               <Skeleton className="h-4 w-28" />
             </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-stretch">
               <LessonCardSkeleton />
               <LessonCardSkeleton />
               <LessonCardSkeleton />
@@ -570,7 +570,7 @@ export function LessonsFeed({
                     )}
                   </div>
 
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-stretch [&_[data-feed-primary-link=true]_h3]:text-base [&_[data-feed-primary-link=true]_h3]:leading-snug">
                     {previewLessons.map((lesson) => (
                       <LessonCard key={lesson.id} lesson={lesson} />
                     ))}

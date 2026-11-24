@@ -97,7 +97,7 @@ export function LessonDetailClient({ id }: { id: string }) {
 
   if (isError || !lesson) {
     return (
-      <div className="mx-auto max-w-3xl py-10 space-y-4">
+      <div className="mx-auto max-w-[60rem] py-10 space-y-4">
         <Link
           href="/lessons"
           className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
@@ -135,7 +135,7 @@ export function LessonDetailClient({ id }: { id: string }) {
     }) || [];
 
   return (
-    <article className="mx-auto max-w-3xl py-2 sm:py-4 space-y-8">
+    <article className="mx-auto max-w-[60rem] py-2 sm:py-4 space-y-6">
       {/* Top Back Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -271,29 +271,24 @@ export function LessonDetailClient({ id }: { id: string }) {
       )}
 
       {/* Distraction-Free Reading Body (Prose + LaTeX) */}
-      <section
-        aria-label="Lesson content"
-        className="rounded-2xl border border-border bg-card p-6 sm:p-8 shadow-sm"
-      >
-        <div className="mx-auto max-w-[70ch]">
-          <MathRenderer
-            content={lesson.body}
-            className="text-base leading-[1.75] text-foreground [overflow-wrap:anywhere]"
-          />
-        </div>
+      <section aria-label="Lesson content" className="py-1">
+        <MathRenderer
+          content={lesson.body}
+          className="text-base leading-[1.75] text-foreground [overflow-wrap:anywhere]"
+        />
       </section>
 
-      {/* Downloadable Attachments Card List */}
+      {/* Downloadable Attachments List */}
       {otherAttachments.length > 0 && (
         <section
           aria-labelledby="lesson-attachments-heading"
-          className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-3"
+          className="pt-2 space-y-3"
         >
           <h2
             id="lesson-attachments-heading"
-            className="flex items-center gap-2 font-heading text-sm font-semibold text-foreground"
+            className="flex items-center gap-2 text-xs font-mono font-medium uppercase tracking-wider text-muted-foreground"
           >
-            <Paperclip className="size-4 text-primary" aria-hidden="true" />
+            <Paperclip className="size-3.5 text-primary" aria-hidden="true" />
             <span>Downloadable Resources ({otherAttachments.length})</span>
           </h2>
           <div className="flex flex-col gap-2">
@@ -310,7 +305,7 @@ export function LessonDetailClient({ id }: { id: string }) {
       )}
 
       {/* Bottom Reader Action Bar */}
-      <footer className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-2xs">
+      <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-border/65 pt-4.5">
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
