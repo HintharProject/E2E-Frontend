@@ -3,13 +3,21 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   Loader2,
   Plus,
   Trash2,
   Edit2,
   ShieldAlert,
-  X,
 } from "lucide-react";
 import {
   useModerationReasons,
@@ -85,24 +93,24 @@ export function ModerationReasonsSection() {
   const getSeverityBadge = (sev: string) => {
     switch (sev) {
       case "CRITICAL":
-        return <Badge className="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20 text-[10px] py-0">Critical</Badge>;
+        return <Badge variant="destructive" className="text-[10px] py-0">Critical</Badge>;
       case "HIGH_PRIORITY":
-        return <Badge className="bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20 text-[10px] py-0">High</Badge>;
+        return <Badge variant="warning" className="text-[10px] py-0">High</Badge>;
       case "NORMAL":
-        return <Badge className="bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20 text-[10px] py-0">Normal</Badge>;
+        return <Badge variant="outline" className="border-warning/40 bg-warning/10 text-warning text-[10px] py-0">Normal</Badge>;
       case "LOW":
       default:
-        return <Badge className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20 text-[10px] py-0">Low</Badge>;
+        return <Badge variant="outline" className="border-chart-3/40 bg-chart-3/10 text-chart-3 text-[10px] py-0">Low</Badge>;
     }
   };
 
   return (
-    <div className="rounded-2xl border border-line bg-card overflow-hidden flex flex-col">
-      <div className="flex items-center justify-between p-4 border-b border-line bg-surface">
+    <div className="rounded-2xl border border-border bg-card overflow-hidden flex flex-col">
+      <div className="flex items-center justify-between p-4 border-b border-border bg-muted/30">
         <div className="flex items-center gap-2">
-          <ShieldAlert className="size-4 text-amber-500" />
-          <h3 className="font-semibold text-ink text-sm">Violation & Moderation Reasons</h3>
-          <Badge variant="outline" className="text-[10px]">
+          <ShieldAlert className="size-4 text-warning" aria-hidden="true" />
+          <h3 className="font-semibold text-foreground text-sm">Violation & Moderation Reasons</h3>
+          <Badge variant="outline" className="font-mono tabular-nums text-[10px]">
             {reasons.length}
           </Badge>
         </div>
@@ -111,52 +119,53 @@ export function ModerationReasonsSection() {
           className="h-8 text-xs gap-1.5"
           onClick={() => handleOpenModal()}
         >
-          <Plus className="size-3.5" /> Add Violation Reason
+          <Plus className="size-3.5" aria-hidden="true" /> Add Violation Reason
         </Button>
       </div>
 
       {isLoading ? (
         <div className="flex h-48 items-center justify-center">
-          <Loader2 className="size-6 animate-spin text-ink-muted" />
+          <Loader2 className="size-6 animate-spin text-muted-foreground" aria-hidden="true" />
         </div>
       ) : reasons.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-12 text-center">
-          <ShieldAlert className="size-8 text-ink-muted/50 mb-2" />
-          <p className="text-sm font-medium text-ink">No violation reasons defined</p>
-          <p className="text-xs text-ink-muted mt-1">Configure moderation violation categories to classify reports.</p>
+          <ShieldAlert className="size-8 text-muted-foreground/50 mb-2" aria-hidden="true" />
+          <p className="text-sm font-medium text-foreground">No violation reasons defined</p>
+          <p className="text-xs text-muted-foreground mt-1">Configure moderation violation categories to classify reports.</p>
         </div>
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
-            <thead className="bg-surface/50 border-b border-line text-ink-muted uppercase font-semibold text-[10px]">
+            <thead className="bg-muted/20 border-b border-border text-muted-foreground uppercase font-semibold text-[10px]">
               <tr>
-                <th className="p-3">Reason Code</th>
-                <th className="p-3">Label</th>
-                <th className="p-3">Description</th>
-                <th className="p-3 text-center">Default Severity</th>
-                <th className="p-3 text-center">Status</th>
-                <th className="p-3 text-right">Actions</th>
+                <th scope="col" className="p-3">Reason Code</th>
+                <th scope="col" className="p-3">Label</th>
+                <th scope="col" className="p-3">Description</th>
+                <th scope="col" className="p-3 text-center">Default Severity</th>
+                <th scope="col" className="p-3 text-center">Status</th>
+                <th scope="col" className="p-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-line">
+            <tbody className="divide-y divide-border">
               {reasons.map((r) => (
                 <tr key={r.id} className="hover:bg-muted/40 transition-colors">
-                  <td className="p-3 font-mono font-bold text-ink-muted text-[11px]">{r.code}</td>
-                  <td className="p-3 font-semibold text-ink">{r.label}</td>
-                  <td className="p-3 text-ink-muted max-w-xs truncate">{r.description || "—"}</td>
+                  <td className="p-3 font-mono font-bold text-muted-foreground text-[11px]">{r.code}</td>
+                  <td className="p-3 font-semibold text-foreground">{r.label}</td>
+                  <td className="p-3 text-muted-foreground max-w-xs truncate">{r.description || "—"}</td>
                   <td className="p-3 text-center">{getSeverityBadge(r.default_severity)}</td>
                   <td className="p-3 text-center">
                     <button
                       type="button"
                       onClick={() => updateReasonMutation.mutate({ id: r.id, data: { is_active: !r.is_active } })}
-                      className="inline-flex items-center gap-1 cursor-pointer"
+                      aria-label={`Toggle ${r.label} status`}
+                      className="inline-flex items-center gap-1 cursor-pointer rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       {r.is_active ? (
-                        <Badge className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 text-[10px] py-0 hover:bg-emerald-500/20">
+                        <Badge variant="default" className="text-[10px] py-0">
                           Active
                         </Badge>
                       ) : (
-                        <Badge variant="secondary" className="text-[10px] py-0 text-ink-muted hover:bg-muted">
+                        <Badge variant="secondary" className="text-[10px] py-0 text-muted-foreground hover:bg-muted">
                           Inactive
                         </Badge>
                       )}
@@ -167,15 +176,17 @@ export function ModerationReasonsSection() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-7 text-ink-muted hover:text-ink"
+                        aria-label={`Edit reason ${r.label}`}
+                        className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-muted-foreground hover:text-foreground"
                         onClick={() => handleOpenModal(r)}
                       >
-                        <Edit2 className="size-3.5" />
+                        <Edit2 className="size-3.5" aria-hidden="true" />
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-7 text-danger hover:text-danger hover:bg-danger/10"
+                        aria-label={`Delete reason ${r.label}`}
+                        className="min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] md:size-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                         onClick={() => {
                           setConfirmModal({
                             isOpen: true,
@@ -189,7 +200,7 @@ export function ModerationReasonsSection() {
                           });
                         }}
                       >
-                        <Trash2 className="size-3.5" />
+                        <Trash2 className="size-3.5" aria-hidden="true" />
                       </Button>
                     </div>
                   </td>
@@ -201,91 +212,85 @@ export function ModerationReasonsSection() {
       )}
 
       {/* Reason Modal */}
-      {modal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="w-full max-w-md rounded-2xl border border-line bg-card shadow-2xl p-5">
-            <div className="flex items-center justify-between pb-3 border-b border-line mb-4">
-              <h4 className="font-semibold text-sm text-ink">
-                {modal.mode === "edit" ? "Edit Violation Reason" : "Add Violation Reason"}
-              </h4>
-              <button
-                type="button"
-                onClick={() => setModal(null)}
-                className="text-ink-muted hover:text-ink p-1"
-              >
-                <X className="size-4" />
-              </button>
+      <Dialog open={Boolean(modal)} onOpenChange={(nextOpen) => !nextOpen && setModal(null)}>
+        <DialogContent className="sm:max-w-md rounded-2xl border-border bg-card p-5 shadow-modal">
+          <DialogHeader className="pb-3 border-b border-border">
+            <DialogTitle className="font-semibold text-sm text-foreground">
+              {modal?.mode === "edit" ? "Edit Violation Reason" : "Add Violation Reason"}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-xs">
+            <div>
+              <label htmlFor="reason-code-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Reason Code (uppercase, e.g. SPAM_OR_COMMERCIAL)
+              </label>
+              <Input
+                id="reason-code-input"
+                type="text"
+                placeholder="e.g. COPYRIGHT_INFRINGEMENT"
+                value={code}
+                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
+                className="font-mono"
+                required
+              />
             </div>
-            <form onSubmit={handleSubmit} className="flex flex-col gap-3 text-xs">
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Reason Code (uppercase, e.g. SPAM_OR_COMMERCIAL)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. COPYRIGHT_INFRINGEMENT"
-                  value={code}
-                  onChange={(e) => setCode(e.target.value.toUpperCase().replace(/\s+/g, "_"))}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs font-mono focus:outline-none focus:border-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Display Label
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Copyright Infringement"
-                  value={label}
-                  onChange={(e) => setLabel(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Default Severity
-                </label>
-                <select
-                  value={severity}
-                  onChange={(e) => setSeverity(e.target.value as any)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary"
-                >
-                  <option value="LOW">Low (Minor infractions, formatting issues)</option>
-                  <option value="NORMAL">Normal (Standard community guidelines)</option>
-                  <option value="HIGH_PRIORITY">High Priority (Harassment, trolling, piracy)</option>
-                  <option value="CRITICAL">Critical (Severe abuse, security threats)</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-[11px] font-medium text-ink-muted mb-1">
-                  Description / Staff Guidance
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Explanation of when this reason applies..."
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-line bg-surface px-3 py-2 text-xs focus:outline-none focus:border-primary resize-none"
-                />
-              </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Button type="button" variant="outline" size="sm" onClick={() => setModal(null)}>
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  size="sm"
-                  disabled={createReasonMutation.isPending || updateReasonMutation.isPending}
-                >
-                  Save Reason
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div>
+              <label htmlFor="reason-label-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Display Label
+              </label>
+              <Input
+                id="reason-label-input"
+                type="text"
+                placeholder="e.g. Copyright Infringement"
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="reason-severity-select" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Default Severity
+              </label>
+              <Select
+                id="reason-severity-select"
+                sizeVariant="sm"
+                value={severity}
+                onChange={(e) => setSeverity(e.target.value as "LOW" | "NORMAL" | "HIGH_PRIORITY" | "CRITICAL")}
+              >
+                <option value="LOW">Low (Minor infractions, formatting issues)</option>
+                <option value="NORMAL">Normal (Standard community guidelines)</option>
+                <option value="HIGH_PRIORITY">High Priority (Harassment, trolling, piracy)</option>
+                <option value="CRITICAL">Critical (Severe abuse, security threats)</option>
+              </Select>
+            </div>
+            <div>
+              <label htmlFor="reason-description-input" className="block text-[11px] font-medium text-muted-foreground mb-1">
+                Description / Staff Guidance
+              </label>
+              <textarea
+                id="reason-description-input"
+                rows={3}
+                placeholder="Explanation of when this reason applies..."
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full rounded-lg border border-input bg-card px-3 py-2 text-base sm:text-sm text-foreground placeholder:text-muted-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 resize-none"
+              />
+            </div>
+            <DialogFooter className="pt-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => setModal(null)}>
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                size="sm"
+                disabled={createReasonMutation.isPending || updateReasonMutation.isPending}
+              >
+                Save Reason
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Confirm Dialog */}
       {confirmModal && (

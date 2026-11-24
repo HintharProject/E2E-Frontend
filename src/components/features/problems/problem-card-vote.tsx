@@ -35,16 +35,29 @@ export function ProblemCardVote({
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
   const [userVote, setUserVote] = useState<number>(initialUserVote ?? 0);
+  const [isPending, setIsPending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Prevents the useEffect prop-sync from overwriting optimistic state
+  // while a mutation is debounced or in-flight
+  const isPendingRef = useRef(false);
+  const lastConfirmedRef = useRef({
+    voteCount: initialVoteCount,
+    userVote: initialUserVote ?? 0,
+  });
 
   useEffect(() => {
-    setVoteCount(initialVoteCount);
-    setUserVote(initialUserVote ?? 0);
+    if (!isPendingRef.current) {
+      const nextVote = initialUserVote ?? 0;
+      setVoteCount(initialVoteCount);
+      setUserVote(nextVote);
+      lastConfirmedRef.current = { voteCount: initialVoteCount, userVote: nextVote };
+    }
   }, [initialVoteCount, initialUserVote]);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      isPendingRef.current = false;
     };
   }, []);
 
@@ -70,17 +83,43 @@ export function ProblemCardVote({
       return;
     }
 
+    if (!isPendingRef.current) {
+      lastConfirmedRef.current = { voteCount, userVote };
+    }
+
     const targetValue = userVote === 1 ? 0 : 1;
-    const diff = targetValue === 0 ? -(userVote * voterMultiplier) : targetValue * voterMultiplier;
+    const diff = (targetValue - userVote) * voterMultiplier;
+    const nextCount = voteCount + diff;
 
     setUserVote(targetValue);
-    setVoteCount((prev) => prev + diff);
+    setVoteCount(nextCount);
+
+    isPendingRef.current = true;
+    setIsPending(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
-      voteMutation.mutate({ problemId, value: targetValue as 1 | 0 });
+      voteMutation.mutate(
+        { problemId, value: targetValue as 1 | 0 },
+        {
+          onSuccess: () => {
+            lastConfirmedRef.current = { voteCount: nextCount, userVote: targetValue };
+          },
+          onSettled: () => {
+            isPendingRef.current = false;
+            setIsPending(false);
+          },
+          onError: () => {
+            setUserVote(lastConfirmedRef.current.userVote);
+            setVoteCount(lastConfirmedRef.current.voteCount);
+            toast.error("Failed to register vote.");
+          },
+        }
+      );
     }, 400);
   };
+
+  const isSyncing = isPending || voteMutation.isPending;
 
   if (variant === "rail") {
     return (
@@ -88,7 +127,15 @@ export function ProblemCardVote({
         type="button"
         onClick={handleVote}
         disabled={isSelf}
-        aria-label={isSelf ? "Cannot vote on your own question" : `Upvote question (${voteCount} votes)`}
+        aria-busy={isSyncing}
+        data-pending={isSyncing ? "true" : undefined}
+        aria-label={
+          isSelf
+            ? "Cannot vote on your own question"
+            : userVote === 1
+              ? `Remove upvote (${voteCount} votes)`
+              : `Upvote question (${voteCount} votes)`
+        }
         aria-pressed={userVote === 1}
         title={isSelf ? "You cannot vote on your own question" : "Upvote question"}
         className={cn(
@@ -99,8 +146,8 @@ export function ProblemCardVote({
             : "border-transparent bg-background/60 text-muted-foreground hover:border-border hover:text-foreground"
         )}
       >
-        <ChevronUp className="size-4 shrink-0" />
-        <span className="font-mono tabular-nums text-base font-semibold leading-tight text-foreground">
+        <ChevronUp className={cn("size-4 shrink-0", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+        <span className={cn("font-mono tabular-nums text-base font-semibold leading-tight text-foreground transition-opacity", isSyncing && "opacity-75")}>
           {voteCount}
         </span>
       </button>
@@ -112,16 +159,27 @@ export function ProblemCardVote({
       type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-busy={isSyncing}
+      data-pending={isSyncing ? "true" : undefined}
+      aria-label={
+        isSelf
+          ? "Cannot vote on your own question"
+          : userVote === 1
+            ? `Remove upvote (${voteCount} votes)`
+            : `Upvote question (${voteCount} votes)`
+      }
       aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own question" : "Vote on question"}
       className={cn(
-        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded",
+        "flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 text-xs font-semibold transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-md sm:rounded px-2.5 py-1 sm:px-1.5 sm:py-0.5",
         isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
-        userVote === 1 ? "text-primary font-bold" : "text-muted-foreground hover:text-primary"
+        userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
     >
-      <ChevronUp className="size-3.5" />
-      <span className="font-mono tabular-nums">{voteCount}</span>
+      <ChevronUp className={cn("size-3.5", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+      <span className={cn("font-mono tabular-nums transition-opacity", isSyncing && "opacity-75")}>
+        {voteCount}
+      </span>
     </button>
   );
 }

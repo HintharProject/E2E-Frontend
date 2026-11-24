@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef, useCallback, useEffect } from "react";
 import { Resource } from "@/types";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -91,12 +91,38 @@ export function DualPdfViewer({
   const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
     setIsDragging(false);
     try {
-      e.currentTarget.releasePointerCapture(e.pointerId);
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
       localStorage.setItem("train_split_ratio", splitRatio.toString());
     } catch {
       // Ignore
     }
   };
+
+  const handlePointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    setIsDragging(false);
+    try {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore
+    }
+  };
+
+  // Escape key exits fullscreen mode
+  useEffect(() => {
+    if (!leftControls.isFullscreen && !rightControls.isFullscreen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setLeftControls((prev) => (prev.isFullscreen ? { ...prev, isFullscreen: false } : prev));
+        setRightControls((prev) => (prev.isFullscreen ? { ...prev, isFullscreen: false } : prev));
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [leftControls.isFullscreen, rightControls.isFullscreen]);
 
   // Zoom handlers
   const handleZoom = useCallback((side: "LEFT" | "RIGHT", action: "in" | "out" | "reset") => {
@@ -136,12 +162,12 @@ export function DualPdfViewer({
     return (
       <div
         className={cn(
-          "flex flex-col h-full w-full bg-card overflow-hidden transition-all",
+          "flex flex-col h-full w-full bg-card overflow-hidden",
           controls.isFullscreen && "fixed inset-0 z-50 bg-background"
         )}
       >
         {/* Panel Mini Toolbar */}
-        <div className="h-10 px-3 border-b border-border bg-muted/40 flex items-center justify-between gap-2 shrink-0 select-none">
+        <div className="min-h-11 px-3 border-b border-border bg-muted/40 flex items-center justify-between gap-2 shrink-0 select-none">
           <div className="flex items-center gap-2 min-w-0">
             {isLoading ? (
               <Loader2 className="size-3.5 text-primary animate-spin shrink-0" aria-hidden="true" />
@@ -168,7 +194,7 @@ export function DualPdfViewer({
             )}
             <Badge
               variant="secondary"
-              className="text-[9px] px-1 py-0 font-mono font-bold uppercase hidden sm:inline-flex"
+              className="text-[10px] px-1.5 py-0 font-mono font-bold uppercase hidden sm:inline-flex"
             >
               {side === "LEFT" ? "Pane L" : "Pane R"}
             </Badge>
@@ -180,35 +206,35 @@ export function DualPdfViewer({
               <button
                 type="button"
                 onClick={() => handleZoom(side, "out")}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
                 title="Zoom Out"
                 aria-label="Zoom out document"
                 disabled={controls.zoom <= 0.5}
               >
-                <ZoomOut className="size-3" aria-hidden="true" />
+                <ZoomOut className="size-3.5" aria-hidden="true" />
               </button>
-              <span className="px-1.5 text-[10px] font-mono font-medium text-foreground tabular-nums">
+              <span className="px-1.5 text-[11px] font-mono font-medium text-foreground tabular-nums">
                 {Math.round(controls.zoom * 100)}%
               </span>
               <button
                 type="button"
                 onClick={() => handleZoom(side, "in")}
-                className="p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1 text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer disabled:opacity-40"
                 title="Zoom In"
                 aria-label="Zoom in document"
                 disabled={controls.zoom >= 2.0}
               >
-                <ZoomIn className="size-3" aria-hidden="true" />
+                <ZoomIn className="size-3.5" aria-hidden="true" />
               </button>
               {controls.zoom !== 1.0 && (
                 <button
                   type="button"
                   onClick={() => handleZoom(side, "reset")}
-                  className="p-1 border-l border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
+                  className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1 border-l border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                   title="Reset Zoom"
                   aria-label="Reset zoom to 100%"
                 >
-                  <RotateCcw className="size-2.5" aria-hidden="true" />
+                  <RotateCcw className="size-3" aria-hidden="true" />
                 </button>
               )}
             </div>
@@ -219,7 +245,7 @@ export function DualPdfViewer({
                 href={resource.file_url}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                 title="Open PDF in new tab"
                 aria-label={`Open ${title} in new tab`}
               >
@@ -234,7 +260,7 @@ export function DualPdfViewer({
                 download={title}
                 target="_blank"
                 rel="noreferrer"
-                className="p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] md:min-h-[28px] md:min-w-[28px] p-1.5 text-muted-foreground hover:text-foreground rounded hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-pointer"
                 title="Download PDF"
                 aria-label={`Download ${title}`}
               >
@@ -329,7 +355,7 @@ export function DualPdfViewer({
               type="button"
               onClick={() => setMobileActiveTab("LEFT")}
               className={cn(
-                "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer truncate px-2",
+                "flex-1 min-h-[38px] py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer truncate px-2",
                 mobileActiveTab === "LEFT"
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -342,7 +368,7 @@ export function DualPdfViewer({
               type="button"
               onClick={() => setMobileActiveTab("RIGHT")}
               className={cn(
-                "flex-1 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer truncate px-2",
+                "flex-1 min-h-[38px] py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer truncate px-2",
                 mobileActiveTab === "RIGHT"
                   ? "bg-primary text-primary-foreground shadow-xs"
                   : "text-muted-foreground hover:text-foreground"
@@ -408,6 +434,8 @@ export function DualPdfViewer({
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerUp={handlePointerUp}
+              onPointerCancel={handlePointerCancel}
+              onLostPointerCapture={handlePointerCancel}
               onKeyDown={(e) => {
                 if (e.key === "ArrowLeft") {
                   e.preventDefault();
@@ -426,7 +454,7 @@ export function DualPdfViewer({
                 }
               }}
               className={cn(
-                "w-1.5 hover:w-2 bg-border hover:bg-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-all cursor-col-resize flex items-center justify-center group shrink-0 relative select-none",
+                "w-1.5 hover:w-2 bg-border hover:bg-primary/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring transition-colors cursor-col-resize touch-none flex items-center justify-center group shrink-0 relative select-none after:absolute after:inset-y-0 after:-inset-x-2",
                 isDragging && "bg-primary w-2 shadow-lg"
               )}
               title="Drag or use Left/Right arrows to resize split panes (30% - 70%)"

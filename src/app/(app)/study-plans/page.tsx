@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, StudyPlan } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { MAX_STUDY_PLANS } from "@/lib/constants";
 import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   BookOpen,
@@ -35,14 +36,14 @@ export default async function StudyPlansPage() {
   }
 
   const hasEmpty = mine.some((plan) => !plan.items || plan.items.length === 0);
-  const atCap = mine.length >= 3;
+  const atCap = mine.length >= MAX_STUDY_PLANS;
   const canCreate = Boolean(token) && !atCap && !hasEmpty;
 
   return (
     <div className="w-full space-y-6">
       <PageHeader
         title="Study plans"
-        description="Curate structured, sequential learning paths from lessons. Up to 3 study plans per account."
+        description={`Curate structured, sequential learning paths from lessons. Up to ${MAX_STUDY_PLANS} study plans per account.`}
         actions={
           canCreate ? (
             <Button
@@ -55,7 +56,7 @@ export default async function StudyPlansPage() {
             </Button>
           ) : (
             <Button disabled className="gap-2">
-              {atCap ? "Limit reached (3)" : hasEmpty ? "Empty plan exists" : "New plan"}
+              {atCap ? `Limit reached (${MAX_STUDY_PLANS})` : hasEmpty ? "Empty plan exists" : "New plan"}
             </Button>
           )
         }
@@ -70,11 +71,12 @@ export default async function StudyPlansPage() {
         />
       </div>
 
-      {/* Plan capacity indicator & 3-slot visual header */}
+      {/* Plan capacity indicator & 12-slot visual header */}
       <CollectionCapacityStrip
         label="Study Plans"
         singularLabel="study plan"
         basePath="/study-plans"
+        maxSlots={MAX_STUDY_PLANS}
         collections={mine.map((plan) => ({
           id: plan.id,
           title: plan.title,
@@ -126,7 +128,7 @@ export default async function StudyPlansPage() {
                     <div className="flex items-center gap-1.5">
                       <Badge
                         variant={plan.is_public ? "default" : "outline"}
-                        className="gap-1 text-[11px] font-normal"
+                        className="gap-1 text-xs font-medium"
                       >
                         {plan.is_public ? (
                           <>
@@ -154,7 +156,7 @@ export default async function StudyPlansPage() {
                   <span
                     className={
                       isEmpty
-                        ? "text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1"
+                        ? "text-warning font-medium flex items-center gap-1"
                         : "text-muted-foreground font-medium"
                     }
                   >
@@ -165,7 +167,7 @@ export default async function StudyPlansPage() {
                       </>
                     ) : (
                       <>
-                        <strong className="text-foreground font-semibold">{itemCount}</strong>{" "}
+                        <strong className="font-mono tabular-nums text-foreground font-semibold">{itemCount}</strong>{" "}
                         {itemCount === 1 ? "lesson" : "lessons"}
                       </>
                     )}

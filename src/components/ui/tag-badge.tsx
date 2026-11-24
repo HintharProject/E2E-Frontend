@@ -10,6 +10,7 @@ export interface TagBadgeProps {
   name: string;
   id?: string;
   size?: "sm" | "md";
+  variant?: "default" | "quiet";
   className?: string;
 }
 
@@ -18,7 +19,12 @@ export interface TagBadgeProps {
  * Prevents click event propagation so parent card links (e.g. BaseFeedCard) are not triggered.
  * Routes to the unified Tag Hub view at /tags/[name].
  */
-export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
+export function TagBadge({
+  name,
+  size = "sm",
+  variant = "default",
+  className,
+}: TagBadgeProps) {
   const { isSignedIn } = useAuthGate();
   const cleanName = (name || "").replace(/^#/, "").trim().toLowerCase();
 
@@ -33,14 +39,22 @@ export function TagBadge({ name, size = "sm", className }: TagBadgeProps) {
         e.stopPropagation();
       }}
       title={`Explore all contents tagged #${cleanName}`}
-      className="inline-flex rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className={cn(
+        "group/tag inline-flex items-center justify-center min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 -my-2 sm:my-0 rounded-full outline-none",
+        variant === "quiet" && "sm:-mx-0.5"
+      )}
     >
       <Badge
         variant="outline"
         className={cn(
-          "border-border bg-secondary/70 font-mono font-medium text-muted-foreground transition-colors cursor-pointer select-none",
-          "hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
-          size === "sm" ? "h-5 px-2 py-0.5 text-xs" : "h-6 px-2.5 py-1 text-xs",
+          "font-mono font-medium text-muted-foreground transition-colors cursor-pointer select-none",
+          variant === "quiet"
+            ? "border-transparent bg-transparent px-1.5 hover:border-primary/30 hover:bg-accent/70 hover:text-accent-foreground"
+            : "border-border bg-secondary/70 hover:border-primary/35 hover:bg-accent hover:text-accent-foreground",
+          "group-focus-visible/tag:ring-2 group-focus-visible/tag:ring-ring group-focus-visible/tag:ring-offset-2 group-focus-visible/tag:ring-offset-background",
+          size === "sm"
+            ? cn("h-5 py-0.5 text-xs", variant === "default" && "px-2")
+            : cn("h-6 py-1 text-xs", variant === "default" ? "px-2.5" : "px-2"),
           className
         )}
       >

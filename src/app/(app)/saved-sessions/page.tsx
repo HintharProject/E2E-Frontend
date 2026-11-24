@@ -7,6 +7,7 @@ import { getServerAuthToken } from "@/lib/auth-server";
 import { apiFetch } from "@/services/api-client";
 import { PaginatedResponse, SavedSession } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { MAX_SAVED_SESSIONS } from "@/lib/constants";
 import { CollectionCapacityStrip } from "@/components/features/collections/collection-capacity-strip";
 import {
   Bookmark,
@@ -35,14 +36,14 @@ export default async function SavedSessionsPage() {
   }
 
   const hasEmpty = mine.some((session) => !session.items || session.items.length === 0);
-  const atCap = mine.length >= 3;
+  const atCap = mine.length >= MAX_SAVED_SESSIONS;
   const canCreate = Boolean(token) && !atCap && !hasEmpty;
 
   return (
     <div className="w-full space-y-6">
       <PageHeader
         title="Saved sessions"
-        description="Bookmark posts, problems, solutions, lessons, and exam papers across the platform. Up to 3 sessions."
+        description={`Bookmark posts, problems, solutions, lessons, and exam papers across the platform. Up to ${MAX_SAVED_SESSIONS} sessions.`}
         actions={
           canCreate ? (
             <Button
@@ -55,7 +56,7 @@ export default async function SavedSessionsPage() {
             </Button>
           ) : (
             <Button disabled className="gap-2">
-              {atCap ? "Limit reached (3)" : hasEmpty ? "Empty session exists" : "New session"}
+              {atCap ? `Limit reached (${MAX_SAVED_SESSIONS})` : hasEmpty ? "Empty session exists" : "New session"}
             </Button>
           )
         }
@@ -70,11 +71,12 @@ export default async function SavedSessionsPage() {
         />
       </div>
 
-      {/* Capacity indicator & 3-slot visual header */}
+      {/* Capacity indicator & 12-slot visual header */}
       <CollectionCapacityStrip
         label="Saved Sessions"
         singularLabel="saved session"
         basePath="/saved-sessions"
+        maxSlots={MAX_SAVED_SESSIONS}
         collections={mine.map((s) => ({
           id: s.id,
           title: s.title,

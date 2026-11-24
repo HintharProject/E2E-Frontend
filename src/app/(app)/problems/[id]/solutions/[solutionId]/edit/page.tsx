@@ -29,10 +29,10 @@ export default function EditSolutionPage({
           Solution Editing Has Been Sunset
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-lg mx-auto">
-          To maintain verification integrity, prevent retroactive vote manipulation, and guarantee consensus finality, worked solutions cannot be modified after submission.
+          To maintain verification integrity and prevent retroactive vote manipulation, worked solutions cannot be modified after submission.
         </p>
         <p className="mt-2 text-xs text-muted-foreground/80 max-w-md mx-auto">
-          If you have developed an improved proof, a correction, or an alternative derivation, submit a new candidate solution to the active 7-slot pool.
+          If you have developed an improved proof, a correction, or an alternative derivation, submit a new candidate solution to the thread.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link

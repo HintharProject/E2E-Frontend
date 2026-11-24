@@ -8,7 +8,6 @@ import {
   Lightbulb,
   BookOpen,
   FileText,
-  CheckCircle2,
   ThumbsUp,
   X,
   ArrowRight,
@@ -16,6 +15,7 @@ import {
   Loader2,
   Sparkles,
 } from "lucide-react";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -170,7 +170,7 @@ export function CommandPalette() {
   return (
     <Dialog open={isCommandPaletteOpen} onOpenChange={(open) => !open && closeCommandPalette()}>
       <DialogContent
-        className="w-full max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border border-line bg-card shadow-2xl rounded-2xl"
+        className="w-full max-w-2xl max-h-[85vh] flex flex-col p-0 gap-0 overflow-hidden border border-border bg-card shadow-modal rounded-2xl"
         showCloseButton={false}
       >
         <div className="sr-only">
@@ -179,11 +179,20 @@ export function CommandPalette() {
         </div>
 
         {/* Input Bar */}
-        <div className="relative flex items-center border-b border-border px-4 py-3 bg-surface/50">
+        <div className="relative flex items-center border-b border-border px-4 py-3 bg-muted/30">
           <Search className="size-5 text-muted-foreground shrink-0 mr-3" aria-hidden="true" />
           <input
             ref={inputRef}
             type="text"
+            role="combobox"
+            aria-expanded={isCommandPaletteOpen}
+            aria-controls="command-palette-listbox"
+            aria-activedescendant={
+              flatItems.length > 0 && flatItems[selectedIndex]
+                ? `command-palette-option-${selectedIndex}`
+                : undefined
+            }
+            aria-autocomplete="list"
             value={query}
             onChange={(e) => {
               setQuery(e.target.value);
@@ -192,7 +201,7 @@ export function CommandPalette() {
             onKeyDown={handleKeyDown}
             aria-label="Search discussions, problems, lessons, and past papers"
             placeholder="Search discussions, problems, lessons, past papers..."
-            className="w-full bg-transparent text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
+            className="w-full bg-transparent text-base sm:text-sm font-medium text-foreground placeholder:text-muted-foreground outline-none"
           />
 
           <div className="flex items-center gap-2 shrink-0 ml-2">
@@ -213,14 +222,14 @@ export function CommandPalette() {
                 <X className="size-4" aria-hidden="true" />
               </button>
             )}
-            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-semibold text-ink-muted bg-muted border border-line rounded">
+            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono font-semibold text-muted-foreground bg-muted border border-border rounded">
               ESC
             </kbd>
           </div>
         </div>
 
         {/* Category Pills */}
-        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-line/60 bg-surface/30 overflow-x-auto text-xs">
+        <div className="flex items-center gap-1.5 px-4 py-2 border-b border-border/60 bg-muted/20 overflow-x-auto text-xs">
           {(
             [
               { id: "all", label: "All" },
@@ -235,15 +244,16 @@ export function CommandPalette() {
               <button
                 key={cat.id}
                 type="button"
+                aria-pressed={isActive}
                 onClick={() => {
                   setActiveCategory(cat.id);
                   setSelectedIndex(0);
                 }}
                 className={cn(
-                  "rounded-full px-2.5 py-1 font-semibold transition-colors cursor-pointer shrink-0",
+                  "rounded-full px-2.5 py-1 min-h-[36px] sm:min-h-0 font-semibold transition-colors cursor-pointer shrink-0",
                   isActive
                     ? "bg-primary text-primary-foreground shadow-xs"
-                    : "bg-muted/70 text-ink-muted hover:bg-muted hover:text-ink"
+                    : "bg-muted/70 text-muted-foreground hover:bg-muted hover:text-foreground"
                 )}
               >
                 {cat.label}
@@ -254,22 +264,25 @@ export function CommandPalette() {
 
         {/* Results Container */}
         <div
+          id="command-palette-listbox"
+          role="listbox"
+          aria-label="Search results"
           ref={listRef}
-          className="flex-1 overflow-y-auto max-h-[50vh] p-2 space-y-4 divide-y divide-line/40 focus:outline-none"
+          className="flex-1 overflow-y-auto max-h-[50vh] p-2 space-y-4 divide-y divide-border/40 focus:outline-none"
         >
           {/* State: Query too short */}
           {query.trim().length < 2 && (
             <div className="py-6 px-4 text-center">
               <div className="mx-auto size-10 rounded-full bg-primary/10 flex items-center justify-center text-primary mb-3">
-                <Sparkles className="size-5" />
+                <Sparkles className="size-5" aria-hidden="true" />
               </div>
-              <h4 className="text-sm font-semibold text-ink">Global Unified Search</h4>
-              <p className="text-xs text-ink-muted mt-1 max-w-sm mx-auto">
+              <h4 className="text-sm font-semibold text-foreground">Global Unified Search</h4>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
                 Type at least 2 characters to search across forum posts, community problems, lessons, and past papers.
               </p>
 
               <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-                <span className="text-[11px] font-medium text-ink-muted">Suggested:</span>
+                <span className="text-[11px] font-medium text-muted-foreground">Suggested:</span>
                 {SUGGESTIONS.map((s) => (
                   <button
                     key={s}
@@ -278,7 +291,7 @@ export function CommandPalette() {
                       setQuery(s);
                       setSelectedIndex(0);
                     }}
-                    className="text-xs px-2.5 py-1 rounded-full border border-line bg-surface hover:bg-muted text-ink transition-colors cursor-pointer"
+                    className="text-xs px-2.5 py-1 min-h-[36px] sm:min-h-0 rounded-full border border-border bg-background hover:bg-muted text-foreground transition-colors cursor-pointer"
                   >
                     {s}
                   </button>
@@ -326,6 +339,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={post.id}
+                      id={`command-palette-option-${itemIndex}`}
+                      role="option"
+                      aria-selected={isSelected}
                       data-index={itemIndex}
                       onClick={() => handleSelect({ type: "post", item: post, href: `/posts/${post.id}` })}
                       onMouseEnter={() => setSelectedIndex(itemIndex)}
@@ -391,6 +407,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={problem.id}
+                      id={`command-palette-option-${itemIndex}`}
+                      role="option"
+                      aria-selected={isSelected}
                       data-index={itemIndex}
                       onClick={() =>
                         handleSelect({ type: "problem", item: problem, href: `/problems/${problem.id}` })
@@ -410,14 +429,12 @@ export function CommandPalette() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <p className="text-xs font-medium truncate">{problem.title}</p>
-                            {problem.is_verified && (
-                              <Badge
-                                variant="outline"
-                                className="h-4 px-1 text-[9px] border-primary/30 text-primary bg-primary/10 shrink-0"
-                              >
-                                Verified
-                              </Badge>
-                            )}
+                            <ConfidenceBadge
+                              confidence={problem.resolution_confidence}
+                              band={problem.confidence_band}
+                              size="sm"
+                              interactive={false}
+                            />
                           </div>
                           <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
                             {problem.subject && <span>{problem.subject.name}</span>}
@@ -456,6 +473,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={lesson.id}
+                      id={`command-palette-option-${itemIndex}`}
+                      role="option"
+                      aria-selected={isSelected}
                       data-index={itemIndex}
                       onClick={() =>
                         handleSelect({ type: "lesson", item: lesson, href: `/lessons/${lesson.id}` })
@@ -511,6 +531,9 @@ export function CommandPalette() {
                   return (
                     <div
                       key={resource.id}
+                      id={`command-palette-option-${itemIndex}`}
+                      role="option"
+                      aria-selected={isSelected}
                       data-index={itemIndex}
                       onClick={() =>
                         handleSelect({ type: "resource", item: resource, href: `/train/${resource.id}` })
@@ -561,6 +584,9 @@ export function CommandPalette() {
 
                 return (
                   <div
+                    id={`command-palette-option-${seeAllIndex}`}
+                    role="option"
+                    aria-selected={isSelected}
                     data-index={seeAllIndex}
                     onClick={() =>
                       handleSelect({
@@ -576,14 +602,14 @@ export function CommandPalette() {
                       "flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors text-xs font-semibold",
                       isSelected
                         ? "bg-primary text-primary-foreground shadow-xs"
-                        : "bg-surface hover:bg-muted text-primary"
+                        : "bg-muted/40 hover:bg-muted text-primary"
                     )}
                   >
                     <span className="flex items-center gap-2">
-                      <Search className="size-3.5" /> See all results for &ldquo;{query}&rdquo; in
+                      <Search className="size-3.5" aria-hidden="true" /> See all results for &ldquo;{query}&rdquo; in
                       Advanced Search
                     </span>
-                    <ArrowRight className="size-4 shrink-0" />
+                    <ArrowRight className="size-4 shrink-0" aria-hidden="true" />
                   </div>
                 );
               })()}
@@ -592,25 +618,25 @@ export function CommandPalette() {
         </div>
 
         {/* Footer Bar with Keyboard Shortcuts */}
-        <div className="flex items-center justify-between border-t border-line px-4 py-2 bg-surface/80 text-[11px] text-ink-muted">
+        <div className="flex items-center justify-between border-t border-border px-4 py-2 bg-muted/30 text-[11px] text-muted-foreground">
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-line text-[10px] font-mono">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">
                 ↑
               </kbd>
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-line text-[10px] font-mono">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">
                 ↓
               </kbd>
               Navigate
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-line text-[10px] font-mono flex items-center">
-                <CornerDownLeft className="size-2.5" />
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono flex items-center">
+                <CornerDownLeft className="size-2.5" aria-hidden="true" />
               </kbd>
               Open
             </span>
             <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-line text-[10px] font-mono">
+              <kbd className="px-1.5 py-0.5 rounded bg-muted border border-border text-[10px] font-mono">
                 ESC
               </kbd>
               Dismiss
@@ -623,7 +649,7 @@ export function CommandPalette() {
               closeCommandPalette();
               router.push(query.trim() ? `/search?q=${encodeURIComponent(query.trim())}` : "/search");
             }}
-            className="hover:text-ink transition-colors cursor-pointer font-medium"
+            className="hover:text-foreground transition-colors cursor-pointer font-medium"
           >
             Explore all in /search →
           </button>

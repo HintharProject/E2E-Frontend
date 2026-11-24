@@ -1,22 +1,24 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useRef } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Plus } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
+import { FeedKeyboardHint } from "@/components/ui/base-card";
 import { ProblemCard } from "@/components/features/problems/problem-card";
 import { ProblemCardSkeleton } from "@/components/features/skeletons";
 import { ProblemsRightRail } from "@/components/features/problems/problems-right-rail";
 import { ColdStartNotice } from "@/components/layout/cold-start-notice";
 import { useProblems } from "@/hooks/use-problems";
+import { useFeedKeyboardNavigation } from "@/hooks/use-feed-keyboard-navigation";
 import { HorizontalFilterBar } from "@/components/layout/horizontal-filter-bar";
 import { TopmostScrollRefresh } from "@/components/ui/topmost-scroll-refresh";
 import { GatedLink } from "@/components/features/auth/gated-link";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { parseFilterList } from "@/lib/filter-params";
-import type { ContentSortMode, TimeframeFilter } from "@/types";
+import type { ConfidenceFilterValue, ContentSortMode, TimeframeFilter } from "@/types";
 
 function ProblemsFeed() {
   const searchParams = useSearchParams();
@@ -24,7 +26,7 @@ function ProblemsFeed() {
 
   const subjects = parseFilterList(searchParams.get("subject"));
   const levels = parseFilterList(searchParams.get("level"));
-  const status = searchParams.get("status") || "";
+  const confidence = (searchParams.get("confidence") as ConfidenceFilterValue) || "";
   const currentSort = (searchParams.get("sort") as ContentSortMode) || "default";
   const currentTimeframe = (searchParams.get("timeframe") as TimeframeFilter) || "all";
 
@@ -41,13 +43,19 @@ function ProblemsFeed() {
   } = useProblems({
     subject: subjects.length > 0 ? subjects[0] : "",
     level: levels.length > 0 ? levels[0] : "",
-    status: status,
+    confidence,
     sort: currentSort,
     timeframe: currentTimeframe,
   });
 
   const problems = data?.pages.flatMap((p) => p.data) ?? [];
   const errStatus = (error as { status?: number } | null)?.status;
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  useFeedKeyboardNavigation({
+    containerRef: feedRef,
+    enabled: !isLoading && !isError && problems.length > 0,
+  });
 
   return (
     <TopmostScrollRefresh
@@ -72,7 +80,7 @@ function ProblemsFeed() {
                 <Button
                   size="sm"
                   nativeButton={false}
-                  render={<Link href="/sign-up?redirect_url=%2Fproblems" />}
+                  render={<Link href="/sign-up?redirect_url=%2Fproblems" target="_blank" rel="noopener noreferrer" />}
                 >
                   Sign up free
                 </Button>
@@ -80,7 +88,7 @@ function ProblemsFeed() {
                   variant="outline"
                   size="sm"
                   nativeButton={false}
-                  render={<Link href="/sign-in?redirect_url=%2Fproblems" />}
+                  render={<Link href="/sign-in?redirect_url=%2Fproblems" target="_blank" rel="noopener noreferrer" />}
                 >
                   Log in
                 </Button>
@@ -104,7 +112,8 @@ function ProblemsFeed() {
           description="Try adjusting your filters or be the first to post a problem."
         />
       ) : (
-        <div className="flex flex-col gap-4">
+        <div ref={feedRef} className="flex flex-col gap-4">
+          <FeedKeyboardHint />
           {problems.map((problem) => (
             <ProblemCard key={problem.id} problem={problem} />
           ))}
@@ -133,7 +142,7 @@ export default function ProblemsPage() {
       <Suspense fallback={<div className="h-12 rounded-xl bg-card border border-border animate-pulse" />}>
         <HorizontalFilterBar
           hideTags
-          showProblemStatus
+          showConfidenceFilter
           showSort
           rightActions={
             <Button

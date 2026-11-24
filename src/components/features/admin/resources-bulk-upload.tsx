@@ -13,6 +13,8 @@ import {
   X,
   Sparkles,
 } from "lucide-react";
+import { Select } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -220,9 +222,10 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
           <div>
-            <label className="text-[10px] text-ink-muted block mb-0.5">Type</label>
-            <select
-              className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
+            <label htmlFor="bulk-default-type" className="text-[10px] text-muted-foreground block mb-0.5">Type</label>
+            <Select
+              id="bulk-default-type"
+              sizeVariant="sm"
               value={batchDefaults.resourceType}
               onChange={(e) =>
                 setBatchDefaults((prev) => ({
@@ -233,15 +236,16 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
             >
               <option value="PAST_PAPER">Past Paper</option>
               <option value="TEXTBOOK">Textbook / Document</option>
-            </select>
+            </Select>
           </div>
 
           {batchDefaults.resourceType === "PAST_PAPER" ? (
             <>
               <div>
-                <label className="text-[10px] text-ink-muted block mb-0.5">Default Year</label>
-                <select
-                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
+                <label htmlFor="bulk-default-year" className="text-[10px] text-muted-foreground block mb-0.5">Default Year</label>
+                <Select
+                  id="bulk-default-year"
+                  sizeVariant="sm"
                   value={batchDefaults.year}
                   onChange={(e) =>
                     setBatchDefaults((prev) => ({
@@ -255,13 +259,14 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       {y === 0 ? "Others" : y}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
 
               <div>
-                <label className="text-[10px] text-ink-muted block mb-0.5">Default Session</label>
-                <select
-                  className="w-full rounded-md border border-line px-2 py-1.5 bg-card text-xs"
+                <label htmlFor="bulk-default-session" className="text-[10px] text-muted-foreground block mb-0.5">Default Session</label>
+                <Select
+                  id="bulk-default-session"
+                  sizeVariant="sm"
                   value={batchDefaults.session}
                   onChange={(e) =>
                     setBatchDefaults((prev) => ({
@@ -275,11 +280,11 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                       {s.label}
                     </option>
                   ))}
-                </select>
+                </Select>
               </div>
             </>
           ) : (
-            <div className="sm:col-span-2 flex items-center text-[11px] text-ink-muted bg-card px-2.5 py-1.5 rounded-md border border-line">
+            <div className="sm:col-span-2 flex items-center text-[11px] text-muted-foreground bg-card px-2.5 py-1.5 rounded-md border border-border">
               Non-paper resources will roll back to the filename as title (customizable below).
             </div>
           )}
@@ -330,8 +335,8 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
       )}
 
       {bulkSuccessMessage && (
-        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-green-500/10 text-green-600 dark:text-green-400 text-xs">
-          <CheckCircle2 className="size-4 shrink-0" />
+        <div className="flex items-center gap-2 p-2.5 rounded-lg bg-primary/10 text-primary text-xs">
+          <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
           <span>{bulkSuccessMessage}</span>
         </div>
       )}
@@ -388,7 +393,7 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                     </Badge>
                   )}
                   {item.status === "SUCCESS" && (
-                    <Badge variant="secondary" className="text-[10px] py-0 bg-green-500/10 text-green-600 dark:text-green-400">
+                    <Badge variant="secondary" className="text-[10px] py-0 bg-primary/10 text-primary">
                       Done
                     </Badge>
                   )}
@@ -400,31 +405,36 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
 
                   <button
                     type="button"
+                    aria-label={`Remove ${item.fileName} from queue`}
                     onClick={() => removeQueueItem(item.id)}
                     disabled={item.status === "UPLOADING"}
-                    className="text-ink-muted hover:text-danger p-0.5 rounded"
+                    className="inline-flex items-center justify-center min-h-[36px] min-w-[36px] md:min-h-[24px] md:min-w-[24px] text-muted-foreground hover:text-destructive p-1 rounded cursor-pointer"
                   >
-                    <X className="size-3.5" />
+                    <X className="size-3.5" aria-hidden="true" />
                   </button>
                 </div>
               </div>
 
               {/* Editable item fields */}
-              <div className="grid grid-cols-4 gap-1.5 pt-1 border-t border-line/60">
-                <select
-                  className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1 border-t border-border/60">
+                <Select
+                  sizeVariant="sm"
+                  aria-label={`Resource type for ${item.fileName}`}
+                  className="h-8 min-h-[32px] text-[11px]"
                   value={item.resourceType}
                   onChange={(e) => updateQueueItem(item.id, { resourceType: e.target.value as ResourceType })}
                   disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                 >
                   <option value="PAST_PAPER">Past Paper</option>
                   <option value="TEXTBOOK">Textbook</option>
-                </select>
+                </Select>
 
                 {item.resourceType === "PAST_PAPER" ? (
                   <>
-                    <select
-                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                    <Select
+                      sizeVariant="sm"
+                      aria-label={`Exam year for ${item.fileName}`}
+                      className="h-8 min-h-[32px] text-[11px]"
                       value={item.year}
                       onChange={(e) => updateQueueItem(item.id, { year: Number(e.target.value) })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
@@ -434,10 +444,12 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                           {y === 0 ? "Others" : y}
                         </option>
                       ))}
-                    </select>
+                    </Select>
 
-                    <select
-                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                    <Select
+                      sizeVariant="sm"
+                      aria-label={`Exam session for ${item.fileName}`}
+                      className="h-8 min-h-[32px] text-[11px]"
                       value={item.session}
                       onChange={(e) => updateQueueItem(item.id, { session: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
@@ -447,25 +459,29 @@ export function ResourcesBulkUpload({ selectedLevel, selectedSubject }: Resource
                           {s.label}
                         </option>
                       ))}
-                    </select>
+                    </Select>
 
-                    <select
-                      className="rounded border border-line px-1.5 py-1 bg-card text-[11px]"
+                    <Select
+                      sizeVariant="sm"
+                      aria-label={`Paper type for ${item.fileName}`}
+                      className="h-8 min-h-[32px] text-[11px]"
                       value={item.paperType}
                       onChange={(e) => updateQueueItem(item.id, { paperType: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}
                     >
                       <option value="QP">QP</option>
                       <option value="MS">MS</option>
-                    </select>
+                    </Select>
                   </>
                 ) : (
-                  <div className="col-span-3">
-                    <input
+                  <div className="col-span-1 sm:col-span-3">
+                    <Input
                       type="text"
+                      sizeVariant="sm"
                       placeholder="Title (defaults to filename)"
                       title="Document Title"
-                      className="w-full rounded border border-line px-2 py-1 bg-card text-[11px]"
+                      aria-label={`Title for ${item.fileName}`}
+                      className="h-8 min-h-[32px]"
                       value={item.title || ""}
                       onChange={(e) => updateQueueItem(item.id, { title: e.target.value })}
                       disabled={item.status === "UPLOADING" || item.status === "SUCCESS"}

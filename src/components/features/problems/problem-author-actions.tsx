@@ -17,36 +17,33 @@ import {
 
 export function ProblemAuthorActions({
   problemId,
-  isFinal = false,
+  isLocked = false,
 }: {
   problemId: string;
-  isFinal?: boolean;
+  isLocked?: boolean;
 }) {
   const router = useRouter();
   const deleteMutation = useDeleteProblem();
   const [isDeleting, setIsDeleting] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Finalized problems cannot be deleted by authors. Staff moderation handles override deletion.
-  if (isFinal) {
+  if (isLocked) {
     return null;
   }
 
   const handleDelete = () => {
     setOpen(false);
+    setIsDeleting(true);
     router.push("/problems");
 
-    toast.promise(
-      deleteMutation.mutateAsync(problemId),
-      {
-        loading: "Deleting problem...",
-        success: () => {
-          router.refresh();
-          return "Problem deleted successfully";
-        },
-        error: (err: any) => err?.message || "Failed to delete problem. Please try again.",
-      }
-    );
+    toast.promise(deleteMutation.mutateAsync(problemId), {
+      loading: "Deleting problem...",
+      success: () => {
+        router.refresh();
+        return "Problem deleted successfully";
+      },
+      error: (err: unknown) => (err as { message?: string } | undefined)?.message || "Failed to delete problem. Please try again.",
+    });
   };
 
   return (
@@ -58,7 +55,7 @@ export function ProblemAuthorActions({
         <DialogHeader>
           <DialogTitle>Delete Problem</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this problem? Any milestone bonuses will be reconciled and this action cannot be undone.
+            Are you sure you want to delete this problem? This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
 

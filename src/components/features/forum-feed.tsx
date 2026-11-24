@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useInfinitePosts } from "@/hooks/use-posts";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useDualStateFilter } from "@/hooks/use-dual-state-filter";
+import { useFeedKeyboardNavigation } from "@/hooks/use-feed-keyboard-navigation";
+import { FeedKeyboardHint } from "@/components/ui/base-card";
 import { PostCard } from "./content-cards";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui/button";
@@ -82,6 +84,7 @@ export function ForumFeed({
     });
 
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const feedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!hasNextPage || isFetchingNextPage) return;
@@ -136,6 +139,11 @@ export function ForumFeed({
     activeFiltersKey,
   });
 
+  useFeedKeyboardNavigation({
+    containerRef: feedRef,
+    enabled: status !== "pending" && !isEmptyPending && status !== "error" && posts.length > 0,
+  });
+
   if (status === "pending" || isEmptyPending) {
     return (
       <div className="flex flex-col gap-4">
@@ -157,10 +165,10 @@ export function ForumFeed({
           action={
             <div className="flex items-center gap-2">
               <Button asChild size="sm">
-                <Link href="/sign-up?redirect_url=%2Fforum">Sign up free</Link>
+                <Link href="/sign-up?redirect_url=%2Fforum" target="_blank" rel="noopener noreferrer">Sign up free</Link>
               </Button>
               <Button asChild variant="outline" size="sm">
-                <Link href="/sign-in?redirect_url=%2Fforum">Log in</Link>
+                <Link href="/sign-in?redirect_url=%2Fforum" target="_blank" rel="noopener noreferrer">Log in</Link>
               </Button>
             </div>
           }
@@ -194,8 +202,8 @@ export function ForumFeed({
       isRefreshing={isRefetching}
       label="posts"
     >
-      <div className="flex flex-col gap-4">
-        {!hideSort && (
+      <div ref={feedRef} className="flex flex-col gap-4">
+        {!hideSort ? (
           <div className="flex items-center justify-between pb-1">
             <ContentSortToggle
               sort={currentSort}
@@ -203,7 +211,10 @@ export function ForumFeed({
               onSortChange={handleSortChange}
               onTimeframeChange={handleTimeframeChange}
             />
+            <FeedKeyboardHint />
           </div>
+        ) : (
+          <FeedKeyboardHint />
         )}
 
         {posts.map((post) => (

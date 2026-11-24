@@ -1,13 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Badge } from "@/components/ui/badge";
 import type { Solution } from "@/types";
 import { formatDate } from "@/lib/utils";
-
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>?/gm, "");
-}
+import { stripHtml } from "@/components/ui/base-card";
 
 export function ContributionCard({ solution }: { solution: Solution }) {
   const title = solution.problem_title ?? "Solution";
@@ -24,17 +20,10 @@ export function ContributionCard({ solution }: { solution: Solution }) {
           <p className="font-mono tabular-nums text-xs text-muted-foreground">
             Solution · {formatDate(solution.created_at)}
           </p>
-          <Badge
-            variant={
-              solution.status === "WORKED"
-                ? "default"
-                : solution.status === "INCORRECT"
-                  ? "destructive"
-                  : "secondary"
-            }
-          >
-            {solution.status === "WORKED" ? "Accepted" : solution.status}
-          </Badge>
+          <span className="font-mono tabular-nums text-xs font-semibold text-muted-foreground">
+            Score {(solution.vote_score ?? solution.vote_count ?? 0) >= 0 ? "+" : ""}
+            {solution.vote_score ?? solution.vote_count ?? 0}
+          </span>
         </div>
         <h3 className="mt-2 font-heading text-lg font-semibold text-foreground tracking-tight group-hover:text-primary transition-colors">
           {title}
@@ -42,9 +31,6 @@ export function ContributionCard({ solution }: { solution: Solution }) {
         <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted-foreground">
           {stripHtml(solution.body)}
         </p>
-        <div className="mt-3 text-xs font-semibold text-muted-foreground">
-          {solution.vote_count ?? 0} votes
-        </div>
       </Link>
     </article>
   );

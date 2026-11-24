@@ -15,43 +15,17 @@ import { useCurrentUser } from "@/hooks/use-current-user";
 import { isContentAuthor } from "@/types/user";
 import { useUser } from "@clerk/nextjs";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
+import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
 import dynamic from "next/dynamic";
 const LessonMediaViewer = dynamic(() => import("@/components/features/lessons/lesson-media-viewer").then(mod => mod.LessonMediaViewer), {
   loading: () => <div className="aspect-video w-full rounded-xl bg-card border border-border animate-pulse"></div>,
   ssr: false
 });
 import { BaseDetailedCard } from "@/components/ui/base-card";
-
-function daysUntilExpiration(createdAt: string): number {
-  const createdDate = new Date(createdAt);
-  const expirationDate = new Date(createdDate.getTime() + 30 * 24 * 60 * 60 * 1000);
-  const diffTime = expirationDate.getTime() - new Date().getTime();
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return Math.max(0, diffDays);
-}
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 
 function PostDetailSkeleton() {
-  return (
-    <div className="mx-auto max-w-3xl space-y-6 animate-pulse">
-      <div className="h-8 w-3/4 rounded-lg bg-card border border-border mb-2" />
-      <div className="h-4 w-1/4 rounded bg-card border border-border mb-8" />
-      <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-        <div className="flex gap-3">
-          <div className="h-8 w-8 rounded-full bg-muted" />
-          <div className="h-4 w-32 rounded bg-muted mt-2" />
-        </div>
-        <div className="space-y-2 mt-4">
-          <div className="h-4 w-full rounded bg-muted" />
-          <div className="h-4 w-full rounded bg-muted" />
-          <div className="h-4 w-2/3 rounded bg-muted" />
-        </div>
-      </div>
-      <div className="mt-10 space-y-4">
-        <div className="h-6 w-32 rounded bg-card border border-border" />
-        <div className="h-24 w-full rounded-xl bg-card border border-border" />
-      </div>
-    </div>
-  );
+  return <DetailedArticleSkeleton headerTopPadding followUp="comments" />;
 }
 
 export function PostDetailView({ postId }: { postId: string }) {
@@ -86,6 +60,8 @@ export function PostDetailView({ postId }: { postId: string }) {
           <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
             <Link
               href={`/sign-up?redirect_url=${encodedRedirect}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: "default", size: "sm" }), "gap-1.5")}
             >
               <UserPlus className="h-3.5 w-3.5" aria-hidden="true" />
@@ -93,6 +69,8 @@ export function PostDetailView({ postId }: { postId: string }) {
             </Link>
             <Link
               href={`/sign-in?redirect_url=${encodedRedirect}`}
+              target="_blank"
+              rel="noopener noreferrer"
               className={cn(buttonVariants({ variant: "outline", size: "sm" }), "gap-1.5")}
             >
               <LogIn className="h-3.5 w-3.5" aria-hidden="true" />
@@ -104,7 +82,7 @@ export function PostDetailView({ postId }: { postId: string }) {
     }
 
     return (
-      <div className="mx-auto max-w-3xl py-12 text-center">
+      <div className="mx-auto max-w-[60rem] py-12 text-center">
         <p className="text-muted-foreground">Could not load this post. It may have been deleted or you may not have access.</p>
       </div>
     );
@@ -115,18 +93,19 @@ export function PostDetailView({ postId }: { postId: string }) {
   const level = post.level_details;
   const tagNames = post.tags_data?.map(t => t.name) ?? [];
   const isAuthor = isContentAuthor(user || (clerkUser ? { clerk_id: clerkUser.id } : null), author, post.author);
-  const expiresIn = daysUntilExpiration(post.created_at);
 
   const isImageAttachment = post.attachment_url && /\.(jpg|jpeg|png|gif|webp|svg)(\?.*)?$/i.test(post.attachment_url);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       <PageHeader
+        className="mb-0 border-b border-border pb-4"
         title={post.title}
         description={`Posted ${formatDate(post.created_at)}`}
         actions={isAuthor ? <PostAuthorActions postId={post.id} /> : undefined}
       />
       <BaseDetailedCard
+        headerClassName="pt-3"
         author={author ? {
           id: author.id || "",
           display_name: author.display_name || "Unknown",
@@ -136,14 +115,8 @@ export function PostDetailView({ postId }: { postId: string }) {
         badges={
           <>
             <Badge variant="default">{post.post_type}</Badge>
-            {expiresIn <= 3 ? (
-              <Badge variant="warning" className="border-warning/30 bg-warning/10 text-warning">
-                Expires in {expiresIn}d
-              </Badge>
-            ) : (
-              <Badge variant="outline" className="text-muted-foreground">
-                Expires in {expiresIn}d
-              </Badge>
+            {post.post_type !== "ANNOUNCEMENT" && (
+              <PostExpirationBadge createdAt={post.created_at} />
             )}
             {subject ? <Badge variant="outline">{subject.name}</Badge> : null}
             {level ? <Badge variant="outline">{level.name}</Badge> : null}

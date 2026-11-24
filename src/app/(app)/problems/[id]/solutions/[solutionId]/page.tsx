@@ -11,25 +11,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ChevronLeft,
-  CheckCircle2,
-  Star,
   UserCheck,
-  Archive,
+  Lock,
   Video,
-  Share2,
-  Flag,
-  Edit2,
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { LessonMediaViewer } from "@/components/features/lessons/lesson-media-viewer";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
-import { AuthorEndorseButton } from "@/components/features/problems/author-endorse-button";
 import { SolutionComments } from "@/components/features/comments/solution-comments";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
+import { MathRenderer } from "@/components/ui/math-renderer";
+import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import {
@@ -50,6 +47,7 @@ export default function SolutionDetailPage({
   const { id: problemId, solutionId } = use(params);
   const router = useRouter();
   const { user } = useCurrentUser();
+  const { requireAuth } = useAuthGate();
 
   const { data: solution, isLoading: isSolLoading, isError: isSolError } = useSolution(solutionId);
   const { data: problem } = useProblem(problemId);
@@ -65,6 +63,7 @@ export default function SolutionDetailPage({
 
   const handleReport = async () => {
     if (!solution) return;
+    if (!requireAuth(undefined, { actionLabel: "report a solution" })) return;
     try {
       await reportMutation.mutateAsync({ targetId: solution.id, targetType: "SOLUTION" });
       toast.success("Solution reported to moderation queue.");
@@ -82,21 +81,24 @@ export default function SolutionDetailPage({
         router.push(`/problems/${problemId}`);
         return "Solution deleted successfully";
       },
-      error: (err: any) => err?.message || "Failed to delete solution.",
+      error: (err: unknown) => (err as { message?: string } | undefined)?.message || "Failed to delete solution.",
     });
   };
 
   if (isSolLoading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6">
-        <div className="h-72 rounded-xl bg-card border border-border animate-pulse" />
-      </div>
+      <DetailedArticleSkeleton
+        hasBackLink
+        headerTopPadding
+        hasMedia={false}
+        followUp="comments"
+      />
     );
   }
 
   if (isSolError || !solution) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 text-center">
+      <div className="mx-auto max-w-[60rem] px-4 py-8 sm:px-6 text-center">
         <h2 className="font-heading text-xl font-bold text-foreground">Solution not found</h2>
         <Button
           variant="outline"
@@ -111,24 +113,13 @@ export default function SolutionDetailPage({
 
   const author = solution.author_details;
   const isAuthor = isContentAuthor(user, author, solution.author);
-
-  const isProblemAuthor =
-    Boolean(
-      (user?.id && problem?.author && user.id === problem.author) ||
-      (user?.clerk_id && problem?.author_details?.clerk_id && user.clerk_id === problem.author_details.clerk_id)
-    );
-
-  const isAccepted = solution.is_accepted || solution.status === "WORKED";
-  const isAuthorSolution =
-    solution.is_author_solution ||
-    (author && problem && (author.id === problem.author || author.clerk_id === problem.author_details?.clerk_id));
-  const isEndorsed = solution.is_author_endorsed;
-  const isArchived = solution.is_active_pool === false;
+  const isLocked = Boolean(solution.is_locked || problem?.is_locked);
+  const isAuthorSolution = Boolean(solution.is_author_solution);
 
   const imageAttachments =
     solution.attachments?.filter((att) => {
       const name =
-        att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+        att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
@@ -136,13 +127,13 @@ export default function SolutionDetailPage({
   const otherAttachments =
     solution.attachments?.filter((att) => {
       const name =
-        att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+        att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       {/* Breadcrumb Back Link to Problem */}
       <Link
         href={`/problems/${problemId}`}
@@ -154,54 +145,41 @@ export default function SolutionDetailPage({
 
       {/* Header */}
       <PageHeader
+        className="mb-0 border-b border-border pb-4"
         title={`Worked Solution`}
         description={`Submitted ${formatDate(solution.created_at)} by ${author?.display_name || "Community Solver"}`}
       />
 
       {/* Solution Post Card */}
       <BaseDetailedCard
+        headerClassName="pt-3"
         author={
           author
             ? {
                 id: author.id || "",
                 display_name: author.display_name || "Community Solver",
                 profile_image_url: author.profile_image_url,
-                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
+                contributor_tier: author.contributor_tier ?? author.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
-            {isAccepted && (
-              <Badge variant="default" className="gap-1 text-xs">
-                <CheckCircle2 className="size-3" /> Accepted Solution
-              </Badge>
-            )}
-
             {isAuthorSolution && (
               <Badge variant="outline" className="border-primary/40 text-primary text-xs h-5 gap-1">
-                <UserCheck className="size-3" /> Problem Author
+                <UserCheck className="size-3" aria-hidden="true" /> Problem Author
               </Badge>
             )}
-
-            {isEndorsed && (
-              <Badge variant="warning" className="text-xs h-5 gap-1">
-                <Star className="size-3 fill-current" /> Author Endorsed (+5)
-              </Badge>
-            )}
-
-            {isArchived && (
+            {isLocked && (
               <Badge variant="secondary" className="text-xs h-5 gap-1">
-                <Archive className="size-3" /> Archived Attempt
+                <Lock className="size-3" aria-hidden="true" /> Locked
               </Badge>
             )}
           </div>
         }
         body={
           <div className="space-y-4">
-            <div className="whitespace-pre-line leading-relaxed text-ink break-words">
-              {solution.body}
-            </div>
+            <MathRenderer content={solution.body} />
 
             {solution.video_url && (
               <div className="pt-2">
@@ -211,7 +189,7 @@ export default function SolutionDetailPage({
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-line bg-muted/30 text-xs font-medium text-brand hover:border-brand/40"
                 >
-                  <Video className="size-4" />
+                  <Video className="size-4" aria-hidden="true" />
                   <span>Watch Video Walkthrough ↗</span>
                 </a>
               </div>
@@ -220,7 +198,7 @@ export default function SolutionDetailPage({
         }
         mediaImages={
           imageAttachments.length > 0 ? (
-            <LessonMediaViewer imageAttachments={imageAttachments as any} youtubeUrl={null} />
+            <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
           ) : undefined
         }
         fileAttachments={
@@ -249,9 +227,12 @@ export default function SolutionDetailPage({
                 authorClerkId={author?.clerk_id}
                 problemAuthorId={problem?.author}
                 problemAuthorClerkId={problem?.author_details?.clerk_id}
-                isActivePool={!isArchived}
                 variant="pill"
               />
+
+              <Button variant="ghost" size="sm" onClick={handleShare} className="min-h-[44px] sm:min-h-0">
+                Share
+              </Button>
 
               <SaveButton
                 entityType="solution"
@@ -260,13 +241,8 @@ export default function SolutionDetailPage({
                 size="sm"
                 showLabel
                 label="Save"
-                className="gap-1.5 text-xs text-ink-muted hover:text-ink"
+                className="min-h-[44px] sm:min-h-0"
               />
-
-              <Button variant="ghost" size="sm" onClick={handleShare} className="gap-1.5 text-xs text-ink-muted hover:text-ink">
-                <Share2 className="size-3.5" />
-                <span>Share</span>
-              </Button>
 
               {!isAuthor && (
                 <Button
@@ -274,27 +250,13 @@ export default function SolutionDetailPage({
                   size="sm"
                   onClick={handleReport}
                   disabled={reportMutation.isPending}
-                  className="gap-1.5 text-xs text-ink-muted hover:text-destructive"
+                  className="min-h-[44px] sm:min-h-0"
                 >
-                  <Flag className="size-3.5" />
-                  <span>Report</span>
+                  {reportMutation.isPending ? "Reporting..." : "Report"}
                 </Button>
               )}
 
-              {isAuthor && !isAccepted && problem?.status !== "FINAL" && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  nativeButton={false}
-                  render={<Link href={`/problems/${problemId}/solutions/${solution.id}/edit`} />}
-                  className="gap-1.5 text-xs text-ink-muted hover:text-ink"
-                >
-                  <Edit2 className="size-3.5" />
-                  <span>Edit</span>
-                </Button>
-              )}
-
-              {isAuthor && (
+              {isAuthor && !isLocked && (
                 <>
                   <Button
                     variant="ghost"
@@ -354,21 +316,6 @@ export default function SolutionDetailPage({
                 }}
               />
             </div>
-
-            {/* Right: Problem Author Endorsement */}
-            {problem && (
-              <div className="shrink-0">
-                <AuthorEndorseButton
-                  solutionId={solution.id}
-                  problemId={problem.id}
-                  isEndorsed={!!isEndorsed}
-                  solutionScore={solution.vote_score ?? solution.vote_count ?? 0}
-                  problemStatus={problem.status}
-                  isAuthor={isProblemAuthor}
-                  isOwnSolution={!!isAuthor}
-                />
-              </div>
-            )}
           </div>
         }
       />

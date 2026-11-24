@@ -12,22 +12,22 @@ export function DocTypeIcon({ filename, resourceType, className = "size-4 shrink
   const ext = getFileExtension(filename);
 
   if (ext === ".zip") {
-    return <Archive className={`${className} text-purple-500`} />;
+    return <Archive className={`${className} text-tier-4`} aria-hidden="true" />;
   }
   if (resourceType === "TEXTBOOK") {
-    return <BookOpen className={`${className} text-blue-500`} />;
+    return <BookOpen className={`${className} text-chart-3`} aria-hidden="true" />;
   }
   if (ext === ".pdf") {
-    return <FileText className={`${className} text-red-500`} />;
+    return <FileText className={`${className} text-destructive`} aria-hidden="true" />;
   }
   if ([".doc", ".docx", ".rtf", ".txt"].includes(ext)) {
-    return <FileText className={`${className} text-blue-500`} />;
+    return <FileText className={`${className} text-chart-3`} aria-hidden="true" />;
   }
   if ([".xls", ".xlsx", ".csv"].includes(ext)) {
-    return <FileSpreadsheet className={`${className} text-emerald-500`} />;
+    return <FileSpreadsheet className={`${className} text-primary`} aria-hidden="true" />;
   }
   if ([".ppt", ".pptx"].includes(ext)) {
-    return <Layers className={`${className} text-amber-500`} />;
+    return <Layers className={`${className} text-warning`} aria-hidden="true" />;
   }
-  return <FileText className={`${className} text-primary`} />;
+  return <FileText className={`${className} text-primary`} aria-hidden="true" />;
 }

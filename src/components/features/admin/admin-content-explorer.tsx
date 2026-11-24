@@ -598,10 +598,10 @@ export function AdminContentExplorer({
                       <button
                         key={type}
                         onClick={() => toggleContentType(type)}
-                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-all ${
+                        className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
                           isSelected
-                            ? "border-transparent text-white shadow-xs"
-                            : "border-line bg-muted/30 text-ink-muted hover:text-ink"
+                            ? "border-transparent text-primary-foreground shadow-xs"
+                            : "border-border bg-muted/30 text-muted-foreground hover:text-foreground"
                         }`}
                         style={{
                           backgroundColor: isSelected ? cfg.color : undefined,
@@ -762,10 +762,9 @@ export function AdminContentExplorer({
                 contentStyle={{
                   backgroundColor: "var(--card)",
                   borderColor: "var(--border)",
-                  borderRadius: "0.75rem",
+                  borderRadius: "var(--radius-xl)",
                   color: "var(--foreground)",
-                  boxShadow:
-                    "0 12px 24px -4px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                  boxShadow: "var(--shadow-modal)",
                   fontSize: "12px",
                   padding: "10px 14px",
                 }}

@@ -105,6 +105,8 @@ export function LandingPage({
               <div className="flex flex-wrap items-center gap-3 shrink-0">
                 <Link
                   href="/sign-up"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={buttonVariants({
                     variant: "default",
                     className: "min-h-[44px] px-5 text-sm font-semibold gap-2 shadow-sm",
@@ -195,6 +197,8 @@ export function LandingPage({
             <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
               <Link
                 href="/sign-up"
+                target="_blank"
+                rel="noopener noreferrer"
                 className={buttonVariants({
                   variant: "default",
                   className: "min-h-[44px] px-6 text-sm font-semibold gap-2 shadow-sm",
@@ -238,7 +242,7 @@ export function LandingPage({
             <Link href="/forum" className="hover:text-foreground transition-colors py-1">
               Forum
             </Link>
-            <Link href="/sign-in" className="font-semibold text-foreground hover:text-primary transition-colors py-1">
+            <Link href="/sign-in" target="_blank" rel="noopener noreferrer" className="font-semibold text-foreground hover:text-primary transition-colors py-1">
               Log in
             </Link>
           </nav>

@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { ShieldAlert, ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 
@@ -137,14 +138,14 @@ export function PointAdjustmentModal({
           </DialogHeader>
 
           {/* User Preview */}
-          <div className="flex items-center justify-between rounded-xl border border-line bg-muted/40 p-3">
+          <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 p-3">
             <div>
-              <div className="font-heading font-semibold text-ink">{user.display_name}</div>
-              <div className="text-xs text-ink-muted">User ID: {user.id.slice(0, 8)}...</div>
+              <div className="font-heading font-semibold text-foreground">{user.display_name}</div>
+              <div className="text-xs text-muted-foreground">User ID: {user.id.slice(0, 8)}...</div>
             </div>
             <div className="flex items-center gap-2">
               <ContributorBadge tier={user.contributor_tier} size="sm" />
-              <span className="font-mono text-xs font-bold text-ink">
+              <span className="font-mono tabular-nums text-xs font-bold text-foreground">
                 {currentPoints.toLocaleString()} pts
               </span>
             </div>
@@ -152,31 +153,32 @@ export function PointAdjustmentModal({
 
           {/* Point Delta Input & Presets */}
           <div className="space-y-2">
-            <label className="text-xs font-semibold text-ink">
-              Point Delta ($\pm\Delta$)
+            <label htmlFor="point-delta-input" className="text-xs font-semibold text-foreground">
+              Point Delta (±Δ)
             </label>
             <div className="flex items-center gap-2">
               <Input
+                id="point-delta-input"
                 type="number"
                 value={delta === 0 ? "" : delta}
                 onChange={(e) => setDelta(parseInt(e.target.value, 10) || 0)}
                 placeholder="Enter positive or negative integer"
-                className="font-mono text-sm"
+                className="font-mono"
                 required
               />
             </div>
 
             {/* Quick Preset Buttons */}
-            <div className="flex items-center gap-1.5 pt-1">
+            <div className="flex items-center gap-1.5 pt-1 flex-wrap">
               {[10, 50, 100, -10, -50, -100].map((preset) => (
                 <button
                   key={preset}
                   type="button"
                   onClick={() => setDelta(preset)}
-                  className={`rounded-md border px-2 py-1 text-[11px] font-semibold transition-colors cursor-pointer ${
+                  className={`rounded-md border px-2 py-1 min-h-[32px] font-mono tabular-nums text-[11px] font-semibold transition-colors cursor-pointer ${
                     preset > 0
-                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/20"
-                      : "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-400 hover:bg-rose-500/20"
+                      ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+                      : "border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20"
                   }`}
                 >
                   {preset > 0 ? `+${preset}` : preset}
@@ -186,53 +188,60 @@ export function PointAdjustmentModal({
           </div>
 
           {/* Live Balance Preview */}
-          <div className="flex items-center justify-center gap-3 rounded-xl border border-line bg-card p-2.5 text-xs">
-            <span className="text-ink-muted">Current: <strong>{currentPoints} pts</strong></span>
-            <ArrowRight className="size-3.5 text-muted-foreground" />
-            <span className="font-bold text-ink">
-              New: <span className={delta >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}>{newBalance} pts</span>
+          <div className="flex items-center justify-center gap-3 rounded-xl border border-border bg-card p-2.5 text-xs">
+            <span className="text-muted-foreground">
+              Current: <strong className="font-mono tabular-nums text-foreground">{currentPoints} pts</strong>
+            </span>
+            <ArrowRight className="size-3.5 text-muted-foreground" aria-hidden="true" />
+            <span className="font-bold text-foreground">
+              New:{" "}
+              <span className={`font-mono tabular-nums ${delta >= 0 ? "text-primary" : "text-destructive"}`}>
+                {newBalance} pts
+              </span>
             </span>
           </div>
 
           {/* Reason Selection */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">
+            <label htmlFor="point-reason-select" className="text-xs font-semibold text-foreground">
               Reason (Required for Audit Log)
             </label>
-            <select
+            <Select
+              id="point-reason-select"
+              sizeVariant="sm"
               value={reasonCategory}
               onChange={(e) => setReasonCategory(e.target.value)}
-              className="w-full rounded-lg border border-line bg-card px-3 py-2 text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               {PRESET_REASONS.map((r) => (
                 <option key={r} value={r}>
                   {r}
                 </option>
               ))}
-            </select>
+            </Select>
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">
+            <label htmlFor="point-custom-reason" className="text-xs font-semibold text-foreground">
               Additional Details / Description
             </label>
             <Input
+              id="point-custom-reason"
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
               placeholder="e.g. Verified duplicated answer on problem #849"
-              className="text-xs"
             />
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-ink">
+            <label htmlFor="point-internal-notes" className="text-xs font-semibold text-foreground">
               Internal Ticket / Notes (Optional)
             </label>
             <Input
+              id="point-internal-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. MOD-2026-894"
-              className="text-xs font-mono"
+              className="font-mono"
             />
           </div>
 

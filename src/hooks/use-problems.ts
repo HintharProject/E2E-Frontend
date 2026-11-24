@@ -2,12 +2,12 @@ import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tansta
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
 import { getMutationAuthToken, resolveClientAuth } from "@/lib/client-auth";
-import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse, ContentSortMode, TimeframeFilter } from "@/types";
+import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse, ContentSortMode, TimeframeFilter, ConfidenceFilterValue, SolutionSortMode } from "@/types";
 
 export interface ProblemFilters {
   subject?: string;
   level?: string;
-  status?: string;
+  confidence?: ConfidenceFilterValue;
   origin?: string;
   ordering?: string;
   sort?: ContentSortMode;
@@ -96,17 +96,17 @@ export function useSolution(id: string) {
   });
 }
 
-export function useSolutions(problemId: string, isActivePool: boolean = true, enabled: boolean = true) {
+export function useSolutions(problemId: string, sort: SolutionSortMode = "score", enabled: boolean = true) {
   const { getToken, isSignedIn } = useAuth();
   const { isAuthed, getOptionalToken } = resolveClientAuth(isSignedIn, getToken);
 
   return useInfiniteQuery({
-    queryKey: ["solutions", problemId, isActivePool, isAuthed ? "auth" : "guest"],
+    queryKey: ["solutions", problemId, sort, isAuthed ? "auth" : "guest"],
     queryFn: async ({ pageParam = 1 }) => {
       const token = await getOptionalToken();
       const qs = buildQueryString({
         page: pageParam,
-        is_active_pool: isActivePool ? "true" : "false",
+        sort,
         expand: "attachments,author_details",
       });
       return apiFetch<PaginatedResponse<Solution>>(`/problems/${problemId}/solutions/${qs}`, token || undefined);
@@ -215,33 +215,6 @@ export function useCreateSolution() {
 }
 
 
-export function useVoteSolution() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ solutionId, value }: { solutionId: string; value: 1 | -1 | 0 }) => {
-      const token = await getMutationAuthToken(getToken);
-      if (!token) throw new Error("Unauthorized");
-
-      if (value === 0) {
-        return apiFetch(`/solutions/${solutionId}/vote/`, token, {
-          method: "DELETE",
-        });
-      } else {
-        return apiFetch(`/solutions/${solutionId}/vote/`, token, {
-          method: "POST",
-          body: JSON.stringify({ value }),
-        });
-      }
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ["solutions"] });
-      queryClient.invalidateQueries({ queryKey: ["problem"] });
-    },
-  });
-}
-
 export function useVoteProblem() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -269,27 +242,6 @@ export function useVoteProblem() {
   });
 }
 
-export function useMarkSolutionStatus() {
-  const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async ({ solutionId, status }: { solutionId: string; status: "WORKED" | "INCORRECT" }) => {
-      const token = await getMutationAuthToken(getToken);
-      if (!token) throw new Error("Unauthorized");
-      return apiFetch(`/solutions/${solutionId}/mark_status/`, token, {
-        method: "POST",
-        body: JSON.stringify({ status }),
-      });
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["solutions"] });
-      queryClient.invalidateQueries({ queryKey: ["problems"] });
-      queryClient.invalidateQueries({ queryKey: ["problem"] });
-    },
-  });
-}
-
 export function useDeleteProblem() {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
@@ -305,8 +257,13 @@ export function useDeleteProblem() {
         body: reason ? JSON.stringify({ reason }) : undefined,
       });
     },
-    onSuccess: () => {
+    onSuccess: (_data, args) => {
+      const problemId = typeof args === "string" ? args : args.problemId;
       queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["problem", problemId] });
+      queryClient.invalidateQueries({ queryKey: ["tag-content"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-session"] });
+      queryClient.invalidateQueries({ queryKey: ["saved-sessions"] });
     },
   });
 }

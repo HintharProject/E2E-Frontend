@@ -22,7 +22,8 @@ Hinthar Education E2E separates everyday navigation from distraction-free exam p
 ## 2. Operate vs. Read Width Discipline
 
 - **Operate Mode (`max-w-7xl`):** Used across `/` (Academic Hub Bento), `/lessons` (Syllabus Shelves), `/resources` (Unified Past Papers & Textbooks), `/problems`, `/forum`, `/study-plans`, `/saved-sessions`, `/search`, `/users/[id]`, and `/admin/*`.
-- **Read & Authoring Mode (`max-w-3xl`):** Applied cleanly within `(app)/layout.tsx` containers on `/lessons/[id]`, `/problems/[id]`, `/problems/[id]/solutions/[solutionId]`, `/posts/[id]`, `/posts/new`, `/problems/new`, `/lessons/new`, `/study-plans/new`, `/saved-sessions/new`, and `/settings/*`.
+- **Detail Read Mode (`max-w-[60rem]`):** Applied cleanly within `(app)/layout.tsx` containers (along with matching skeletons and fallback states) on `/lessons/[id]` (keeping inner body prose at `max-w-[70ch]`), `/problems/[id]`, `/problems/[id]/solutions/[solutionId]`, and `/posts/[id]`.
+- **Authoring & Form Mode (`max-w-3xl`):** Applied to `/posts/new`, `/problems/new`, `/lessons/new`, `/study-plans/new`, `/saved-sessions/new`, and `/settings/*`.
 
 ---
 

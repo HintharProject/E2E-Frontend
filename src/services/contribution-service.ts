@@ -57,68 +57,6 @@ export async function fetchContributionLedger(
   );
 }
 
-/**
- * Problem author toggles endorsement on candidate solution (+5 Solved Score boost).
- */
-export async function endorseSolution(
-  solutionId: string,
-  token: string | null
-): Promise<{
-  solution_id: string;
-  is_author_endorsed: boolean;
-  solved_score: number;
-  problem_status: string;
-  dynamic_acceptance_triggered: boolean;
-  message: string;
-}> {
-  return apiFetch(`/solutions/${solutionId}/endorse/`, token, {
-    method: "POST",
-  });
-}
-
-/**
- * @deprecated Manual solution acceptance is superseded by the automated Dynamic Acceptance Engine.
- * Calling this endpoint will return HTTP 410 Gone (MANUAL_ACCEPTANCE_DEPRECATED).
- */
-export async function acceptSolution(
-  problemId: string,
-  solutionId: string,
-  token: string | null
-): Promise<{
-  problem_id: string;
-  problem_status: "SOLVED";
-  accepted_solution_id: string;
-  milestone_awarded: boolean;
-  milestone_points: number;
-  problem_author_balance: number;
-}> {
-  return apiFetch(`/problems/${problemId}/solutions/${solutionId}/accept/`, token, {
-    method: "POST",
-  });
-}
-
-/**
- * @deprecated Manual solution unacceptance is superseded by the automated Dynamic Acceptance Engine.
- * Calling this endpoint will return HTTP 410 Gone (MANUAL_ACCEPTANCE_DEPRECATED).
- */
-export async function unacceptSolution(
-  problemId: string,
-  solutionId: string,
-  token: string | null
-): Promise<{
-  problem_id: string;
-  problem_status: "OPEN";
-  accepted_solution_id: null;
-  milestone_reverted: boolean;
-  milestone_points_deducted: number;
-  problem_author_balance: number;
-}> {
-  return apiFetch(`/problems/${problemId}/solutions/${solutionId}/accept/`, token, {
-    method: "DELETE",
-  });
-}
-
-
 export async function adjustPointsAdmin(
   payload: {
     user_id: string;

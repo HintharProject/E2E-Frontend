@@ -78,7 +78,7 @@ export function AppTopBar() {
   const router = useRouter();
   const { user, isLoading } = useCurrentUser();
   const { toggleMobileNav, openCommandPalette } = useUIStore();
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
   const queryClient = useQueryClient();
   const { isRefreshing, triggerRefresh } = useRefreshStore();
 
@@ -110,10 +110,13 @@ export function AppTopBar() {
       });
 
       queryClient.prefetchInfiniteQuery({
-        queryKey: ["problems", { status: "OPEN", subject: "", level: "" }],
+        queryKey: ["problems", { confidence: "needs_help", sort: "default" }, isSignedIn ? "auth" : "guest", "v2"],
         initialPageParam: 1,
         queryFn: ({ pageParam = 1 }) =>
-          apiFetch(`/problems/?status=OPEN&page=${pageParam}`, token),
+          apiFetch(
+            `/problems/?confidence=needs_help&sort=default&page=${pageParam}&expand=attachments,author_details,subject_details,level_details,resource`,
+            token
+          ),
       });
 
       queryClient.prefetchInfiniteQuery({
@@ -128,7 +131,7 @@ export function AppTopBar() {
     };
 
     prefetchTabs();
-  }, [user, isLoading, getToken, queryClient]);
+  }, [user, isLoading, getToken, isSignedIn, queryClient]);
 
   const [showSuccess, setShowSuccess] = useState(false);
   const wasRefreshing = useRef(isRefreshing);
@@ -282,6 +285,8 @@ export function AppTopBar() {
               <div className="flex items-center gap-1.5">
                 <Link
                   href="/sign-in"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={buttonVariants({
                     variant: "ghost",
                     size: "sm",
@@ -292,6 +297,8 @@ export function AppTopBar() {
                 </Link>
                 <Link
                   href="/sign-up"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className={buttonVariants({
                     variant: "default",
                     size: "sm",

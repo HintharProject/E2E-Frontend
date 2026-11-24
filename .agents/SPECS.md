@@ -18,7 +18,7 @@ E2E is a minimal, robust platform focused on creator-led learning and community-
 - **Comments**: Comments are threaded (nested). **Crucial**: Use lazy-loading. Fetch top-level comments from `/comments/?post_id={id}`, and only fetch replies from `/replies/?parent_id={id}` when requested by the user. Use `react-virtuoso` for virtualized rendering of long lists.
 
 ## 4. User Roles & Capabilities
-- **Student (Default)**: Can view, follow, create Questions/Sharing posts, comment, vote, and manage 3 Study Plans + 3 Saved Sessions.
+- **Student (Default)**: Can view, follow, create Questions/Sharing posts, comment, vote, and manage 12 Study Plans + 12 Saved Sessions.
 - **Creator**: Requires Admin approval. Can publish Lessons, make Announcements, and manage their content.
 - **Admin**: Can delete content, ban users, update roles, and manage the moderation queue.
 
@@ -28,7 +28,7 @@ E2E is a minimal, robust platform focused on creator-led learning and community-
   - Posts: Max 1 file (5MB, .jpg, .png, .pdf). 
   - Lessons: Max 5 files (20MB, .pdf, .docx, .pptx, .zip).
   - Videos: Direct video upload is prohibited. The UI must only provide a URL input for embedded videos (YouTube).
-- **Collection Limits**: Max 3 Study Plans (Lessons only) and 3 Saved Sessions (Posts + Lessons). The UI must disable the "Create New" button if the limit is reached or if an empty collection exists.
+- **Collection Limits**: Max 12 Study Plans and 12 Saved Sessions per user. The UI must disable the "Create New" button if the limit is reached or if an empty collection exists.
 - **30-Day TTL**: All posts expire in 30 days. The UI should display an "expires in X days" badge.
 - **Banned Users**: Users progress through `WARNING` -> `BANNED_24H` -> `BANNED_7D` -> `PERMANENT_BAN`. Banned users receive `403 Forbidden` on write actions. The frontend should display a "Read-Only Mode" banner or disable inputs.
 

@@ -27,7 +27,9 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import {
   Dialog,
@@ -42,6 +44,7 @@ import { Input } from "@/components/ui/input";
 import { ReportModal } from "@/components/features/moderation/report-modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { isModeratorOrAbove, isAdminOrSuperAdmin, BanState } from "@/types/user";
+import type { ContributorTier } from "@/types/contribution";
 import { useStaffActions, TakedownAction } from "@/hooks/use-staff-actions";
 import { ManageSanctionModal, SanctionTargetUser } from "@/components/features/admin/manage-sanction-modal";
 import { PointAdjustmentModal } from "@/components/features/admin/point-adjustment-modal";
@@ -183,6 +186,13 @@ export function CardMoreMenu({
     }
   }
 
+  const openStaffAction = (config: PendingStaffActionConfig) => {
+    setStaffReason("");
+    setStaffActionConfig(config);
+  };
+
+  const hasAuthorActions = Boolean(editHref || onPublish || onArchive || onDelete);
+
   const handleExecuteStaffAction = async () => {
     if (!staffActionConfig) return;
 
@@ -217,31 +227,30 @@ export function CardMoreMenu({
         <DropdownMenuContent align="end" side="bottom" sideOffset={4} className="w-56 text-xs">
           {/* Share */}
           <DropdownMenuItem onClick={handleShare}>
-            <Share2 className="h-3.5 w-3.5" />
+            <Share2 className="h-3.5 w-3.5" aria-hidden="true" />
             Share
           </DropdownMenuItem>
 
           {/* Report */}
           <DropdownMenuItem onClick={handleReport}>
-            <Flag className="h-3.5 w-3.5" />
+            <Flag className="h-3.5 w-3.5" aria-hidden="true" />
             Report
           </DropdownMenuItem>
 
-          {/* Edit — only if authorized */}
+          {/* Author Actions — only when authorized */}
+          {hasAuthorActions && <DropdownMenuSeparator />}
+
           {editHref && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.stopPropagation();
-                }}
-              >
-                <Link href={editHref} className="flex items-center gap-2 w-full">
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit
-                </Link>
-              </DropdownMenuItem>
-            </>
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+            >
+              <Link href={editHref} className="flex items-center gap-2 w-full">
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                Edit
+              </Link>
+            </DropdownMenuItem>
           )}
 
           {/* Publish — Lessons only */}
@@ -253,7 +262,7 @@ export function CardMoreMenu({
                 setPublishOpen(true);
               }}
             >
-              <Eye className="h-3.5 w-3.5" />
+              <Eye className="h-3.5 w-3.5" aria-hidden="true" />
               Publish
             </DropdownMenuItem>
           )}
@@ -267,231 +276,236 @@ export function CardMoreMenu({
                 setArchiveOpen(true);
               }}
             >
-              <Archive className="h-3.5 w-3.5" />
+              <Archive className="h-3.5 w-3.5" aria-hidden="true" />
               Archive
             </DropdownMenuItem>
           )}
 
           {/* Delete — Author delete */}
           {onDelete && (
-            <>
-              {!editHref && !onPublish && !onArchive && <DropdownMenuSeparator />}
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDeleteOpen(true);
-                }}
-              >
-                <Trash2 className="h-3.5 w-3.5" />
-                Delete
-              </DropdownMenuItem>
-            </>
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setDeleteOpen(true);
+              }}
+            >
+              <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+              Delete
+            </DropdownMenuItem>
           )}
 
           {/* ========================================================================= */}
-          {/* STAFF MODERATION ACTIONS (Strictly isModeratorOrAbove)                      */}
+          {/* STAFF MODERATION SUBMENU (Strictly isModeratorOrAbove)                    */}
           {/* ========================================================================= */}
           {isStaff && (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuLabel className="flex items-center gap-1.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
-                <Shield className="size-3" />
-                <span>Staff Moderation</span>
-              </DropdownMenuLabel>
-
-              {/* Hide / Unhide */}
-              {contentType !== "LESSON" && (
-                <>
-                  {isHidden ? (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setStaffActionConfig({
-                          action: "unhide",
-                          title: `Unhide ${contentType}`,
-                          description: `Make this ${contentType.toLowerCase()} publicly visible to all students again.`,
-                          confirmLabel: "Unhide Item",
-                        });
-                      }}
-                      className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
-                    >
-                      <Eye className="size-3.5" />
-                      <span>Unhide {contentType}</span>
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setStaffActionConfig({
-                          action: "hide",
-                          title: `Hide ${contentType}`,
-                          description: `Hide this ${contentType.toLowerCase()} from public student feeds immediately. Only staff will see it.`,
-                          confirmLabel: "Hide from Students",
-                          isDestructive: true,
-                        });
-                      }}
-                      className="gap-2 text-amber-600 dark:text-amber-400"
-                    >
-                      <EyeOff className="size-3.5" />
-                      <span>Hide {contentType}</span>
-                    </DropdownMenuItem>
+              <DropdownMenuSub>
+                <DropdownMenuSubTrigger
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                  className="gap-2 text-amber-700 dark:text-amber-400 font-medium"
+                >
+                  <Shield className="size-3.5" aria-hidden="true" />
+                  <span>Moderation</span>
+                </DropdownMenuSubTrigger>
+                <DropdownMenuSubContent className="w-52 text-xs">
+                  {/* Hide / Unhide */}
+                  {contentType !== "LESSON" && (
+                    <>
+                      {isHidden ? (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openStaffAction({
+                              action: "unhide",
+                              title: `Unhide ${contentType}`,
+                              description: `Make this ${contentType.toLowerCase()} publicly visible to all students again.`,
+                              confirmLabel: "Unhide Item",
+                            });
+                          }}
+                          className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
+                        >
+                          <Eye className="size-3.5" aria-hidden="true" />
+                          <span>Unhide {contentType}</span>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openStaffAction({
+                              action: "hide",
+                              title: `Hide ${contentType}`,
+                              description: `Hide this ${contentType.toLowerCase()} from public student feeds immediately. Only staff will see it.`,
+                              confirmLabel: "Hide from Students",
+                              isDestructive: true,
+                            });
+                          }}
+                          className="gap-2 text-amber-600 dark:text-amber-400"
+                        >
+                          <EyeOff className="size-3.5" aria-hidden="true" />
+                          <span>Hide {contentType}</span>
+                        </DropdownMenuItem>
+                      )}
+                    </>
                   )}
-                </>
-              )}
 
-              {/* Lesson Delist vs Restore */}
-              {contentType === "LESSON" && (
-                isHidden ? (
+                  {/* Lesson Delist vs Restore */}
+                  {contentType === "LESSON" && (
+                    isHidden ? (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openStaffAction({
+                            action: "restore",
+                            title: "Restore Lesson to Published",
+                            description: "Restore this lesson to Published status so students can view it.",
+                            confirmLabel: "Restore Lesson",
+                          });
+                        }}
+                        className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
+                      >
+                        <Eye className="size-3.5" aria-hidden="true" />
+                        <span>Restore to Published</span>
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          openStaffAction({
+                            action: "delist",
+                            title: "Delist Lesson to Draft",
+                            description: "Demote this lesson back to Draft status so students cannot view it.",
+                            confirmLabel: "Delist to Draft",
+                            isDestructive: true,
+                          });
+                        }}
+                        className="gap-2 text-amber-600 dark:text-amber-400"
+                      >
+                        <FileMinus className="size-3.5" aria-hidden="true" />
+                        <span>Delist to Draft</span>
+                      </DropdownMenuItem>
+                    )
+                  )}
+
+                  {/* Lock / Unlock */}
+                  {(contentType === "POST" || contentType === "PROBLEM") && (
+                    <>
+                      {isLocked ? (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openStaffAction({
+                              action: "unlock",
+                              title: `Unlock Discussion`,
+                              description: `Re-open comments and replies for this ${contentType.toLowerCase()}.`,
+                              confirmLabel: "Unlock Thread",
+                            });
+                          }}
+                          className="gap-2 text-emerald-600 dark:text-emerald-400"
+                        >
+                          <Unlock className="size-3.5" aria-hidden="true" />
+                          <span>Unlock Thread</span>
+                        </DropdownMenuItem>
+                      ) : (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            openStaffAction({
+                              action: "lock",
+                              title: `Lock Discussion`,
+                              description: `Prevent students from submitting new comments or solutions to this ${contentType.toLowerCase()}.`,
+                              confirmLabel: "Lock Thread",
+                              isDestructive: true,
+                            });
+                          }}
+                          className="gap-2 text-muted-foreground"
+                        >
+                          <Lock className="size-3.5" aria-hidden="true" />
+                          <span>Lock Discussion</span>
+                        </DropdownMenuItem>
+                      )}
+                    </>
+                  )}
+
+                  {/* Staff Soft Delete (even if not author) */}
                   <DropdownMenuItem
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      setStaffActionConfig({
-                        action: "restore",
-                        title: "Restore Lesson to Published",
-                        description: "Restore this lesson to Published status so students can view it.",
-                        confirmLabel: "Restore Lesson",
-                      });
-                    }}
-                    className="gap-2 text-emerald-600 dark:text-emerald-400 font-medium"
-                  >
-                    <Eye className="size-3.5" />
-                    <span>Restore to Published</span>
-                  </DropdownMenuItem>
-                ) : (
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setStaffActionConfig({
-                        action: "delist",
-                        title: "Delist Lesson to Draft",
-                        description: "Demote this lesson back to Draft status so students cannot view it.",
-                        confirmLabel: "Delist to Draft",
+                      openStaffAction({
+                        action: "soft_delete",
+                        title: isFinal ? "Staff Override Delete" : `Staff Delete ${contentType}`,
+                        description: isFinal
+                          ? "This problem has finalized consensus. Your staff deletion overrides finality and automatically reconciles author milestone points."
+                          : `Soft delete this ${contentType.toLowerCase()} and archive associated media/replies.`,
+                        confirmLabel: "Confirm Deletion",
                         isDestructive: true,
+                        requiresReason: true,
                       });
-                    }}
-                    className="gap-2 text-amber-600 dark:text-amber-400"
-                  >
-                    <FileMinus className="size-3.5" />
-                    <span>Delist to Draft</span>
-                  </DropdownMenuItem>
-                )
-              )}
-
-              {/* Lock / Unlock */}
-              {(contentType === "POST" || contentType === "PROBLEM") && (
-                <>
-                  {isLocked ? (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setStaffActionConfig({
-                          action: "unlock",
-                          title: `Unlock Discussion`,
-                          description: `Re-open comments and replies for this ${contentType.toLowerCase()}.`,
-                          confirmLabel: "Unlock Thread",
-                        });
-                      }}
-                      className="gap-2 text-emerald-600 dark:text-emerald-400"
-                    >
-                      <Unlock className="size-3.5" />
-                      <span>Unlock Thread</span>
-                    </DropdownMenuItem>
-                  ) : (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setStaffActionConfig({
-                          action: "lock",
-                          title: `Lock Discussion`,
-                          description: `Prevent students from submitting new comments or solutions to this ${contentType.toLowerCase()}.`,
-                          confirmLabel: "Lock Thread",
-                          isDestructive: true,
-                        });
-                      }}
-                      className="gap-2 text-muted-foreground"
-                    >
-                      <Lock className="size-3.5" />
-                      <span>Lock Discussion</span>
-                    </DropdownMenuItem>
-                  )}
-                </>
-              )}
-
-              {/* Staff Soft Delete (even if not author) */}
-              <DropdownMenuItem
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setStaffActionConfig({
-                    action: "soft_delete",
-                    title: isFinal ? "Staff Override Delete" : `Staff Delete ${contentType}`,
-                    description: isFinal
-                      ? "This problem has finalized consensus. Your staff deletion overrides finality and automatically reconciles author milestone points."
-                      : `Soft delete this ${contentType.toLowerCase()} and archive associated media/replies.`,
-                    confirmLabel: "Confirm Deletion",
-                    isDestructive: true,
-                    requiresReason: true,
-                  });
-                }}
-                className="gap-2 text-destructive focus:text-destructive"
-              >
-                <Trash2 className="size-3.5" />
-                <span>{isFinal ? "Staff Override Delete" : `Staff Delete ${contentType}`}</span>
-              </DropdownMenuItem>
-
-              {/* Author Sanctions */}
-              {targetUserForModal && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSanctionInitialStatus("WARNING");
-                      setSanctionModalOpen(true);
-                    }}
-                    className="gap-2 text-amber-600 dark:text-amber-400"
-                  >
-                    <AlertTriangle className="size-3.5" />
-                    <span>Warn Author</span>
-                  </DropdownMenuItem>
-
-                  <DropdownMenuItem
-                    onClick={(e) => {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      setSanctionInitialStatus("BANNED_24H");
-                      setSanctionModalOpen(true);
                     }}
                     className="gap-2 text-destructive focus:text-destructive"
                   >
-                    <ShieldAlert className="size-3.5" />
-                    <span>Sanction / Suspend</span>
+                    <Trash2 className="size-3.5" aria-hidden="true" />
+                    <span>{isFinal ? "Staff Override Delete" : `Staff Delete ${contentType}`}</span>
                   </DropdownMenuItem>
 
-                  {isAdmin && (
-                    <DropdownMenuItem
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setPointModalOpen(true);
-                      }}
-                      className="gap-2 text-primary"
-                    >
-                      <Coins className="size-3.5" />
-                      <span>Adjust Points</span>
-                    </DropdownMenuItem>
+                  {/* Author Sanctions */}
+                  {targetUserForModal && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSanctionInitialStatus("WARNING");
+                          setSanctionModalOpen(true);
+                        }}
+                        className="gap-2 text-amber-600 dark:text-amber-400"
+                      >
+                        <AlertTriangle className="size-3.5" aria-hidden="true" />
+                        <span>Warn Author</span>
+                      </DropdownMenuItem>
+
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setSanctionInitialStatus("BANNED_24H");
+                          setSanctionModalOpen(true);
+                        }}
+                        className="gap-2 text-destructive focus:text-destructive"
+                      >
+                        <ShieldAlert className="size-3.5" aria-hidden="true" />
+                        <span>Sanction / Suspend</span>
+                      </DropdownMenuItem>
+
+                      {isAdmin && (
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setPointModalOpen(true);
+                          }}
+                          className="gap-2 text-primary"
+                        >
+                          <Coins className="size-3.5" aria-hidden="true" />
+                          <span>Adjust Points</span>
+                        </DropdownMenuItem>
+                      )}
+                    </>
                   )}
-                </>
-              )}
+                </DropdownMenuSubContent>
+              </DropdownMenuSub>
             </>
           )}
         </DropdownMenuContent>
@@ -579,21 +593,21 @@ export function CardMoreMenu({
               />
               {staffActionConfig?.title}
             </DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed text-ink-muted">
+            <DialogDescription className="text-sm leading-relaxed text-muted-foreground">
               {staffActionConfig?.description}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2">
-            <div className="rounded-xl border border-line bg-muted/40 p-3 text-xs space-y-1">
-              <div className="font-semibold text-ink">{deleteLabel}</div>
+            <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs space-y-1">
+              <div className="font-semibold text-foreground">{deleteLabel}</div>
               {author?.display_name && (
-                <div className="text-ink-muted">Author: {author.display_name}</div>
+                <div className="text-muted-foreground">Author: {author.display_name}</div>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-ink">
+              <label className="text-xs font-semibold text-foreground">
                 Audit Reason {staffActionConfig?.requiresReason ? "(Mandatory)" : "(Optional)"}
               </label>
               <Input
@@ -644,7 +658,7 @@ export function CardMoreMenu({
           user={{
             id: targetUserForModal.id,
             display_name: targetUserForModal.display_name,
-            contributor_tier: (author?.contributor_tier as any) || 0,
+            contributor_tier: (author?.contributor_tier as ContributorTier | undefined) ?? 0,
             contribution_points: author?.contribution_points || 0,
           }}
           open={pointModalOpen}

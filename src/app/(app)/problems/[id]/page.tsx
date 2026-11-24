@@ -13,13 +13,17 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { PageHeader } from "@/components/ui/page-header";
 import { PostAttachment } from "@/components/features/posts/post-attachment";
-import { SolutionPoolContainer } from "@/components/features/problems/solution-pool-container";
+import { SolutionListContainer } from "@/components/features/problems/solution-pool-container";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
+import { MathRenderer } from "@/components/ui/math-renderer";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProblemAuthorActions } from "@/components/features/problems/problem-author-actions";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { BaseDetailedCard } from "@/components/ui/base-card";
+import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 import { VoteWidget } from "@/components/features/contributions/vote-widget";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
@@ -57,16 +61,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
   };
 
   if (isProblemLoading) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <div className="h-64 rounded-xl bg-card border border-border animate-pulse" />
-      </div>
-    );
+    return <DetailedArticleSkeleton hasBackLink followUp="solutions" />;
   }
 
   if (isProblemError || !problem) {
     return (
-      <div className="mx-auto max-w-3xl py-12 text-center">
+      <div className="mx-auto max-w-[60rem] py-12 text-center">
         <h2 className="text-xl font-heading font-semibold text-foreground">Problem not found</h2>
         <Button variant="outline" className="mt-4" onClick={() => router.push("/problems")}>
           Back to Problems
@@ -77,39 +77,44 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
   const author = problem.author_details;
   const isAuthor = isContentAuthor(user, author, problem.author);
-  const isFinal = problem.status === "FINAL";
+  const isLocked = Boolean(problem.is_locked);
   const pastPaperDetails = problem.resource_details;
+  const isExpiringProblem =
+    problem.origin !== "PAST_PAPER" &&
+    (problem.resolution_confidence ?? 0) < 80 &&
+    problem.confidence_band !== "high";
 
   const imageAttachments =
     problem.attachments?.filter((att) => {
-      const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const name = att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return ["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
   const otherAttachments =
     problem.attachments?.filter((att) => {
-      const name = att.file_name || (att as any).attachment_name || att.file_url || (att as any).attachment_url || "";
+      const name = att.file_name || att.attachment_name || att.file_url || att.attachment_url || "";
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto max-w-[60rem] space-y-6">
       <div>
         <Link
           href="/problems"
-          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-6 transition-colors"
+          className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground mb-3 transition-colors"
         >
           <ChevronLeft className="mr-1 h-4 w-4" /> Back to problems
         </Link>
 
         <PageHeader
+          className="mb-0 border-b border-border pb-4"
           title={problem.title}
           description={`Asked ${formatDate(problem.created_at)}`}
           actions={
             <div className="flex items-center gap-2">
-              {isAuthor && <ProblemAuthorActions problemId={problem.id} isFinal={isFinal} />}
+              {isAuthor && <ProblemAuthorActions problemId={problem.id} isLocked={isLocked} />}
               <StaffContentActionMenu
                 targetType="PROBLEM"
                 targetId={problem.id}
@@ -118,7 +123,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 isHidden={problem.is_hidden}
                 isLocked={problem.is_locked}
                 isDeleted={problem.is_deleted}
-                isFinal={isFinal}
                 variant="button"
               />
             </div>
@@ -126,7 +130,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         />
       </div>
 
-      {/* Path B Past Paper Sourced Ribbon */}
       {problem.origin === "PAST_PAPER" && (
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 rounded-xl border border-border bg-muted/30">
           <div className="flex items-center gap-2 text-sm text-foreground font-medium">
@@ -144,10 +147,10 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             )}
           </div>
 
-          {Boolean(problem.resource || (problem as any).resource_id || pastPaperDetails?.id) && (
+          {Boolean(problem.resource || problem.resource_id || pastPaperDetails?.id) && (
             <Link
-              href={`/train/${problem.resource || (problem as any).resource_id || pastPaperDetails?.id}`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline transition-colors px-2.5 py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
+              href={`/train/${problem.resource || problem.resource_id || pastPaperDetails?.id}`}
+              className="inline-flex items-center gap-1.5 min-h-[44px] sm:min-h-0 text-xs font-semibold text-primary hover:underline transition-colors px-3 py-1.5 sm:px-2.5 sm:py-1 rounded-lg border border-primary/20 bg-primary/5 hover:bg-primary/10"
               title="Open this past paper in Train practice workspace"
             >
               <span>Open in Train!</span>
@@ -157,7 +160,6 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         </div>
       )}
 
-      {/* Problem Detailed Card */}
       <BaseDetailedCard
         author={
           author
@@ -165,33 +167,27 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
                 id: author.id || "",
                 display_name: author.display_name || "Unknown",
                 profile_image_url: author.profile_image_url,
-                contributor_tier: author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0,
+                contributor_tier: author.contributor_tier ?? author.reputation?.contributor_tier ?? 0,
               }
             : undefined
         }
         badges={
           <div className="flex flex-wrap items-center gap-1.5">
-            {problem.status === "FINAL" && (
-              <Badge variant="outline" className="border-chart-3/40 bg-chart-3/10 text-chart-3 font-medium text-xs gap-1">
-                <Lock className="size-3" /> Final Consensus
+            <ConfidenceBadge
+              confidence={problem.resolution_confidence}
+              band={problem.confidence_band}
+            />
+            {isExpiringProblem && (
+              <PostExpirationBadge
+                createdAt={problem.created_at}
+                entityType="problem"
+              />
+            )}
+            {isLocked && (
+              <Badge variant="secondary" className="text-xs gap-1">
+                <Lock className="size-3" aria-hidden="true" /> Locked
               </Badge>
             )}
-            {problem.status === "SOLVED" && (
-              <Badge className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-xs">
-                Solved (+10 pts)
-              </Badge>
-            )}
-            {problem.status === "OPEN" && (
-              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-xs">
-                Active Pool
-              </Badge>
-            )}
-            {problem.status === "CLOSED" && (
-              <Badge variant="secondary" className="text-xs">
-                Closed
-              </Badge>
-            )}
-
             {problem.subject_details && <Badge variant="outline">{problem.subject_details.name}</Badge>}
             {problem.level_details && <Badge variant="outline">{problem.level_details.name}</Badge>}
             {problem.tags_data?.map((t) => (
@@ -199,7 +195,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         }
-        body={problem.body}
+        body={problem.body ? <MathRenderer content={problem.body} /> : ""}
         mediaImages={
           imageAttachments.length > 0 ? (
             <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
@@ -225,12 +221,12 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
               authorClerkId={author?.clerk_id}
               variant="pill"
             />
-            <Button variant="ghost" size="sm" onClick={handleShare}>
+            <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={handleShare}>
               Share
             </Button>
-            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" showLabel label="Save" />
+            <SaveButton entityType="problem" entityId={problem.id} variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" showLabel label="Save" />
             {user?.clerk_id !== problem.author_details?.clerk_id && (
-              <Button variant="ghost" size="sm" onClick={handleReport} disabled={reportMutation.isPending}>
+              <Button variant="ghost" size="sm" className="min-h-[44px] sm:min-h-0" onClick={handleReport} disabled={reportMutation.isPending}>
                 {reportMutation.isPending ? "Reporting..." : "Report"}
               </Button>
             )}
@@ -238,8 +234,7 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
         }
       />
 
-      {/* Solutions Section with 7-Slot Pool & Eviction Engine */}
-      <SolutionPoolContainer problem={problem} isAuthor={isAuthor} />
+      <SolutionListContainer problem={problem} isAuthor={isAuthor} />
     </div>
   );
 }

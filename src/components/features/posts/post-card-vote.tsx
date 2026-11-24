@@ -26,21 +26,29 @@ export function PostCardVote({
 
   const [voteCount, setVoteCount] = useState(initialVoteCount);
   const [userVote, setUserVote] = useState(initialUserVote ?? 0);
+  const [isPending, setIsPending] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Prevents the useEffect prop-sync from overwriting optimistic state
   // while a mutation is in-flight (triggered by onMutate cache patch re-renders)
   const isPendingRef = useRef(false);
+  const lastConfirmedRef = useRef({
+    voteCount: initialVoteCount,
+    userVote: initialUserVote ?? 0,
+  });
 
   useEffect(() => {
     if (!isPendingRef.current) {
+      const nextVote = initialUserVote ?? 0;
       setVoteCount(initialVoteCount);
-      setUserVote(initialUserVote ?? 0);
+      setUserVote(nextVote);
+      lastConfirmedRef.current = { voteCount: initialVoteCount, userVote: nextVote };
     }
   }, [initialVoteCount, initialUserVote]);
 
   useEffect(() => {
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
+      isPendingRef.current = false;
     };
   }, []);
 
@@ -68,50 +76,73 @@ export function PostCardVote({
       return;
     }
 
+    if (!isPendingRef.current) {
+      lastConfirmedRef.current = { voteCount, userVote };
+    }
+
     const targetValue = userVote === 1 ? 0 : 1;
     const diff = (targetValue - userVote) * userWeight;
+    const nextCount = voteCount + diff;
 
     setUserVote(targetValue);
-    setVoteCount((prev) => prev + diff);
+    setVoteCount(nextCount);
 
     // Mark pending before the debounce fires so the useEffect won't reset state
     // when the onMutate cache patch triggers a re-render
     isPendingRef.current = true;
+    setIsPending(true);
 
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => {
       voteMutation.mutate(
         { postId, value: targetValue, voteWeight: userWeight },
         {
+          onSuccess: () => {
+            lastConfirmedRef.current = { voteCount: nextCount, userVote: targetValue };
+          },
           onSettled: () => {
             isPendingRef.current = false;
+            setIsPending(false);
           },
           onError: () => {
             // Roll back optimistic state on error
-            setUserVote(userVote);
-            setVoteCount((prev) => prev - diff);
+            setUserVote(lastConfirmedRef.current.userVote);
+            setVoteCount(lastConfirmedRef.current.voteCount);
             toast.error("Failed to register vote.");
           },
         }
       );
-    }, 1000);
+    }, 350);
   };
+
+  const isSyncing = isPending || voteMutation.isPending;
 
   return (
     <button
       type="button"
       onClick={handleVote}
       disabled={isSelf}
+      aria-busy={isSyncing}
+      data-pending={isSyncing ? "true" : undefined}
+      aria-label={
+        isSelf
+          ? "Cannot vote on your own post"
+          : userVote === 1
+            ? `Remove upvote (${voteCount} votes)`
+            : `Upvote post (${voteCount} votes)`
+      }
       aria-pressed={userVote === 1}
       title={isSelf ? "You cannot vote on your own post" : "Upvote"}
       className={cn(
-        "flex items-center gap-1 text-xs font-semibold transition-colors disabled:opacity-50 rounded px-1.5 py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        "flex items-center justify-center gap-1 min-h-[44px] min-w-[44px] sm:min-h-0 sm:min-w-0 text-xs font-semibold transition-colors disabled:opacity-50 rounded-md sm:rounded px-2.5 py-1 sm:px-1.5 sm:py-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
         isSelf ? "cursor-not-allowed opacity-50" : "cursor-pointer",
         userVote === 1 ? "text-primary bg-primary/10 font-bold" : "text-muted-foreground hover:text-primary"
       )}
     >
-      <ChevronUp className="size-3.5" />
-      <span className="font-mono tabular-nums">{voteCount}</span>
+      <ChevronUp className={cn("size-3.5", isSyncing && "animate-pulse opacity-80")} aria-hidden="true" />
+      <span className={cn("font-mono tabular-nums transition-opacity", isSyncing && "opacity-75")}>
+        {voteCount}
+      </span>
     </button>
   );
 }

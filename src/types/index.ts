@@ -138,9 +138,10 @@ export interface PaginatedResponse<T> {
 
 export * from "./collections";
 
-export type ProblemStatusEnum = "OPEN" | "SOLVED" | "FINAL" | "CLOSED";
+export type ConfidenceBand = "unanswered" | "developing" | "likely_solved" | "high";
+export type ConfidenceFilterValue = "" | ConfidenceBand | "needs_help";
+export type SolutionSortMode = "score" | "newest";
 export type ProblemOriginEnum = "USER_UPLOAD" | "PAST_PAPER";
-export type SolutionStatusEnum = "PENDING" | "WORKED" | "INCORRECT";
 
 export interface Resource {
   id: string;
@@ -164,6 +165,7 @@ export interface ProblemAttachment {
   file_url: string;
   file_name: string;
   attachment_url: string | null;
+  attachment_name?: string | null;
   created_at: string;
 }
 
@@ -191,19 +193,18 @@ export interface Problem {
   level_details: Level;
   source?: string | null;
   ocr_text?: string | null;
-  status: ProblemStatusEnum;
   is_feed_visible?: boolean;
-  solved_at?: string | null;
   attachments: ProblemAttachment[];
   tags?: string[];
   tags_data?: Tag[];
   vote_count?: number;
   vote_score?: number;
   solution_count?: number;
-  accepted_solution?: string | null;
-  accepted_solution_id?: string | null;
-  has_accepted_solution?: boolean;
-  milestone_claimed?: boolean;
+  top_solution_score?: number;
+  corroborating_score_sum?: number;
+  last_solution_change_at?: string | null;
+  resolution_confidence: number;
+  confidence_band: ConfidenceBand;
   user_vote?: 1 | -1 | null;
   is_hidden?: boolean;
   is_locked?: boolean;
@@ -217,14 +218,8 @@ export interface SolutionAttachment {
   file_url: string;
   file_name: string;
   attachment_url: string | null;
+  attachment_name?: string | null;
   created_at: string;
-}
-
-export interface VerificationMetrics {
-  solved_score: number;
-  peer_upvoters_count: number;
-  is_maturation_met: boolean;
-  decisive_margin: number;
 }
 
 export interface Solution {
@@ -234,12 +229,7 @@ export interface Solution {
   author_details: UserPublic;
   body: string;
   video_url?: string | null;
-  status: SolutionStatusEnum;
-  is_accepted?: boolean;
-  is_author_endorsed?: boolean;
   is_author_solution?: boolean;
-  is_active_pool?: boolean;
-  verification_metrics?: VerificationMetrics;
   attachments: SolutionAttachment[];
   vote_count?: number;
   vote_score?: number;
@@ -254,26 +244,20 @@ export interface Solution {
   problem_details?: Problem;
 }
 
-export interface SolutionPoolResponse {
-  active_count: number;
-  max_pool_capacity: number;
-  has_accepted_solution: boolean;
-  solutions: Solution[];
-}
-
 export interface DeduplicationResponse {
   exists: boolean;
   problem: {
     id: string;
     origin: ProblemOriginEnum;
-    status: ProblemStatusEnum;
     is_feed_visible: boolean;
+    is_locked: boolean;
     title: string;
     question_number: string;
     resource_id: string;
     vote_score: number;
     solution_count: number;
-    has_accepted_solution: boolean;
+    resolution_confidence: number;
+    confidence_band: ConfidenceBand;
     created_at: string;
   } | null;
   solutions: {
@@ -288,9 +272,6 @@ export interface DeduplicationResponse {
     video_url?: string | null;
     vote_score: number;
     is_author_solution?: boolean;
-    is_author_endorsed?: boolean;
-    is_accepted?: boolean;
-    is_active_pool?: boolean;
     created_at: string;
   }[];
 }
@@ -298,15 +279,6 @@ export interface DeduplicationResponse {
 export interface PresignedUploadResponse {
   upload_url: string;
   file_key: string;
-}
-
-export interface EndorseSolutionResponse {
-  solution_id: string;
-  is_author_endorsed: boolean;
-  solved_score: number;
-  problem_status: string;
-  dynamic_acceptance_triggered: boolean;
-  message: string;
 }
 
 export type ContentSortMode = "default" | "popular" | "newest";

@@ -19,7 +19,7 @@ export default function LessonsBoardLoading() {
           <Skeleton className="h-7 w-44" />
           <Skeleton className="h-4 w-32" />
         </div>
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3 items-stretch">
           <LessonCardSkeleton />
           <LessonCardSkeleton />
           <LessonCardSkeleton />

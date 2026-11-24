@@ -48,12 +48,16 @@ export interface TargetDetails {
   content_markdown?: string;
   subject?: { id: string; name: string; code: string } | null;
   level?: { id: string; name: string; code: string } | null;
-  parent_problem?: { id: string; title: string; url?: string } | null;
+  parent_problem?: {
+    id: string;
+    title: string;
+    resolution_confidence?: number;
+    url?: string;
+  } | null;
   parent_title?: string;
   parent_type?: string;
   url?: string;
-  is_accepted?: boolean;
-  status?: string;
+  vote_score?: number;
   post_type?: string;
   tags?: string[];
   state?: string;

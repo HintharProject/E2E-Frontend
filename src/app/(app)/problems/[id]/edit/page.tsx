@@ -24,10 +24,10 @@ export default async function EditProblemPage(props: {
           Problem Editing Has Been Sunset
         </h2>
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground max-w-lg mx-auto">
-          To preserve mathematical consensus, peer verification integrity, and the immutable audit ledger, in-place editing of problem statements is permanently disabled.
+          To preserve peer verification integrity and an accurate audit trail, in-place editing of problem statements is permanently disabled.
         </p>
         <p className="mt-2 text-xs text-muted-foreground/80 max-w-md mx-auto">
-          If your submission contains critical errors, you may delete the problem if it has not yet reached consensus, or submit a clarifying solution to the community pool.
+          If your submission contains critical errors, you may delete the problem (unless locked by moderation) or post a clarifying solution in the thread.
         </p>
         <div className="mt-8 flex justify-center gap-3">
           <Link

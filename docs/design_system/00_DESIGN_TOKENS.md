@@ -102,7 +102,7 @@ Configured in `src/app/layout.tsx` and bound in `src/app/globals.css`:
 
 - **Editorial Display (`font-display` — `Newsreader`):** PageHeader display titles, Home Hub hero greeting, Curriculum shelf titles, long-form article headers.
 - **UI & Subheadings (`font-heading`, `font-sans` — `Plus Jakarta Sans`):** Card titles (`CardTitle`), navigation links, buttons, form controls, body copy (`text-sm leading-relaxed`), descriptions.
-- **Monospace (`font-mono` — `Geist Mono`):** Syllabus codes (`9709`, `9702`), numeric counters (`font-mono tabular-nums`), `X/7` / `X/3` slot telemetry, timers, keyboard shortcuts (`⌘K`).
+- **Monospace (`font-mono` — `Geist Mono`):** Syllabus codes (`9709`, `9702`), numeric counters (`font-mono tabular-nums`), `X/7` / `X/12` slot telemetry, timers, keyboard shortcuts (`⌘K`).
 
 ### Typographic Hierarchy Scale
 

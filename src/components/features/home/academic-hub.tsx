@@ -32,6 +32,8 @@ import { useStudyPlans, useSavedSessions } from "@/hooks/use-collections";
 import { useAnnouncements } from "@/hooks/use-announcements";
 import { TIER_CONFIG, type ContributorTier } from "@/types/contribution";
 import { isWriteLocked } from "@/types/user";
+import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
+import { MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
 import { cn, formatDate } from "@/lib/utils";
 
 interface LastTrainPaper {
@@ -41,41 +43,10 @@ interface LastTrainPaper {
   level?: string;
 }
 
-function SevenSlotMeter({ count }: { count: number }) {
-  const safeCount = Math.max(0, Math.min(7, count));
-  const isFull = safeCount >= 7;
-
-  return (
-    <div
-      className="flex items-center gap-2 shrink-0"
-      title={`${safeCount} of 7 active solution slots filled`}
-    >
-      <div className="flex items-center gap-0.5" aria-hidden="true">
-        {Array.from({ length: 7 }).map((_, idx) => (
-          <span
-            key={idx}
-            className={cn(
-              "h-2 w-2 rounded-[2px] transition-colors",
-              idx < safeCount
-                ? isFull
-                  ? "bg-warning"
-                  : "bg-primary"
-                : "bg-muted border border-border/80"
-            )}
-          />
-        ))}
-      </div>
-      <span className="font-mono text-xs font-semibold tabular-nums text-muted-foreground">
-        {safeCount}/7
-      </span>
-    </div>
-  );
-}
-
 function LibrarySlotMeter({
   label,
   count,
-  max = 3,
+  max = MAX_STUDY_PLANS,
   href,
   icon: Icon,
 }: {
@@ -98,12 +69,12 @@ function LibrarySlotMeter({
           <div className="text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
             {label}
           </div>
-          <div className="mt-1 flex items-center gap-1" aria-hidden="true">
+          <div className="mt-1 flex items-center gap-0.5" aria-hidden="true">
             {Array.from({ length: max }).map((_, i) => (
               <span
                 key={i}
                 className={cn(
-                  "h-1.5 w-6 rounded-full transition-colors",
+                  "h-1.5 w-2 rounded-full transition-colors",
                   i < filled ? "bg-primary" : "bg-muted"
                 )}
               />
@@ -143,7 +114,7 @@ export function AcademicHub() {
     isLoading: problemsLoading,
     isError: problemsError,
     refetch: refetchProblems,
-  } = useProblems({ status: "OPEN", sort: "default" });
+  } = useProblems({ confidence: "needs_help", sort: "default" });
 
   const {
     data: lessonsData,
@@ -335,14 +306,14 @@ export function AcademicHub() {
                   id="hub-open-problems-heading"
                   className="font-display text-xl font-semibold tracking-tight text-foreground"
                 >
-                  Open Solve! Bounties
+                  Solve! Needing Help
                 </h2>
                 <Badge variant="outline" className="font-mono text-xs tabular-nums">
-                  7-slot pool
+                  Confidence &lt; 80%
                 </Badge>
               </div>
               <Link
-                href="/problems?status=OPEN"
+                href="/problems?confidence=needs_help"
                 className="inline-flex items-center gap-1 shrink-0 text-xs font-semibold text-primary hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <span>View all in Solve!</span>
@@ -376,7 +347,7 @@ export function AcademicHub() {
               <div className="rounded-xl border border-dashed border-border bg-card/60 p-8 text-center space-y-3">
                 <Lightbulb className="mx-auto size-6 text-muted-foreground" aria-hidden="true" />
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-foreground">No open bounties right now</p>
+                  <p className="text-sm font-semibold text-foreground">All caught up on problems needing help</p>
                   <p className="text-xs text-muted-foreground">
                     Post an exam question or photo problem to invite peer solutions.
                   </p>
@@ -419,7 +390,17 @@ export function AcademicHub() {
                             </span>
                           )}
                         </div>
-                        <SevenSlotMeter count={slotCount} />
+                        <div className="flex items-center gap-2 shrink-0">
+                          <ConfidenceBadge
+                            confidence={problem.resolution_confidence}
+                            band={problem.confidence_band}
+                            size="sm"
+                            interactive={false}
+                          />
+                          <span className="font-mono text-xs tabular-nums text-muted-foreground">
+                            {slotCount} {slotCount === 1 ? "sol" : "sols"}
+                          </span>
+                        </div>
                       </div>
 
                       <div className="flex items-start justify-between gap-3">
@@ -586,7 +567,7 @@ export function AcademicHub() {
                 <span>My Library</span>
               </h2>
               <span className="font-mono text-xs text-muted-foreground">
-                3/3 slots
+                12/12 slots
               </span>
             </div>
 
@@ -600,14 +581,14 @@ export function AcademicHub() {
                 <LibrarySlotMeter
                   label="Study Plans"
                   count={studyPlansCount}
-                  max={3}
+                  max={MAX_STUDY_PLANS}
                   href="/study-plans"
                   icon={Bookmark}
                 />
                 <LibrarySlotMeter
                   label="Saved Sessions"
                   count={savedSessionsCount}
-                  max={3}
+                  max={MAX_SAVED_SESSIONS}
                   href="/saved-sessions"
                   icon={Clock}
                 />

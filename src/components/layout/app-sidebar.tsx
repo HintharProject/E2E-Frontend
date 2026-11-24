@@ -22,7 +22,7 @@ import { ContributorBadge } from "@/components/features/contributions/contributo
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { useStudyPlans, useSavedSessions } from "@/hooks/use-collections";
-import { isNavActive } from "@/lib/constants";
+import { isNavActive, MAX_SAVED_SESSIONS, MAX_STUDY_PLANS } from "@/lib/constants";
 import { useUIStore } from "@/lib/store/ui-store";
 import { isAdminOrSuperAdmin, isStaffRole } from "@/types/user";
 import { cn } from "@/lib/utils";
@@ -86,11 +86,13 @@ export function AppSidebar() {
 
   const getLibraryCount = (item: ShellNavItem): string | null => {
     if (!user) return null;
-    if (item.libraryKey === "plans" && Array.isArray(studyPlans)) {
-      return `${studyPlans.length}/3`;
+    const plansList = Array.isArray(studyPlans) ? studyPlans : studyPlans?.data;
+    const sessionsList = Array.isArray(savedSessions) ? savedSessions : savedSessions?.data;
+    if (item.libraryKey === "plans" && Array.isArray(plansList)) {
+      return `${plansList.length}/${MAX_STUDY_PLANS}`;
     }
-    if (item.libraryKey === "sessions" && Array.isArray(savedSessions)) {
-      return `${savedSessions.length}/3`;
+    if (item.libraryKey === "sessions" && Array.isArray(sessionsList)) {
+      return `${sessionsList.length}/${MAX_SAVED_SESSIONS}`;
     }
     return null;
   };
@@ -362,6 +364,8 @@ export function AppSidebar() {
               <div className="flex flex-col items-center gap-2">
                 <Link
                   href="/sign-up"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   title="Sign up free"
                   aria-label="Sign up free"
                   className={buttonVariants({
@@ -374,6 +378,8 @@ export function AppSidebar() {
                 </Link>
                 <Link
                   href="/sign-in"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   title="Log in"
                   aria-label="Log in"
                   className={buttonVariants({
@@ -391,6 +397,8 @@ export function AppSidebar() {
                 <div className="flex flex-col gap-1.5">
                   <Link
                     href="/sign-up"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={buttonVariants({
                       variant: "default",
                       size: "sm",
@@ -402,6 +410,8 @@ export function AppSidebar() {
                   </Link>
                   <Link
                     href="/sign-in"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className={buttonVariants({
                       variant: "outline",
                       size: "sm",

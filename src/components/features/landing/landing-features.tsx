@@ -7,7 +7,7 @@ const PLATFORM_FEATURES = [
     href: "/problems",
     ctaLabel: "Open Solve!",
     description:
-      "Post a problem from coursework or a past paper and receive structured worked solutions in a 7-slot pool ranked by peer votes.",
+      "Post a problem from coursework or a past paper and compare worked solutions ranked by peer votes and continuous resolution confidence.",
   },
   {
     name: "Lessons",

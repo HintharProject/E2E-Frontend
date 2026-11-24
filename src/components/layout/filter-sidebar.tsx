@@ -19,7 +19,7 @@ export type FilterSidebarProps = {
   showPostType?: boolean;
   showStateFilter?: boolean;
   hideTags?: boolean;
-  showProblemStatus?: boolean;
+  showConfidenceFilter?: boolean;
   postTypeOptions?: { value: string; label: string }[];
   isMobile?: boolean;
 };
@@ -85,7 +85,7 @@ export function FilterContent({
   showPostType = false,
   showStateFilter = false,
   hideTags = false,
-  showProblemStatus = false,
+  showConfidenceFilter = false,
   postTypeOptions = [
     { value: "QUESTION", label: "Question" },
     { value: "SHARING", label: "Sharing" },
@@ -111,7 +111,7 @@ export function FilterContent({
     selectedLevels.length > 0 ||
     selectedTypes.length > 0 ||
     selectedTags.length > 0 ||
-    searchParams.get("status");
+    searchParams.get("confidence");
 
   function setListParam(key: string, values: string[]) {
     const next = new URLSearchParams(searchParams.toString());
@@ -201,35 +201,35 @@ export function FilterContent({
           </div>
         </fieldset>
       ) : null}
-      {showProblemStatus ? (
+      {showConfidenceFilter ? (
         <fieldset>
           <legend className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Status
+            Confidence
           </legend>
           <div className="flex flex-col gap-2">
             {[
               { value: "", label: "All" },
-              { value: "OPEN", label: "Open" },
-              { value: "SOLVED", label: "Solved" },
-              { value: "FINAL", label: "Verified Consensus" },
-              { value: "CLOSED", label: "Closed" },
+              { value: "unanswered", label: "Unanswered (0%)" },
+              { value: "developing", label: "Developing (1–49%)" },
+              { value: "likely_solved", label: "Likely Solved (50–79%)" },
+              { value: "high", label: "High Confidence (80%+)" },
+              { value: "needs_help", label: "Needs Help (<50%)" },
             ].map((opt) => (
-
               <label
                 key={opt.value}
                 className="flex cursor-pointer items-center gap-2.5 text-sm text-foreground hover:text-primary transition-colors"
               >
                 <input
                   type="radio"
-                  name="Status"
+                  name="Confidence"
                   className="h-4 w-4 shrink-0 border-border accent-primary cursor-pointer"
-                  checked={searchParams.get("status") === opt.value || (!searchParams.get("status") && opt.value === "")}
+                  checked={searchParams.get("confidence") === opt.value || (!searchParams.get("confidence") && opt.value === "")}
                   onChange={() => {
                     const next = new URLSearchParams(searchParams.toString());
                     if (opt.value) {
-                      next.set("status", opt.value);
+                      next.set("confidence", opt.value);
                     } else {
-                      next.delete("status");
+                      next.delete("confidence");
                     }
                     router.push(`${pathname}?${next.toString()}`);
                   }}
@@ -257,7 +257,7 @@ export function FilterSidebar(props: FilterSidebarProps) {
       showPostType={props.showPostType}
       showStateFilter={props.showStateFilter}
       hideTags={props.hideTags}
-      showProblemStatus={props.showProblemStatus}
+      showConfidenceFilter={props.showConfidenceFilter}
       postTypeOptions={props.postTypeOptions}
     />
   );

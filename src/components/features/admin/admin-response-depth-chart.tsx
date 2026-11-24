@@ -61,7 +61,8 @@ export function AdminResponseDepthChart({
     let totalSolved = 0;
     let totalUnanswered = 0;
 
-    const data: ChartDataItem[] = sourceData.map((item) => {
+    const data: ChartDataItem[] = [];
+    for (const item of sourceData) {
       const displayLabel = isSubjects ? item.code || item.name : item.name;
 
       if (isProb) {
@@ -69,12 +70,12 @@ export function AdminResponseDepthChart({
         const solutions = item.solutions_count || 0;
         const unanswered = typeof item.unanswered_problems_count === "number"
           ? item.unanswered_problems_count
-          : Math.max(0, total - (item.solved_problems_count || 0));
-        const solved = typeof item.solved_problems_count === "number"
-          ? item.solved_problems_count
+          : Math.max(0, total - (item.high_confidence_problems_count || 0));
+        const solved = typeof item.high_confidence_problems_count === "number"
+          ? item.high_confidence_problems_count
           : Math.max(0, total - unanswered);
-        const solvedRate = typeof item.solved_rate_pct === "number"
-          ? item.solved_rate_pct
+        const solvedRate = typeof item.high_confidence_rate_pct === "number"
+          ? item.high_confidence_rate_pct
           : (total > 0 ? Math.min(100, Math.round((solved / total) * 100)) : 100);
         const avg = item.avg_solutions_per_problem ?? (total > 0 ? Number((solutions / total).toFixed(2)) : 0);
 
@@ -83,7 +84,7 @@ export function AdminResponseDepthChart({
         totalSolved += solved;
         totalUnanswered += unanswered;
 
-        return {
+        data.push({
           name: displayLabel,
           code: item.code,
           fullName: item.name,
@@ -92,7 +93,7 @@ export function AdminResponseDepthChart({
           unanswered,
           solvedRate,
           ratio: avg,
-        };
+        });
       } else {
         const total = item.posts_count || 0;
         const comments = item.comments_count || 0;
@@ -106,7 +107,7 @@ export function AdminResponseDepthChart({
         totalSolved += withReplies;
         totalUnanswered += zeroReplies;
 
-        return {
+        data.push({
           name: displayLabel,
           code: item.code,
           fullName: item.name,
@@ -115,9 +116,9 @@ export function AdminResponseDepthChart({
           unanswered: zeroReplies,
           solvedRate: replyRate,
           ratio: avg,
-        };
+        });
       }
-    });
+    }
 
     const overallRate = totalItems > 0 ? Math.round((totalSolved / totalItems) * 100) : 100;
     const overallRatio = totalItems > 0 ? Number((totalResponses / totalItems).toFixed(2)) : 0;
@@ -162,7 +163,7 @@ export function AdminResponseDepthChart({
           <div className="flex flex-wrap items-center gap-3">
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-line bg-surface text-xs">
               <Percent className="size-3.5 text-emerald-500" />
-              <span className="text-ink-muted">{domain === "problems" ? "Solved Rate:" : "Active Discussions:"}</span>
+              <span className="text-ink-muted">{domain === "problems" ? "High Conf. Rate:" : "Active Discussions:"}</span>
               <span className="font-bold text-ink">{metrics.overallRate}%</span>
             </div>
 
@@ -293,7 +294,7 @@ export function AdminResponseDepthChart({
                       <div className="font-semibold text-sm border-b border-line pb-1.5 mb-2 flex items-center justify-between gap-2">
                         <span className="truncate">{item.fullName || label}</span>
                         <Badge variant="outline" className="text-[10px] shrink-0">
-                          {isProb ? `${item.solvedRate}% Solved` : `${item.solvedRate}% with Replies`}
+                          {isProb ? `${item.solvedRate}% High Conf.` : `${item.solvedRate}% with Replies`}
                         </Badge>
                       </div>
                       <div className="flex flex-col gap-1.5 text-[11px]">
@@ -302,7 +303,7 @@ export function AdminResponseDepthChart({
                           <span className="font-mono tabular-nums font-semibold text-foreground">{item.total}</span>
                         </div>
                         <div className="flex justify-between items-center text-primary">
-                          <span>{isProb ? "Answered / Solved:" : "Active with Replies:"}</span>
+                          <span>{isProb ? "High Confidence (≥80%):" : "Active with Replies:"}</span>
                           <span className="font-mono tabular-nums font-semibold">{item.solved}</span>
                         </div>
                         <div className="flex justify-between items-center text-warning">
@@ -325,7 +326,7 @@ export function AdminResponseDepthChart({
 
               <Bar
                 dataKey="solved"
-                name={domain === "problems" ? "Answered / Solved" : "Active with Replies"}
+                name={domain === "problems" ? "High Confidence (≥80%)" : "Active with Replies"}
                 fill="var(--primary)"
                 stackId="stack"
                 radius={[0, 0, 0, 0]}
