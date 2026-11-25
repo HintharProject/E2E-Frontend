@@ -1,3 +1,5 @@
+import { inferContentType } from "@/lib/upload-rules";
+
 export interface GeometryInspectionResult {
   isValid: boolean;
   file: File;
@@ -7,34 +9,66 @@ export interface GeometryInspectionResult {
   error?: string;
 }
 
+export interface InspectImageGeometryOptions {
+  onProgress?: (stage: "reading" | "optimizing" | "done") => void;
+}
+
+export const MAX_RAW_IMAGE_BYTES = 25 * 1024 * 1024; // 25MB raw pre-compression cap
+const MAX_OUTPUT_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB post-compression cap
 const MIN_DIMENSION = 200;
 const MAX_DIMENSION = 2560;
-const MIN_ASPECT_RATIO = 0.20;
-const MAX_ASPECT_RATIO = 5.00;
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+const MIN_ASPECT_RATIO = 0.2;
+const MAX_ASPECT_RATIO = 5.0;
 const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+
+function encodeCanvasToWebP(
+  canvas: HTMLCanvasElement,
+  quality: number
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((blob) => resolve(blob), "image/webp", quality);
+  });
+}
+
+function toWebpFileName(name: string): string {
+  return name.includes(".") ? name.replace(/\.[^.]+$/, ".webp") : `${name}.webp`;
+}
 
 /**
  * Client-Side HTML5 Canvas Geometry Inspector.
- * Validates dimensions, aspect ratio, and performs offscreen downscale optimization
- * to avoid uploading 15MB phone camera images directly to object storage.
+ * Accepts raw images up to 25MB, validates dimensions and aspect ratio,
+ * downscales >2560px or >5MB images to <=2560px WebP, and enforces <=5MB after compression.
  */
-export async function inspectImageGeometry(file: File): Promise<GeometryInspectionResult> {
-  // 1. MIME check
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+export async function inspectImageGeometry(
+  file: File,
+  options?: InspectImageGeometryOptions
+): Promise<GeometryInspectionResult> {
+  options?.onProgress?.("reading");
+
+  // 1. MIME check (with extension inference when browser omits file.type)
+  const effectiveType = inferContentType(file);
+  if (!ALLOWED_MIME_TYPES.includes(effectiveType)) {
     return {
       isValid: false,
       file,
-      error: "Only .jpg, .png, and .webp images are allowed for problem photos.",
+      error: "Only .jpg, .png, and .webp images are allowed.",
     };
   }
 
-  // 2. File size check
-  if (file.size > MAX_FILE_SIZE) {
+  // 2. Empty & raw pre-compression size check
+  if (file.size <= 0) {
     return {
       isValid: false,
       file,
-      error: "File size exceeds 5MB limit. Please upload a smaller image.",
+      error: "Image file is empty. Please choose a valid image.",
+    };
+  }
+
+  if (file.size > MAX_RAW_IMAGE_BYTES) {
+    return {
+      isValid: false,
+      file,
+      error: "Raw image exceeds the 25MB limit. Please choose a smaller photo.",
     };
   }
 
@@ -68,59 +102,20 @@ export async function inspectImageGeometry(file: File): Promise<GeometryInspecti
           width,
           height,
           aspectRatio,
-          error: "Image dimensions are disproportionate. Please crop to focus specifically on the question.",
+          error:
+            "Image dimensions are disproportionate. Please crop to focus specifically on the question.",
         });
         return;
       }
 
-      // 5. Downscale optimization if image exceeds 2560px
-      if (width > MAX_DIMENSION || height > MAX_DIMENSION) {
-        try {
-          const scale = Math.min(MAX_DIMENSION / width, MAX_DIMENSION / height);
-          const targetWidth = Math.round(width * scale);
-          const targetHeight = Math.round(height * scale);
+      // 5. Downscale & WebP compression when >2560px or >5MB
+      const needsOptimization =
+        width > MAX_DIMENSION ||
+        height > MAX_DIMENSION ||
+        file.size > MAX_OUTPUT_IMAGE_BYTES;
 
-          const canvas = document.createElement("canvas");
-          canvas.width = targetWidth;
-          canvas.height = targetHeight;
-
-          const ctx = canvas.getContext("2d");
-          if (!ctx) {
-            resolve({ isValid: true, file, width, height, aspectRatio });
-            return;
-          }
-
-          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
-
-          // Test WebP export with JPEG fallback
-          const format = "image/webp";
-          canvas.toBlob(
-            (blob) => {
-              if (blob) {
-                const optimizedName = file.name.replace(/\.[^.]+$/, ".webp");
-                const optimizedFile = new File([blob], optimizedName, {
-                  type: "image/webp",
-                  lastModified: Date.now(),
-                });
-                resolve({
-                  isValid: true,
-                  file: optimizedFile,
-                  width: targetWidth,
-                  height: targetHeight,
-                  aspectRatio,
-                });
-              } else {
-                // Fallback to original file if blob export failed
-                resolve({ isValid: true, file, width, height, aspectRatio });
-              }
-            },
-            format,
-            0.88
-          );
-        } catch {
-          resolve({ isValid: true, file, width, height, aspectRatio });
-        }
-      } else {
+      if (!needsOptimization) {
+        options?.onProgress?.("done");
         resolve({
           isValid: true,
           file,
@@ -128,6 +123,105 @@ export async function inspectImageGeometry(file: File): Promise<GeometryInspecti
           height,
           aspectRatio,
         });
+        return;
+      }
+
+      options?.onProgress?.("optimizing");
+
+      try {
+        const scale = Math.min(1, MAX_DIMENSION / width, MAX_DIMENSION / height);
+        const targetWidth = Math.round(width * scale);
+        const targetHeight = Math.round(height * scale);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+          if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+            options?.onProgress?.("done");
+            resolve({ isValid: true, file, width, height, aspectRatio });
+          } else {
+            resolve({
+              isValid: false,
+              file,
+              width,
+              height,
+              aspectRatio,
+              error:
+                "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+            });
+          }
+          return;
+        }
+
+        ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+        let blob = await encodeCanvasToWebP(canvas, 0.86);
+        if (blob && blob.size > MAX_OUTPUT_IMAGE_BYTES) {
+          blob = await encodeCanvasToWebP(canvas, 0.74);
+        }
+
+        if (!blob) {
+          if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+            options?.onProgress?.("done");
+            resolve({ isValid: true, file, width, height, aspectRatio });
+          } else {
+            resolve({
+              isValid: false,
+              file,
+              width,
+              height,
+              aspectRatio,
+              error:
+                "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+            });
+          }
+          return;
+        }
+
+        const optimizedFile = new File([blob], toWebpFileName(file.name), {
+          type: "image/webp",
+          lastModified: Date.now(),
+        });
+
+        if (optimizedFile.size > MAX_OUTPUT_IMAGE_BYTES) {
+          resolve({
+            isValid: false,
+            file: optimizedFile,
+            width: targetWidth,
+            height: targetHeight,
+            aspectRatio,
+            error:
+              "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+          });
+          return;
+        }
+
+        options?.onProgress?.("done");
+        resolve({
+          isValid: true,
+          file: optimizedFile,
+          width: targetWidth,
+          height: targetHeight,
+          aspectRatio,
+        });
+      } catch {
+        if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+          options?.onProgress?.("done");
+          resolve({ isValid: true, file, width, height, aspectRatio });
+        } else {
+          resolve({
+            isValid: false,
+            file,
+            width,
+            height,
+            aspectRatio,
+            error:
+              "Failed to optimize image below 5MB. Please upload a smaller image.",
+          });
+        }
       }
     };
 

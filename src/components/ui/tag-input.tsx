@@ -102,6 +102,7 @@ export function TagInput({
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (disabled) return;
+    if (e.nativeEvent.isComposing || e.keyCode === 229) return;
 
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -133,9 +134,14 @@ export function TagInput({
 
   return (
     <div ref={containerRef} className={cn("relative w-full space-y-1.5", className)}>
-      <div className="flex items-center justify-between text-xs text-ink-muted">
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>Tags (up to {maxTags})</span>
-        <span className={cn(isMaxReached ? "font-semibold text-brand" : "text-ink-muted")}>
+        <span
+          className={cn(
+            "font-mono tabular-nums",
+            isMaxReached ? "font-semibold text-primary" : "text-muted-foreground"
+          )}
+        >
           {value.length}/{maxTags}
         </span>
       </div>
@@ -143,9 +149,9 @@ export function TagInput({
       <div
         onClick={() => !isMaxReached && inputRef.current?.focus()}
         className={cn(
-          "flex min-h-[42px] w-full flex-wrap items-center gap-1.5 rounded-lg border border-line bg-card px-3 py-1.5 text-sm transition-all focus-within:border-brand focus-within:ring-2 focus-within:ring-brand/20",
+          "flex min-h-[42px] w-full flex-wrap items-center gap-1.5 rounded-lg border border-input bg-card px-3 py-1.5 text-sm transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20",
           disabled && "cursor-not-allowed opacity-60",
-          error && "border-danger focus-within:border-danger focus-within:ring-danger/20",
+          error && "border-destructive focus-within:border-destructive focus-within:ring-destructive/20",
           isMaxReached && "cursor-default"
         )}
       >
@@ -153,9 +159,9 @@ export function TagInput({
           <Badge
             key={tag}
             variant="secondary"
-            className="flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium text-ink bg-line/60"
+            className="flex items-center gap-1 rounded-md border border-border bg-secondary px-2 py-0.5 text-xs font-medium text-foreground"
           >
-            <Hash className="size-3 text-ink-muted" />
+            <Hash className="size-3 text-muted-foreground" aria-hidden="true" />
             <span>{tag}</span>
             {!disabled && (
               <button
@@ -164,10 +170,10 @@ export function TagInput({
                   e.stopPropagation();
                   removeTag(idx);
                 }}
-                className="ml-0.5 rounded-full p-0.5 text-ink-muted hover:bg-line hover:text-ink"
+                className="ml-0.5 inline-flex min-h-[24px] min-w-[24px] items-center justify-center rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer"
                 aria-label={`Remove tag ${tag}`}
               >
-                <X className="size-3" />
+                <X className="size-3" aria-hidden="true" />
               </button>
             )}
           </Badge>
@@ -193,25 +199,29 @@ export function TagInput({
           }}
           onKeyDown={handleKeyDown}
           className={cn(
-            "border-0 bg-transparent p-0 text-sm text-ink outline-none placeholder:text-ink-muted focus:ring-0",
+            "border-0 bg-transparent p-0 text-base sm:text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-0",
             isMaxReached ? "w-0 min-w-0 pointer-events-none opacity-0" : "min-w-[120px] flex-1"
           )}
         />
 
         {isMaxReached && (
-          <span className="text-xs italic text-ink-muted select-none">
-            Maximum tags reached (press ⌫ to remove)
+          <span className="text-xs italic text-muted-foreground select-none">
+            Maximum tags reached (press Backspace to remove)
           </span>
         )}
 
-        {isLoading && <Loader2 className="size-3.5 animate-spin text-ink-muted ml-auto" />}
+        {isLoading && <Loader2 className="size-3.5 animate-spin text-muted-foreground ml-auto" aria-hidden="true" />}
       </div>
 
-      {error && <p className="text-xs text-danger">{error}</p>}
+      {error && (
+        <p role="alert" aria-live="polite" className="text-xs font-medium text-destructive">
+          {error}
+        </p>
+      )}
 
       {/* Floating Suggestions Dropdown */}
       {isOpen && !isMaxReached && selectableOptions.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-line bg-card p-1 shadow-lg custom-scrollbar">
+        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-modal custom-scrollbar">
           {selectableOptions.map((opt, idx) => {
             const isHighlighted = idx === highlightedIndex;
             if (opt.type === "create") {
@@ -222,14 +232,14 @@ export function TagInput({
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   className={cn(
                     "flex cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-colors",
-                    isHighlighted ? "bg-brand/10 text-brand font-medium" : "text-ink hover:bg-muted"
+                    isHighlighted ? "bg-primary/10 text-primary font-medium" : "text-foreground hover:bg-muted"
                   )}
                 >
                   <div className="flex items-center gap-1.5">
-                    <Plus className="size-3.5 text-brand" />
+                    <Plus className="size-3.5 text-primary" aria-hidden="true" />
                     <span>Create <strong>&ldquo;#{opt.name}&rdquo;</strong></span>
                   </div>
-                  <span className="rounded bg-brand/20 px-1.5 py-0.5 text-[10px] text-brand">New</span>
+                  <span className="rounded bg-primary/15 px-1.5 py-0.5 text-xs font-medium text-primary">New</span>
                 </div>
               );
             }
@@ -241,15 +251,15 @@ export function TagInput({
                 onMouseEnter={() => setHighlightedIndex(idx)}
                 className={cn(
                   "flex cursor-pointer items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition-colors",
-                  isHighlighted ? "bg-muted font-medium text-ink" : "text-ink hover:bg-muted/60"
+                  isHighlighted ? "bg-muted font-medium text-foreground" : "text-foreground hover:bg-muted/60"
                 )}
               >
                 <div className="flex items-center gap-1.5">
-                  <Hash className="size-3 text-ink-muted" />
+                  <Hash className="size-3 text-muted-foreground" aria-hidden="true" />
                   <span>{opt.name}</span>
                 </div>
                 {opt.count !== undefined && (
-                  <span className="text-[10px] text-ink-muted">{opt.count} used</span>
+                  <span className="font-mono tabular-nums text-xs text-muted-foreground">{opt.count} used</span>
                 )}
               </div>
             );

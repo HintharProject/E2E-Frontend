@@ -1,36 +1,43 @@
 import React from "react";
 import { AlertCircle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-interface FormErrorBannerProps {
+export interface FormErrorBannerProps {
   serverMessage?: string;
   fieldErrors?: Record<string, string[]>;
   className?: string;
 }
 
-export function FormErrorBanner({
-  serverMessage,
-  fieldErrors,
-  className = "",
-}: FormErrorBannerProps) {
+export const FormErrorBanner = React.forwardRef<
+  HTMLDivElement,
+  FormErrorBannerProps
+>(function FormErrorBanner({ serverMessage, fieldErrors, className }, ref) {
   if (!serverMessage && (!fieldErrors || Object.keys(fieldErrors).length === 0)) {
     return null;
   }
 
   const entries = fieldErrors
-    ? Object.entries(fieldErrors).filter(([_, msgs]) => msgs && msgs.length > 0)
+    ? Object.entries(fieldErrors).filter(([, msgs]) => msgs && msgs.length > 0)
     : [];
 
   return (
     <div
+      ref={ref}
+      tabIndex={-1}
       role="alert"
-      className={`rounded-xl border border-danger/30 bg-danger/10 p-4 text-danger ${className}`}
+      aria-live="polite"
+      className={cn(
+        "rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-destructive",
+        "outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+        className
+      )}
     >
       <div className="flex items-start gap-3">
-        <AlertCircle className="w-5 h-5 mt-0.5 shrink-0" />
+        <AlertCircle className="size-5 mt-0.5 shrink-0" aria-hidden="true" />
         <div className="space-y-1 text-sm">
           {serverMessage && <p className="font-semibold">{serverMessage}</p>}
           {entries.length > 0 && (
-            <ul className="list-disc list-inside space-y-0.5 mt-1 text-xs opacity-90">
+            <ul className="list-disc list-inside space-y-0.5 mt-1 text-xs">
               {entries.map(([field, msgs]) => (
                 <li key={field}>
                   <span className="font-medium capitalize">
@@ -45,4 +52,6 @@ export function FormErrorBanner({
       </div>
     </div>
   );
-}
+});
+
+FormErrorBanner.displayName = "FormErrorBanner";
