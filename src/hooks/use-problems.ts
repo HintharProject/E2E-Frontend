@@ -2,7 +2,7 @@ import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tansta
 import { apiFetch, buildQueryString } from "@/services/api-client";
 import { useAuth } from "@clerk/nextjs";
 import { getMutationAuthToken, resolveClientAuth } from "@/lib/client-auth";
-import { Problem, Solution, PaginatedResponse, DeduplicationResponse, PresignedUploadResponse, ContentSortMode, TimeframeFilter, ConfidenceFilterValue, SolutionSortMode } from "@/types";
+import { Problem, Solution, PaginatedResponse, DeduplicationResponse, ContentSortMode, TimeframeFilter, ConfidenceFilterValue, SolutionSortMode } from "@/types";
 
 export interface ProblemFilters {
   subject?: string;
@@ -139,22 +139,6 @@ export function useProblemByPaper(resourceId?: string, questionNumber?: string) 
   });
 }
 
-export async function generateProblemUploadUrl(
-  fileName: string,
-  contentType: string,
-  uploadType: "problem_attachment" | "solution_attachment",
-  token: string | null
-): Promise<PresignedUploadResponse> {
-  return apiFetch<PresignedUploadResponse>("/problems/generate_upload_url/", token, {
-    method: "POST",
-    body: JSON.stringify({
-      file_name: fileName,
-      content_type: contentType,
-      upload_type: uploadType,
-    }),
-  });
-}
-
 export interface CreateProblemPayload {
   origin: "USER_UPLOAD" | "PAST_PAPER";
   title?: string;
@@ -165,6 +149,7 @@ export interface CreateProblemPayload {
   resource?: string;
   question_number?: string;
   is_feed_visible?: boolean;
+  tags?: string[];
   uploaded_attachments?: Array<{ file_key: string; file_name: string }>;
 }
 
@@ -181,8 +166,12 @@ export function useCreateProblem() {
         body: JSON.stringify(payload),
       });
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["problems"] });
+      if (variables.resource) {
+        queryClient.invalidateQueries({ queryKey: ["paperProblems", variables.resource] });
+        queryClient.invalidateQueries({ queryKey: ["by-paper", variables.resource] });
+      }
     },
   });
 }
@@ -190,7 +179,7 @@ export function useCreateProblem() {
 export interface CreateSolutionPayload {
   problemId: string;
   body: string;
-  video_url?: string;
+  video_url?: string | null;
   attachments?: Array<{ file_key: string; file_name: string }>;
 }
 
@@ -210,6 +199,9 @@ export function useCreateSolution() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["solutions", variables.problemId] });
       queryClient.invalidateQueries({ queryKey: ["problem", variables.problemId] });
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["paperProblems"] });
+      queryClient.invalidateQueries({ queryKey: ["by-paper"] });
     },
   });
 }
@@ -261,6 +253,8 @@ export function useDeleteProblem() {
       const problemId = typeof args === "string" ? args : args.problemId;
       queryClient.invalidateQueries({ queryKey: ["problems"] });
       queryClient.invalidateQueries({ queryKey: ["problem", problemId] });
+      queryClient.invalidateQueries({ queryKey: ["paperProblems"] });
+      queryClient.invalidateQueries({ queryKey: ["by-paper"] });
       queryClient.invalidateQueries({ queryKey: ["tag-content"] });
       queryClient.invalidateQueries({ queryKey: ["saved-session"] });
       queryClient.invalidateQueries({ queryKey: ["saved-sessions"] });
@@ -282,6 +276,10 @@ export function useDeleteSolution() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["solutions"] });
+      queryClient.invalidateQueries({ queryKey: ["problem"] });
+      queryClient.invalidateQueries({ queryKey: ["problems"] });
+      queryClient.invalidateQueries({ queryKey: ["paperProblems"] });
+      queryClient.invalidateQueries({ queryKey: ["by-paper"] });
     },
   });
 }

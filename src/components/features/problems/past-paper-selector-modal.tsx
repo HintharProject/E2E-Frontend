@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
+import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { Resource } from "@/types";
 import {
   Dialog,
@@ -13,6 +14,9 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PastPapersFolderView } from "@/components/features/resources/past-papers-folder-view";
 import {
@@ -21,11 +25,11 @@ import {
 } from "@/components/features/resources/document-viewer-modal";
 import { Search, X, Loader2, BookOpen } from "lucide-react";
 
-interface PastPaperSelectorModalProps {
+export interface PastPaperSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  levelId: string;
-  subjectId: string;
+  levelId?: string;
+  subjectId?: string;
   levelName?: string;
   subjectName?: string;
   selectedPaperId?: string;
@@ -35,44 +39,71 @@ interface PastPaperSelectorModalProps {
 export function PastPaperSelectorModal({
   isOpen,
   onClose,
-  levelId,
-  subjectId,
+  levelId = "",
+  subjectId = "",
   levelName,
   subjectName,
   selectedPaperId,
   onSelectPaper,
 }: PastPaperSelectorModalProps) {
   const { getToken } = useAuth();
+  const { data: levels = [] } = useLevels();
+  const { data: subjects = [] } = useSubjects();
+
+  const [prevOpen, setPrevOpen] = useState(isOpen);
+  const [filterLevelId, setFilterLevelId] = useState(levelId);
+  const [filterSubjectId, setFilterSubjectId] = useState(subjectId);
   const [searchQuery, setSearchQuery] = useState("");
   const [viewingDoc, setViewingDoc] = useState<ViewingDocument | null>(null);
 
-  // Fetch past papers filtered by level and subject
+  if (isOpen !== prevOpen) {
+    setPrevOpen(isOpen);
+    if (isOpen) {
+      setFilterLevelId(levelId);
+      setFilterSubjectId(subjectId);
+    } else {
+      setSearchQuery("");
+      setViewingDoc(null);
+    }
+  }
+
+  const resolvedLevelName = useMemo(() => {
+    if (!filterLevelId) return undefined;
+    return (
+      levels.find((l) => l.id === filterLevelId)?.name ??
+      (filterLevelId === levelId ? levelName : undefined)
+    );
+  }, [filterLevelId, levels, levelId, levelName]);
+
+  const resolvedSubjectName = useMemo(() => {
+    if (!filterSubjectId) return undefined;
+    return (
+      subjects.find((s) => s.id === filterSubjectId)?.name ??
+      (filterSubjectId === subjectId ? subjectName : undefined)
+    );
+  }, [filterSubjectId, subjects, subjectId, subjectName]);
+
+  // Fetch past papers, filtered by level and subject when selected
   const {
     data: resources = [],
     isLoading,
     isError,
   } = useQuery<Resource[]>({
-    queryKey: ["pastPaperSelectorResources", levelId, subjectId],
+    queryKey: ["pastPaperSelectorResources", filterLevelId, filterSubjectId],
     queryFn: async () => {
       const token = await getToken();
       const params = new URLSearchParams();
       params.append("resource_type", "PAST_PAPER");
-      if (levelId) params.append("level", levelId);
-      if (subjectId) params.append("subject", subjectId);
+      if (filterLevelId) params.append("level", filterLevelId);
+      if (filterSubjectId) params.append("subject", filterSubjectId);
 
-      const res = await apiFetch<any>(`/resources/files/?${params.toString()}`, token as string);
+      const res = await apiFetch<
+        Resource[] | { data?: Resource[]; results?: Resource[] }
+      >(`/resources/files/?${params.toString()}`, token ?? undefined);
       return Array.isArray(res) ? res : res?.data || res?.results || [];
     },
-    enabled: isOpen && !!levelId && !!subjectId,
+    enabled: isOpen,
   });
-
-  // Reset search when modal closes
-  useEffect(() => {
-    if (!isOpen) {
-      setSearchQuery("");
-      setViewingDoc(null);
-    }
-  }, [isOpen]);
 
   // Filter papers based on search query
   const filteredPapers = useMemo(() => {
@@ -82,61 +113,116 @@ export function PastPaperSelectorModal({
       const name = (r.file_name || r.title || "").toLowerCase();
       const session = (r.session || "").toLowerCase();
       const type = (r.paper_type || "").toLowerCase();
+      const code = (r.paper_code || "").toLowerCase();
       const year = r.year?.toString() || "";
-      return name.includes(q) || session.includes(q) || type.includes(q) || year.includes(q);
+      const subj = (r.subject_details?.name || "").toLowerCase();
+      const lvl = (r.level_details?.name || "").toLowerCase();
+      return (
+        name.includes(q) ||
+        session.includes(q) ||
+        type.includes(q) ||
+        code.includes(q) ||
+        year.includes(q) ||
+        subj.includes(q) ||
+        lvl.includes(q)
+      );
     });
   }, [resources, searchQuery]);
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-        <DialogContent className="max-w-3xl max-h-[88vh] flex flex-col p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="w-[94vw] max-w-3xl sm:max-w-3xl max-h-[88vh] flex flex-col p-0 gap-0 overflow-hidden rounded-2xl border border-border bg-card shadow-modal">
           {/* Header */}
-          <DialogHeader className="p-5 pb-3 border-b border-line bg-surface/80">
-            <div className="flex items-center justify-between gap-4">
+          <DialogHeader className="p-5 pb-4 border-b border-border bg-muted/40 space-y-3">
+            <div className="flex items-center justify-between gap-4 pr-8">
               <div className="flex items-center gap-2.5 min-w-0">
-                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary shrink-0">
-                  <BookOpen className="size-4" />
+                <div className="flex items-center justify-center size-8 rounded-lg bg-primary/10 text-primary border border-primary/20 shrink-0">
+                  <BookOpen className="size-4" aria-hidden="true" />
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <DialogTitle className="text-base font-bold font-display text-ink truncate">
+                  <DialogTitle className="text-base sm:text-lg font-bold font-heading text-foreground truncate">
                     Select Curated Past Paper
                   </DialogTitle>
-                  <DialogDescription className="text-xs text-ink-muted flex items-center gap-1.5 truncate mt-0.5">
-                    <span>Targeting:</span>
-                    {levelName && (
-                      <Badge variant="outline" className="text-[11px] font-semibold py-0 px-1.5 h-5">
-                        {levelName}
-                      </Badge>
-                    )}
-                    {subjectName && (
-                      <Badge variant="secondary" className="text-[11px] font-semibold py-0 px-1.5 h-5">
-                        {subjectName}
-                      </Badge>
+                  <DialogDescription className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
+                    {resolvedLevelName || resolvedSubjectName ? (
+                      <>
+                        <span>Filtering by:</span>
+                        {resolvedLevelName && (
+                          <Badge variant="outline" className="text-xs font-semibold py-0 px-2 h-5">
+                            {resolvedLevelName}
+                          </Badge>
+                        )}
+                        {resolvedSubjectName && (
+                          <Badge variant="secondary" className="text-xs font-semibold py-0 px-2 h-5">
+                            {resolvedSubjectName}
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <span>Browse all curated past papers or narrow by level and subject.</span>
                     )}
                   </DialogDescription>
                 </div>
               </div>
             </div>
 
-            {/* Quick Search */}
-            <div className="relative mt-3">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-ink-muted" />
-              <input
+            {/* Level / Subject Filters + Quick Search */}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Select
+                sizeVariant="sm"
+                aria-label="Filter by education level"
+                value={filterLevelId}
+                onChange={(e) => setFilterLevelId(e.target.value)}
+              >
+                <option value="">All education levels</option>
+                {levels.map((lvl) => (
+                  <option key={lvl.id} value={lvl.id}>
+                    {lvl.name}
+                  </option>
+                ))}
+              </Select>
+
+              <Select
+                sizeVariant="sm"
+                aria-label="Filter by subject"
+                value={filterSubjectId}
+                onChange={(e) => setFilterSubjectId(e.target.value)}
+              >
+                <option value="">All subjects</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
+              <Input
                 type="text"
+                sizeVariant="sm"
+                aria-label="Search curated past papers"
                 placeholder="Search papers by name, code, or session (e.g. 9709, May / June, QP)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-line bg-card pl-9 pr-9 py-2 text-xs text-ink placeholder:text-ink-muted/70 outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-all"
+                className="pl-9 pr-10"
               />
               {searchQuery && (
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon-xs"
                   onClick={() => setSearchQuery("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-muted hover:text-ink p-0.5"
+                  aria-label="Clear search"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 size-7 text-muted-foreground hover:text-foreground"
                 >
-                  <X className="size-3.5" />
-                </button>
+                  <X className="size-3.5" aria-hidden="true" />
+                </Button>
               )}
             </div>
           </DialogHeader>
@@ -144,9 +230,11 @@ export function PastPaperSelectorModal({
           {/* Body: Shared Past Papers Folder View */}
           <div className="flex-1 overflow-y-auto p-5">
             {isLoading ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3 text-ink-muted">
-                <Loader2 className="size-7 animate-spin text-primary" />
-                <p className="text-xs font-medium">Loading past papers for {subjectName || "subject"}...</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
+                <Loader2 className="size-7 animate-spin text-primary" aria-hidden="true" />
+                <p className="text-xs font-medium">
+                  Loading past papers{resolvedSubjectName ? ` for ${resolvedSubjectName}` : ""}...
+                </p>
               </div>
             ) : isError ? (
               <EmptyState
@@ -159,7 +247,7 @@ export function PastPaperSelectorModal({
                 description={
                   searchQuery
                     ? `No papers match "${searchQuery}". Try a different keyword or clear the search.`
-                    : `No past papers have been uploaded yet for ${levelName || "this level"} ${subjectName || "this subject"}.`
+                    : `No past papers have been uploaded yet${resolvedLevelName || resolvedSubjectName ? ` for ${[resolvedLevelName, resolvedSubjectName].filter(Boolean).join(" · ")}` : ""}.`
                 }
               />
             ) : (
