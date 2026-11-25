@@ -1,31 +1,44 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuth } from "@clerk/nextjs";
+import { Loader2, RotateCcw, UploadCloud, X } from "lucide-react";
+import { toast } from "sonner";
+
 import { Button } from "@/components/ui/button";
-import { TagInput } from "@/components/ui/tag-input";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import Link from "next/link";
-import { Post } from "@/types";
-import { useAuth } from "@clerk/nextjs";
-import { apiFetch } from "@/services/api-client";
-import { useQueryClient } from "@tanstack/react-query";
-import { useSubjects, useLevels } from "@/hooks/use-metadata";
-import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
-import { applyFieldErrorsToForm } from "@/lib/form-errors";
-import { uploadDirectlyToB2 } from "@/lib/storage";
+import { Input } from "@/components/ui/input";
+import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
+import { Select } from "@/components/ui/select";
+import { TagInput } from "@/components/ui/tag-input";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { useLevels, useSubjects } from "@/hooks/use-metadata";
+import { useCreatePost } from "@/hooks/use-posts";
+import { useStagedUploads } from "@/hooks/use-staged-uploads";
+import { getMutationAuthToken } from "@/lib/client-auth";
+import {
+  applyFieldErrorsToForm,
+  extractApiFieldErrors,
+} from "@/lib/form-errors";
+import { UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
 
+const POST_RULE = UPLOAD_SCOPE_RULES.post_attachment;
 
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+type PostDraftValues = {
+  post_type: "QUESTION" | "SHARING" | "ANNOUNCEMENT";
+  title: string;
+  body: string;
+  subject_id: string;
+  level_id: string;
+  tags: string[];
+};
 
 export function CreatePostForm({
   userRole,
@@ -36,11 +49,21 @@ export function CreatePostForm({
 }) {
   const router = useRouter();
   const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+  const createPostMutation = useCreatePost();
+
+  const errorBannerRef = useRef<HTMLDivElement>(null);
+  const appliedDraftRef = useRef(false);
 
   const [serverError, setServerError] = useState("");
-  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
+  const [serverFieldErrors, setServerFieldErrors] = useState<
+    Record<string, string[]>
+  >({});
+  const [errorFocusNonce, setErrorFocusNonce] = useState(0);
+  const [didSubmit, setDidSubmit] = useState(false);
+  const [submitStage, setSubmitStage] = useState<
+    "idle" | "uploading" | "saving"
+  >("idle");
+  const [slowServerNotice, setSlowServerNotice] = useState(false);
 
   const { data: subjects = [] } = useSubjects();
   const { data: levels = [] } = useLevels();
@@ -48,210 +71,468 @@ export function CreatePostForm({
   const canAnnounce = userRole === "ADMIN" || userRole === "SUPERADMIN";
   const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
 
-  const formSchema = z.object({
-    post_type: z.enum(["QUESTION", "SHARING", "ANNOUNCEMENT"]),
-    title: z.string().min(1, "Title is required").max(100, "Max 100 characters"),
-    body: z.string().min(1, "Body is required").max(3000, "Max 3000 characters"),
-    subject_id: subjectRequired ? z.string().min(1, "Subject is required") : z.string().optional().or(z.literal("")),
-    level_id: subjectRequired ? z.string().min(1, "Level is required") : z.string().optional().or(z.literal("")),
-    tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
-    attachment: z
-      .any()
-      .optional()
-      .refine((files) => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-      .refine(
-        (files) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files[0].type),
-        "Only .jpg, .png, and .pdf formats are supported."
-      ),
-  });
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        post_type: z.enum(["QUESTION", "SHARING", "ANNOUNCEMENT"]),
+        title: z
+          .string()
+          .trim()
+          .min(1, "Title is required")
+          .max(100, "Max 100 characters"),
+        body: z
+          .string()
+          .trim()
+          .min(1, "Body is required")
+          .max(3000, "Max 3000 characters"),
+        subject_id: subjectRequired
+          ? z.string().min(1, "Subject is required")
+          : z.string().optional().or(z.literal("")),
+        level_id: subjectRequired
+          ? z.string().min(1, "Level is required")
+          : z.string().optional().or(z.literal("")),
+        tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
+      }),
+    [subjectRequired]
+  );
 
   type FormValues = z.infer<typeof formSchema>;
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    setError,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
+  const defaultValues = useMemo<FormValues>(
+    () => ({
       post_type: "QUESTION",
       title: "",
       body: "",
       subject_id: "",
       level_id: "",
       tags: [],
-    },
+    }),
+    []
+  );
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    control,
+    formState: { errors, isDirty },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
   });
 
-  // Recover state and field errors if background submission failed
-  useEffect(() => {
-    const failed = getFailedSubmission("create_post");
-    if (failed) {
-      if (failed.formValues) {
-        reset(failed.formValues as FormValues);
-      }
-      if (failed.files && failed.files.length > 0) {
-        setValue("attachment", failed.files, { shouldValidate: true });
-      }
-      if (failed.serverMessage) {
-        setServerError(failed.serverMessage);
-      }
-      if (failed.fieldErrors) {
-        setServerFieldErrors(failed.fieldErrors);
-        applyFieldErrorsToForm(failed.fieldErrors, setError);
-      }
-      clearFailedSubmission("create_post");
-    }
-  }, [getFailedSubmission, clearFailedSubmission, reset, setValue, setError]);
+  const watchedValues = useWatch({ control });
 
-  const onSubmit = async (data: FormValues) => {
+  const {
+    items,
+    batchError,
+    isUploading,
+    addFiles,
+    removeFile,
+    cancelUpload,
+    uploadAll,
+    retryItem,
+    reset: resetUploads,
+  } = useStagedUploads({
+    scope: "post_attachment",
+    maxConcurrency: 1,
+  });
+
+  const isPostDraftEmpty = useCallback((draft: Partial<PostDraftValues>) => {
+    return (
+      !draft.title?.trim() &&
+      !draft.body?.trim() &&
+      !draft.subject_id &&
+      !draft.level_id &&
+      (!draft.tags || draft.tags.length === 0)
+    );
+  }, []);
+
+  const {
+    restoredDraft,
+    hasRestoredDraft,
+    saveDraft,
+    clearDraft,
+    dismissRestoredNotice,
+  } = useDraftPersistence<PostDraftValues>({
+    storageKey: "draft:post:new",
+    enabled: !writeLocked,
+    isEmpty: isPostDraftEmpty,
+  });
+
+  useEffect(() => {
+    if (!restoredDraft || appliedDraftRef.current) return;
+    appliedDraftRef.current = true;
+
+    const restoredType =
+      restoredDraft.post_type === "ANNOUNCEMENT" && !canAnnounce
+        ? "QUESTION"
+        : restoredDraft.post_type || "QUESTION";
+
+    reset({
+      post_type: restoredType,
+      title: restoredDraft.title ?? "",
+      body: restoredDraft.body ?? "",
+      subject_id: restoredDraft.subject_id ?? "",
+      level_id: restoredDraft.level_id ?? "",
+      tags: Array.isArray(restoredDraft.tags) ? restoredDraft.tags : [],
+    });
+  }, [restoredDraft, canAnnounce, reset]);
+
+  useEffect(() => {
+    if (!isDirty || writeLocked || didSubmit) return;
+    saveDraft({
+      post_type: watchedValues.post_type ?? "QUESTION",
+      title: watchedValues.title ?? "",
+      body: watchedValues.body ?? "",
+      subject_id: watchedValues.subject_id ?? "",
+      level_id: watchedValues.level_id ?? "",
+      tags: watchedValues.tags ?? [],
+    });
+  }, [watchedValues, isDirty, writeLocked, didSubmit, saveDraft]);
+
+  useEffect(() => {
+    if (errorFocusNonce === 0) return;
+    errorBannerRef.current?.focus();
+  }, [errorFocusNonce]);
+
+  useEffect(() => {
+    if (submitStage === "idle") {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSlowServerNotice(true);
+    }, 6000);
+    return () => {
+      clearTimeout(timer);
+      setSlowServerNotice(false);
+    };
+  }, [submitStage]);
+
+  useEffect(() => {
+    const hasUnsavedWork =
+      (isDirty || items.length > 0 || isUploading) && !didSubmit;
+    if (!hasUnsavedWork) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, items.length, isUploading, didSubmit]);
+
+  const resolveUploadToken = useCallback(
+    () => getMutationAuthToken(getToken),
+    [getToken]
+  );
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    reset(defaultValues);
+    resetUploads();
     setServerError("");
     setServerFieldErrors({});
+  };
 
-    // Minimize form and navigate to forum immediately
-    router.push("/forum");
+  const isBusy = submitStage !== "idle" || isUploading;
 
-    startBackgroundSubmission({
-      key: "create_post",
-      loadingMessage: "Publishing post...",
-      successMessage: "Post published successfully!",
-      returnUrl: "/posts/new",
-      formValues: data,
-      files: data.attachment,
-      fieldMapping: {
+  const onSubmit = async (data: FormValues) => {
+    if (writeLocked) return;
+
+    setServerError("");
+    setServerFieldErrors({});
+    setSlowServerNotice(false);
+
+    let succeeded = false;
+    try {
+      let uploaded: Array<{
+        file_key: string;
+        file_name: string;
+        public_url?: string;
+      }> = [];
+
+      if (items.length > 0) {
+        setSubmitStage("uploading");
+        uploaded = await uploadAll(resolveUploadToken);
+      }
+
+      setSubmitStage("saving");
+      const created = await createPostMutation.mutateAsync({
+        post_type: data.post_type,
+        title: data.title.trim(),
+        body: data.body.trim(),
+        ...(data.subject_id ? { subject: data.subject_id } : {}),
+        ...(data.level_id ? { level: data.level_id } : {}),
+        tags: data.tags,
+        uploaded_attachment: uploaded[0]
+          ? {
+              file_key: uploaded[0].file_key,
+              file_name: uploaded[0].file_name,
+            }
+          : null,
+      });
+
+      succeeded = true;
+      setDidSubmit(true);
+      clearDraft();
+      resetUploads();
+      toast.success("Post published!");
+      router.push(`/posts/${created.id}`);
+    } catch (err: unknown) {
+      const extracted = extractApiFieldErrors(err, {
         subject: "subject_id",
         level: "level_id",
         tags: "tags",
         file: "attachment",
         attachment: "attachment",
-      },
-      router,
-      execute: async () => {
-        const token = await getToken();
-        if (!token) throw new Error("Unauthorized");
-
-        const payload = {
-          post_type: data.post_type,
-          title: data.title,
-          body: data.body,
-          ...(data.subject_id && { subject: data.subject_id }),
-          ...(data.level_id && { level: data.level_id }),
-          tags: data.tags,
-        };
-
-        const res = await apiFetch<Post>("/posts/", token, {
-          method: "POST",
-          body: JSON.stringify(payload),
-        });
-
-        if (data.attachment && data.attachment.length > 0) {
-          const uploaded = await uploadDirectlyToB2(data.attachment[0], "post_attachment", token);
-          await apiFetch(`/posts/${res.id}/attachment/`, token, {
-            method: "POST",
-            body: JSON.stringify(uploaded),
-          });
-        }
-
-        queryClient.setQueryData(["posts"], (old: any) => {
-          if (!old || !old.pages || old.pages.length === 0) return old;
-          const newPages = [...old.pages];
-          newPages[0] = {
-            ...newPages[0],
-            data: [res, ...newPages[0].data],
-          };
-          return { ...old, pages: newPages };
-        });
-
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        return res;
-      },
-      onSuccessUrl: (res) => `/posts/${res.id}`,
-    });
+        uploaded_attachment: "attachment",
+      });
+      setServerError(extracted.serverMessage);
+      setServerFieldErrors(extracted.fieldErrors);
+      applyFieldErrorsToForm(extracted.fieldErrors, setError);
+      setErrorFocusNonce((prev) => prev + 1);
+    } finally {
+      if (!succeeded) {
+        setSubmitStage("idle");
+        setSlowServerNotice(false);
+      }
+    }
   };
 
+  const activeUploadProgress = items[0]?.progress ?? 0;
+  const submitLabel =
+    submitStage === "uploading"
+      ? `Uploading attachment (${activeUploadProgress}%)…`
+      : submitStage === "saving"
+        ? "Publishing post…"
+        : "Publish post";
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
-      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
-      
-      <Field label="Post type" error={errors.post_type?.message}>
-        <Select {...register("post_type")} aria-invalid={!!errors.post_type}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-card"
+    >
+      {hasRestoredDraft && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-foreground"
+        >
+          <span>Restored your unsaved draft.</span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={handleDiscardDraft}
+              className="min-h-[36px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <RotateCcw className="size-3" aria-hidden="true" />
+              <span>Discard</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={dismissRestoredNotice}
+              aria-label="Dismiss draft notice"
+              className="min-h-[36px] min-w-[36px] sm:min-h-[28px] sm:min-w-[28px]"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <FormErrorBanner
+        ref={errorBannerRef}
+        serverMessage={serverError}
+        fieldErrors={serverFieldErrors}
+      />
+
+      <Field
+        label="Post type"
+        htmlFor="create-post-type"
+        required
+        error={errors.post_type?.message}
+      >
+        <Select
+          id="create-post-type"
+          {...register("post_type")}
+          disabled={isBusy || writeLocked}
+          aria-invalid={!!errors.post_type}
+        >
           <option value="QUESTION">Question</option>
           <option value="SHARING">Sharing</option>
           {canAnnounce && <option value="ANNOUNCEMENT">Announcement</option>}
         </Select>
       </Field>
 
-      <Field label="Title (max 100)" error={errors.title?.message}>
+      <Field
+        label="Title"
+        htmlFor="create-post-title"
+        required
+        description="Up to 100 characters."
+        error={errors.title?.message}
+      >
         <Input
+          id="create-post-title"
           {...register("title")}
+          maxLength={100}
+          disabled={isBusy || writeLocked}
           placeholder="Clear, searchable title"
           aria-invalid={!!errors.title}
         />
       </Field>
 
-      <Field label="Body (max 3000)" error={errors.body?.message}>
-        <Textarea
-          {...register("body")}
-          placeholder="What's on your mind?"
-          aria-invalid={!!errors.body}
-          className="min-h-32"
+      <Field
+        label="Body"
+        htmlFor="create-post-body"
+        required
+        error={errors.body?.message}
+      >
+        <Controller
+          control={control}
+          name="body"
+          render={({ field }) => (
+            <MarkdownMathEditor
+              id="create-post-body"
+              name={field.name}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              maxLength={3000}
+              required
+              disabled={isBusy || writeLocked}
+              aria-invalid={!!errors.body}
+              placeholder="Explain your question or share notes with the community..."
+            />
+          )}
         />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={`Subject${subjectRequired ? " *" : " (optional)"}`} error={errors.subject_id?.message}>
-          <Select {...register("subject_id")} aria-invalid={!!errors.subject_id}>
+        <Field
+          label="Subject"
+          htmlFor="create-post-subject"
+          required={subjectRequired}
+          description={subjectRequired ? undefined : "Optional for Announcements."}
+          error={errors.subject_id?.message}
+        >
+          <Select
+            id="create-post-subject"
+            {...register("subject_id")}
+            disabled={isBusy || writeLocked}
+            aria-invalid={!!errors.subject_id}
+          >
             <option value="">Select…</option>
             {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label={`Level${subjectRequired ? " *" : " (optional)"}`} error={errors.level_id?.message}>
-          <Select {...register("level_id")} aria-invalid={!!errors.level_id}>
+        <Field
+          label="Level"
+          htmlFor="create-post-level"
+          required={subjectRequired}
+          description={subjectRequired ? undefined : "Optional for Announcements."}
+          error={errors.level_id?.message}
+        >
+          <Select
+            id="create-post-level"
+            {...register("level_id")}
+            disabled={isBusy || writeLocked}
+            aria-invalid={!!errors.level_id}
+          >
             <option value="">Select…</option>
             {levels.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <Controller
-        control={control}
-        name="tags"
-        render={({ field }) => (
-          <TagInput
-            value={field.value || []}
-            onChange={field.onChange}
-            maxTags={3}
-            error={errors.tags?.message}
-          />
-        )}
-      />
-
-      <Field label="Attachment (optional · max 1 · 5MB · jpg/png/pdf)">
-        <FileDropzone 
-          onFilesSelected={(files) => {
-            setValue("attachment", files, { shouldValidate: true });
-          }}
-          maxFiles={1}
-          maxSizeMB={5}
-          acceptedTypes={ACCEPTED_FILE_TYPES}
-          error={errors.attachment?.message as string}
+      <Field label="Tags" asGroup>
+        <Controller
+          control={control}
+          name="tags"
+          render={({ field }) => (
+            <TagInput
+              value={field.value || []}
+              onChange={field.onChange}
+              maxTags={3}
+              disabled={isBusy || writeLocked}
+              error={errors.tags?.message}
+            />
+          )}
         />
       </Field>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked}>
-          Publish
+      <Field
+        label="Attachment"
+        asGroup
+        description={`Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}).`}
+      >
+        <FileDropzone
+          items={items}
+          onAddFiles={addFiles}
+          onRemoveItem={removeFile}
+          onRetryItem={(id) => void retryItem(id, resolveUploadToken)}
+          scope="post_attachment"
+          sizeMode="per-file"
+          disabled={isBusy || writeLocked}
+          label="Upload post attachment"
+          helperText={`JPG, PNG, WebP, or PDF · Max ${POST_RULE.maxSizeMB} MB`}
+          error={batchError || serverFieldErrors.attachment?.[0] || undefined}
+        />
+      </Field>
+
+      {slowServerNotice && submitStage !== "idle" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+        >
+          <span>
+            Still working — the server may be waking up. Your draft and attachment are safe.
+          </span>
+          {isUploading && (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => cancelUpload()}
+              className="min-h-[36px] sm:min-h-[28px]"
+            >
+              Cancel upload
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 pt-2">
+        <Button type="submit" disabled={writeLocked || isBusy}>
+          {isBusy ? (
+            <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <UploadCloud className="mr-1.5 size-4" aria-hidden="true" />
+          )}
+          <span className={submitStage === "uploading" ? "font-mono tabular-nums" : undefined}>
+            {submitLabel}
+          </span>
         </Button>
-        <Button variant="secondary" nativeButton={false} render={<Link href="/forum" />}>
+        <Button
+          variant="secondary"
+          nativeButton={false}
+          disabled={isBusy}
+          render={<Link href="/forum" />}
+        >
           Cancel
         </Button>
       </div>

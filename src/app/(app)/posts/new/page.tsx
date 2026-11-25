@@ -1,16 +1,24 @@
+import { notFound, redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
-import { auth } from "@clerk/nextjs/server";
+import { getServerAuthToken } from "@/lib/auth-server";
+import { fetchCurrentUser } from "@/services/user-service";
 import { isWriteLocked } from "@/types/user";
 import { CreatePostForm } from "@/components/features/posts/create-post-form";
 
 export default async function NewPostPage() {
-  const { userId } = await auth();
+  const token = await getServerAuthToken();
+  if (!token) {
+    redirect("/sign-in");
+  }
 
-  // fallback for UI testing without auth
-  const user = userId ? { role: "USER", banState: "ACTIVE" } : { role: "ADMIN", banState: "ACTIVE" }; 
+  const user = await fetchCurrentUser(token).catch(() => null);
+  if (!user) {
+    notFound();
+  }
 
-  const subjectRequired = user.role === "USER" || user.role === "MODERATOR";
-  const writeLocked = isWriteLocked(user.banState as "WARNING" | "BANNED_24H" | "BANNED_7D" | "PERMANENT_BAN");
+  const userRole = user.role || "USER";
+  const writeLocked = isWriteLocked(user.ban_state);
+  const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -23,10 +31,19 @@ export default async function NewPostPage() {
         }
       />
 
-      <CreatePostForm
-        userRole={user.role}
-        writeLocked={writeLocked}
-      />
+      {writeLocked ? (
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 p-6 text-center text-sm font-medium text-destructive"
+        >
+          Your account is restricted. You cannot create forum posts at this time.
+        </div>
+      ) : (
+        <CreatePostForm
+          userRole={userRole}
+          writeLocked={writeLocked}
+        />
+      )}
     </div>
   );
 }

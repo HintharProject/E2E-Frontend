@@ -1,37 +1,60 @@
 "use client";
-import { useState, useEffect } from "react";
+
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuth } from "@clerk/nextjs";
+import { Loader2, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { toast } from "sonner";
+
+import { PostAttachment } from "@/components/features/posts/post-attachment";
 import { Button } from "@/components/ui/button";
-import { TagInput } from "@/components/ui/tag-input";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Field } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Select } from "@/components/ui/select";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import Link from "next/link";
-import { Subject, Level, Tag, Post } from "@/types";
-import { useAuth } from "@clerk/nextjs";
-import { apiFetch } from "@/services/api-client";
-import { useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-import { useFormSubmissionStore } from "@/lib/store/form-submission-store";
-import { applyFieldErrorsToForm } from "@/lib/form-errors";
-import { uploadDirectlyToB2 } from "@/lib/storage";
+import { Input } from "@/components/ui/input";
+import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
+import { Select } from "@/components/ui/select";
+import { TagInput } from "@/components/ui/tag-input";
+import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { useRemovePostAttachment, useUpdatePost } from "@/hooks/use-posts";
+import { useStagedUploads } from "@/hooks/use-staged-uploads";
+import { getMutationAuthToken } from "@/lib/client-auth";
+import {
+  applyFieldErrorsToForm,
+  extractApiFieldErrors,
+} from "@/lib/form-errors";
+import { UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
+import { Level, Post, PostTypeEnum, Subject, Tag } from "@/types";
 
+const POST_RULE = UPLOAD_SCOPE_RULES.post_attachment;
 
-
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-const ACCEPTED_FILE_TYPES = ["image/jpeg", "image/png", "application/pdf"];
+type PostEditDraftValues = {
+  post_type: PostTypeEnum;
+  title: string;
+  body: string;
+  subject_id: string;
+  level_id: string;
+  tags: string[];
+};
 
 export function UpdatePostForm({
   post,
   subjects,
   levels,
-  tags,
+  tags: _tags,
   userRole,
   writeLocked,
 }: {
@@ -42,244 +65,633 @@ export function UpdatePostForm({
   userRole: string;
   writeLocked: boolean;
 }) {
+  void _tags;
   const router = useRouter();
   const { getToken } = useAuth();
-  const queryClient = useQueryClient();
-  const submissionKey = `update_post_${post.id}`;
-  const { startBackgroundSubmission, getFailedSubmission, clearFailedSubmission } = useFormSubmissionStore();
+  const updatePostMutation = useUpdatePost();
+  const removeAttachmentMutation = useRemovePostAttachment();
+
+  const errorBannerRef = useRef<HTMLDivElement>(null);
+  const appliedDraftRef = useRef(false);
 
   const [serverError, setServerError] = useState("");
-  const [serverFieldErrors, setServerFieldErrors] = useState<Record<string, string[]>>({});
-  const [existingAttachment, setExistingAttachment] = useState<{ url: string; name: string } | null>(
-    post.attachment_url ? { url: post.attachment_url, name: post.attachment_name || "Attachment" } : null
+  const [serverFieldErrors, setServerFieldErrors] = useState<
+    Record<string, string[]>
+  >({});
+  const [errorFocusNonce, setErrorFocusNonce] = useState(0);
+  const [didSubmit, setDidSubmit] = useState(false);
+  const [submitStage, setSubmitStage] = useState<
+    "idle" | "uploading" | "saving"
+  >("idle");
+  const [slowServerNotice, setSlowServerNotice] = useState(false);
+  const [removeDialogOpen, setRemoveDialogOpen] = useState(false);
+  const [existingAttachment, setExistingAttachment] = useState<{
+    url: string;
+    name: string;
+  } | null>(
+    post.attachment_url
+      ? {
+          url: post.attachment_url,
+          name: post.attachment_name || "Attachment",
+        }
+      : null
   );
-
-  const handleRemoveExistingAttachment = async () => {
-    const toastId = toast.loading("Removing attachment...");
-    try {
-      const token = await getToken();
-      await apiFetch(`/posts/${post.id}/attachment/remove/`, token, {
-        method: "DELETE",
-      });
-      setExistingAttachment(null);
-      toast.success("Attachment removed", { id: toastId });
-      queryClient.invalidateQueries({ queryKey: ["post", post.id] });
-      queryClient.invalidateQueries({ queryKey: ["posts"] });
-    } catch (err: any) {
-      toast.error("Failed to remove attachment", { id: toastId });
-    }
-  };
 
   const canAnnounce = userRole === "ADMIN" || userRole === "SUPERADMIN";
   const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
 
-  const formSchema = z.object({
-    post_type: z.enum(["QUESTION", "SHARING", "ANNOUNCEMENT"]),
-    title: z.string().min(1, "Title is required").max(100, "Max 100 characters"),
-    body: z.string().min(1, "Body is required").max(3000, "Max 3000 characters"),
-    subject_id: subjectRequired ? z.string().min(1, "Subject is required") : z.string().optional().or(z.literal("")),
-    level_id: subjectRequired ? z.string().min(1, "Level is required") : z.string().optional().or(z.literal("")),
-    tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
-    attachment: z
-      .any()
-      .optional()
-      .refine((files) => !files || files.length === 0 || files[0].size <= MAX_FILE_SIZE, `Max file size is 5MB.`)
-      .refine(
-        (files) => !files || files.length === 0 || ACCEPTED_FILE_TYPES.includes(files[0].type),
-        "Only .jpg, .png, and .pdf formats are supported."
-      ),
-  });
+  const formSchema = useMemo(
+    () =>
+      z.object({
+        post_type: z.enum(["QUESTION", "SHARING", "ANNOUNCEMENT"]),
+        title: z
+          .string()
+          .trim()
+          .min(1, "Title is required")
+          .max(100, "Max 100 characters"),
+        body: z
+          .string()
+          .trim()
+          .min(1, "Body is required")
+          .max(3000, "Max 3000 characters"),
+        subject_id: subjectRequired
+          ? z.string().min(1, "Subject is required")
+          : z.string().optional().or(z.literal("")),
+        level_id: subjectRequired
+          ? z.string().min(1, "Level is required")
+          : z.string().optional().or(z.literal("")),
+        tags: z.array(z.string()).max(3, "Maximum 3 tags allowed"),
+      }),
+    [subjectRequired]
+  );
 
   type FormValues = z.infer<typeof formSchema>;
 
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    setError,
-    reset,
-    control,
-    formState: { errors },
-  } = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      post_type: post.post_type as any,
+  const initialValues = useMemo<FormValues>(
+    () => ({
+      post_type: post.post_type || "QUESTION",
       title: post.title,
       body: post.body,
       subject_id: post.subject ?? "",
       level_id: post.level ?? "",
       tags: (post.tags_data || []).map((t) => t.name),
-    },
+    }),
+    [post]
+  );
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    reset,
+    control,
+    formState: { errors, isDirty },
+  } = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: initialValues,
   });
 
-  // Recover state and field errors if background update failed
-  useEffect(() => {
-    const failed = getFailedSubmission(submissionKey);
-    if (failed) {
-      if (failed.formValues) {
-        reset(failed.formValues as FormValues);
-      }
-      if (failed.files && failed.files.length > 0) {
-        setValue("attachment", failed.files, { shouldValidate: true });
-      }
-      if (failed.serverMessage) {
-        setServerError(failed.serverMessage);
-      }
-      if (failed.fieldErrors) {
-        setServerFieldErrors(failed.fieldErrors);
-        applyFieldErrorsToForm(failed.fieldErrors, setError);
-      }
-      clearFailedSubmission(submissionKey);
-    }
-  }, [getFailedSubmission, clearFailedSubmission, submissionKey, reset, setValue, setError]);
+  const watchedValues = useWatch({ control });
 
-  const onSubmit = async (data: FormValues) => {
+  const {
+    items,
+    batchError,
+    isUploading,
+    addFiles,
+    removeFile,
+    cancelUpload,
+    uploadAll,
+    retryItem,
+    reset: resetUploads,
+  } = useStagedUploads({
+    scope: "post_attachment",
+    maxConcurrency: 1,
+  });
+
+  const isEditDraftEmpty = useCallback(
+    (draft: Partial<PostEditDraftValues>) => {
+      return (
+        !draft.title?.trim() &&
+        !draft.body?.trim() &&
+        !draft.subject_id &&
+        !draft.level_id &&
+        (!draft.tags || draft.tags.length === 0)
+      );
+    },
+    []
+  );
+
+  const {
+    restoredDraft,
+    hasRestoredDraft,
+    saveDraft,
+    clearDraft,
+    dismissRestoredNotice,
+  } = useDraftPersistence<PostEditDraftValues>({
+    storageKey: `draft:post:edit:${post.id}`,
+    enabled: !writeLocked,
+    isEmpty: isEditDraftEmpty,
+  });
+
+  useEffect(() => {
+    if (!restoredDraft || appliedDraftRef.current) return;
+    appliedDraftRef.current = true;
+
+    const restoredType =
+      restoredDraft.post_type === "ANNOUNCEMENT" && !canAnnounce
+        ? initialValues.post_type
+        : restoredDraft.post_type || initialValues.post_type;
+
+    reset({
+      post_type: restoredType,
+      title: restoredDraft.title ?? initialValues.title,
+      body: restoredDraft.body ?? initialValues.body,
+      subject_id: restoredDraft.subject_id ?? initialValues.subject_id,
+      level_id: restoredDraft.level_id ?? initialValues.level_id,
+      tags: Array.isArray(restoredDraft.tags)
+        ? restoredDraft.tags
+        : initialValues.tags,
+    });
+  }, [restoredDraft, canAnnounce, initialValues, reset]);
+
+  useEffect(() => {
+    if (!isDirty || writeLocked || didSubmit) return;
+    saveDraft({
+      post_type: watchedValues.post_type ?? initialValues.post_type,
+      title: watchedValues.title ?? "",
+      body: watchedValues.body ?? "",
+      subject_id: watchedValues.subject_id ?? "",
+      level_id: watchedValues.level_id ?? "",
+      tags: watchedValues.tags ?? [],
+    });
+  }, [
+    watchedValues,
+    isDirty,
+    writeLocked,
+    didSubmit,
+    initialValues.post_type,
+    saveDraft,
+  ]);
+
+  useEffect(() => {
+    if (errorFocusNonce === 0) return;
+    errorBannerRef.current?.focus();
+  }, [errorFocusNonce]);
+
+  useEffect(() => {
+    if (submitStage === "idle") {
+      return;
+    }
+    const timer = setTimeout(() => {
+      setSlowServerNotice(true);
+    }, 6000);
+    return () => {
+      clearTimeout(timer);
+      setSlowServerNotice(false);
+    };
+  }, [submitStage]);
+
+  useEffect(() => {
+    const hasUnsavedWork =
+      (isDirty || items.length > 0 || isUploading) && !didSubmit;
+    if (!hasUnsavedWork) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty, items.length, isUploading, didSubmit]);
+
+  const resolveUploadToken = useCallback(
+    () => getMutationAuthToken(getToken),
+    [getToken]
+  );
+
+  const handleDiscardDraft = () => {
+    clearDraft();
+    reset(initialValues);
+    resetUploads();
     setServerError("");
     setServerFieldErrors({});
+  };
 
-    // Minimize form and navigate immediately
-    router.push(`/posts/${post.id}`);
+  const handleConfirmRemoveAttachment = async () => {
+    if (writeLocked) return;
+    try {
+      await removeAttachmentMutation.mutateAsync(post.id);
+      setExistingAttachment(null);
+      setRemoveDialogOpen(false);
+      toast.success("Attachment removed");
+    } catch (err: unknown) {
+      const extracted = extractApiFieldErrors(
+        err,
+        {},
+        "Failed to remove attachment."
+      );
+      toast.error(extracted.serverMessage);
+    }
+  };
 
-    startBackgroundSubmission({
-      key: submissionKey,
-      loadingMessage: "Saving changes...",
-      successMessage: "Changes saved successfully!",
-      returnUrl: `/posts/${post.id}/edit`,
-      formValues: data,
-      files: data.attachment,
-      fieldMapping: {
+  const isBusy =
+    submitStage !== "idle" ||
+    isUploading ||
+    removeAttachmentMutation.isPending;
+
+  const onSubmit = async (data: FormValues) => {
+    if (writeLocked) return;
+
+    setServerError("");
+    setServerFieldErrors({});
+    setSlowServerNotice(false);
+
+    let succeeded = false;
+    try {
+      let uploaded: Array<{
+        file_key: string;
+        file_name: string;
+        public_url?: string;
+      }> = [];
+
+      if (items.length > 0) {
+        setSubmitStage("uploading");
+        uploaded = await uploadAll(resolveUploadToken);
+      }
+
+      setSubmitStage("saving");
+      await updatePostMutation.mutateAsync({
+        postId: post.id,
+        post_type: data.post_type,
+        title: data.title.trim(),
+        body: data.body.trim(),
+        subject: data.subject_id ? data.subject_id : null,
+        level: data.level_id ? data.level_id : null,
+        tags: data.tags,
+        uploaded_attachment: uploaded[0]
+          ? {
+              file_key: uploaded[0].file_key,
+              file_name: uploaded[0].file_name,
+            }
+          : undefined,
+      });
+
+      succeeded = true;
+      setDidSubmit(true);
+      clearDraft();
+      resetUploads();
+      toast.success("Changes saved!");
+      router.push(`/posts/${post.id}`);
+    } catch (err: unknown) {
+      const extracted = extractApiFieldErrors(err, {
         subject: "subject_id",
         level: "level_id",
         tags: "tags",
         file: "attachment",
         attachment: "attachment",
-      },
-      router,
-      execute: async () => {
-        const token = await getToken();
-        if (!token) throw new Error("Unauthorized");
-
-        const payload = {
-          post_type: data.post_type,
-          title: data.title,
-          body: data.body,
-          ...(data.subject_id && { subject: data.subject_id }),
-          ...(data.level_id && { level: data.level_id }),
-          tags: data.tags,
-        };
-
-        const res = await apiFetch<Post>(`/posts/${post.id}/`, token, {
-          method: "PATCH",
-          body: JSON.stringify(payload),
-        });
-
-        if (data.attachment && data.attachment.length > 0) {
-          const uploaded = await uploadDirectlyToB2(data.attachment[0], "post_attachment", token);
-          await apiFetch(`/posts/${post.id}/attachment/`, token, {
-            method: "POST",
-            body: JSON.stringify(uploaded),
-          });
-        }
-
-        queryClient.invalidateQueries({ queryKey: ["posts"] });
-        queryClient.invalidateQueries({ queryKey: ["post", post.id] });
-        return res;
-      },
-      onSuccessUrl: () => `/posts/${post.id}`,
-    });
+        uploaded_attachment: "attachment",
+      });
+      setServerError(extracted.serverMessage);
+      setServerFieldErrors(extracted.fieldErrors);
+      applyFieldErrorsToForm(extracted.fieldErrors, setError);
+      setErrorFocusNonce((prev) => prev + 1);
+    } finally {
+      if (!succeeded) {
+        setSubmitStage("idle");
+        setSlowServerNotice(false);
+      }
+    }
   };
 
+  const activeUploadProgress = items[0]?.progress ?? 0;
+  const submitLabel =
+    submitStage === "uploading"
+      ? `Uploading attachment (${activeUploadProgress}%)…`
+      : submitStage === "saving"
+        ? "Saving changes…"
+        : "Save changes";
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card">
-      <FormErrorBanner serverMessage={serverError} fieldErrors={serverFieldErrors} />
-      
-      <Field label="Post type" error={errors.post_type?.message}>
-        <Select {...register("post_type")} aria-invalid={!!errors.post_type}>
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-card"
+    >
+      {writeLocked && (
+        <div
+          role="alert"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-medium text-destructive"
+        >
+          Your account is restricted. You cannot edit posts at this time.
+        </div>
+      )}
+
+      {hasRestoredDraft && (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-foreground"
+        >
+          <span>Restored your unsaved edits.</span>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              onClick={handleDiscardDraft}
+              className="min-h-[36px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            >
+              <RotateCcw className="size-3" aria-hidden="true" />
+              <span>Discard</span>
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={dismissRestoredNotice}
+              aria-label="Dismiss draft notice"
+              className="min-h-[36px] min-w-[36px] sm:min-h-[28px] sm:min-w-[28px]"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      <FormErrorBanner
+        ref={errorBannerRef}
+        serverMessage={serverError}
+        fieldErrors={serverFieldErrors}
+      />
+
+      <Field
+        label="Post type"
+        htmlFor="edit-post-type"
+        required
+        error={errors.post_type?.message}
+      >
+        <Select
+          id="edit-post-type"
+          {...register("post_type")}
+          disabled={isBusy || writeLocked}
+          aria-invalid={!!errors.post_type}
+        >
           <option value="QUESTION">Question</option>
           <option value="SHARING">Sharing</option>
-          {canAnnounce && <option value="ANNOUNCEMENT">Announcement</option>}
+          {(canAnnounce || post.post_type === "ANNOUNCEMENT") && (
+            <option value="ANNOUNCEMENT">Announcement</option>
+          )}
         </Select>
       </Field>
 
-      <Field label="Title (max 100)" error={errors.title?.message}>
+      <Field
+        label="Title"
+        htmlFor="edit-post-title"
+        required
+        description="Up to 100 characters."
+        error={errors.title?.message}
+      >
         <Input
+          id="edit-post-title"
           {...register("title")}
+          maxLength={100}
+          disabled={isBusy || writeLocked}
           placeholder="Clear, searchable title"
           aria-invalid={!!errors.title}
         />
       </Field>
 
-      <Field label="Body (max 3000)" error={errors.body?.message}>
-        <Textarea
-          {...register("body")}
-          aria-invalid={!!errors.body}
-          className="min-h-32"
+      <Field
+        label="Body"
+        htmlFor="edit-post-body"
+        required
+        error={errors.body?.message}
+      >
+        <Controller
+          control={control}
+          name="body"
+          render={({ field }) => (
+            <MarkdownMathEditor
+              id="edit-post-body"
+              name={field.name}
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              maxLength={3000}
+              required
+              disabled={isBusy || writeLocked}
+              aria-invalid={!!errors.body}
+              placeholder="Explain your question or share notes with the community..."
+            />
+          )}
         />
       </Field>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label={`Subject${subjectRequired ? " *" : " (optional)"}`} error={errors.subject_id?.message}>
-          <Select {...register("subject_id")} aria-invalid={!!errors.subject_id}>
+        <Field
+          label="Subject"
+          htmlFor="edit-post-subject"
+          required={subjectRequired}
+          description={subjectRequired ? undefined : "Optional for Announcements."}
+          error={errors.subject_id?.message}
+        >
+          <Select
+            id="edit-post-subject"
+            {...register("subject_id")}
+            disabled={isBusy || writeLocked}
+            aria-invalid={!!errors.subject_id}
+          >
             <option value="">Select…</option>
             {subjects.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
             ))}
           </Select>
         </Field>
 
-        <Field label={`Level${subjectRequired ? " *" : " (optional)"}`} error={errors.level_id?.message}>
-          <Select {...register("level_id")} aria-invalid={!!errors.level_id}>
+        <Field
+          label="Level"
+          htmlFor="edit-post-level"
+          required={subjectRequired}
+          description={subjectRequired ? undefined : "Optional for Announcements."}
+          error={errors.level_id?.message}
+        >
+          <Select
+            id="edit-post-level"
+            {...register("level_id")}
+            disabled={isBusy || writeLocked}
+            aria-invalid={!!errors.level_id}
+          >
             <option value="">Select…</option>
             {levels.map((l) => (
-              <option key={l.id} value={l.id}>{l.name}</option>
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
             ))}
           </Select>
         </Field>
       </div>
 
-      <Controller
-        control={control}
-        name="tags"
-        render={({ field }) => (
-          <TagInput
-            value={field.value || []}
-            onChange={field.onChange}
-            maxTags={3}
-            error={errors.tags?.message}
-          />
-        )}
-      />
-
-      <Field label="New attachment (optional · max 1 · 5MB · jpg/png/pdf)">
-        {existingAttachment && (
-          <div className="mb-4 flex items-center justify-between p-2 text-sm border border-border rounded-lg bg-secondary">
-            <div className="flex items-center gap-3 overflow-hidden">
-              <span className="truncate flex-1 min-w-0 font-medium">{existingAttachment.name}</span>
-            </div>
-            <Button type="button" variant="ghost" size="xs" onClick={handleRemoveExistingAttachment} className="shrink-0 text-muted-foreground hover:text-destructive">
-              Remove
-            </Button>
-          </div>
-        )}
-        <FileDropzone 
-          onFilesSelected={(files) => {
-            setValue("attachment", files, { shouldValidate: true });
-          }}
-          maxFiles={1}
-          maxSizeMB={5}
-          acceptedTypes={ACCEPTED_FILE_TYPES}
-          error={errors.attachment?.message as string}
+      <Field label="Tags" asGroup>
+        <Controller
+          control={control}
+          name="tags"
+          render={({ field }) => (
+            <TagInput
+              value={field.value || []}
+              onChange={field.onChange}
+              maxTags={3}
+              disabled={isBusy || writeLocked}
+              error={errors.tags?.message}
+            />
+          )}
         />
       </Field>
 
-      <div className="flex gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked}>
-          Save Changes
+      <Field
+        label="Attachment"
+        asGroup
+        description={
+          existingAttachment
+            ? `Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}). Uploading a new file will replace the current attachment when you save.`
+            : `Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}).`
+        }
+      >
+        {existingAttachment && (
+          <div className="mb-3 space-y-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-xs font-medium text-muted-foreground">
+                Current attachment:{" "}
+                <span className="text-foreground">
+                  {existingAttachment.name}
+                </span>
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setRemoveDialogOpen(true)}
+                disabled={isBusy || writeLocked}
+                className="min-h-[44px] sm:min-h-[36px] gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" />
+                <span>Remove attachment</span>
+              </Button>
+            </div>
+
+            <PostAttachment
+              url={existingAttachment.url}
+              filename={existingAttachment.name}
+            />
+
+            {items.length > 0 && (
+              <p className="text-xs font-medium text-warning">
+                Uploading a new file will replace the current attachment when you
+                save.
+              </p>
+            )}
+          </div>
+        )}
+
+        <FileDropzone
+          items={items}
+          onAddFiles={addFiles}
+          onRemoveItem={removeFile}
+          onRetryItem={(id) => void retryItem(id, resolveUploadToken)}
+          scope="post_attachment"
+          sizeMode="per-file"
+          disabled={isBusy || writeLocked}
+          label="Upload replacement attachment"
+          helperText={`JPG, PNG, WebP, or PDF · Max ${POST_RULE.maxSizeMB} MB`}
+          error={batchError || serverFieldErrors.attachment?.[0] || undefined}
+        />
+      </Field>
+
+      {slowServerNotice && submitStage !== "idle" && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+        >
+          <span>
+            Still working — the server may be waking up. Your edits are safe.
+          </span>
+          {isUploading && (
+            <Button
+              type="button"
+              variant="outline"
+              size="xs"
+              onClick={() => cancelUpload()}
+              className="min-h-[36px] sm:min-h-[28px]"
+            >
+              Cancel upload
+            </Button>
+          )}
+        </div>
+      )}
+
+      <div className="flex flex-wrap items-center gap-2 pt-2">
+        <Button type="submit" disabled={writeLocked || isBusy}>
+          {isBusy ? (
+            <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Save className="mr-1.5 size-4" aria-hidden="true" />
+          )}
+          <span className={submitStage === "uploading" ? "font-mono tabular-nums" : undefined}>
+            {submitLabel}
+          </span>
         </Button>
-        <Button variant="secondary" nativeButton={false} render={<Link href={`/posts/${post.id}`} />}>
+        <Button
+          variant="secondary"
+          nativeButton={false}
+          disabled={isBusy}
+          render={<Link href={`/posts/${post.id}`} />}
+        >
           Cancel
         </Button>
       </div>
+
+      <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove attachment</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove &ldquo;{existingAttachment?.name}
+              &rdquo; from this post? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose
+              render={
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={removeAttachmentMutation.isPending}
+                />
+              }
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmRemoveAttachment}
+              disabled={removeAttachmentMutation.isPending}
+            >
+              {removeAttachmentMutation.isPending ? (
+                <>
+                  <Loader2
+                    className="mr-1.5 size-4 animate-spin"
+                    aria-hidden="true"
+                  />
+                  Removing…
+                </>
+              ) : (
+                "Remove attachment"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </form>
   );
 }
