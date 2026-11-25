@@ -9,6 +9,7 @@ import type { StagedUploadItem } from "@/hooks/use-staged-uploads";
 import {
   formatBytes,
   getFileExtension,
+  inferContentType,
   UPLOAD_SCOPE_RULES,
   UploadScope,
   validateFileBatch,
@@ -25,19 +26,14 @@ export interface FileDropzoneProps {
   onRemoveItem?: (id: string) => void;
   onRetryItem?: (id: string) => void;
   scope?: UploadScope;
+  maxFiles?: number;
   existingCount?: number;
   sizeMode?: "per-file" | "total";
   disabled?: boolean;
   label?: string;
   helperText?: string;
-  className?: string;
-
-  // Optional legacy compatibility props (to be removed after form migrations)
-  onFilesSelected?: (files: File[]) => void;
-  maxFiles?: number;
-  maxSizeMB?: number;
-  acceptedTypes?: string[];
   error?: string;
+  className?: string;
 }
 
 export function FileDropzone({
@@ -48,17 +44,14 @@ export function FileDropzone({
   onRemoveItem,
   onRetryItem,
   scope,
+  maxFiles,
   existingCount = 0,
   sizeMode,
   disabled = false,
   label,
   helperText,
-  className,
-  onFilesSelected,
-  maxFiles,
-  maxSizeMB,
-  acceptedTypes,
   error,
+  className,
 }: FileDropzoneProps) {
   const [isDragActive, setIsDragActive] = useState(false);
   const [legacyFiles, setLegacyFiles] = useState<File[]>([]);
@@ -70,9 +63,9 @@ export function FileDropzone({
 
   const rule = scope ? UPLOAD_SCOPE_RULES[scope] : undefined;
   const effectiveMaxFiles = maxFiles ?? rule?.maxFiles ?? 1;
-  const effectiveMaxSizeMB = maxSizeMB ?? rule?.maxSizeMB ?? 5;
+  const effectiveMaxSizeMB = rule?.maxSizeMB ?? 5;
   const effectiveSizeMode = sizeMode ?? rule?.sizeMode ?? "per-file";
-  const effectiveAccept = acceptedTypes?.join(",") ?? rule?.acceptString;
+  const effectiveAccept = rule?.acceptString;
 
   const isItemsControlled = items !== undefined;
   const isFilesControlled = files !== undefined;
@@ -102,7 +95,7 @@ export function FileDropzone({
     let changed = false;
 
     for (const file of activeFiles) {
-      if (file.type.startsWith("image/") && !map.has(file)) {
+      if (inferContentType(file).startsWith("image/") && !map.has(file)) {
         map.set(file, URL.createObjectURL(file));
         changed = true;
       }
@@ -167,23 +160,6 @@ export function FileDropzone({
           return false;
         }
 
-        if (acceptedTypes && acceptedTypes.length > 0) {
-          const fileExt = getFileExtension(file.name);
-          const isValidType =
-            (file.type && acceptedTypes.includes(file.type)) ||
-            acceptedTypes.some(
-              (type) =>
-                (fileExt && fileExt === type.toLowerCase()) ||
-                (fileExt && type.toLowerCase().includes(fileExt))
-            );
-          if (!isValidType) {
-            setLocalError(
-              `Invalid file type for "${file.name}". Accepted: ${acceptedTypes.join(", ")}`
-            );
-            return false;
-          }
-        }
-
         if (effectiveSizeMode === "per-file" && file.size > maxBytes) {
           setLocalError(
             `File "${file.name}" exceeds the ${effectiveMaxSizeMB} MB per-file limit.`
@@ -210,7 +186,6 @@ export function FileDropzone({
       scope,
       totalBytes,
       effectiveMaxSizeMB,
-      acceptedTypes,
       effectiveSizeMode,
     ]
   );
@@ -253,7 +228,6 @@ export function FileDropzone({
         setLegacyFiles(nextFiles);
       }
       onFilesChange?.(nextFiles);
-      onFilesSelected?.(nextFiles);
     },
     [
       disabled,
@@ -266,7 +240,6 @@ export function FileDropzone({
       isFilesControlled,
       isItemsControlled,
       onFilesChange,
-      onFilesSelected,
     ]
   );
 
@@ -303,14 +276,10 @@ export function FileDropzone({
       setLegacyFiles(nextFiles);
     }
     onFilesChange?.(nextFiles);
-    onFilesSelected?.(nextFiles);
   };
 
   const displayError = error || localError;
-  const acceptsSummary =
-    rule?.allowedExtensions.join(", ") ??
-    acceptedTypes?.join(", ") ??
-    "Supported files";
+  const acceptsSummary = rule?.allowedExtensions.join(", ") ?? "Supported files";
 
   return (
     <div className={cn("w-full", className)}>
@@ -440,7 +409,7 @@ export function FileDropzone({
                         variant="outline"
                         size="xs"
                         onClick={() => onRetryItem(item.id)}
-                        className="min-h-[36px] sm:min-h-[28px] gap-1"
+                        className="min-h-[44px] sm:min-h-[28px] gap-1"
                       >
                         <RotateCcw className="size-3" aria-hidden="true" />
                         <span>Retry</span>

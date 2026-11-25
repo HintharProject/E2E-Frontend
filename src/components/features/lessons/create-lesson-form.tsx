@@ -255,6 +255,12 @@ export function CreateLessonForm({
     return `Uploading ${activeIndex} of ${total} (${pct}%)...`;
   }, [submitStage, stagedItems]);
 
+  const onInvalid = () => {
+    setServerError("Please review the highlighted fields before submitting.");
+    setServerFieldErrors({});
+    focusErrorBanner();
+  };
+
   const onSubmit = async (data: FormValues) => {
     setServerError("");
     setServerFieldErrors({});
@@ -262,6 +268,7 @@ export function CreateLessonForm({
     setShowColdStartHint(false);
 
     let uploadedAttachments: UploadedLessonAttachment[] = [];
+    let succeeded = false;
 
     try {
       if (stagedItems.length > 0) {
@@ -286,6 +293,7 @@ export function CreateLessonForm({
         uploaded_attachments: uploadedAttachments,
       });
 
+      succeeded = true;
       isNavigatingAfterSuccessRef.current = true;
       clearDraft();
       resetUploads();
@@ -310,16 +318,19 @@ export function CreateLessonForm({
       applyFieldErrorsToForm(extracted.fieldErrors, setError);
       focusErrorBanner();
     } finally {
-      setSubmitStage("idle");
-      setShowColdStartHint(false);
+      if (!succeeded) {
+        setSubmitStage("idle");
+        setShowColdStartHint(false);
+      }
     }
   };
 
   return (
     <form
       onSubmit={(e) => {
-        void handleSubmit(onSubmit)(e);
+        void handleSubmit(onSubmit, onInvalid)(e);
       }}
+      noValidate
       className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
     >
       {hasRestoredDraft && (
@@ -337,7 +348,7 @@ export function CreateLessonForm({
               variant="ghost"
               size="xs"
               onClick={handleDiscardDraft}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="min-h-[44px] sm:min-h-[28px] text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               Discard
             </Button>
@@ -347,6 +358,7 @@ export function CreateLessonForm({
               size="icon-xs"
               onClick={dismissRestoredNotice}
               aria-label="Dismiss draft notice"
+              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
             >
               <X className="size-3.5" aria-hidden="true" />
             </Button>

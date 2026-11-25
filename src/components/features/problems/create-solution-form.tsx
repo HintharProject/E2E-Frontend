@@ -249,6 +249,7 @@ export function CreateSolutionForm({
   return (
     <form
       onSubmit={handleSubmit(onSubmit, onInvalid)}
+      noValidate
       className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card"
     >
       <h3 className="font-heading text-lg font-semibold text-foreground">
@@ -314,7 +315,6 @@ export function CreateSolutionForm({
       <Field
         label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)"
         asGroup
-        error={errors.attachments?.message as string | undefined}
       >
         <FileDropzone
           items={items}

@@ -303,7 +303,6 @@ export function SolveAPaperModal({
           >
             <Input
               id="solve-paper-qnum"
-              sizeVariant="sm"
               value={questionNumber}
               onChange={(e) => setQuestionNumber(e.target.value)}
               placeholder="e.g. Q3(a) or Q7"
@@ -341,7 +340,6 @@ export function SolveAPaperModal({
             <div className="relative">
               <Input
                 id="solve-paper-video"
-                sizeVariant="sm"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 placeholder="https://www.youtube.com/watch?v=..."
@@ -359,7 +357,6 @@ export function SolveAPaperModal({
           <Field
             label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)"
             asGroup
-            error={serverFieldErrors.attachments?.[0]}
           >
             <FileDropzone
               items={items}

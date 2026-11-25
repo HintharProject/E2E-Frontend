@@ -239,10 +239,12 @@ export function useStagedUploads({
         const uploaded = await uploadDirectlyToB2(item.file, scope, token, {
           signal: controller.signal,
           onProgress: (percent) => {
+            if (controllersRef.current.get(item.id) !== controller) return;
             updateItem(item.id, { progress: percent });
           },
         });
 
+        if (controllersRef.current.get(item.id) !== controller) return;
         updateItem(item.id, {
           status: "uploaded",
           progress: 100,
@@ -257,14 +259,18 @@ export function useStagedUploads({
           : err instanceof Error
             ? err.message
             : "Upload failed";
-        updateItem(item.id, {
-          status: "error",
-          progress: 0,
-          error: msg,
-        });
+        if (controllersRef.current.get(item.id) === controller) {
+          updateItem(item.id, {
+            status: "error",
+            progress: 0,
+            error: msg,
+          });
+        }
         throw new Error(msg);
       } finally {
-        controllersRef.current.delete(item.id);
+        if (controllersRef.current.get(item.id) === controller) {
+          controllersRef.current.delete(item.id);
+        }
       }
     },
     [scope, updateItem]

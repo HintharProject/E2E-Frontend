@@ -34,7 +34,7 @@ export const FormErrorBanner = React.forwardRef<
     >
       <div className="flex items-start gap-3">
         <AlertCircle className="size-5 mt-0.5 shrink-0" aria-hidden="true" />
-        <div className="space-y-1 text-sm">
+        <div className="min-w-0 flex-1 space-y-1 text-sm [overflow-wrap:anywhere]">
           {serverMessage && <p className="font-semibold">{serverMessage}</p>}
           {entries.length > 0 && (
             <ul className="list-disc list-inside space-y-0.5 mt-1 text-xs">

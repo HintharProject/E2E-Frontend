@@ -157,6 +157,8 @@ export function CreateProblemForm({
   const bodyIdB = `${uid}-problem-body-b`;
 
   const errorBannerRef = useRef<HTMLDivElement>(null);
+  const pathATabRef = useRef<HTMLButtonElement>(null);
+  const pathBTabRef = useRef<HTMLButtonElement>(null);
   const appliedDraftRef = useRef(false);
 
   const urlResource =
@@ -857,6 +859,7 @@ export function CreateProblemForm({
               variant="ghost"
               size="xs"
               onClick={dismissRestoredNotice}
+              className="min-h-[44px] sm:min-h-[28px]"
             >
               Keep
             </Button>
@@ -865,7 +868,7 @@ export function CreateProblemForm({
               variant="outline"
               size="xs"
               onClick={handleDiscardDraft}
-              className="gap-1"
+              className="min-h-[44px] sm:min-h-[28px] gap-1"
             >
               <RotateCcw className="size-3" aria-hidden="true" />
               <span>Discard</span>
@@ -881,11 +884,20 @@ export function CreateProblemForm({
         className="flex flex-col sm:flex-row rounded-xl border border-border bg-muted/40 p-1 gap-1"
       >
         <button
+          ref={pathATabRef}
           type="button"
           role="tab"
           aria-selected={selectedOrigin === "USER_UPLOAD"}
+          tabIndex={selectedOrigin === "USER_UPLOAD" ? 0 : -1}
           disabled={isSubmitting}
           onClick={() => handleOriginChange("USER_UPLOAD")}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
+              e.preventDefault();
+              handleOriginChange("PAST_PAPER");
+              pathBTabRef.current?.focus();
+            }
+          }}
           className={cn(
             "flex-1 flex min-h-[44px] sm:min-h-[38px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
@@ -899,11 +911,20 @@ export function CreateProblemForm({
         </button>
 
         <button
+          ref={pathBTabRef}
           type="button"
           role="tab"
           aria-selected={selectedOrigin === "PAST_PAPER"}
+          tabIndex={selectedOrigin === "PAST_PAPER" ? 0 : -1}
           disabled={isSubmitting}
           onClick={() => handleOriginChange("PAST_PAPER")}
+          onKeyDown={(e) => {
+            if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
+              e.preventDefault();
+              handleOriginChange("USER_UPLOAD");
+              pathATabRef.current?.focus();
+            }
+          }}
           className={cn(
             "flex-1 flex min-h-[44px] sm:min-h-[38px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
@@ -1077,7 +1098,6 @@ export function CreateProblemForm({
               label="Question Photos (1 to 3 images)"
               asGroup
               required
-              error={fieldErrorMap.attachments?.message}
             >
               <FileDropzone
                 items={items}

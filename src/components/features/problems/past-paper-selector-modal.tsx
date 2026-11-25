@@ -174,6 +174,7 @@ export function PastPaperSelectorModal({
                 aria-label="Filter by education level"
                 value={filterLevelId}
                 onChange={(e) => setFilterLevelId(e.target.value)}
+                className="min-h-[44px] sm:min-h-[36px] text-base sm:text-xs"
               >
                 <option value="">All education levels</option>
                 {levels.map((lvl) => (
@@ -188,6 +189,7 @@ export function PastPaperSelectorModal({
                 aria-label="Filter by subject"
                 value={filterSubjectId}
                 onChange={(e) => setFilterSubjectId(e.target.value)}
+                className="min-h-[44px] sm:min-h-[36px] text-base sm:text-xs"
               >
                 <option value="">All subjects</option>
                 {subjects.map((sub) => (
@@ -210,7 +212,7 @@ export function PastPaperSelectorModal({
                 placeholder="Search papers by name, code, or session (e.g. 9709, May / June, QP)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-10"
+                className="min-h-[44px] sm:min-h-[36px] pl-9 pr-11 text-base sm:text-xs"
               />
               {searchQuery && (
                 <Button
@@ -219,7 +221,7 @@ export function PastPaperSelectorModal({
                   size="icon-xs"
                   onClick={() => setSearchQuery("")}
                   aria-label="Clear search"
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 size-7 text-muted-foreground hover:text-foreground"
+                  className="absolute right-0.5 sm:right-1.5 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px] text-muted-foreground hover:text-foreground"
                 >
                   <X className="size-3.5" aria-hidden="true" />
                 </Button>

@@ -299,6 +299,12 @@ export function UpdatePostForm({
     isUploading ||
     removeAttachmentMutation.isPending;
 
+  const onInvalid = () => {
+    setServerError("Please review the highlighted fields before submitting.");
+    setServerFieldErrors({});
+    setErrorFocusNonce((prev) => prev + 1);
+  };
+
   const onSubmit = async (data: FormValues) => {
     if (writeLocked) return;
 
@@ -373,8 +379,9 @@ export function UpdatePostForm({
 
   return (
     <form
-      onSubmit={handleSubmit(onSubmit)}
-      className="space-y-5 rounded-xl border border-border bg-card p-6 shadow-card"
+      onSubmit={handleSubmit(onSubmit, onInvalid)}
+      noValidate
+      className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
     >
       {writeLocked && (
         <div
@@ -397,7 +404,7 @@ export function UpdatePostForm({
               variant="ghost"
               size="xs"
               onClick={handleDiscardDraft}
-              className="min-h-[36px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              className="min-h-[44px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
             >
               <RotateCcw className="size-3" aria-hidden="true" />
               <span>Discard</span>
@@ -408,7 +415,7 @@ export function UpdatePostForm({
               size="icon-xs"
               onClick={dismissRestoredNotice}
               aria-label="Dismiss draft notice"
-              className="min-h-[36px] min-w-[36px] sm:min-h-[28px] sm:min-w-[28px]"
+              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
             >
               <X className="size-3.5" aria-hidden="true" />
             </Button>

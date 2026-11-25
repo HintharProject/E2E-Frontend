@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useMemo } from "react";
+import React, { useState, useRef, useEffect, useMemo, useId } from "react";
 import { Badge } from "@/components/ui/badge";
 import { useTagSuggestions } from "@/hooks/use-tag-suggestions";
 import { X, Plus, Hash, Loader2 } from "lucide-react";
@@ -29,6 +29,7 @@ export function TagInput({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState<number>(-1);
 
+  const listboxId = useId();
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -182,9 +183,14 @@ export function TagInput({
         <input
           ref={inputRef}
           type="text"
+          role="combobox"
           value={query}
           disabled={disabled}
           readOnly={isMaxReached}
+          aria-label="Add tags"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-expanded={isOpen && !isMaxReached && selectableOptions.length > 0}
           placeholder={value.length === 0 ? placeholder : (isMaxReached ? "" : "Add another...")}
           onChange={(e) => {
             if (isMaxReached) return;
@@ -221,13 +227,20 @@ export function TagInput({
 
       {/* Floating Suggestions Dropdown */}
       {isOpen && !isMaxReached && selectableOptions.length > 0 && (
-        <div className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-modal custom-scrollbar">
+        <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Tag suggestions"
+          className="absolute left-0 top-full z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-popover p-1 shadow-modal custom-scrollbar"
+        >
           {selectableOptions.map((opt, idx) => {
             const isHighlighted = idx === highlightedIndex;
             if (opt.type === "create") {
               return (
                 <div
                   key="create-new-option"
+                  role="option"
+                  aria-selected={isHighlighted}
                   onClick={() => addTag(opt.name)}
                   onMouseEnter={() => setHighlightedIndex(idx)}
                   className={cn(
@@ -247,6 +260,8 @@ export function TagInput({
             return (
               <div
                 key={opt.name}
+                role="option"
+                aria-selected={isHighlighted}
                 onClick={() => addTag(opt.name)}
                 onMouseEnter={() => setHighlightedIndex(idx)}
                 className={cn(
