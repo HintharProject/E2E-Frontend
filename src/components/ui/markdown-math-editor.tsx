@@ -17,6 +17,8 @@ export interface MarkdownMathEditorProps {
   rows?: number;
   disabled?: boolean;
   required?: boolean;
+  mode?: "write" | "preview";
+  variant?: "default" | "borderless";
   "aria-invalid"?: boolean;
   "aria-describedby"?: string;
   className?: string;
@@ -38,6 +40,8 @@ export const MarkdownMathEditor = React.forwardRef<
     rows = 6,
     disabled = false,
     required = false,
+    mode: controlledMode,
+    variant = "default",
     "aria-invalid": ariaInvalid,
     "aria-describedby": ariaDescribedBy,
     className,
@@ -45,7 +49,11 @@ export const MarkdownMathEditor = React.forwardRef<
   },
   ref
 ) {
-  const [tab, setTab] = React.useState<"write" | "preview">("write");
+  const [internalTab, setInternalTab] = React.useState<"write" | "preview">("write");
+  const tab = controlledMode ?? internalTab;
+  const setTab = setInternalTab;
+  const isControlledMode = controlledMode !== undefined;
+  const isBorderless = variant === "borderless";
   const baseId = React.useId();
   const writeTabId = `${baseId}-write-tab`;
   const previewTabId = `${baseId}-preview-tab`;
@@ -76,72 +84,74 @@ export const MarkdownMathEditor = React.forwardRef<
 
   return (
     <div className={cn("w-full space-y-2", className)}>
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <div
-          role="tablist"
-          aria-label="Editor mode"
-          className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1"
-        >
-          <button
-            ref={writeTabRef}
-            type="button"
-            role="tab"
-            id={writeTabId}
-            aria-selected={tab === "write"}
-            aria-controls={writePanelId}
-            tabIndex={tab === "write" ? 0 : -1}
-            onClick={() => setTab("write")}
-            onKeyDown={handleTabKeyDown}
-            className={cn(
-              "inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-              tab === "write"
-                ? "bg-card text-foreground shadow-2xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
+      {!isControlledMode && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div
+            role="tablist"
+            aria-label="Editor mode"
+            className="inline-flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-1"
           >
-            <Edit3 className="size-3.5" aria-hidden="true" />
-            <span>Write</span>
-          </button>
+            <button
+              ref={writeTabRef}
+              type="button"
+              role="tab"
+              id={writeTabId}
+              aria-selected={tab === "write"}
+              aria-controls={writePanelId}
+              tabIndex={tab === "write" ? 0 : -1}
+              onClick={() => setTab("write")}
+              onKeyDown={handleTabKeyDown}
+              className={cn(
+                "inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                tab === "write"
+                  ? "bg-card text-foreground shadow-2xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Edit3 className="size-3.5" aria-hidden="true" />
+              <span>Write</span>
+            </button>
 
-          <button
-            ref={previewTabRef}
-            type="button"
-            role="tab"
-            id={previewTabId}
-            aria-selected={tab === "preview"}
-            aria-controls={previewPanelId}
-            tabIndex={tab === "preview" ? 0 : -1}
-            onClick={() => setTab("preview")}
-            onKeyDown={handleTabKeyDown}
-            className={cn(
-              "inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
-              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-              tab === "preview"
-                ? "bg-card text-foreground shadow-2xs border border-border"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Eye className="size-3.5" aria-hidden="true" />
-            <span>Preview</span>
-          </button>
+            <button
+              ref={previewTabRef}
+              type="button"
+              role="tab"
+              id={previewTabId}
+              aria-selected={tab === "preview"}
+              aria-controls={previewPanelId}
+              tabIndex={tab === "preview" ? 0 : -1}
+              onClick={() => setTab("preview")}
+              onKeyDown={handleTabKeyDown}
+              className={cn(
+                "inline-flex min-h-[44px] sm:min-h-[32px] items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                tab === "preview"
+                  ? "bg-card text-foreground shadow-2xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Eye className="size-3.5" aria-hidden="true" />
+              <span>Preview</span>
+            </button>
+          </div>
+
+          {typeof maxLength === "number" && (
+            <span
+              className={cn(
+                "font-mono tabular-nums text-xs",
+                overLimit
+                  ? "font-semibold text-destructive"
+                  : nearLimit
+                    ? "font-medium text-warning"
+                    : "text-muted-foreground"
+              )}
+            >
+              {length}/{maxLength}
+            </span>
+          )}
         </div>
-
-        {typeof maxLength === "number" && (
-          <span
-            className={cn(
-              "font-mono tabular-nums text-xs",
-              overLimit
-                ? "font-semibold text-destructive"
-                : nearLimit
-                  ? "font-medium text-warning"
-                  : "text-muted-foreground"
-            )}
-          >
-            {length}/{maxLength}
-          </span>
-        )}
-      </div>
+      )}
 
       <div
         id={writePanelId}
@@ -163,7 +173,12 @@ export const MarkdownMathEditor = React.forwardRef<
           required={required}
           aria-invalid={ariaInvalid}
           aria-describedby={ariaDescribedBy}
-          className={cn("text-base sm:text-sm min-h-[160px]", textareaClassName)}
+          className={cn(
+            isBorderless
+              ? "min-h-[220px] resize-y border-0 bg-transparent px-0 py-1 text-base leading-[1.75] shadow-none focus-visible:ring-0"
+              : "min-h-[160px] text-base sm:text-sm",
+            textareaClassName
+          )}
         />
       </div>
 
@@ -172,10 +187,15 @@ export const MarkdownMathEditor = React.forwardRef<
           id={previewPanelId}
           role="tabpanel"
           aria-labelledby={previewTabId}
-          className="min-h-[160px] w-full overflow-x-auto [overflow-wrap:anywhere] rounded-lg border border-input bg-card p-3.5 text-sm leading-relaxed text-foreground"
+          className={cn(
+            "min-h-[160px] w-full overflow-x-auto [overflow-wrap:anywhere] text-foreground",
+            isBorderless
+              ? "rounded-xl border border-border/70 bg-card/40 p-5 text-base leading-[1.75]"
+              : "rounded-lg border border-input bg-card p-3.5 text-sm leading-relaxed"
+          )}
         >
           {value.trim() ? (
-            <MathRenderer content={value} />
+            <MathRenderer content={value} className={isBorderless ? "text-base leading-[1.75]" : undefined} />
           ) : (
             <p className="text-xs italic text-muted-foreground">
               Nothing to preview yet. Switch to Write to compose your content.
