@@ -11,10 +11,11 @@ export interface GeometryInspectionResult {
 
 export interface InspectImageGeometryOptions {
   onProgress?: (stage: "reading" | "optimizing" | "done") => void;
+  maxOutputMB?: number;
 }
 
 export const MAX_RAW_IMAGE_BYTES = 25 * 1024 * 1024; // 25MB raw pre-compression cap
-const MAX_OUTPUT_IMAGE_BYTES = 5 * 1024 * 1024; // 5MB post-compression cap
+const DEFAULT_MAX_OUTPUT_MB = 5;
 const MIN_DIMENSION = 200;
 const MAX_DIMENSION = 2560;
 const MIN_ASPECT_RATIO = 0.2;
@@ -37,12 +38,14 @@ function toWebpFileName(name: string): string {
 /**
  * Client-Side HTML5 Canvas Geometry Inspector.
  * Accepts raw images up to 25MB, validates dimensions and aspect ratio,
- * downscales >2560px or >5MB images to <=2560px WebP, and enforces <=5MB after compression.
+ * downscales >2560px or >maxOutputMB images to <=2560px WebP, and enforces <=maxOutputMB after compression.
  */
 export async function inspectImageGeometry(
   file: File,
   options?: InspectImageGeometryOptions
 ): Promise<GeometryInspectionResult> {
+  const maxOutputMB = options?.maxOutputMB ?? DEFAULT_MAX_OUTPUT_MB;
+  const maxOutputBytes = maxOutputMB * 1024 * 1024;
   options?.onProgress?.("reading");
 
   // 1. MIME check (with extension inference when browser omits file.type)
@@ -108,11 +111,11 @@ export async function inspectImageGeometry(
         return;
       }
 
-      // 5. Downscale & WebP compression when >2560px or >5MB
+      // 5. Downscale & WebP compression when >2560px or >maxOutputBytes
       const needsOptimization =
         width > MAX_DIMENSION ||
         height > MAX_DIMENSION ||
-        file.size > MAX_OUTPUT_IMAGE_BYTES;
+        file.size > maxOutputBytes;
 
       if (!needsOptimization) {
         options?.onProgress?.("done");
@@ -139,7 +142,7 @@ export async function inspectImageGeometry(
 
         const ctx = canvas.getContext("2d");
         if (!ctx) {
-          if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+          if (file.size <= maxOutputBytes) {
             options?.onProgress?.("done");
             resolve({ isValid: true, file, width, height, aspectRatio });
           } else {
@@ -150,7 +153,7 @@ export async function inspectImageGeometry(
               height,
               aspectRatio,
               error:
-                "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+                `Optimized image still exceeds ${maxOutputMB}MB. Please crop or use a lower-resolution photo.`,
             });
           }
           return;
@@ -159,12 +162,12 @@ export async function inspectImageGeometry(
         ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
         let blob = await encodeCanvasToWebP(canvas, 0.86);
-        if (blob && blob.size > MAX_OUTPUT_IMAGE_BYTES) {
+        if (blob && blob.size > maxOutputBytes) {
           blob = await encodeCanvasToWebP(canvas, 0.74);
         }
 
         if (!blob) {
-          if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+          if (file.size <= maxOutputBytes) {
             options?.onProgress?.("done");
             resolve({ isValid: true, file, width, height, aspectRatio });
           } else {
@@ -175,7 +178,7 @@ export async function inspectImageGeometry(
               height,
               aspectRatio,
               error:
-                "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+                `Optimized image still exceeds ${maxOutputMB}MB. Please crop or use a lower-resolution photo.`,
             });
           }
           return;
@@ -186,7 +189,7 @@ export async function inspectImageGeometry(
           lastModified: Date.now(),
         });
 
-        if (optimizedFile.size > MAX_OUTPUT_IMAGE_BYTES) {
+        if (optimizedFile.size > maxOutputBytes) {
           resolve({
             isValid: false,
             file: optimizedFile,
@@ -194,7 +197,7 @@ export async function inspectImageGeometry(
             height: targetHeight,
             aspectRatio,
             error:
-              "Optimized image still exceeds 5MB. Please crop or use a lower-resolution photo.",
+              `Optimized image still exceeds ${maxOutputMB}MB. Please crop or use a lower-resolution photo.`,
           });
           return;
         }
@@ -208,7 +211,7 @@ export async function inspectImageGeometry(
           aspectRatio,
         });
       } catch {
-        if (file.size <= MAX_OUTPUT_IMAGE_BYTES) {
+        if (file.size <= maxOutputBytes) {
           options?.onProgress?.("done");
           resolve({ isValid: true, file, width, height, aspectRatio });
         } else {
@@ -219,7 +222,7 @@ export async function inspectImageGeometry(
             height,
             aspectRatio,
             error:
-              "Failed to optimize image below 5MB. Please upload a smaller image.",
+              `Failed to optimize image below ${maxOutputMB}MB. Please upload a smaller image.`,
           });
         }
       }

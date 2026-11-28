@@ -6,6 +6,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { ContributorTier } from "@/types/contribution";
 import { cn } from "@/lib/utils";
+import { stripInlineImageTokens } from "@/lib/inline-media";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 
 export function getInitials(name?: string | null): string {
@@ -16,7 +17,7 @@ export function getInitials(name?: string | null): string {
 }
 
 export function stripHtml(html: string): string {
-  return html
+  return stripInlineImageTokens(html)
     .replace(/<[^>]*>?/gm, "")
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")

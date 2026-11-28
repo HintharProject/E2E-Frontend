@@ -34,7 +34,7 @@ export const UPLOAD_SCOPE_RULES: Record<UploadScope, ScopeValidationRule> = {
     allowedMimeTypes: ["image/jpeg", "image/png", "image/webp"],
     maxSizeMB: 5,
     sizeMode: "per-file",
-    maxFiles: 3,
+    maxFiles: 5,
     userFriendlyName: "Solution Diagram",
     acceptString: ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp",
     presignEndpoint: "/problems/generate_upload_url/",
@@ -70,7 +70,7 @@ export const UPLOAD_SCOPE_RULES: Record<UploadScope, ScopeValidationRule> = {
       "image/webp",
     ],
     maxSizeMB: 20,
-    sizeMode: "total",
+    sizeMode: "per-file",
     maxFiles: 5,
     userFriendlyName: "Lesson Material",
     acceptString:

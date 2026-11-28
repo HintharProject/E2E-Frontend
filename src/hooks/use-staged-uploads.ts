@@ -3,10 +3,13 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { uploadDirectlyToB2 } from "@/lib/storage";
 import {
+  inferContentType,
   UPLOAD_SCOPE_RULES,
   UploadScope,
   validateFileBatch,
+  validateFilePreflight,
 } from "@/lib/upload-rules";
+import { renameFileIfColliding } from "@/lib/inline-media";
 import {
   inspectImageGeometry,
   MAX_RAW_IMAGE_BYTES,
@@ -35,6 +38,7 @@ export interface StagedUploadItem {
 export interface UseStagedUploadsOptions {
   scope: UploadScope;
   existingCount?: number;
+  existingFileNames?: string[];
   optimizeImages?: boolean;
   maxConcurrency?: number;
 }
@@ -55,6 +59,7 @@ function createItemId(file: File): string {
 export function useStagedUploads({
   scope,
   existingCount = 0,
+  existingFileNames = [],
   optimizeImages = false,
   maxConcurrency = 2,
 }: UseStagedUploadsOptions) {
@@ -62,7 +67,12 @@ export function useStagedUploads({
   const [batchError, setBatchError] = useState<string>("");
 
   const itemsRef = useRef<StagedUploadItem[]>(items);
+  const existingFileNamesRef = useRef<string[]>(existingFileNames);
   const controllersRef = useRef<Map<string, AbortController>>(new Map());
+
+  useEffect(() => {
+    existingFileNamesRef.current = existingFileNames;
+  }, [existingFileNames]);
 
   const commitItems = useCallback(
     (updater: (prev: StagedUploadItem[]) => StagedUploadItem[]) => {
@@ -100,27 +110,65 @@ export function useStagedUploads({
       setBatchError("");
       const currentItems = itemsRef.current;
       const currentBytes = currentItems.reduce((sum, i) => sum + i.file.size, 0);
+      const scopeRule = UPLOAD_SCOPE_RULES[scope];
 
-      const batchCheck = validateFileBatch(
-        incoming,
-        scope,
-        existingCount + currentItems.length,
-        {
-          existingBytes: currentBytes,
-          maxSizeOverrideMB: optimizeImages
-            ? MAX_RAW_IMAGE_BYTES / (1024 * 1024)
-            : undefined,
-        }
-      );
-
-      if (!batchCheck.valid) {
-        const msg = batchCheck.error || "Invalid file selection.";
+      if (existingCount + currentItems.length + incoming.length > scopeRule.maxFiles) {
+        const msg = `Maximum ${scopeRule.maxFiles} ${scopeRule.maxFiles === 1 ? "file" : "files"} allowed for ${scopeRule.userFriendlyName}.`;
         setBatchError(msg);
         return { added: [], errors: [msg] };
       }
 
+      if (optimizeImages) {
+        for (const file of incoming) {
+          const isImg = inferContentType(file).startsWith("image/");
+          const preflight = validateFilePreflight(file, scope, {
+            maxSizeOverrideMB: isImg
+              ? Math.max(scopeRule.maxSizeMB, MAX_RAW_IMAGE_BYTES / (1024 * 1024))
+              : undefined,
+          });
+          if (!preflight.valid) {
+            const msg = preflight.error || "Invalid file selection.";
+            setBatchError(msg);
+            return { added: [], errors: [msg] };
+          }
+        }
+        if (scopeRule.sizeMode === "total") {
+          const incomingNonImageBytes = incoming
+            .filter((f) => !inferContentType(f).startsWith("image/"))
+            .reduce((sum, f) => sum + f.size, 0);
+          if (currentBytes + incomingNonImageBytes > scopeRule.maxSizeMB * 1024 * 1024) {
+            const msg = `Total size exceeds the ${scopeRule.maxSizeMB} MB limit for ${scopeRule.userFriendlyName}.`;
+            setBatchError(msg);
+            return { added: [], errors: [msg] };
+          }
+        }
+      } else {
+        const batchCheck = validateFileBatch(
+          incoming,
+          scope,
+          existingCount + currentItems.length,
+          { existingBytes: currentBytes }
+        );
+        if (!batchCheck.valid) {
+          const msg = batchCheck.error || "Invalid file selection.";
+          setBatchError(msg);
+          return { added: [], errors: [msg] };
+        }
+      }
+
+      const takenNames = new Set<string>([
+        ...existingFileNamesRef.current,
+        ...currentItems.map((i) => i.file.name),
+      ]);
+
+      const dedupedIncoming = incoming.map((file) => {
+        const unique = renameFileIfColliding(file, takenNames);
+        takenNames.add(unique.name);
+        return unique;
+      });
+
       if (!optimizeImages) {
-        const newItems: StagedUploadItem[] = incoming.map((file) => ({
+        const newItems: StagedUploadItem[] = dedupedIncoming.map((file) => ({
           id: createItemId(file),
           file,
           status: "idle",
@@ -130,28 +178,47 @@ export function useStagedUploads({
         return { added: newItems, errors: [] };
       }
 
-      const placeholders: StagedUploadItem[] = incoming.map((file) => ({
-        id: createItemId(file),
-        file,
-        status: "optimizing",
-        progress: 0,
-      }));
+      const placeholders: StagedUploadItem[] = dedupedIncoming.map((file) => {
+        const isImg = inferContentType(file).startsWith("image/");
+        return {
+          id: createItemId(file),
+          file,
+          status: isImg ? "optimizing" : "idle",
+          progress: 0,
+        };
+      });
       commitItems((prev) => [...prev, ...placeholders]);
 
       const added: StagedUploadItem[] = [];
       const errors: string[] = [];
 
       for (const placeholder of placeholders) {
-        const result = await inspectImageGeometry(placeholder.file);
+        const isImg = inferContentType(placeholder.file).startsWith("image/");
+        if (!isImg) {
+          added.push(placeholder);
+          continue;
+        }
+
+        const result = await inspectImageGeometry(placeholder.file, {
+          maxOutputMB: scopeRule.maxSizeMB,
+        });
         if (!result.isValid) {
           const errMsg =
             result.error || `Invalid image: ${placeholder.file.name}`;
           errors.push(errMsg);
           commitItems((prev) => prev.filter((i) => i.id !== placeholder.id));
         } else {
+          // Ensure post-optimization .webp extension does not collide with other staged/existing names
+          const otherNames = [
+            ...existingFileNamesRef.current,
+            ...itemsRef.current
+              .filter((i) => i.id !== placeholder.id)
+              .map((i) => i.file.name),
+          ];
+          const finalFile = renameFileIfColliding(result.file, otherNames);
           const finalized: StagedUploadItem = {
             ...placeholder,
-            file: result.file,
+            file: finalFile,
             status: "idle",
             progress: 0,
             error: undefined,
