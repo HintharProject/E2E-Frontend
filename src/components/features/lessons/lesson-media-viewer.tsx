@@ -52,9 +52,14 @@ interface MediaAttachmentLike {
 interface LessonMediaViewerProps {
   imageAttachments: MediaAttachmentLike[];
   youtubeUrl: string | null | undefined;
+  onImageOpen?: (attachmentId: string, index: number) => void;
 }
 
-export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaViewerProps) {
+export function LessonMediaViewer({
+  imageAttachments,
+  youtubeUrl,
+  onImageOpen,
+}: LessonMediaViewerProps) {
   const [activeTab, setActiveTab] = useState<"images" | "video">(
     imageAttachments.length > 0 ? "images" : "video"
   );
@@ -134,7 +139,13 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
               downloadUrl={current.downloadUrl}
               priority={safeIndex === 0}
               className="p-2 sm:p-3"
-              onOpen={() => setLightboxOpen(true)}
+              onOpen={() => {
+                if (onImageOpen) {
+                  onImageOpen(current.id || current.filename || String(safeIndex), safeIndex);
+                } else {
+                  setLightboxOpen(true);
+                }
+              }}
             />
 
             {lightboxImages.length > 1 && (
@@ -240,13 +251,15 @@ export function LessonMediaViewer({ imageAttachments, youtubeUrl }: LessonMediaV
         )}
       </div>
 
-      <ImageLightbox
-        images={lightboxImages}
-        initialIndex={safeIndex}
-        open={lightboxOpen}
-        onOpenChange={setLightboxOpen}
-        onIndexChange={setCurrentImageIndex}
-      />
+      {!onImageOpen && (
+        <ImageLightbox
+          images={lightboxImages}
+          initialIndex={safeIndex}
+          open={lightboxOpen}
+          onOpenChange={setLightboxOpen}
+          onIndexChange={setCurrentImageIndex}
+        />
+      )}
     </div>
   );
 }

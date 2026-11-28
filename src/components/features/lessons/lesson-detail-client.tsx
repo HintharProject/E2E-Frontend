@@ -8,6 +8,12 @@ import { TagBadge } from "@/components/ui/tag-badge";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { MathRenderer } from "@/components/ui/math-renderer";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
+import {
+  getUnplacedImageAttachments,
+  resolveAttachmentForRef,
+  toLightboxImages,
+} from "@/lib/inline-media";
 import { ContributorBadge } from "@/components/features/contributions/contributor-badge";
 import { getInitials } from "@/components/ui/base-card";
 import { formatDate } from "@/lib/utils";
@@ -34,6 +40,8 @@ export function LessonDetailClient({ id }: { id: string }) {
   const { user: currentUser } = useCurrentUser();
   const voteMutation = useVoteLesson();
   const [reportOpen, setReportOpen] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const { data: lesson, isLoading, isError } = useLesson(id);
 
@@ -134,6 +142,18 @@ export function LessonDetailClient({ id }: { id: string }) {
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
+  const unplacedImages = getUnplacedImageAttachments(lesson.body || "", imageAttachments);
+  const lightboxImages = toLightboxImages(imageAttachments);
+
+  const openLightboxFor = (attachmentIdOrRef: string) => {
+    const matched = resolveAttachmentForRef(attachmentIdOrRef, imageAttachments);
+    const idx = matched
+      ? lightboxImages.findIndex((item) => item.id === matched.id)
+      : -1;
+    setLightboxIndex(idx >= 0 ? idx : 0);
+    setLightboxOpen(true);
+  };
+
   return (
     <article className="mx-auto max-w-[60rem] py-2 sm:py-4 space-y-6">
       {/* Top Back Navigation */}
@@ -229,7 +249,11 @@ export function LessonDetailClient({ id }: { id: string }) {
                 )}
                 {author && (
                   <ContributorBadge
-                    tier={author.contributor_tier ?? (author as any)?.reputation?.contributor_tier ?? 0}
+                    tier={
+                      author.contributor_tier ??
+                      (author as { reputation?: { contributor_tier?: number } })?.reputation?.contributor_tier ??
+                      0
+                    }
                     size="sm"
                   />
                 )}
@@ -260,20 +284,23 @@ export function LessonDetailClient({ id }: { id: string }) {
         )}
       </header>
 
-      {/* Embedded YouTube Player / Image Gallery */}
-      {(imageAttachments.length > 0 || lesson.embedded_video_url) && (
+      {/* Embedded YouTube Player / Unplaced Image Gallery */}
+      {(unplacedImages.length > 0 || lesson.embedded_video_url) && (
         <section aria-label="Lesson media">
           <LessonMediaViewer
-            imageAttachments={imageAttachments}
+            imageAttachments={unplacedImages}
             youtubeUrl={lesson.embedded_video_url}
+            onImageOpen={(attId) => openLightboxFor(attId)}
           />
         </section>
       )}
 
-      {/* Distraction-Free Reading Body (Prose + LaTeX) */}
+      {/* Distraction-Free Reading Body (Prose + LaTeX + Inline Figures) */}
       <section aria-label="Lesson content" className="py-1">
         <MathRenderer
           content={lesson.body}
+          attachments={imageAttachments}
+          onInlineImageClick={(ref) => openLightboxFor(ref)}
           className="text-base leading-[1.75] text-foreground [overflow-wrap:anywhere]"
         />
       </section>
@@ -382,6 +409,13 @@ export function LessonDetailClient({ id }: { id: string }) {
         targetId={lesson.id}
         targetType="LESSON"
         targetTitle={lesson.title}
+      />
+
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
       />
     </article>
   );

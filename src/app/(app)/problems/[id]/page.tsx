@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useProblem } from "@/hooks/use-problems";
@@ -17,6 +17,12 @@ import { SolutionListContainer } from "@/components/features/problems/solution-p
 import { ConfidenceBadge } from "@/components/features/problems/confidence-badge";
 import { PostExpirationBadge } from "@/components/features/posts/post-expiration-badge";
 import { MathRenderer } from "@/components/ui/math-renderer";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
+import {
+  getUnplacedImageAttachments,
+  resolveAttachmentForRef,
+  toLightboxImages,
+} from "@/lib/inline-media";
 import dynamic from "next/dynamic";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -44,6 +50,8 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
 
   const { data: problem, isLoading: isProblemLoading, isError: isProblemError } = useProblem(id);
   const reportMutation = useReport();
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -97,6 +105,18 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
       const ext = name.split("?")[0].split(".").pop()?.toLowerCase() || "";
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
+
+  const unplacedImages = getUnplacedImageAttachments(problem.body || "", imageAttachments);
+  const lightboxImages = toLightboxImages(imageAttachments);
+
+  const openLightboxFor = (attachmentIdOrRef: string) => {
+    const matched = resolveAttachmentForRef(attachmentIdOrRef, imageAttachments);
+    const idx = matched
+      ? lightboxImages.findIndex((item) => item.id === matched.id)
+      : -1;
+    setLightboxIndex(idx >= 0 ? idx : 0);
+    setLightboxOpen(true);
+  };
 
   return (
     <div className="mx-auto max-w-[60rem] space-y-6">
@@ -195,10 +215,24 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
             ))}
           </div>
         }
-        body={problem.body ? <MathRenderer content={problem.body} /> : ""}
+        body={
+          problem.body ? (
+            <MathRenderer
+              content={problem.body}
+              attachments={imageAttachments}
+              onInlineImageClick={(ref) => openLightboxFor(ref)}
+            />
+          ) : (
+            ""
+          )
+        }
         mediaImages={
-          imageAttachments.length > 0 ? (
-            <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
+          unplacedImages.length > 0 ? (
+            <LessonMediaViewer
+              imageAttachments={unplacedImages}
+              youtubeUrl={null}
+              onImageOpen={(attId) => openLightboxFor(attId)}
+            />
           ) : undefined
         }
         fileAttachments={
@@ -235,6 +269,13 @@ export default function ProblemDetailPage({ params }: { params: Promise<{ id: st
       />
 
       <SolutionListContainer problem={problem} isAuthor={isAuthor} />
+
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
+      />
     </div>
   );
 }

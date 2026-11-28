@@ -26,6 +26,12 @@ import { DetailedArticleSkeleton } from "@/components/features/skeletons";
 import { SaveButton } from "@/components/features/collections/save-button";
 import { StaffContentActionMenu } from "@/components/features/moderation/staff-content-action-menu";
 import { MathRenderer } from "@/components/ui/math-renderer";
+import { ImageLightbox } from "@/components/ui/image-lightbox";
+import {
+  getUnplacedImageAttachments,
+  resolveAttachmentForRef,
+  toLightboxImages,
+} from "@/lib/inline-media";
 import { useAuthGate } from "@/components/features/auth/auth-gate-modal";
 import { formatDate } from "@/lib/utils";
 import { toast } from "sonner";
@@ -55,6 +61,8 @@ export default function SolutionDetailPage({
   const reportMutation = useReport();
   const deleteMutation = useDeleteSolution();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -132,6 +140,18 @@ export default function SolutionDetailPage({
       return !["jpg", "jpeg", "png", "gif", "webp", "svg"].includes(ext);
     }) || [];
 
+  const unplacedImages = getUnplacedImageAttachments(solution.body || "", imageAttachments);
+  const lightboxImages = toLightboxImages(imageAttachments);
+
+  const openLightboxFor = (attachmentIdOrRef: string) => {
+    const matched = resolveAttachmentForRef(attachmentIdOrRef, imageAttachments);
+    const idx = matched
+      ? lightboxImages.findIndex((item) => item.id === matched.id)
+      : -1;
+    setLightboxIndex(idx >= 0 ? idx : 0);
+    setLightboxOpen(true);
+  };
+
   return (
     <div className="mx-auto max-w-[60rem] space-y-6">
       {/* Breadcrumb Back Link to Problem */}
@@ -179,7 +199,11 @@ export default function SolutionDetailPage({
         }
         body={
           <div className="space-y-4">
-            <MathRenderer content={solution.body} />
+            <MathRenderer
+              content={solution.body}
+              attachments={imageAttachments}
+              onInlineImageClick={(ref) => openLightboxFor(ref)}
+            />
 
             {solution.video_url && (
               <div className="pt-2">
@@ -197,8 +221,12 @@ export default function SolutionDetailPage({
           </div>
         }
         mediaImages={
-          imageAttachments.length > 0 ? (
-            <LessonMediaViewer imageAttachments={imageAttachments} youtubeUrl={null} />
+          unplacedImages.length > 0 ? (
+            <LessonMediaViewer
+              imageAttachments={unplacedImages}
+              youtubeUrl={null}
+              onImageOpen={(attId) => openLightboxFor(attId)}
+            />
           ) : undefined
         }
         fileAttachments={
@@ -325,6 +353,13 @@ export default function SolutionDetailPage({
         solutionId={solution.id}
         initialCount={solution.comment_count ?? 0}
         isLocked={Boolean(solution.is_locked || problem?.is_locked)}
+      />
+
+      <ImageLightbox
+        images={lightboxImages}
+        initialIndex={lightboxIndex}
+        open={lightboxOpen}
+        onOpenChange={setLightboxOpen}
       />
     </div>
   );
