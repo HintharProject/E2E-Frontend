@@ -1,5 +1,4 @@
 import { notFound, redirect } from "next/navigation";
-import { PageHeader } from "@/components/ui/page-header";
 import { getServerAuthToken } from "@/lib/auth-server";
 import { fetchCurrentUser } from "@/services/user-service";
 import { isWriteLocked } from "@/types/user";
@@ -18,19 +17,10 @@ export default async function NewPostPage() {
 
   const userRole = user.role || "USER";
   const writeLocked = isWriteLocked(user.ban_state);
-  const subjectRequired = userRole === "USER" || userRole === "MODERATOR";
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="New post"
-        description={
-          subjectRequired
-            ? "Choose Question or Sharing, plus Subject and Level."
-            : "Admins may post Announcements and omit Subject/Level."
-        }
-      />
-
+    <div className="mx-auto max-w-[52rem] space-y-6">
+      <h1 className="sr-only">New post</h1>
       {writeLocked ? (
         <div
           role="alert"

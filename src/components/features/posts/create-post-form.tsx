@@ -1,23 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2, RotateCcw, UploadCloud, X } from "lucide-react";
+import { Clock } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import { Input } from "@/components/ui/input";
 import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
-import { Select } from "@/components/ui/select";
 import { TagInput } from "@/components/ui/tag-input";
+import {
+  ArchivalComposerShell,
+  ArchivalTitleInput,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataSelectPill,
+} from "@/components/features/editor/metadata-pill-bar";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useLevels, useSubjects } from "@/hooks/use-metadata";
 import { useCreatePost } from "@/hooks/use-posts";
@@ -28,6 +32,7 @@ import {
   extractApiFieldErrors,
 } from "@/lib/form-errors";
 import { UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
+import { cn } from "@/lib/utils";
 
 const POST_RULE = UPLOAD_SCOPE_RULES.post_attachment;
 
@@ -54,6 +59,7 @@ export function CreatePostForm({
   const errorBannerRef = useRef<HTMLDivElement>(null);
   const appliedDraftRef = useRef(false);
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
   const [serverError, setServerError] = useState("");
   const [serverFieldErrors, setServerFieldErrors] = useState<
     Record<string, string[]>
@@ -114,6 +120,7 @@ export function CreatePostForm({
     register,
     handleSubmit,
     setError,
+    setValue,
     reset,
     control,
     formState: { errors, isDirty },
@@ -310,95 +317,190 @@ export function CreatePostForm({
   const activeUploadProgress = items[0]?.progress ?? 0;
   const submitLabel =
     submitStage === "uploading"
-      ? `Uploading attachment (${activeUploadProgress}%)…`
+      ? `Uploading (${activeUploadProgress}%)…`
       : submitStage === "saving"
-        ? "Publishing post…"
-        : "Publish post";
+        ? "Publishing…"
+        : "Publish Post";
+
+  const activePostType = watchedValues.post_type ?? "QUESTION";
+  const bodyLength = (watchedValues.body ?? "").length;
 
   return (
-    <form
+    <ArchivalComposerShell
+      backHref="/forum"
+      backLabel="Forum"
+      cancelHref="/forum"
+      mode={mode}
+      onModeChange={setMode}
+      charCount={bodyLength}
+      maxChars={3000}
+      submitLabel={submitLabel}
+      isSubmitting={isBusy}
+      submitDisabled={writeLocked}
+      isUploading={isUploading}
+      onCancelUpload={() => cancelUpload()}
       onSubmit={handleSubmit(onSubmit, onInvalid)}
-      noValidate
-      className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
-    >
-      {hasRestoredDraft && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-foreground"
-        >
-          <span>Restored your unsaved draft.</span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleDiscardDraft}
-              className="min-h-[44px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <RotateCcw className="size-3" aria-hidden="true" />
-              <span>Discard</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={dismissRestoredNotice}
-              aria-label="Dismiss draft notice"
-              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
-            >
-              <X className="size-3.5" aria-hidden="true" />
-            </Button>
+      autosaveLabel={isDirty ? "Draft saved locally" : undefined}
+      draftBanner={{
+        visible: hasRestoredDraft,
+        message: "Restored your unsaved draft.",
+        onDiscard: handleDiscardDraft,
+        onDismiss: dismissRestoredNotice,
+      }}
+      errorBanner={
+        <FormErrorBanner
+          ref={errorBannerRef}
+          serverMessage={serverError}
+          fieldErrors={serverFieldErrors}
+        />
+      }
+      coldStartNotice={
+        slowServerNotice && submitStage !== "idle" ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+          >
+            <span>
+              Still working — the server may be waking up. Your draft and attachment are safe.
+            </span>
+            {isUploading && (
+              <Button
+                type="button"
+                variant="outline"
+                size="xs"
+                onClick={() => cancelUpload()}
+                className="min-h-[36px] sm:min-h-[28px]"
+              >
+                Cancel upload
+              </Button>
+            )}
           </div>
+        ) : undefined
+      }
+    >
+      <MetadataPillBar
+        errors={[
+          errors.post_type?.message,
+          errors.subject_id?.message,
+          errors.level_id?.message,
+          errors.tags?.message,
+        ]}
+      >
+        <div
+          role="radiogroup"
+          aria-label="Post type"
+          className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5"
+        >
+          {(
+            [
+              { value: "QUESTION", label: "Question" },
+              { value: "SHARING", label: "Sharing" },
+              ...(canAnnounce
+                ? [{ value: "ANNOUNCEMENT" as const, label: "Announcement" }]
+                : []),
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              role="radio"
+              aria-checked={activePostType === opt.value}
+              disabled={isBusy || writeLocked}
+              onClick={() =>
+                setValue("post_type", opt.value, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              className={cn(
+                "min-h-[40px] sm:min-h-[30px] cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                activePostType === opt.value
+                  ? "border border-border bg-card text-foreground shadow-2xs"
+                  : "border border-transparent text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
         </div>
-      )}
 
-      <FormErrorBanner
-        ref={errorBannerRef}
-        serverMessage={serverError}
-        fieldErrors={serverFieldErrors}
+        <MetadataSelectPill
+          id="create-post-subject"
+          label="Subject"
+          required={subjectRequired}
+          invalid={!!errors.subject_id}
+          disabled={isBusy || writeLocked}
+          {...register("subject_id")}
+        >
+          <option value="">
+            {subjectRequired ? "Subject *" : "Subject (Optional)"}
+          </option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </MetadataSelectPill>
+
+        <MetadataSelectPill
+          id="create-post-level"
+          label="Level"
+          required={subjectRequired}
+          invalid={!!errors.level_id}
+          disabled={isBusy || writeLocked}
+          {...register("level_id")}
+        >
+          <option value="">
+            {subjectRequired ? "Level *" : "Level (Optional)"}
+          </option>
+          {levels.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </MetadataSelectPill>
+
+        <span className="inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs text-muted-foreground">
+          <Clock className="size-3 text-warning" aria-hidden="true" />
+          <span>30d auto-archive</span>
+        </span>
+      </MetadataPillBar>
+
+      <Controller
+        control={control}
+        name="tags"
+        render={({ field }) => (
+          <TagInput
+            value={field.value || []}
+            onChange={field.onChange}
+            maxTags={3}
+            disabled={isBusy || writeLocked}
+            error={errors.tags?.message}
+          />
+        )}
       />
 
-      <Field
-        label="Post type"
-        htmlFor="create-post-type"
-        required
-        error={errors.post_type?.message}
-      >
-        <Select
-          id="create-post-type"
-          {...register("post_type")}
-          disabled={isBusy || writeLocked}
-          aria-invalid={!!errors.post_type}
-        >
-          <option value="QUESTION">Question</option>
-          <option value="SHARING">Sharing</option>
-          {canAnnounce && <option value="ANNOUNCEMENT">Announcement</option>}
-        </Select>
-      </Field>
+      <Controller
+        control={control}
+        name="title"
+        render={({ field }) => (
+          <ArchivalTitleInput
+            id="create-post-title"
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            maxLength={100}
+            disabled={isBusy || writeLocked}
+            placeholder="Clear, searchable title..."
+            error={errors.title?.message}
+            aria-invalid={!!errors.title}
+          />
+        )}
+      />
 
-      <Field
-        label="Title"
-        htmlFor="create-post-title"
-        required
-        description="Up to 100 characters."
-        error={errors.title?.message}
-      >
-        <Input
-          id="create-post-title"
-          {...register("title")}
-          maxLength={100}
-          disabled={isBusy || writeLocked}
-          placeholder="Clear, searchable title"
-          aria-invalid={!!errors.title}
-        />
-      </Field>
-
-      <Field
-        label="Body"
-        htmlFor="create-post-body"
-        required
-        error={errors.body?.message}
-      >
+      <div className="space-y-1.5">
         <Controller
           control={control}
           name="body"
@@ -409,6 +511,8 @@ export function CreatePostForm({
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
+              mode={mode}
+              variant="borderless"
               maxLength={3000}
               required
               disabled={isBusy || writeLocked}
@@ -417,75 +521,26 @@ export function CreatePostForm({
             />
           )}
         />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Subject"
-          htmlFor="create-post-subject"
-          required={subjectRequired}
-          description={subjectRequired ? undefined : "Optional for Announcements."}
-          error={errors.subject_id?.message}
-        >
-          <Select
-            id="create-post-subject"
-            {...register("subject_id")}
-            disabled={isBusy || writeLocked}
-            aria-invalid={!!errors.subject_id}
-          >
-            <option value="">Select…</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field
-          label="Level"
-          htmlFor="create-post-level"
-          required={subjectRequired}
-          description={subjectRequired ? undefined : "Optional for Announcements."}
-          error={errors.level_id?.message}
-        >
-          <Select
-            id="create-post-level"
-            {...register("level_id")}
-            disabled={isBusy || writeLocked}
-            aria-invalid={!!errors.level_id}
-          >
-            <option value="">Select…</option>
-            {levels.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
+        {errors.body?.message && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {errors.body.message}
+          </p>
+        )}
       </div>
 
-      <Field label="Tags" asGroup>
-        <Controller
-          control={control}
-          name="tags"
-          render={({ field }) => (
-            <TagInput
-              value={field.value || []}
-              onChange={field.onChange}
-              maxTags={3}
-              disabled={isBusy || writeLocked}
-              error={errors.tags?.message}
-            />
-          )}
-        />
-      </Field>
-
-      <Field
-        label="Attachment"
-        asGroup
-        description={`Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}).`}
+      <section
+        aria-label="Attachment"
+        className="mt-6 space-y-2.5 border-t border-border pt-6"
       >
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-foreground">
+            Attachment (Optional)
+          </h2>
+          <span className="font-mono tabular-nums text-xs text-muted-foreground">
+            Max {POST_RULE.maxFiles} file · {POST_RULE.maxSizeMB} MB
+          </span>
+        </div>
+
         <FileDropzone
           items={items}
           onAddFiles={addFiles}
@@ -498,51 +553,7 @@ export function CreatePostForm({
           helperText={`JPG, PNG, WebP, or PDF · Max ${POST_RULE.maxSizeMB} MB`}
           error={batchError || serverFieldErrors.attachment?.[0] || undefined}
         />
-      </Field>
-
-      {slowServerNotice && submitStage !== "idle" && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
-        >
-          <span>
-            Still working — the server may be waking up. Your draft and attachment are safe.
-          </span>
-          {isUploading && (
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={() => cancelUpload()}
-              className="min-h-[36px] sm:min-h-[28px]"
-            >
-              Cancel upload
-            </Button>
-          )}
-        </div>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isBusy}>
-          {isBusy ? (
-            <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <UploadCloud className="mr-1.5 size-4" aria-hidden="true" />
-          )}
-          <span className={submitStage === "uploading" ? "font-mono tabular-nums" : undefined}>
-            {submitLabel}
-          </span>
-        </Button>
-        <Button
-          variant="secondary"
-          nativeButton={false}
-          disabled={isBusy}
-          render={<Link href="/forum" />}
-        >
-          Cancel
-        </Button>
-      </div>
-    </form>
+      </section>
+    </ArchivalComposerShell>
   );
 }

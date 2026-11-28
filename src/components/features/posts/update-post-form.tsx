@@ -1,13 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useAuth } from "@clerk/nextjs";
-import { Loader2, RotateCcw, Save, Trash2, X } from "lucide-react";
+import { Clock, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PostAttachment } from "@/components/features/posts/post-attachment";
@@ -21,13 +20,18 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field } from "@/components/ui/field";
 import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import { Input } from "@/components/ui/input";
 import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
-import { Select } from "@/components/ui/select";
 import { TagInput } from "@/components/ui/tag-input";
+import {
+  ArchivalComposerShell,
+  ArchivalTitleInput,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataSelectPill,
+} from "@/components/features/editor/metadata-pill-bar";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import { useRemovePostAttachment, useUpdatePost } from "@/hooks/use-posts";
 import { useStagedUploads } from "@/hooks/use-staged-uploads";
@@ -37,6 +41,7 @@ import {
   extractApiFieldErrors,
 } from "@/lib/form-errors";
 import { UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
+import { cn } from "@/lib/utils";
 import { Level, Post, PostTypeEnum, Subject, Tag } from "@/types";
 
 const POST_RULE = UPLOAD_SCOPE_RULES.post_attachment;
@@ -74,6 +79,7 @@ export function UpdatePostForm({
   const errorBannerRef = useRef<HTMLDivElement>(null);
   const appliedDraftRef = useRef(false);
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
   const [serverError, setServerError] = useState("");
   const [serverFieldErrors, setServerFieldErrors] = useState<
     Record<string, string[]>
@@ -143,6 +149,7 @@ export function UpdatePostForm({
     register,
     handleSubmit,
     setError,
+    setValue,
     reset,
     control,
     formState: { errors, isDirty },
@@ -372,173 +379,170 @@ export function UpdatePostForm({
   const activeUploadProgress = items[0]?.progress ?? 0;
   const submitLabel =
     submitStage === "uploading"
-      ? `Uploading attachment (${activeUploadProgress}%)…`
+      ? `Uploading (${activeUploadProgress}%)…`
       : submitStage === "saving"
-        ? "Saving changes…"
-        : "Save changes";
+        ? "Saving…"
+        : "Save Changes";
+
+  const activePostType = watchedValues.post_type ?? initialValues.post_type;
+  const bodyLength = (watchedValues.body ?? "").length;
+  const showAnnouncementOption =
+    canAnnounce || post.post_type === "ANNOUNCEMENT";
 
   return (
-    <form
-      onSubmit={handleSubmit(onSubmit, onInvalid)}
-      noValidate
-      className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
-    >
-      {writeLocked && (
-        <div
-          role="alert"
-          className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-medium text-destructive"
-        >
-          Your account is restricted. You cannot edit posts at this time.
-        </div>
-      )}
-
-      {hasRestoredDraft && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-foreground"
-        >
-          <span>Restored your unsaved edits.</span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleDiscardDraft}
-              className="min-h-[44px] sm:min-h-[28px] gap-1 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              <RotateCcw className="size-3" aria-hidden="true" />
-              <span>Discard</span>
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={dismissRestoredNotice}
-              aria-label="Dismiss draft notice"
-              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
-            >
-              <X className="size-3.5" aria-hidden="true" />
-            </Button>
-          </div>
-        </div>
-      )}
-
-      <FormErrorBanner
-        ref={errorBannerRef}
-        serverMessage={serverError}
-        fieldErrors={serverFieldErrors}
-      />
-
-      <Field
-        label="Post type"
-        htmlFor="edit-post-type"
-        required
-        error={errors.post_type?.message}
-      >
-        <Select
-          id="edit-post-type"
-          {...register("post_type")}
-          disabled={isBusy || writeLocked}
-          aria-invalid={!!errors.post_type}
-        >
-          <option value="QUESTION">Question</option>
-          <option value="SHARING">Sharing</option>
-          {(canAnnounce || post.post_type === "ANNOUNCEMENT") && (
-            <option value="ANNOUNCEMENT">Announcement</option>
-          )}
-        </Select>
-      </Field>
-
-      <Field
-        label="Title"
-        htmlFor="edit-post-title"
-        required
-        description="Up to 100 characters."
-        error={errors.title?.message}
-      >
-        <Input
-          id="edit-post-title"
-          {...register("title")}
-          maxLength={100}
-          disabled={isBusy || writeLocked}
-          placeholder="Clear, searchable title"
-          aria-invalid={!!errors.title}
-        />
-      </Field>
-
-      <Field
-        label="Body"
-        htmlFor="edit-post-body"
-        required
-        error={errors.body?.message}
-      >
-        <Controller
-          control={control}
-          name="body"
-          render={({ field }) => (
-            <MarkdownMathEditor
-              id="edit-post-body"
-              name={field.name}
-              value={field.value}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              maxLength={3000}
-              required
-              disabled={isBusy || writeLocked}
-              aria-invalid={!!errors.body}
-              placeholder="Explain your question or share notes with the community..."
+    <>
+      <ArchivalComposerShell
+        backHref={`/posts/${post.id}`}
+        backLabel="Post"
+        cancelHref={`/posts/${post.id}`}
+        mode={mode}
+        onModeChange={setMode}
+        charCount={bodyLength}
+        maxChars={3000}
+        submitLabel={submitLabel}
+        isSubmitting={isBusy}
+        submitDisabled={writeLocked}
+        isUploading={isUploading}
+        onCancelUpload={() => cancelUpload()}
+        onSubmit={handleSubmit(onSubmit, onInvalid)}
+        autosaveLabel={isDirty ? "Unsaved edits saved locally" : undefined}
+        draftBanner={{
+          visible: hasRestoredDraft,
+          message: "Restored your unsaved edits.",
+          onDiscard: handleDiscardDraft,
+          onDismiss: dismissRestoredNotice,
+        }}
+        errorBanner={
+          <div className="space-y-3">
+            {writeLocked && (
+              <div
+                role="alert"
+                className="rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm font-medium text-destructive"
+              >
+                Your account is restricted. You cannot edit posts at this time.
+              </div>
+            )}
+            <FormErrorBanner
+              ref={errorBannerRef}
+              serverMessage={serverError}
+              fieldErrors={serverFieldErrors}
             />
-          )}
-        />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Subject"
-          htmlFor="edit-post-subject"
-          required={subjectRequired}
-          description={subjectRequired ? undefined : "Optional for Announcements."}
-          error={errors.subject_id?.message}
+          </div>
+        }
+        coldStartNotice={
+          slowServerNotice && submitStage !== "idle" ? (
+            <div
+              role="status"
+              aria-live="polite"
+              className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+            >
+              <span>
+                Still working — the server may be waking up. Your edits are safe.
+              </span>
+              {isUploading && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="xs"
+                  onClick={() => cancelUpload()}
+                  className="min-h-[36px] sm:min-h-[28px]"
+                >
+                  Cancel upload
+                </Button>
+              )}
+            </div>
+          ) : undefined
+        }
+      >
+        <MetadataPillBar
+          errors={[
+            errors.post_type?.message,
+            errors.subject_id?.message,
+            errors.level_id?.message,
+            errors.tags?.message,
+          ]}
         >
-          <Select
-            id="edit-post-subject"
-            {...register("subject_id")}
-            disabled={isBusy || writeLocked}
-            aria-invalid={!!errors.subject_id}
+          <div
+            role="radiogroup"
+            aria-label="Post type"
+            className="inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/60 p-0.5"
           >
-            <option value="">Select…</option>
+            {(
+              [
+                { value: "QUESTION", label: "Question" },
+                { value: "SHARING", label: "Sharing" },
+                ...(showAnnouncementOption
+                  ? [{ value: "ANNOUNCEMENT" as const, label: "Announcement" }]
+                  : []),
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={activePostType === opt.value}
+                disabled={isBusy || writeLocked}
+                onClick={() =>
+                  setValue("post_type", opt.value, {
+                    shouldDirty: true,
+                    shouldValidate: true,
+                  })
+                }
+                className={cn(
+                  "min-h-[40px] sm:min-h-[30px] cursor-pointer rounded-md px-2.5 py-1 text-xs font-semibold transition-colors",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  activePostType === opt.value
+                    ? "border border-border bg-card text-foreground shadow-2xs"
+                    : "border border-transparent text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+
+          <MetadataSelectPill
+            id="edit-post-subject"
+            label="Subject"
+            required={subjectRequired}
+            invalid={!!errors.subject_id}
+            disabled={isBusy || writeLocked}
+            {...register("subject_id")}
+          >
+            <option value="">
+              {subjectRequired ? "Subject *" : "Subject (Optional)"}
+            </option>
             {subjects.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.name}
               </option>
             ))}
-          </Select>
-        </Field>
+          </MetadataSelectPill>
 
-        <Field
-          label="Level"
-          htmlFor="edit-post-level"
-          required={subjectRequired}
-          description={subjectRequired ? undefined : "Optional for Announcements."}
-          error={errors.level_id?.message}
-        >
-          <Select
+          <MetadataSelectPill
             id="edit-post-level"
-            {...register("level_id")}
+            label="Level"
+            required={subjectRequired}
+            invalid={!!errors.level_id}
             disabled={isBusy || writeLocked}
-            aria-invalid={!!errors.level_id}
+            {...register("level_id")}
           >
-            <option value="">Select…</option>
+            <option value="">
+              {subjectRequired ? "Level *" : "Level (Optional)"}
+            </option>
             {levels.map((l) => (
               <option key={l.id} value={l.id}>
                 {l.name}
               </option>
             ))}
-          </Select>
-        </Field>
-      </div>
+          </MetadataSelectPill>
 
-      <Field label="Tags" asGroup>
+          <span className="inline-flex min-h-[30px] items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-0.5 text-xs text-muted-foreground">
+            <Clock className="size-3 text-warning" aria-hidden="true" />
+            <span>30d auto-archive</span>
+          </span>
+        </MetadataPillBar>
+
         <Controller
           control={control}
           name="tags"
@@ -552,110 +556,119 @@ export function UpdatePostForm({
             />
           )}
         />
-      </Field>
 
-      <Field
-        label="Attachment"
-        asGroup
-        description={
-          existingAttachment
-            ? `Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}). Uploading a new file will replace the current attachment when you save.`
-            : `Optional. Max ${POST_RULE.maxFiles} file up to ${POST_RULE.maxSizeMB} MB (${POST_RULE.allowedExtensions.join(", ")}).`
-        }
-      >
-        {existingAttachment && (
-          <div className="mb-3 space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">
-                Current attachment:{" "}
-                <span className="text-foreground">
-                  {existingAttachment.name}
-                </span>
-              </span>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setRemoveDialogOpen(true)}
-                disabled={isBusy || writeLocked}
-                className="min-h-[44px] sm:min-h-[36px] gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                <Trash2 className="size-3.5" aria-hidden="true" />
-                <span>Remove attachment</span>
-              </Button>
-            </div>
-
-            <PostAttachment
-              url={existingAttachment.url}
-              filename={existingAttachment.name}
+        <Controller
+          control={control}
+          name="title"
+          render={({ field }) => (
+            <ArchivalTitleInput
+              id="edit-post-title"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              maxLength={100}
+              disabled={isBusy || writeLocked}
+              placeholder="Clear, searchable title..."
+              error={errors.title?.message}
+              aria-invalid={!!errors.title}
             />
-
-            {items.length > 0 && (
-              <p className="text-xs font-medium text-warning">
-                Uploading a new file will replace the current attachment when you
-                save.
-              </p>
-            )}
-          </div>
-        )}
-
-        <FileDropzone
-          items={items}
-          onAddFiles={addFiles}
-          onRemoveItem={removeFile}
-          onRetryItem={(id) => void retryItem(id, resolveUploadToken)}
-          scope="post_attachment"
-          sizeMode="per-file"
-          disabled={isBusy || writeLocked}
-          label="Upload replacement attachment"
-          helperText={`JPG, PNG, WebP, or PDF · Max ${POST_RULE.maxSizeMB} MB`}
-          error={batchError || serverFieldErrors.attachment?.[0] || undefined}
+          )}
         />
-      </Field>
 
-      {slowServerNotice && submitStage !== "idle" && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
-        >
-          <span>
-            Still working — the server may be waking up. Your edits are safe.
-          </span>
-          {isUploading && (
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={() => cancelUpload()}
-              className="min-h-[36px] sm:min-h-[28px]"
-            >
-              Cancel upload
-            </Button>
+        <div className="space-y-1.5">
+          <Controller
+            control={control}
+            name="body"
+            render={({ field }) => (
+              <MarkdownMathEditor
+                id="edit-post-body"
+                name={field.name}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                mode={mode}
+                variant="borderless"
+                maxLength={3000}
+                required
+                disabled={isBusy || writeLocked}
+                aria-invalid={!!errors.body}
+                placeholder="Explain your question or share notes with the community..."
+              />
+            )}
+          />
+          {errors.body?.message && (
+            <p role="alert" className="text-xs font-medium text-destructive">
+              {errors.body.message}
+            </p>
           )}
         </div>
-      )}
 
-      <div className="flex flex-wrap items-center gap-2 pt-2">
-        <Button type="submit" disabled={writeLocked || isBusy}>
-          {isBusy ? (
-            <Loader2 className="mr-1.5 size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <Save className="mr-1.5 size-4" aria-hidden="true" />
-          )}
-          <span className={submitStage === "uploading" ? "font-mono tabular-nums" : undefined}>
-            {submitLabel}
-          </span>
-        </Button>
-        <Button
-          variant="secondary"
-          nativeButton={false}
-          disabled={isBusy}
-          render={<Link href={`/posts/${post.id}`} />}
+        <section
+          aria-label="Attachment"
+          className="mt-6 space-y-3 border-t border-border pt-6"
         >
-          Cancel
-        </Button>
-      </div>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-foreground">
+              Attachment (Optional)
+            </h2>
+            <span className="font-mono tabular-nums text-xs text-muted-foreground">
+              Max {POST_RULE.maxFiles} file · {POST_RULE.maxSizeMB} MB
+            </span>
+          </div>
+
+          {existingAttachment && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-xs font-medium text-muted-foreground">
+                  Current attachment:{" "}
+                  <span className="text-foreground">
+                    {existingAttachment.name}
+                  </span>
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRemoveDialogOpen(true)}
+                  disabled={isBusy || writeLocked}
+                  className="min-h-[44px] sm:min-h-[32px] gap-1.5 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="size-3.5" aria-hidden="true" />
+                  <span>Remove attachment</span>
+                </Button>
+              </div>
+
+              <PostAttachment
+                url={existingAttachment.url}
+                filename={existingAttachment.name}
+              />
+
+              {items.length > 0 && (
+                <p className="text-xs font-medium text-warning">
+                  Uploading a new file will replace the current attachment when you save.
+                </p>
+              )}
+            </div>
+          )}
+
+          <FileDropzone
+            items={items}
+            onAddFiles={addFiles}
+            onRemoveItem={removeFile}
+            onRetryItem={(id) => void retryItem(id, resolveUploadToken)}
+            scope="post_attachment"
+            sizeMode="per-file"
+            disabled={isBusy || writeLocked}
+            label={
+              existingAttachment
+                ? "Upload replacement attachment"
+                : "Upload post attachment"
+            }
+            helperText={`JPG, PNG, WebP, or PDF · Max ${POST_RULE.maxSizeMB} MB`}
+            error={batchError || serverFieldErrors.attachment?.[0] || undefined}
+          />
+        </section>
+      </ArchivalComposerShell>
 
       <Dialog open={removeDialogOpen} onOpenChange={setRemoveDialogOpen}>
         <DialogContent>
@@ -699,6 +712,6 @@ export function UpdatePostForm({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </form>
+    </>
   );
 }

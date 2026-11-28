@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
 import { AlertCircle } from "lucide-react";
-import { PageHeader } from "@/components/ui/page-header";
 import { apiFetch } from "@/services/api-client";
 import { Lesson, Subject, Level, Tag } from "@/types";
 import { isWriteLocked, isContentAuthor } from "@/types/user";
@@ -45,11 +44,8 @@ export default async function EditLessonPage(props: {
   );
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="Edit lesson"
-        description="Draft ↔ Published ↔ Archived state transitions."
-      />
+    <div className="mx-auto max-w-[52rem] space-y-6">
+      <h1 className="sr-only">Edit lesson</h1>
       {writeLocked && (
         <div
           role="alert"

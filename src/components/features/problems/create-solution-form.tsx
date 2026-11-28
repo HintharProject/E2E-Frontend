@@ -1,15 +1,21 @@
 "use client";
 
-import { useState, useEffect, useRef, useId } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { useState, useEffect, useRef, useId, useCallback } from "react";
+import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button } from "@/components/ui/button";
-import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
+import {
+  ArchivalComposerShell,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataTogglePill,
+} from "@/components/features/editor/metadata-pill-bar";
+import { BlockDocumentEditor } from "@/components/features/editor/block-document-editor";
+import { MediaDock } from "@/components/features/editor/media-dock";
+import { useEditorMediaItems } from "@/components/features/editor/use-editor-media-items";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient } from "@tanstack/react-query";
@@ -17,15 +23,18 @@ import { toast } from "sonner";
 import { Solution } from "@/types";
 import { applyFieldErrorsToForm, extractApiFieldErrors } from "@/lib/form-errors";
 import { useStagedUploads } from "@/hooks/use-staged-uploads";
-import { isAllowedYouTubeUrl } from "@/lib/upload-rules";
-import { Loader2, Video } from "lucide-react";
+import { appendInlineImageToBody } from "@/lib/inline-media";
+import { isAllowedYouTubeUrl, UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
+import { Video } from "lucide-react";
+
+const SOLUTION_RULE = UPLOAD_SCOPE_RULES.solution_attachment;
 
 const formSchema = z.object({
   body: z
     .string()
     .trim()
     .min(10, "Solution description must be at least 10 characters")
-    .max(5000, "Max 5000 characters"),
+    .max(8000, "Max 8000 characters"),
   video_url: z
     .string()
     .trim()
@@ -61,6 +70,8 @@ export function CreateSolutionForm({
 
   const errorBannerRef = useRef<HTMLDivElement>(null);
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
+  const [showVideoWell, setShowVideoWell] = useState(false);
   const [submitStage, setSubmitStage] = useState<
     "idle" | "uploading" | "saving"
   >("idle");
@@ -87,12 +98,16 @@ export function CreateSolutionForm({
     optimizeImages: true,
   });
 
+  const mediaItems = useEditorMediaItems(items);
+
   const {
     register,
     control,
     handleSubmit,
     setError,
     clearErrors,
+    setValue,
+    getValues,
     reset,
     formState: { errors, isDirty },
   } = useForm<FormValues>({
@@ -102,6 +117,9 @@ export function CreateSolutionForm({
       video_url: "",
     },
   });
+
+  const watchedBody = useWatch({ control, name: "body" }) || "";
+  const watchedVideoUrl = useWatch({ control, name: "video_url" }) || "";
 
   const isSubmitting = submitStage !== "idle";
 
@@ -136,9 +154,28 @@ export function CreateSolutionForm({
     }
   }, [errorFocusTick]);
 
+  const handleUploadAndReturnNames = useCallback(
+    async (files: File[]): Promise<Array<{ fileName: string }>> => {
+      const res = await addFiles(files);
+      return res.added.map((item) => ({ fileName: item.file.name }));
+    },
+    [addFiles]
+  );
+
+  const handleInsertFromDock = useCallback(
+    (fileName: string) => {
+      const current = getValues("body") || "";
+      setValue("body", appendInlineImageToBody(current, fileName), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
+    [getValues, setValue]
+  );
+
   if (isLocked) {
     return (
-      <div className="rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+      <div className="my-4 rounded-xl border border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
         This problem thread has been locked by moderation. New solutions cannot be posted.
       </div>
     );
@@ -172,8 +209,7 @@ export function CreateSolutionForm({
     setSubmitStage(items.length > 0 ? "uploading" : "saving");
 
     try {
-      const uploaded =
-        items.length > 0 ? await uploadAll(getToken) : [];
+      const uploaded = items.length > 0 ? await uploadAll(getToken) : [];
 
       setSubmitStage("saving");
       const token = await getToken();
@@ -240,142 +276,128 @@ export function CreateSolutionForm({
   const submitLabel =
     submitStage === "uploading" && items.length > 0
       ? uploadingIndex >= 0
-        ? `Uploading ${uploadingIndex + 1} of ${items.length} (${activeUploadProgress}%)...`
-        : "Uploading diagrams..."
+        ? `Uploading ${uploadingIndex + 1} of ${items.length} (${activeUploadProgress}%)…`
+        : "Uploading diagrams…"
       : submitStage === "saving"
-        ? "Posting solution..."
+        ? "Posting solution…"
         : "Post Solution";
 
+  const videoOpen =
+    showVideoWell ||
+    Boolean(watchedVideoUrl.trim()) ||
+    Boolean(errors.video_url?.message);
+
   return (
-    <form
+    <ArchivalComposerShell
+      stickyVariant="dialog"
+      mode={mode}
+      onModeChange={setMode}
+      charCount={watchedBody.length}
+      maxChars={8000}
+      submitLabel={submitLabel}
+      isSubmitting={isSubmitting}
+      submitDisabled={isOptimizing}
+      isUploading={isUploading}
+      onCancelUpload={() => cancelUpload()}
+      onCancel={onCancel ? handleCancel : undefined}
       onSubmit={handleSubmit(onSubmit, onInvalid)}
-      noValidate
-      className="space-y-4 rounded-xl border border-border bg-card p-6 shadow-card"
-    >
-      <h3 className="font-heading text-lg font-semibold text-foreground">
-        Submit a Worked Solution
-      </h3>
-
-      <FormErrorBanner
-        ref={errorBannerRef}
-        serverMessage={serverError}
-        fieldErrors={serverFieldErrors}
-      />
-
-      <Field
-        label="Your Worked Steps & Reasoning"
-        htmlFor={bodyFieldId}
-        required
-        error={errors.body?.message}
-      >
-        <Controller
-          control={control}
-          name="body"
-          render={({ field }) => (
-            <MarkdownMathEditor
-              id={bodyFieldId}
-              name={field.name}
-              ref={field.ref}
-              value={field.value || ""}
-              onChange={field.onChange}
-              onBlur={field.onBlur}
-              maxLength={5000}
-              rows={6}
-              disabled={isSubmitting}
-              required
-              aria-invalid={!!errors.body}
-              placeholder="Explain your step-by-step mathematical working clearly..."
-            />
-          )}
+      errorBanner={
+        <FormErrorBanner
+          ref={errorBannerRef}
+          serverMessage={serverError}
+          fieldErrors={serverFieldErrors}
         />
-      </Field>
+      }
+      coldStartNotice={
+        isSubmitting && elapsedSeconds >= 6 ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-border bg-muted/40 px-3.5 py-2 text-xs text-muted-foreground"
+          >
+            Server is waking up or finishing transfer — please keep this tab open.
+          </p>
+        ) : undefined
+      }
+    >
+      <MetadataPillBar errors={[errors.video_url?.message]}>
+        <MetadataTogglePill
+          active={videoOpen}
+          hasValue={Boolean(watchedVideoUrl.trim())}
+          onClick={() => setShowVideoWell((prev) => !prev)}
+          icon={<Video className="size-3.5 text-primary" aria-hidden="true" />}
+        >
+          {watchedVideoUrl.trim() ? "YouTube Walkthrough Added" : "Add YouTube Walkthrough"}
+        </MetadataTogglePill>
+      </MetadataPillBar>
 
-      <Field
-        label="YouTube Video Walkthrough URL (Optional)"
-        htmlFor={videoFieldId}
-        description="Supports youtube.com, youtu.be, or youtube-nocookie.com links."
-        error={errors.video_url?.message}
-      >
-        <div className="relative">
+      {videoOpen && (
+        <div className="rounded-xl border border-border bg-card/70 p-3.5 space-y-1.5">
+          <label
+            htmlFor={videoFieldId}
+            className="text-xs font-medium text-foreground"
+          >
+            YouTube Video Walkthrough URL (Optional)
+          </label>
           <Input
             id={videoFieldId}
             {...register("video_url")}
             disabled={isSubmitting}
-            placeholder="e.g. https://www.youtube.com/watch?v=..."
-            className="pl-9"
+            placeholder="https://www.youtube.com/watch?v=..."
             aria-invalid={!!errors.video_url}
+            className="text-base sm:text-sm"
           />
-          <Video
-            className="size-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none"
-            aria-hidden="true"
-          />
+          <p className="text-xs text-muted-foreground">
+            Supports youtube.com, youtu.be, or youtube-nocookie.com links.
+          </p>
         </div>
-      </Field>
-
-      <Field
-        label="Diagrams / Working Photos (Optional · Max 3 · 5MB each)"
-        asGroup
-      >
-        <FileDropzone
-          items={items}
-          onAddFiles={addFiles}
-          onRemoveItem={removeFile}
-          onRetryItem={(id) => void retryItem(id, getToken)}
-          scope="solution_attachment"
-          sizeMode="per-file"
-          disabled={isSubmitting}
-          label="Upload solution diagrams"
-          helperText="Up to 3 images (JPG, PNG, WebP). High-resolution phone photos up to 25MB are automatically optimized to WebP (<= 5MB final)."
-          error={
-            batchError ||
-            (errors.attachments?.message as string | undefined)
-          }
-        />
-      </Field>
-
-      {isSubmitting && elapsedSeconds >= 6 && (
-        <p
-          role="status"
-          aria-live="polite"
-          className="text-xs text-muted-foreground text-right"
-        >
-          Server is waking up or finishing transfer — please keep this tab open.
-        </p>
       )}
 
-      <div className="flex flex-wrap items-center justify-end gap-2.5 pt-2">
-        {isUploading && (
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => cancelUpload()}
-            className="w-full sm:w-auto text-destructive hover:bg-destructive/10 hover:text-destructive"
-          >
-            Cancel Upload
-          </Button>
-        )}
-        {onCancel && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isSubmitting}
-            className="w-full sm:w-auto"
-          >
-            Cancel
-          </Button>
-        )}
-        <Button
-          type="submit"
-          disabled={isSubmitting || isOptimizing}
-          className="w-full sm:w-auto gap-2"
-        >
-          {isSubmitting && (
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+      <div className="space-y-1.5">
+        <Controller
+          control={control}
+          name="body"
+          render={({ field }) => (
+            <BlockDocumentEditor
+              id={bodyFieldId}
+              value={field.value || ""}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              mode={mode}
+              attachments={mediaItems}
+              canUploadMore={items.length < SOLUTION_RULE.maxFiles}
+              acceptString={SOLUTION_RULE.acceptString}
+              onUploadImages={handleUploadAndReturnNames}
+              maxLength={8000}
+              disabled={isSubmitting}
+              aria-invalid={!!errors.body}
+              placeholder="Explain your step-by-step mathematical working clearly. Insert diagram breaks between steps..."
+              emptyPreviewText="Nothing to preview yet. Write your solution steps or insert a diagram."
+            />
           )}
-          <span>{submitLabel}</span>
-        </Button>
+        />
+        {errors.body?.message && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {errors.body.message}
+          </p>
+        )}
       </div>
-    </form>
+
+      <MediaDock
+        scope="solution_attachment"
+        title="Worked Diagrams"
+        body={watchedBody}
+        stagedItems={items}
+        onAddFiles={addFiles}
+        onRemoveStaged={removeFile}
+        onRetryStaged={(id) => void retryItem(id, getToken)}
+        onInsertInlineImage={handleInsertFromDock}
+        helperText="Up to 5 images (JPG, PNG, WebP). Photos up to 25 MB are automatically optimized to WebP (<= 5 MB final)."
+        error={
+          batchError || (errors.attachments?.message as string | undefined)
+        }
+        disabled={isSubmitting}
+      />
+    </ArchivalComposerShell>
   );
 }

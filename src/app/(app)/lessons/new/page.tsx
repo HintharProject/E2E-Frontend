@@ -1,9 +1,7 @@
 import { Suspense } from "react";
-import { PageHeader } from "@/components/ui/page-header";
 import { apiFetch } from "@/services/api-client";
-import { PaginatedResponse, Subject, Level, Tag } from "@/types";
+import { Subject, Level, Tag } from "@/types";
 import { CreateLessonForm } from "@/components/features/lessons/create-lesson-form";
-import { auth } from "@clerk/nextjs/server";
 import { redirect, notFound } from "next/navigation";
 import { UserPublic } from "@/types";
 import { getServerAuthToken } from "@/lib/auth-server";
@@ -37,11 +35,8 @@ export default async function NewLessonPage() {
   ] as [Subject[], Level[], Tag[]]);
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="New lesson"
-        description="Subject and Level are required. Videos must be YouTube/playlist URLs — no direct video upload."
-      />
+    <div className="mx-auto max-w-[52rem] space-y-6">
+      <h1 className="sr-only">New lesson</h1>
       <Suspense fallback={<div className="h-64 rounded-xl bg-card border border-border animate-pulse" />}>
         <CreateLessonForm
           subjects={subjects}

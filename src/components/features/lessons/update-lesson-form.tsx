@@ -5,28 +5,28 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Link from "next/link";
-import {
-  ExternalLink,
-  FileText,
-  Image as ImageIcon,
-  Info,
-  Loader2,
-  RotateCcw,
-  Save,
-  Trash2,
-  X,
-} from "lucide-react";
+import { Loader2, Video } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { TagInput } from "@/components/ui/tag-input";
-import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
+import {
+  ArchivalComposerShell,
+  ArchivalTitleInput,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataSelectPill,
+  MetadataTogglePill,
+} from "@/components/features/editor/metadata-pill-bar";
+import { BlockDocumentEditor } from "@/components/features/editor/block-document-editor";
+import {
+  MediaDock,
+  type ExistingDockAttachment,
+} from "@/components/features/editor/media-dock";
+import { useEditorMediaItems } from "@/components/features/editor/use-editor-media-items";
 import {
   Dialog,
   DialogClose,
@@ -45,7 +45,11 @@ import {
 import { useStagedUploads } from "@/hooks/use-staged-uploads";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
 import {
-  getFileExtension,
+  appendInlineImageToBody,
+  isImageFileName,
+  removeInlineImageFromBody,
+} from "@/lib/inline-media";
+import {
   isAllowedYouTubeUrl,
   UPLOAD_SCOPE_RULES,
 } from "@/lib/upload-rules";
@@ -53,7 +57,6 @@ import { extractApiFieldErrors, applyFieldErrorsToForm } from "@/lib/form-errors
 import { getMutationAuthToken } from "@/lib/client-auth";
 
 const LESSON_RULE = UPLOAD_SCOPE_RULES.lesson_attachment;
-const IMAGE_EXTENSIONS = new Set([".jpg", ".jpeg", ".png", ".webp"]);
 
 const formSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Max 100 characters"),
@@ -92,6 +95,10 @@ export function UpdateLessonForm({
   const updateLessonMutation = useUpdateLesson(lesson.id);
   const deleteAttachmentMutation = useDeleteLessonAttachment(lesson.id);
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
+  const [showVideoWell, setShowVideoWell] = useState(
+    Boolean(lesson.embedded_video_url)
+  );
   const [deletedAttachmentIds, setDeletedAttachmentIds] = useState<string[]>(
     []
   );
@@ -118,6 +125,11 @@ export function UpdateLessonForm({
     [lesson.attachments, deletedAttachmentIds]
   );
 
+  const existingFileNames = useMemo(
+    () => existingAttachments.map((a) => a.file_name),
+    [existingAttachments]
+  );
+
   const remainingSlots = Math.max(
     0,
     LESSON_RULE.maxFiles - existingAttachments.length
@@ -138,7 +150,11 @@ export function UpdateLessonForm({
   } = useStagedUploads({
     scope: "lesson_attachment",
     existingCount: existingAttachments.length,
+    existingFileNames,
+    optimizeImages: true,
   });
+
+  const mediaItems = useEditorMediaItems(stagedItems, existingAttachments);
 
   const initialValues = useMemo<FormValues>(() => {
     const initialTags =
@@ -193,6 +209,8 @@ export function UpdateLessonForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    getValues,
     setError,
     reset,
     control,
@@ -203,6 +221,8 @@ export function UpdateLessonForm({
   });
 
   const watchedValues = useWatch({ control });
+  const watchedBody = watchedValues.body ?? "";
+  const watchedVideoUrl = watchedValues.embedded_video_url ?? "";
 
   const isBusy =
     submitStage !== "idle" ||
@@ -296,11 +316,43 @@ export function UpdateLessonForm({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty, stagedItems.length, isUploading]);
 
+  const handleUploadAndReturnImageNames = useCallback(
+    async (files: File[]): Promise<Array<{ fileName: string }>> => {
+      const res = await addFiles(files);
+      return res.added
+        .filter((i) => i.file.type.startsWith("image/"))
+        .map((i) => ({ fileName: i.file.name }));
+    },
+    [addFiles]
+  );
+
+  const handleInsertFromDock = useCallback(
+    (fileName: string) => {
+      const current = getValues("body") || "";
+      setValue("body", appendInlineImageToBody(current, fileName), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
+    [getValues, setValue]
+  );
+
   const handleDiscardDraft = () => {
     clearDraft();
     reset(initialValues);
+    resetUploads();
     toast.info("Unsaved edits discarded");
   };
+
+  const handleRequestDeleteExisting = useCallback(
+    (dockAtt: ExistingDockAttachment) => {
+      const full = existingAttachments.find((a) => a.id === dockAtt.id);
+      if (full) {
+        setAttachmentToDelete(full);
+      }
+    },
+    [existingAttachments]
+  );
 
   const handleConfirmDeleteAttachment = async () => {
     if (!attachmentToDelete || writeLocked) return;
@@ -310,6 +362,20 @@ export function UpdateLessonForm({
       setDeletedAttachmentIds((prev) =>
         prev.includes(target.id) ? prev : [...prev, target.id]
       );
+
+      // Sync inline blocks if the deleted attachment was an inline image
+      if (isImageFileName(target.file_name)) {
+        const currentBody = getValues("body") || "";
+        const nextBody = removeInlineImageFromBody(currentBody, target.file_name);
+        if (nextBody !== currentBody) {
+          setValue("body", nextBody, {
+            shouldDirty: true,
+            shouldValidate: true,
+          });
+          toast.info(`Removed inline image block for ${target.file_name}`);
+        }
+      }
+
       setAttachmentToDelete(null);
       router.refresh();
       toast.success("Attachment deleted");
@@ -321,10 +387,10 @@ export function UpdateLessonForm({
   };
 
   const uploadStatusLabel = useMemo(() => {
-    if (submitStage === "saving") return "Saving changes...";
+    if (submitStage === "saving") return "Saving…";
     if (submitStage !== "uploading") return "Save Changes";
     const total = stagedItems.length;
-    if (total === 0) return "Uploading materials...";
+    if (total === 0) return "Uploading…";
     const uploadedCount = stagedItems.filter(
       (i) => i.status === "uploaded"
     ).length;
@@ -333,7 +399,7 @@ export function UpdateLessonForm({
     const pct = activeItem
       ? activeItem.progress
       : Math.round((uploadedCount / total) * 100);
-    return `Uploading ${activeIndex} of ${total} (${pct}%)...`;
+    return `Uploading ${activeIndex}/${total} (${pct}%)…`;
   }, [submitStage, stagedItems]);
 
   const onInvalid = () => {
@@ -409,329 +475,225 @@ export function UpdateLessonForm({
     }
   };
 
+  const videoOpen =
+    showVideoWell ||
+    Boolean(watchedVideoUrl.trim()) ||
+    Boolean(errors.embedded_video_url?.message);
+
   return (
     <>
-      <form
+      <ArchivalComposerShell
+        backHref={`/lessons/${lesson.id}`}
+        backLabel="Lesson"
+        cancelHref={`/lessons/${lesson.id}`}
+        mode={mode}
+        onModeChange={setMode}
+        charCount={watchedBody.length}
+        maxChars={5000}
+        submitLabel={uploadStatusLabel}
+        isSubmitting={isBusy}
+        submitDisabled={writeLocked}
+        isUploading={isUploading}
+        onCancelUpload={() => cancelUpload()}
         onSubmit={(e) => {
           void handleSubmit(onSubmit, onInvalid)(e);
         }}
-        noValidate
-        className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
+        autosaveLabel={isDirty ? "Unsaved edits saved locally" : undefined}
+        draftBanner={{
+          visible: hasRestoredDraft,
+          message: "Restored unsaved draft from this browser session.",
+          onDiscard: handleDiscardDraft,
+          onDismiss: dismissRestoredNotice,
+        }}
+        errorBanner={
+          <FormErrorBanner
+            ref={errorBannerRef}
+            serverMessage={serverError}
+            fieldErrors={serverFieldErrors}
+          />
+        }
+        coldStartNotice={
+          isBusy && showColdStartHint ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+            >
+              Still working — the server may be waking up. Your edits and uploaded files are preserved; please keep this tab open.
+            </p>
+          ) : undefined
+        }
       >
-        {hasRestoredDraft && (
-          <div
-            role="status"
-            className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
-          >
-            <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-              <RotateCcw className="size-3.5 text-primary" aria-hidden="true" />
-              Restored unsaved draft
-            </span>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="xs"
-                onClick={handleDiscardDraft}
-                className="min-h-[44px] sm:min-h-[28px] text-destructive hover:bg-destructive/10 hover:text-destructive"
-              >
-                Discard
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={dismissRestoredNotice}
-                aria-label="Dismiss draft notice"
-                className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
-              >
-                <X className="size-3.5" aria-hidden="true" />
-              </Button>
-            </div>
-          </div>
-        )}
-
-        <FormErrorBanner
-          ref={errorBannerRef}
-          serverMessage={serverError}
-          fieldErrors={serverFieldErrors}
-        />
-
-        <Field
-          label="Title (max 100)"
-          htmlFor="edit-lesson-title"
-          required
-          error={errors.title?.message}
+        <MetadataPillBar
+          errors={[
+            errors.subject_id?.message,
+            errors.level_id?.message,
+            errors.state?.message,
+            errors.embedded_video_url?.message,
+            errors.tags?.message,
+          ]}
         >
-          <Input
-            id="edit-lesson-title"
-            {...register("title")}
-            placeholder="Lesson title"
-            disabled={isFormDisabled}
-            aria-invalid={!!errors.title}
-          />
-        </Field>
-
-        <Field
-          label="Body (max 5000)"
-          htmlFor="edit-lesson-body"
-          required
-          error={errors.body?.message}
-        >
-          <Controller
-            control={control}
-            name="body"
-            render={({ field }) => (
-              <MarkdownMathEditor
-                id="edit-lesson-body"
-                ref={field.ref}
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                maxLength={5000}
-                required
-                disabled={isFormDisabled}
-                aria-invalid={!!errors.body}
-              />
-            )}
-          />
-        </Field>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field
+          <MetadataSelectPill
+            id="edit-lesson-subject"
             label="Subject"
-            htmlFor="edit-lesson-subject"
             required
-            error={errors.subject_id?.message}
+            invalid={!!errors.subject_id}
+            disabled={isFormDisabled}
+            {...register("subject_id")}
           >
-            <Select
-              id="edit-lesson-subject"
-              {...register("subject_id")}
-              disabled={isFormDisabled}
-              aria-invalid={!!errors.subject_id}
-            >
-              <option value="">Select…</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
+            <option value="">Subject *</option>
+            {subjects.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+              </option>
+            ))}
+          </MetadataSelectPill>
 
-          <Field
+          <MetadataSelectPill
+            id="edit-lesson-level"
             label="Level"
-            htmlFor="edit-lesson-level"
             required
-            error={errors.level_id?.message}
+            invalid={!!errors.level_id}
+            disabled={isFormDisabled}
+            {...register("level_id")}
           >
-            <Select
-              id="edit-lesson-level"
-              {...register("level_id")}
-              disabled={isFormDisabled}
-              aria-invalid={!!errors.level_id}
-            >
-              <option value="">Select…</option>
-              {levels.map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </Select>
-          </Field>
-        </div>
+            <option value="">Level *</option>
+            {levels.map((l) => (
+              <option key={l.id} value={l.id}>
+                {l.name}
+              </option>
+            ))}
+          </MetadataSelectPill>
 
-        <Field label="Tags" asGroup error={errors.tags?.message}>
-          <Controller
-            control={control}
-            name="tags"
-            render={({ field }) => (
-              <TagInput
-                value={field.value || []}
-                onChange={field.onChange}
-                maxTags={3}
-                disabled={isFormDisabled}
-                error={errors.tags?.message}
-              />
-            )}
-          />
-        </Field>
-
-        <Field
-          label="Embedded video URL (YouTube / playlist)"
-          htmlFor="edit-lesson-video-url"
-          description="Optional. Clear this field and save to remove the embedded video."
-          error={errors.embedded_video_url?.message}
-        >
-          <Input
-            id="edit-lesson-video-url"
-            {...register("embedded_video_url")}
-            type="url"
-            placeholder="https://www.youtube.com/watch?v=…"
-            disabled={isFormDisabled}
-            aria-invalid={!!errors.embedded_video_url}
-          />
-        </Field>
-
-        <Field
-          label="State"
-          htmlFor="edit-lesson-state"
-          error={errors.state?.message}
-        >
-          <Select
+          <MetadataSelectPill
             id="edit-lesson-state"
-            {...register("state")}
+            label="State"
+            invalid={!!errors.state}
             disabled={isFormDisabled}
-            aria-invalid={!!errors.state}
+            {...register("state")}
           >
             <option value="DRAFT">Draft</option>
             <option value="PUBLISHED">Published</option>
             <option value="ARCHIVED">Archived</option>
-          </Select>
-        </Field>
+          </MetadataSelectPill>
 
-        <Field
-          label={`Attachments (${existingAttachments.length} / ${LESSON_RULE.maxFiles} used · ${remainingSlots} ${remainingSlots === 1 ? "slot" : "slots"} remaining)`}
-          asGroup
-        >
-          {existingAttachments.length > 0 && (
-            <ul className="space-y-2">
-              {existingAttachments.map((att) => {
-                const ext = getFileExtension(att.file_name);
-                const isImg = IMAGE_EXTENSIONS.has(ext);
-                const fileHref = att.download_url || att.file_url;
-
-                return (
-                  <li
-                    key={att.id}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3"
-                  >
-                    <div className="flex min-w-0 flex-1 items-center gap-3">
-                      <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/50 text-muted-foreground">
-                        {isImg ? (
-                          <ImageIcon className="size-4" aria-hidden="true" />
-                        ) : (
-                          <FileText className="size-4" aria-hidden="true" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <a
-                          href={fileHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex max-w-full items-center gap-1.5 truncate rounded text-sm font-medium text-foreground transition-colors hover:text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                        >
-                          <span className="truncate">{att.file_name}</span>
-                          <ExternalLink
-                            className="size-3.5 shrink-0 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                        </a>
-                      </div>
-                    </div>
-
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isFormDisabled}
-                      onClick={() => setAttachmentToDelete(att)}
-                      aria-label={`Delete ${att.file_name}`}
-                      className="min-h-[44px] min-w-[44px] sm:min-h-[36px] shrink-0 gap-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="size-4" aria-hidden="true" />
-                      <span>Delete</span>
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          {remainingSlots === 0 ? (
-            <div
-              role="status"
-              className="mt-2 flex items-start gap-2.5 rounded-xl border border-border bg-muted/30 p-4 text-sm text-muted-foreground"
-            >
-              <Info
-                className="mt-0.5 size-4 shrink-0 text-primary"
-                aria-hidden="true"
-              />
-              <p>
-                Maximum of 5 attachments reached. Remove an existing file to add
-                another.
-              </p>
-            </div>
-          ) : (
-            <div className={existingAttachments.length > 0 ? "mt-2" : undefined}>
-              <FileDropzone
-                items={stagedItems}
-                onAddFiles={addFiles}
-                onRemoveItem={removeFile}
-                onRetryItem={(id) =>
-                  void retryItem(id, () => getMutationAuthToken(getToken))
-                }
-                scope="lesson_attachment"
-                sizeMode="total"
-                maxFiles={remainingSlots}
-                existingCount={0}
-                disabled={isFormDisabled}
-                label="Add new lesson attachments"
-                helperText={`Add up to ${remainingSlots} more ${remainingSlots === 1 ? "file" : "files"} (PDF, Word, PowerPoint, Excel, ZIP, JPG, PNG, WebP · 20 MB total for new uploads)`}
-                error={uploadBatchError || undefined}
-              />
-            </div>
-          )}
-        </Field>
-
-        {isBusy && showColdStartHint && (
-          <p
-            role="status"
-            aria-live="polite"
-            className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
+          <MetadataTogglePill
+            active={videoOpen}
+            hasValue={Boolean(watchedVideoUrl.trim())}
+            onClick={() => setShowVideoWell((prev) => !prev)}
+            icon={<Video className="size-3.5 text-primary" aria-hidden="true" />}
           >
-            Still working — the server may be waking up. Your edits and
-            uploaded files are preserved; please keep this tab open.
-          </p>
+            {watchedVideoUrl.trim() ? "YouTube Video Added" : "Add YouTube Video"}
+          </MetadataTogglePill>
+        </MetadataPillBar>
+
+        {videoOpen && (
+          <div className="rounded-xl border border-border bg-card/70 p-3.5 space-y-1.5">
+            <label
+              htmlFor="edit-lesson-video-url"
+              className="text-xs font-medium text-foreground"
+            >
+              Embedded video URL (YouTube / playlist)
+            </label>
+            <Input
+              id="edit-lesson-video-url"
+              {...register("embedded_video_url")}
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=…"
+              disabled={isFormDisabled}
+              aria-invalid={!!errors.embedded_video_url}
+              className="text-base sm:text-sm"
+            />
+            <p className="text-xs text-muted-foreground">
+              Optional. Clear this field and save to remove the embedded video.
+            </p>
+          </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-2.5 pt-2">
-          <Button
-            type="submit"
-            disabled={isFormDisabled}
-            className="min-h-[44px] sm:min-h-[40px]"
-          >
-            {isBusy ? (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            ) : (
-              <Save className="size-4" aria-hidden="true" />
-            )}
-            <span>{uploadStatusLabel}</span>
-          </Button>
-
-          {isUploading && (
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => cancelUpload()}
-              className="min-h-[44px] sm:min-h-[40px]"
-            >
-              Cancel upload
-            </Button>
+        <Controller
+          control={control}
+          name="tags"
+          render={({ field }) => (
+            <TagInput
+              value={field.value || []}
+              onChange={field.onChange}
+              maxTags={3}
+              disabled={isFormDisabled}
+              error={errors.tags?.message}
+            />
           )}
+        />
 
-          <Button
-            type="button"
-            variant="secondary"
-            disabled={isBusy}
-            nativeButton={false}
-            render={<Link href={`/lessons/${lesson.id}`} />}
-            className="min-h-[44px] sm:min-h-[40px]"
-          >
-            Cancel
-          </Button>
+        <Controller
+          control={control}
+          name="title"
+          render={({ field }) => (
+            <ArchivalTitleInput
+              id="edit-lesson-title"
+              value={field.value}
+              onChange={field.onChange}
+              onBlur={field.onBlur}
+              maxLength={100}
+              disabled={isFormDisabled}
+              placeholder="Lesson title..."
+              error={errors.title?.message}
+              aria-invalid={!!errors.title}
+            />
+          )}
+        />
+
+        <div className="space-y-1.5">
+          <Controller
+            control={control}
+            name="body"
+            render={({ field }) => (
+              <BlockDocumentEditor
+                id="edit-lesson-body"
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                mode={mode}
+                attachments={mediaItems}
+                canUploadMore={remainingSlots - stagedItems.length > 0}
+                acceptString=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+                onUploadImages={handleUploadAndReturnImageNames}
+                maxLength={5000}
+                disabled={isFormDisabled}
+                aria-invalid={!!errors.body}
+                placeholder="Write your lesson explanation with Markdown and LaTeX. Insert diagram breaks between paragraphs..."
+                emptyPreviewText="Nothing to preview yet."
+              />
+            )}
+          />
+          {errors.body?.message && (
+            <p role="alert" className="text-xs font-medium text-destructive">
+              {errors.body.message}
+            </p>
+          )}
         </div>
-      </form>
+
+        <MediaDock
+          scope="lesson_attachment"
+          title="Lesson Media & Downloadable Resources"
+          body={watchedBody}
+          stagedItems={stagedItems}
+          existingAttachments={existingAttachments}
+          onAddFiles={addFiles}
+          onRemoveStaged={removeFile}
+          onRetryStaged={(id) =>
+            void retryItem(id, () => getMutationAuthToken(getToken))
+          }
+          onDeleteExisting={handleRequestDeleteExisting}
+          onInsertInlineImage={handleInsertFromDock}
+          helperText={
+            remainingSlots === 0
+              ? "Maximum of 5 attachments reached. Delete an existing file to add another."
+              : `Add up to ${remainingSlots} more ${remainingSlots === 1 ? "file" : "files"} (JPG, PNG, WebP, PDF, Word, PowerPoint, Excel, ZIP · Max ${LESSON_RULE.maxSizeMB} MB per file).`
+          }
+          error={uploadBatchError || undefined}
+          disabled={isFormDisabled}
+        />
+      </ArchivalComposerShell>
 
       <Dialog
         open={Boolean(attachmentToDelete)}
@@ -749,7 +711,7 @@ export function UpdateLessonForm({
               <span className="font-medium text-foreground">
                 {attachmentToDelete?.file_name}
               </span>
-              ? This action cannot be undone.
+              ? Any inline image block referencing this file will also be removed. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

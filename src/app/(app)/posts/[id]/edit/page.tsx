@@ -1,8 +1,6 @@
 import { notFound } from "next/navigation";
-import { PageHeader } from "@/components/ui/page-header";
-import { auth } from "@clerk/nextjs/server";
 import { apiFetch } from "@/services/api-client";
-import { Post, PaginatedResponse, Subject, Level, Tag } from "@/types";
+import { Post, Subject, Level, Tag } from "@/types";
 import { isWriteLocked, isContentAuthor } from "@/types/user";
 import { fetchCurrentUser } from "@/services/user-service";
 import { UpdatePostForm } from "@/components/features/posts/update-post-form";
@@ -19,7 +17,7 @@ export default async function EditPostPage(props: {
   let post: Post;
   try {
     post = await apiFetch<Post>(`/posts/${id}/`, token);
-  } catch (error) {
+  } catch {
     notFound();
   }
   
@@ -47,8 +45,8 @@ export default async function EditPostPage(props: {
   ] as [Subject[], Level[], Tag[]]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
-      <PageHeader title="Edit post" description="Update your post details." />
+    <div className="mx-auto max-w-[52rem] space-y-6">
+      <h1 className="sr-only">Edit post</h1>
       <UpdatePostForm
         post={post}
         subjects={subjects}

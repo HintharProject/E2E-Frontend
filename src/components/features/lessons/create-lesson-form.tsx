@@ -5,22 +5,32 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import Link from "next/link";
-import { Loader2, RotateCcw, UploadCloud, X } from "lucide-react";
+import { Video } from "lucide-react";
 import { useAuth } from "@clerk/nextjs";
 import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { TagInput } from "@/components/ui/tag-input";
-import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { FileDropzone } from "@/components/ui/file-dropzone";
+import { TagInput } from "@/components/ui/tag-input";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
-import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
+import {
+  ArchivalComposerShell,
+  ArchivalTitleInput,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataSelectPill,
+  MetadataTogglePill,
+} from "@/components/features/editor/metadata-pill-bar";
+import { BlockDocumentEditor } from "@/components/features/editor/block-document-editor";
+import { MediaDock } from "@/components/features/editor/media-dock";
+import { useEditorMediaItems } from "@/components/features/editor/use-editor-media-items";
 import { Subject, Level, Tag } from "@/types";
 import { useCreateLesson, type UploadedLessonAttachment } from "@/hooks/use-lessons";
 import { useStagedUploads } from "@/hooks/use-staged-uploads";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import {
+  appendInlineImageToBody,
+  extractInlineImageRefs,
+} from "@/lib/inline-media";
 import { isAllowedYouTubeUrl, UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
 import { extractApiFieldErrors, applyFieldErrorsToForm } from "@/lib/form-errors";
 import { getMutationAuthToken } from "@/lib/client-auth";
@@ -71,6 +81,8 @@ export function CreateLessonForm({
   const { getToken } = useAuth();
   const createLessonMutation = useCreateLesson();
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
+  const [showVideoWell, setShowVideoWell] = useState(false);
   const [serverError, setServerError] = useState("");
   const [serverFieldErrors, setServerFieldErrors] = useState<
     Record<string, string[]>
@@ -96,7 +108,12 @@ export function CreateLessonForm({
     uploadAll,
     retryItem,
     reset: resetUploads,
-  } = useStagedUploads({ scope: "lesson_attachment" });
+  } = useStagedUploads({
+    scope: "lesson_attachment",
+    optimizeImages: true,
+  });
+
+  const mediaItems = useEditorMediaItems(stagedItems);
 
   const isDraftEmpty = useCallback((draft: Partial<LessonDraft>) => {
     return (
@@ -124,6 +141,7 @@ export function CreateLessonForm({
     register,
     handleSubmit,
     setValue,
+    getValues,
     setError,
     reset,
     control,
@@ -134,6 +152,8 @@ export function CreateLessonForm({
   });
 
   const watchedValues = useWatch({ control });
+  const watchedBody = watchedValues.body ?? "";
+  const watchedVideoUrl = watchedValues.embedded_video_url ?? "";
 
   const isBusy = submitStage !== "idle" || isUploading || isOptimizing;
 
@@ -233,17 +253,39 @@ export function CreateLessonForm({
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty, stagedItems.length, isUploading]);
 
+  const handleUploadAndReturnImageNames = useCallback(
+    async (files: File[]): Promise<Array<{ fileName: string }>> => {
+      const res = await addFiles(files);
+      return res.added
+        .filter((i) => i.file.type.startsWith("image/"))
+        .map((i) => ({ fileName: i.file.name }));
+    },
+    [addFiles]
+  );
+
+  const handleInsertFromDock = useCallback(
+    (fileName: string) => {
+      const current = getValues("body") || "";
+      setValue("body", appendInlineImageToBody(current, fileName), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
+    [getValues, setValue]
+  );
+
   const handleDiscardDraft = () => {
     clearDraft();
     reset(EMPTY_DEFAULTS);
+    resetUploads();
     toast.info("Unsaved draft discarded");
   };
 
   const uploadStatusLabel = useMemo(() => {
-    if (submitStage === "saving") return "Saving lesson...";
+    if (submitStage === "saving") return "Saving lesson…";
     if (submitStage !== "uploading") return "Save Lesson";
     const total = stagedItems.length;
-    if (total === 0) return "Uploading materials...";
+    if (total === 0) return "Uploading…";
     const uploadedCount = stagedItems.filter(
       (i) => i.status === "uploaded"
     ).length;
@@ -252,7 +294,7 @@ export function CreateLessonForm({
     const pct = activeItem
       ? activeItem.progress
       : Math.round((uploadedCount / total) * 100);
-    return `Uploading ${activeIndex} of ${total} (${pct}%)...`;
+    return `Uploading ${activeIndex}/${total} (${pct}%)…`;
   }, [submitStage, stagedItems]);
 
   const onInvalid = () => {
@@ -325,247 +367,222 @@ export function CreateLessonForm({
     }
   };
 
+  const videoOpen =
+    showVideoWell ||
+    Boolean(watchedVideoUrl.trim()) ||
+    Boolean(errors.embedded_video_url?.message);
+  const hasRestoredInlineTokens =
+    hasRestoredDraft &&
+    extractInlineImageRefs(watchedBody).length > 0 &&
+    stagedItems.length === 0;
+
   return (
-    <form
+    <ArchivalComposerShell
+      backHref="/lessons/manage"
+      backLabel="Lessons"
+      cancelHref="/lessons/manage"
+      mode={mode}
+      onModeChange={setMode}
+      charCount={watchedBody.length}
+      maxChars={5000}
+      submitLabel={uploadStatusLabel}
+      isSubmitting={isBusy}
+      isUploading={isUploading}
+      onCancelUpload={() => cancelUpload()}
       onSubmit={(e) => {
         void handleSubmit(onSubmit, onInvalid)(e);
       }}
-      noValidate
-      className="space-y-5 rounded-xl border border-border bg-card p-5 sm:p-6 shadow-card"
+      autosaveLabel={isDirty ? "Draft saved locally" : undefined}
+      draftBanner={{
+        visible: hasRestoredDraft,
+        message: "Restored unsaved draft from this browser session.",
+        missingMediaNote: hasRestoredInlineTokens
+          ? "Local image files do not persist across reloads — re-attach any missing inline images below."
+          : undefined,
+        onDiscard: handleDiscardDraft,
+        onDismiss: dismissRestoredNotice,
+      }}
+      errorBanner={
+        <FormErrorBanner
+          ref={errorBannerRef}
+          serverMessage={serverError}
+          fieldErrors={serverFieldErrors}
+        />
+      }
+      coldStartNotice={
+        isBusy && showColdStartHint ? (
+          <p
+            role="status"
+            aria-live="polite"
+            className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+          >
+            Still working — the server may be waking up. Your lesson text and uploaded files are preserved; please keep this tab open.
+          </p>
+        ) : undefined
+      }
     >
-      {hasRestoredDraft && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+      <MetadataPillBar
+        errors={[
+          errors.subject_id?.message,
+          errors.level_id?.message,
+          errors.state?.message,
+          errors.embedded_video_url?.message,
+          errors.tags?.message,
+        ]}
+      >
+        <MetadataSelectPill
+          id="lesson-subject"
+          label="Subject"
+          required
+          invalid={!!errors.subject_id}
+          disabled={isBusy}
+          {...register("subject_id")}
         >
-          <span className="inline-flex items-center gap-1.5 font-medium text-foreground">
-            <RotateCcw className="size-3.5 text-primary" aria-hidden="true" />
-            Restored unsaved draft
-          </span>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={handleDiscardDraft}
-              className="min-h-[44px] sm:min-h-[28px] text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              Discard
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-xs"
-              onClick={dismissRestoredNotice}
-              aria-label="Dismiss draft notice"
-              className="min-h-[44px] min-w-[44px] sm:min-h-[28px] sm:min-w-[28px]"
-            >
-              <X className="size-3.5" aria-hidden="true" />
-            </Button>
-          </div>
+          <option value="">Subject *</option>
+          {subjects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </MetadataSelectPill>
+
+        <MetadataSelectPill
+          id="lesson-level"
+          label="Level"
+          required
+          invalid={!!errors.level_id}
+          disabled={isBusy}
+          {...register("level_id")}
+        >
+          <option value="">Level *</option>
+          {levels.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </MetadataSelectPill>
+
+        <MetadataSelectPill
+          id="lesson-state"
+          label="Initial state"
+          invalid={!!errors.state}
+          disabled={isBusy}
+          {...register("state")}
+        >
+          <option value="DRAFT">Draft</option>
+          <option value="PUBLISHED">Published</option>
+        </MetadataSelectPill>
+
+        <MetadataTogglePill
+          active={videoOpen}
+          hasValue={Boolean(watchedVideoUrl.trim())}
+          onClick={() => setShowVideoWell((prev) => !prev)}
+          icon={<Video className="size-3.5 text-primary" aria-hidden="true" />}
+        >
+          {watchedVideoUrl.trim() ? "YouTube Video Added" : "Add YouTube Video"}
+        </MetadataTogglePill>
+      </MetadataPillBar>
+
+      {videoOpen && (
+        <div className="rounded-xl border border-border bg-card/70 p-3.5 space-y-1.5">
+          <label
+            htmlFor="lesson-video-url"
+            className="text-xs font-medium text-foreground"
+          >
+            Embedded video URL (YouTube / playlist)
+          </label>
+          <Input
+            id="lesson-video-url"
+            type="url"
+            {...register("embedded_video_url")}
+            placeholder="https://www.youtube.com/watch?v=…"
+            disabled={isBusy}
+            aria-invalid={!!errors.embedded_video_url}
+            className="text-base sm:text-sm"
+          />
+          <p className="text-xs text-muted-foreground">
+            Only YouTube links (youtube.com, youtu.be, youtube-nocookie.com) are supported — no direct video upload.
+          </p>
         </div>
       )}
 
-      <FormErrorBanner
-        ref={errorBannerRef}
-        serverMessage={serverError}
-        fieldErrors={serverFieldErrors}
+      <Controller
+        control={control}
+        name="tags"
+        render={({ field }) => (
+          <TagInput
+            value={field.value || []}
+            onChange={field.onChange}
+            maxTags={3}
+            disabled={isBusy}
+            error={errors.tags?.message}
+          />
+        )}
       />
 
-      <Field
-        label="Title (max 100)"
-        htmlFor="lesson-title"
-        required
-        error={errors.title?.message}
-      >
-        <Input
-          id="lesson-title"
-          {...register("title")}
-          placeholder="Lesson title"
-          disabled={isBusy}
-          aria-invalid={!!errors.title}
-        />
-      </Field>
+      <Controller
+        control={control}
+        name="title"
+        render={({ field }) => (
+          <ArchivalTitleInput
+            id="lesson-title"
+            value={field.value}
+            onChange={field.onChange}
+            onBlur={field.onBlur}
+            maxLength={100}
+            disabled={isBusy}
+            placeholder="Lesson title..."
+            error={errors.title?.message}
+            aria-invalid={!!errors.title}
+          />
+        )}
+      />
 
-      <Field
-        label="Body (max 5000)"
-        htmlFor="lesson-body"
-        required
-        error={errors.body?.message}
-      >
+      <div className="space-y-1.5">
         <Controller
           control={control}
           name="body"
           render={({ field }) => (
-            <MarkdownMathEditor
+            <BlockDocumentEditor
               id="lesson-body"
-              ref={field.ref}
               value={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
+              mode={mode}
+              attachments={mediaItems}
+              canUploadMore={stagedItems.length < LESSON_RULE.maxFiles}
+              acceptString=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
+              onUploadImages={handleUploadAndReturnImageNames}
               maxLength={5000}
-              required
               disabled={isBusy}
               aria-invalid={!!errors.body}
+              placeholder="Write your lesson explanation with Markdown and LaTeX. Insert diagram breaks between paragraphs..."
+              emptyPreviewText="Nothing to preview yet. Write your lesson content or insert a diagram."
             />
           )}
         />
-      </Field>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field
-          label="Subject"
-          htmlFor="lesson-subject"
-          required
-          error={errors.subject_id?.message}
-        >
-          <Select
-            id="lesson-subject"
-            {...register("subject_id")}
-            disabled={isBusy}
-            aria-invalid={!!errors.subject_id}
-          >
-            <option value="">Select…</option>
-            {subjects.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-
-        <Field
-          label="Level"
-          htmlFor="lesson-level"
-          required
-          error={errors.level_id?.message}
-        >
-          <Select
-            id="lesson-level"
-            {...register("level_id")}
-            disabled={isBusy}
-            aria-invalid={!!errors.level_id}
-          >
-            <option value="">Select…</option>
-            {levels.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.name}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      </div>
-
-      <Field label="Tags" asGroup error={errors.tags?.message}>
-        <Controller
-          control={control}
-          name="tags"
-          render={({ field }) => (
-            <TagInput
-              value={field.value || []}
-              onChange={field.onChange}
-              maxTags={3}
-              disabled={isBusy}
-              error={errors.tags?.message}
-            />
-          )}
-        />
-      </Field>
-
-      <Field
-        label="Embedded video URL (YouTube / playlist)"
-        htmlFor="lesson-video-url"
-        description="Optional. Only YouTube links (youtube.com, youtu.be, youtube-nocookie.com) are supported."
-        error={errors.embedded_video_url?.message}
-      >
-        <Input
-          id="lesson-video-url"
-          type="url"
-          {...register("embedded_video_url")}
-          placeholder="https://www.youtube.com/watch?v=…"
-          disabled={isBusy}
-          aria-invalid={!!errors.embedded_video_url}
-        />
-      </Field>
-
-      <Field
-        label={`Resources (max ${LESSON_RULE.maxFiles} · ${LESSON_RULE.maxSizeMB} MB total)`}
-        asGroup
-      >
-        <FileDropzone
-          items={stagedItems}
-          onAddFiles={addFiles}
-          onRemoveItem={removeFile}
-          onRetryItem={(id) =>
-            void retryItem(id, () => getMutationAuthToken(getToken))
-          }
-          scope="lesson_attachment"
-          sizeMode="total"
-          disabled={isBusy}
-          label="Upload lesson materials"
-          helperText="PDF, Word, PowerPoint, Excel, ZIP, or images (JPG, PNG, WebP) · Max 5 files · 20 MB total"
-          error={uploadBatchError || undefined}
-        />
-      </Field>
-
-      <Field
-        label="Initial state"
-        htmlFor="lesson-state"
-        error={errors.state?.message}
-      >
-        <Select
-          id="lesson-state"
-          {...register("state")}
-          disabled={isBusy}
-          aria-invalid={!!errors.state}
-        >
-          <option value="DRAFT">Draft</option>
-          <option value="PUBLISHED">Published</option>
-        </Select>
-      </Field>
-
-      {isBusy && showColdStartHint && (
-        <p
-          role="status"
-          aria-live="polite"
-          className="rounded-lg border border-border bg-muted/40 px-3 py-2 text-xs text-muted-foreground"
-        >
-          Still working — the server may be waking up. Your lesson text and uploaded files are preserved; please keep this tab open.
-        </p>
-      )}
-
-      <div className="flex flex-wrap items-center gap-2.5 pt-2">
-        <Button type="submit" disabled={isBusy} className="min-h-[44px] sm:min-h-[40px]">
-          {isBusy ? (
-            <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <UploadCloud className="size-4" aria-hidden="true" />
-          )}
-          <span>{uploadStatusLabel}</span>
-        </Button>
-
-        {isUploading && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => cancelUpload()}
-            className="min-h-[44px] sm:min-h-[40px]"
-          >
-            Cancel upload
-          </Button>
+        {errors.body?.message && (
+          <p role="alert" className="text-xs font-medium text-destructive">
+            {errors.body.message}
+          </p>
         )}
-
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={isBusy}
-          nativeButton={false}
-          render={<Link href="/lessons/manage" />}
-          className="min-h-[44px] sm:min-h-[40px]"
-        >
-          Cancel
-        </Button>
       </div>
-    </form>
+
+      <MediaDock
+        scope="lesson_attachment"
+        title="Lesson Media & Downloadable Resources"
+        body={watchedBody}
+        stagedItems={stagedItems}
+        onAddFiles={addFiles}
+        onRemoveStaged={removeFile}
+        onRetryStaged={(id) =>
+          void retryItem(id, () => getMutationAuthToken(getToken))
+        }
+        onInsertInlineImage={handleInsertFromDock}
+        helperText={`Images (JPG, PNG, WebP) can be placed inline or in the top gallery; PDF, Word, PowerPoint, Excel, and ZIP files appear in Downloadable Resources · Max ${LESSON_RULE.maxFiles} files, ${LESSON_RULE.maxSizeMB} MB per file.`}
+        error={uploadBatchError || undefined}
+        disabled={isBusy}
+      />
+    </ArchivalComposerShell>
   );
 }

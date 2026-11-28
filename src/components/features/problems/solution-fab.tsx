@@ -61,21 +61,21 @@ export function SolutionFAB({ problem, variant = "inline" }: SolutionFABProps) {
 
       {/* Solution Submission Dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 border-border bg-card">
-          <div className="p-6 pb-2">
+        <DialogContent className="sm:max-w-3xl max-h-[92dvh] overflow-y-auto p-0 border-border bg-card">
+          <div className="border-b border-border/70 px-6 pt-5 pb-3">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-xl font-heading font-semibold text-foreground">
-                <PenTool className="size-5 text-primary" aria-hidden="true" />
+              <DialogTitle className="flex items-center gap-2 font-display text-xl font-semibold text-foreground">
+                <PenTool className="size-4 text-primary" aria-hidden="true" />
                 <span>Submit a Worked Solution</span>
               </DialogTitle>
               <DialogDescription className="text-xs text-muted-foreground">
-                Contribute step-by-step working, diagrams, and explanation for{" "}
+                Contribute step-by-step working, inline diagrams, and explanation for{" "}
                 <span className="font-semibold text-foreground">&ldquo;{problem.title}&rdquo;</span>.
               </DialogDescription>
             </DialogHeader>
           </div>
 
-          <div className="p-6 pt-0">
+          <div className="px-6 pb-6">
             <CreateSolutionForm
               problemId={problem.id}
               isLocked={isLocked}

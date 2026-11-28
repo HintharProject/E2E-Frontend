@@ -5,16 +5,24 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { TagInput } from "@/components/ui/tag-input";
-import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { FileDropzone } from "@/components/ui/file-dropzone";
 import { FormErrorBanner } from "@/components/ui/form-error-banner";
 import { MarkdownMathEditor } from "@/components/ui/markdown-math-editor";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
+import {
+  ArchivalComposerShell,
+  ArchivalTitleInput,
+} from "@/components/features/editor/archival-composer-shell";
+import {
+  MetadataPillBar,
+  MetadataSelectPill,
+  MetadataTogglePill,
+} from "@/components/features/editor/metadata-pill-bar";
+import { BlockDocumentEditor } from "@/components/features/editor/block-document-editor";
+import { MediaDock } from "@/components/features/editor/media-dock";
+import { useEditorMediaItems } from "@/components/features/editor/use-editor-media-items";
 import { useAuth } from "@clerk/nextjs";
 import { apiFetch } from "@/services/api-client";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -23,6 +31,8 @@ import { Problem, Resource } from "@/types";
 import { applyFieldErrorsToForm, extractApiFieldErrors } from "@/lib/form-errors";
 import { useStagedUploads } from "@/hooks/use-staged-uploads";
 import { useDraftPersistence } from "@/hooks/use-draft-persistence";
+import { appendInlineImageToBody } from "@/lib/inline-media";
+import { UPLOAD_SCOPE_RULES } from "@/lib/upload-rules";
 import { PreCreationPreviewDrawer } from "./pre-creation-preview-drawer";
 import { PastPaperSelectorModal } from "./past-paper-selector-modal";
 import { useProblemByPaper } from "@/hooks/use-problems";
@@ -32,13 +42,14 @@ import {
   Check,
   FolderOpen,
   X,
-  Loader2,
   Eye,
-  RotateCcw,
+  Tag as TagIcon,
 } from "lucide-react";
 import { toast } from "sonner";
 import { DocTypeIcon } from "@/components/features/resources/doc-type-icon";
 import { cn } from "@/lib/utils";
+
+const PROBLEM_RULE = UPLOAD_SCOPE_RULES.problem_attachment;
 
 const PathASchema = z.object({
   origin: z.literal("USER_UPLOAD"),
@@ -182,6 +193,8 @@ export function CreateProblemForm({
     initialOrigin ||
     "USER_UPLOAD";
 
+  const [mode, setMode] = useState<"write" | "preview">("write");
+  const [showSourceWell, setShowSourceWell] = useState(false);
   const [selectedOrigin, setSelectedOrigin] = useState<
     "USER_UPLOAD" | "PAST_PAPER"
   >(urlOrigin);
@@ -224,6 +237,8 @@ export function CreateProblemForm({
     scope: "problem_attachment",
     optimizeImages: true,
   });
+
+  const mediaItems = useEditorMediaItems(items);
 
   const {
     restoredDraft,
@@ -464,6 +479,8 @@ export function CreateProblemForm({
   const watchedQuestionNumber = watchedValues.question_number || "";
   const watchedLevelId = watchedValues.level_id || "";
   const watchedSubjectId = watchedValues.subject_id || "";
+  const watchedBody = watchedValues.body || "";
+  const watchedSource = watchedValues.source || "";
 
   // Fetch individual resource details when initialized from URL without full Resource metadata
   const { data: fetchedSelectedResource } = useQuery<Resource | null>({
@@ -549,6 +566,26 @@ export function CreateProblemForm({
       errorBannerRef.current?.focus();
     }
   }, [errorFocusTick]);
+
+  const handleUploadAndReturnNames = useCallback(
+    async (files: File[]): Promise<Array<{ fileName: string }>> => {
+      const res = await addFiles(files);
+      persistCurrentDraft({ hadAttachments: true });
+      return res.added.map((item) => ({ fileName: item.file.name }));
+    },
+    [addFiles, persistCurrentDraft]
+  );
+
+  const handleInsertFromDock = useCallback(
+    (fileName: string) => {
+      const current = getValues("body") || "";
+      setValue("body", appendInlineImageToBody(current, fileName), {
+        shouldDirty: true,
+        shouldValidate: true,
+      });
+    },
+    [getValues, setValue]
+  );
 
   const handleOriginChange = (newOrigin: "USER_UPLOAD" | "PAST_PAPER") => {
     if (isSubmitting) return;
@@ -813,10 +850,10 @@ export function CreateProblemForm({
   const submitLabel =
     submitStage === "uploading" && items.length > 0
       ? uploadingIndex >= 0
-        ? `Uploading ${uploadingIndex + 1} of ${items.length} (${activeUploadProgress}%)...`
-        : "Uploading photos..."
+        ? `Uploading ${uploadingIndex + 1}/${items.length} (${activeUploadProgress}%)…`
+        : "Uploading photos…"
       : submitStage === "saving"
-        ? "Posting problem..."
+        ? "Posting…"
         : "Post Problem";
 
   const dedupSolutionCount =
@@ -835,351 +872,358 @@ export function CreateProblemForm({
     selectedOrigin === "USER_UPLOAD" &&
     items.length === 0;
 
+  const sourceOpen =
+    showSourceWell ||
+    Boolean(watchedSource.trim()) ||
+    Boolean(fieldErrorMap.source?.message);
+
   return (
-    <div className="space-y-6">
-      {/* Draft Recovery Notice */}
-      {showRestoredBanner && (
-        <div
-          role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-2.5 text-xs text-foreground"
-        >
-          <div className="space-y-0.5">
-            <p className="font-medium">
-              Restored unsaved draft from this browser session.
-            </p>
-            {showRestoredAttachmentNote && (
-              <p className="text-muted-foreground">
-                Selected photo files cannot persist across page reloads — please re-attach your images.
-              </p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Button
-              type="button"
-              variant="ghost"
-              size="xs"
-              onClick={dismissRestoredNotice}
-              className="min-h-[44px] sm:min-h-[28px]"
-            >
-              Keep
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="xs"
-              onClick={handleDiscardDraft}
-              className="min-h-[44px] sm:min-h-[28px] gap-1"
-            >
-              <RotateCcw className="size-3" aria-hidden="true" />
-              <span>Discard</span>
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Pipeline Selector: Path A vs Path B */}
-      <div
-        role="tablist"
-        aria-label="Problem source type"
-        className="flex flex-col sm:flex-row rounded-xl border border-border bg-muted/40 p-1 gap-1"
-      >
-        <button
-          ref={pathATabRef}
-          type="button"
-          role="tab"
-          aria-selected={selectedOrigin === "USER_UPLOAD"}
-          tabIndex={selectedOrigin === "USER_UPLOAD" ? 0 : -1}
-          disabled={isSubmitting}
-          onClick={() => handleOriginChange("USER_UPLOAD")}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
-              e.preventDefault();
-              handleOriginChange("PAST_PAPER");
-              pathBTabRef.current?.focus();
-            }
-          }}
-          className={cn(
-            "flex-1 flex min-h-[44px] sm:min-h-[38px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-            selectedOrigin === "USER_UPLOAD"
-              ? "bg-card text-primary shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <Camera className="size-4 shrink-0" aria-hidden="true" />
-          <span>Manual Photo Upload (Path A)</span>
-        </button>
-
-        <button
-          ref={pathBTabRef}
-          type="button"
-          role="tab"
-          aria-selected={selectedOrigin === "PAST_PAPER"}
-          tabIndex={selectedOrigin === "PAST_PAPER" ? 0 : -1}
-          disabled={isSubmitting}
-          onClick={() => handleOriginChange("PAST_PAPER")}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "ArrowLeft" || e.key === "ArrowUp") {
-              e.preventDefault();
-              handleOriginChange("USER_UPLOAD");
-              pathATabRef.current?.focus();
-            }
-          }}
-          className={cn(
-            "flex-1 flex min-h-[44px] sm:min-h-[38px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
-            selectedOrigin === "PAST_PAPER"
-              ? "bg-card text-primary shadow-xs border border-border"
-              : "text-muted-foreground hover:text-foreground"
-          )}
-        >
-          <BookOpen className="size-4 shrink-0" aria-hidden="true" />
-          <span>Curated Past Paper (Path B)</span>
-        </button>
-      </div>
-
-      <FormErrorBanner
-        ref={errorBannerRef}
-        serverMessage={serverError}
-        fieldErrors={serverFieldErrors}
-      />
-
-      <form
+    <>
+      <ArchivalComposerShell
+        backHref="/problems"
+        backLabel="Solve!"
+        cancelHref="/problems"
+        mode={mode}
+        onModeChange={setMode}
+        charCount={watchedBody.length}
+        maxChars={3000}
+        submitLabel={submitLabel}
+        isSubmitting={isSubmitting}
+        submitDisabled={isOptimizing}
+        isUploading={isUploading}
+        onCancelUpload={() => cancelUpload()}
         onSubmit={handleSubmit(onSubmit, onInvalid)}
-        className="space-y-5"
-        noValidate
+        autosaveLabel={isDirty ? "Draft saved locally" : undefined}
+        draftBanner={{
+          visible: showRestoredBanner,
+          message: "Restored unsaved draft from this browser session.",
+          missingMediaNote: showRestoredAttachmentNote
+            ? "Selected photo files cannot persist across page reloads — please re-attach your images."
+            : undefined,
+          onDiscard: handleDiscardDraft,
+          onDismiss: dismissRestoredNotice,
+        }}
+        errorBanner={
+          <FormErrorBanner
+            ref={errorBannerRef}
+            serverMessage={serverError}
+            fieldErrors={serverFieldErrors}
+          />
+        }
+        coldStartNotice={
+          isSubmitting && elapsedSeconds >= 6 ? (
+            <p
+              role="status"
+              aria-live="polite"
+              className="rounded-xl border border-border bg-muted/40 px-3.5 py-2.5 text-xs text-muted-foreground"
+            >
+              Server is waking up or finishing transfer — please keep this tab open.
+            </p>
+          ) : undefined
+        }
+        headerExtra={
+          <div
+            role="tablist"
+            aria-label="Problem source type"
+            className="flex flex-col sm:flex-row rounded-xl border border-border bg-muted/40 p-1 gap-1"
+          >
+            <button
+              ref={pathATabRef}
+              type="button"
+              role="tab"
+              aria-selected={selectedOrigin === "USER_UPLOAD"}
+              tabIndex={selectedOrigin === "USER_UPLOAD" ? 0 : -1}
+              disabled={isSubmitting}
+              onClick={() => handleOriginChange("USER_UPLOAD")}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "ArrowRight" ||
+                  e.key === "ArrowDown" ||
+                  e.key === "ArrowLeft" ||
+                  e.key === "ArrowUp"
+                ) {
+                  e.preventDefault();
+                  handleOriginChange("PAST_PAPER");
+                  pathBTabRef.current?.focus();
+                }
+              }}
+              className={cn(
+                "flex-1 flex min-h-[44px] sm:min-h-[36px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                selectedOrigin === "USER_UPLOAD"
+                  ? "bg-card text-primary shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Camera className="size-4 shrink-0" aria-hidden="true" />
+              <span>Manual Photo Upload (Path A)</span>
+            </button>
+
+            <button
+              ref={pathBTabRef}
+              type="button"
+              role="tab"
+              aria-selected={selectedOrigin === "PAST_PAPER"}
+              tabIndex={selectedOrigin === "PAST_PAPER" ? 0 : -1}
+              disabled={isSubmitting}
+              onClick={() => handleOriginChange("PAST_PAPER")}
+              onKeyDown={(e) => {
+                if (
+                  e.key === "ArrowRight" ||
+                  e.key === "ArrowDown" ||
+                  e.key === "ArrowLeft" ||
+                  e.key === "ArrowUp"
+                ) {
+                  e.preventDefault();
+                  handleOriginChange("USER_UPLOAD");
+                  pathATabRef.current?.focus();
+                }
+              }}
+              className={cn(
+                "flex-1 flex min-h-[44px] sm:min-h-[36px] items-center justify-center gap-2 py-2 px-3 text-xs font-semibold rounded-lg transition-all cursor-pointer",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background",
+                selectedOrigin === "PAST_PAPER"
+                  ? "bg-card text-primary shadow-xs border border-border"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <BookOpen className="size-4 shrink-0" aria-hidden="true" />
+              <span>Curated Past Paper (Path B)</span>
+            </button>
+          </div>
+        }
       >
         <input type="hidden" {...register("origin")} value={selectedOrigin} />
 
         {/* Path A Workflow */}
         {selectedOrigin === "USER_UPLOAD" && (
           <>
-            <Field
-              label="Problem Title"
-              htmlFor={titleId}
-              required
-              error={fieldErrorMap.title?.message}
+            <MetadataPillBar
+              errors={[
+                fieldErrorMap.subject_id?.message,
+                fieldErrorMap.level_id?.message,
+                fieldErrorMap.source?.message,
+                fieldErrorMap.tags?.message,
+              ]}
             >
-              <Input
-                id={titleId}
-                {...register("title")}
-                disabled={isSubmitting}
-                placeholder="e.g. Stuck on trigonometric identity verification"
-                aria-invalid={!!fieldErrorMap.title}
-              />
-            </Field>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field
+              <MetadataSelectPill
+                id={subjectIdA}
                 label="Subject"
-                htmlFor={subjectIdA}
                 required
-                error={fieldErrorMap.subject_id?.message}
-              >
-                <Select
-                  id={subjectIdA}
-                  {...register("subject_id")}
-                  value={watchedSubjectId}
-                  disabled={isSubmitting}
-                  onChange={(e) => {
-                    setValue("subject_id", e.target.value, {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    });
-                    persistCurrentDraft({ subject_id: e.target.value });
-                  }}
-                  aria-invalid={!!fieldErrorMap.subject_id}
-                >
-                  <option value="">Select subject...</option>
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field
-                label="Education Level"
-                htmlFor={levelIdA}
-                required
-                error={fieldErrorMap.level_id?.message}
-              >
-                <Select
-                  id={levelIdA}
-                  {...register("level_id")}
-                  value={watchedLevelId}
-                  disabled={isSubmitting}
-                  onChange={(e) => {
-                    setValue("level_id", e.target.value, {
-                      shouldValidate: true,
-                      shouldDirty: true,
-                    });
-                    persistCurrentDraft({ level_id: e.target.value });
-                  }}
-                  aria-invalid={!!fieldErrorMap.level_id}
-                >
-                  <option value="">Select level...</option>
-                  {levels.map((lvl) => (
-                    <option key={lvl.id} value={lvl.id}>
-                      {lvl.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <Field
-              label="Topic Tags"
-              asGroup
-              error={fieldErrorMap.tags?.message}
-            >
-              <Controller
-                control={control}
-                name="tags"
-                render={({ field }) => (
-                  <TagInput
-                    value={field.value || []}
-                    onChange={(nextTags) => {
-                      field.onChange(nextTags);
-                      persistCurrentDraft({ tags: nextTags });
-                    }}
-                    maxTags={3}
-                    disabled={isSubmitting}
-                    error={fieldErrorMap.tags?.message}
-                  />
-                )}
-              />
-            </Field>
-
-            <Field
-              label="Source / Reference (Optional)"
-              htmlFor={sourceIdA}
-              error={fieldErrorMap.source?.message}
-            >
-              <Input
-                id={sourceIdA}
-                {...register("source")}
+                invalid={!!fieldErrorMap.subject_id}
                 disabled={isSubmitting}
-                placeholder="e.g. Oxford Pure Maths Ex 7B or Cambridge 9709 Homework"
-                aria-invalid={!!fieldErrorMap.source}
-              />
-            </Field>
+                {...register("subject_id")}
+                value={watchedSubjectId}
+                onChange={(e) => {
+                  setValue("subject_id", e.target.value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                  persistCurrentDraft({ subject_id: e.target.value });
+                }}
+              >
+                <option value="">Subject *</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+              </MetadataSelectPill>
 
-            <Field
-              label="Problem Description / Working"
-              htmlFor={bodyIdA}
-              required
-              error={fieldErrorMap.body?.message}
-            >
+              <MetadataSelectPill
+                id={levelIdA}
+                label="Education Level"
+                required
+                invalid={!!fieldErrorMap.level_id}
+                disabled={isSubmitting}
+                {...register("level_id")}
+                value={watchedLevelId}
+                onChange={(e) => {
+                  setValue("level_id", e.target.value, {
+                    shouldValidate: true,
+                    shouldDirty: true,
+                  });
+                  persistCurrentDraft({ level_id: e.target.value });
+                }}
+              >
+                <option value="">Level *</option>
+                {levels.map((lvl) => (
+                  <option key={lvl.id} value={lvl.id}>
+                    {lvl.name}
+                  </option>
+                ))}
+              </MetadataSelectPill>
+
+              <MetadataTogglePill
+                active={sourceOpen}
+                hasValue={Boolean(watchedSource.trim())}
+                onClick={() => setShowSourceWell((prev) => !prev)}
+                icon={<TagIcon className="size-3.5 text-primary" aria-hidden="true" />}
+              >
+                {watchedSource.trim() ? `Source: ${watchedSource.trim()}` : "Add Source"}
+              </MetadataTogglePill>
+            </MetadataPillBar>
+
+            {sourceOpen && (
+              <div className="rounded-xl border border-border bg-card/70 p-3.5 space-y-1.5">
+                <label
+                  htmlFor={sourceIdA}
+                  className="text-xs font-medium text-foreground"
+                >
+                  Source / Reference (Optional)
+                </label>
+                <Input
+                  id={sourceIdA}
+                  {...register("source")}
+                  disabled={isSubmitting}
+                  placeholder="e.g. Oxford Pure Maths Ex 7B or Cambridge 9709 Homework"
+                  aria-invalid={!!fieldErrorMap.source}
+                  className="text-base sm:text-sm"
+                />
+              </div>
+            )}
+
+            <Controller
+              control={control}
+              name="tags"
+              render={({ field }) => (
+                <TagInput
+                  value={field.value || []}
+                  onChange={(nextTags) => {
+                    field.onChange(nextTags);
+                    persistCurrentDraft({ tags: nextTags });
+                  }}
+                  maxTags={3}
+                  disabled={isSubmitting}
+                  error={fieldErrorMap.tags?.message}
+                />
+              )}
+            />
+
+            <Controller
+              control={control}
+              name="title"
+              render={({ field }) => (
+                <ArchivalTitleInput
+                  id={titleId}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  maxLength={150}
+                  disabled={isSubmitting}
+                  placeholder="e.g. Stuck on trigonometric identity verification..."
+                  error={fieldErrorMap.title?.message}
+                  aria-invalid={!!fieldErrorMap.title}
+                />
+              )}
+            />
+
+            <div className="space-y-1.5">
               <Controller
                 control={control}
                 name="body"
                 render={({ field }) => (
-                  <MarkdownMathEditor
+                  <BlockDocumentEditor
                     id={bodyIdA}
-                    name={field.name}
-                    ref={field.ref}
                     value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    mode={mode}
+                    attachments={mediaItems}
+                    canUploadMore={items.length < PROBLEM_RULE.maxFiles}
+                    acceptString={PROBLEM_RULE.acceptString}
+                    onUploadImages={handleUploadAndReturnNames}
                     maxLength={3000}
-                    rows={5}
                     disabled={isSubmitting}
-                    required
                     aria-invalid={!!fieldErrorMap.body}
-                    placeholder="Describe your current steps, where you are stuck, or what you've tried so far..."
+                    placeholder="Describe your current steps, where you are stuck, or insert question photos inline between paragraphs..."
+                    emptyPreviewText="Nothing to preview yet. Describe your problem or insert a photo."
                   />
                 )}
               />
-            </Field>
+              {fieldErrorMap.body?.message && (
+                <p role="alert" className="text-xs font-medium text-destructive">
+                  {fieldErrorMap.body.message}
+                </p>
+              )}
+            </div>
 
-            <Field
-              label="Question Photos (1 to 3 images)"
-              asGroup
+            <MediaDock
+              scope="problem_attachment"
+              title="Question Photos"
               required
-            >
-              <FileDropzone
-                items={items}
-                onAddFiles={async (incoming) => {
-                  const res = await addFiles(incoming);
-                  persistCurrentDraft({ hadAttachments: true });
-                  return res;
-                }}
-                onRemoveItem={removeFile}
-                onRetryItem={(id) => void retryItem(id, getToken)}
-                scope="problem_attachment"
-                sizeMode="per-file"
-                disabled={isSubmitting}
-                label="Upload question photos"
-                helperText="Up to 3 images (JPG, PNG, WebP). High-resolution phone photos up to 25MB are automatically optimized to WebP (<= 5MB final)."
-                error={batchError || fieldErrorMap.attachments?.message}
-              />
-            </Field>
+              body={watchedBody}
+              stagedItems={items}
+              onAddFiles={async (incoming) => {
+                const res = await addFiles(incoming);
+                persistCurrentDraft({ hadAttachments: true });
+                return res;
+              }}
+              onRemoveStaged={removeFile}
+              onRetryStaged={(id) => void retryItem(id, getToken)}
+              onInsertInlineImage={handleInsertFromDock}
+              helperText="1 to 3 images required (JPG, PNG, WebP). Photos up to 25 MB are automatically optimized to WebP (<= 5 MB final)."
+              error={batchError || fieldErrorMap.attachments?.message}
+              disabled={isSubmitting}
+            />
           </>
         )}
 
         {/* Path B Workflow */}
         {selectedOrigin === "PAST_PAPER" && (
           <>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field
-                label="Education Level"
-                htmlFor={levelIdB}
-                required
-                error={fieldErrorMap.level_id?.message}
-              >
-                <Select
-                  id={levelIdB}
-                  {...register("level_id")}
-                  value={watchedLevelId}
-                  disabled={isSubmitting}
-                  onChange={(e) => handlePathBLevelChange(e.target.value)}
-                  aria-invalid={!!fieldErrorMap.level_id}
-                >
-                  <option value="">Select level...</option>
-                  {levels.map((lvl) => (
-                    <option key={lvl.id} value={lvl.id}>
-                      {lvl.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-
-              <Field
-                label="Subject"
-                htmlFor={subjectIdB}
-                required
-                error={fieldErrorMap.subject_id?.message}
-              >
-                <Select
-                  id={subjectIdB}
-                  {...register("subject_id")}
-                  value={watchedSubjectId}
-                  disabled={isSubmitting}
-                  onChange={(e) => handlePathBSubjectChange(e.target.value)}
-                  aria-invalid={!!fieldErrorMap.subject_id}
-                >
-                  <option value="">Select subject...</option>
-                  {subjects.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </div>
-
-            <Field
-              label="Curated Exam Paper"
-              asGroup
-              required
-              error={fieldErrorMap.resource_id?.message}
+            <MetadataPillBar
+              errors={[
+                fieldErrorMap.level_id?.message,
+                fieldErrorMap.subject_id?.message,
+                fieldErrorMap.resource_id?.message,
+                fieldErrorMap.question_number?.message,
+                fieldErrorMap.tags?.message,
+              ]}
             >
-              <input type="hidden" {...register("resource_id")} />
+              <MetadataSelectPill
+                id={levelIdB}
+                label="Education Level"
+                required
+                invalid={!!fieldErrorMap.level_id}
+                disabled={isSubmitting}
+                {...register("level_id")}
+                value={watchedLevelId}
+                onChange={(e) => handlePathBLevelChange(e.target.value)}
+              >
+                <option value="">Level *</option>
+                {levels.map((lvl) => (
+                  <option key={lvl.id} value={lvl.id}>
+                    {lvl.name}
+                  </option>
+                ))}
+              </MetadataSelectPill>
 
+              <MetadataSelectPill
+                id={subjectIdB}
+                label="Subject"
+                required
+                invalid={!!fieldErrorMap.subject_id}
+                disabled={isSubmitting}
+                {...register("subject_id")}
+                value={watchedSubjectId}
+                onChange={(e) => handlePathBSubjectChange(e.target.value)}
+              >
+                <option value="">Subject *</option>
+                {subjects.map((sub) => (
+                  <option key={sub.id} value={sub.id}>
+                    {sub.name}
+                  </option>
+                ))}
+              </MetadataSelectPill>
+            </MetadataPillBar>
+
+            {/* Curated Past Paper Picker + Q# */}
+            <input type="hidden" {...register("resource_id")} />
+
+            <div className="rounded-xl border border-border bg-card p-4 space-y-4">
               {!selectedResource ? (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 rounded-xl border border-dashed border-border bg-muted/40">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-dashed border-border bg-muted/35 p-3.5">
                   <Button
                     type="button"
                     variant="outline"
@@ -1191,117 +1235,120 @@ export function CreateProblemForm({
                     <span>Select a Paper in Resources</span>
                   </Button>
                   <span className="text-xs text-muted-foreground">
-                    Browse, preview, and select curated past papers without leaving this form.
+                    Browse, preview, and select curated past papers without leaving this composer.
                   </span>
                 </div>
               ) : (
-                <div className="rounded-xl border border-border bg-card p-3.5 shadow-xs space-y-2.5">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-start gap-3 min-w-0">
-                      <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
-                        <DocTypeIcon
-                          filename={
-                            selectedResource.file_name ||
-                            selectedResource.title ||
-                            ""
-                          }
-                          resourceType={selectedResource.resource_type}
-                        />
-                      </div>
-                      <div className="flex flex-col min-w-0">
-                        <span
-                          className="font-semibold text-foreground text-xs sm:text-sm truncate"
-                          title={
-                            selectedResource.title || selectedResource.file_name
-                          }
-                        >
-                          {selectedResource.title ||
-                            selectedResource.file_name ||
-                            "Past Paper"}
-                        </span>
-                        <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                          {selectedResource.session && (
-                            <span className="inline-flex items-center text-xs font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">
-                              {formatSession(selectedResource.session)}
-                            </span>
-                          )}
-                          {selectedResource.paper_type && (
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-xs uppercase font-semibold",
-                                selectedResource.paper_type === "QP"
-                                  ? "border-primary/35 text-primary bg-primary/10"
-                                  : "border-border text-secondary-foreground bg-secondary"
-                              )}
-                            >
-                              {selectedResource.paper_type === "QP"
-                                ? "Question Paper"
-                                : "Mark Scheme"}
-                            </Badge>
-                          )}
-                          {selectedResource.year && (
-                            <Badge variant="secondary" className="font-mono tabular-nums text-xs">
-                              {selectedResource.year}
-                            </Badge>
-                          )}
-                        </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3 min-w-0">
+                    <div className="mt-0.5 flex items-center justify-center size-8 rounded-lg bg-primary/10 shrink-0">
+                      <DocTypeIcon
+                        filename={
+                          selectedResource.file_name ||
+                          selectedResource.title ||
+                          ""
+                        }
+                        resourceType={selectedResource.resource_type}
+                      />
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <span
+                        className="font-semibold text-foreground text-xs sm:text-sm truncate"
+                        title={
+                          selectedResource.title || selectedResource.file_name
+                        }
+                      >
+                        {selectedResource.title ||
+                          selectedResource.file_name ||
+                          "Past Paper"}
+                      </span>
+                      <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                        {selectedResource.session && (
+                          <span className="inline-flex items-center text-xs font-medium text-muted-foreground bg-muted border border-border px-2 py-0.5 rounded-md">
+                            {formatSession(selectedResource.session)}
+                          </span>
+                        )}
+                        {selectedResource.paper_type && (
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-xs uppercase font-semibold",
+                              selectedResource.paper_type === "QP"
+                                ? "border-primary/35 text-primary bg-primary/10"
+                                : "border-border text-secondary-foreground bg-secondary"
+                            )}
+                          >
+                            {selectedResource.paper_type === "QP"
+                              ? "Question Paper"
+                              : "Mark Scheme"}
+                          </Badge>
+                        )}
+                        {selectedResource.year && (
+                          <Badge
+                            variant="secondary"
+                            className="font-mono tabular-nums text-xs"
+                          >
+                            {selectedResource.year}
+                          </Badge>
+                        )}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="flex items-center gap-2 shrink-0 sm:self-center">
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isSubmitting}
-                        onClick={() => setPaperModalOpen(true)}
-                        className="min-h-[44px] sm:min-h-[32px] px-2.5 gap-1.5 text-xs font-semibold"
-                      >
-                        <FolderOpen className="size-3.5" aria-hidden="true" />
-                        <span>Change Paper</span>
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="icon-sm"
-                        disabled={isSubmitting}
-                        onClick={() => {
-                          setValue("resource_id", "", {
-                            shouldValidate: true,
-                            shouldDirty: true,
-                          });
-                          setSelectedPaper(null);
-                          persistCurrentDraft({
-                            resource_id: "",
-                            selectedPaper: null,
-                          });
-                        }}
-                        className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                        aria-label="Remove selected paper"
-                      >
-                        <X className="size-3.5" aria-hidden="true" />
-                      </Button>
-                    </div>
+                  <div className="flex items-center gap-2 shrink-0 sm:self-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={isSubmitting}
+                      onClick={() => setPaperModalOpen(true)}
+                      className="min-h-[44px] sm:min-h-[32px] px-2.5 gap-1.5 text-xs font-semibold"
+                    >
+                      <FolderOpen className="size-3.5" aria-hidden="true" />
+                      <span>Change Paper</span>
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-sm"
+                      disabled={isSubmitting}
+                      onClick={() => {
+                        setValue("resource_id", "", {
+                          shouldValidate: true,
+                          shouldDirty: true,
+                        });
+                        setSelectedPaper(null);
+                        persistCurrentDraft({
+                          resource_id: "",
+                          selectedPaper: null,
+                        });
+                      }}
+                      className="min-h-[44px] min-w-[44px] sm:min-h-[32px] sm:min-w-[32px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      aria-label="Remove selected paper"
+                    >
+                      <X className="size-3.5" aria-hidden="true" />
+                    </Button>
                   </div>
                 </div>
               )}
-            </Field>
 
-            <Field
-              label="Question Number"
-              htmlFor={qNumIdB}
-              required
-              error={fieldErrorMap.question_number?.message}
-            >
-              <Input
-                id={qNumIdB}
-                {...register("question_number")}
-                disabled={isSubmitting}
-                placeholder="e.g. Q4(b) or Question 3"
-                aria-invalid={!!fieldErrorMap.question_number}
-              />
-            </Field>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor={qNumIdB}
+                  className="text-xs font-medium text-foreground"
+                >
+                  Question Number <span className="text-destructive">*</span>
+                </label>
+                <Input
+                  id={qNumIdB}
+                  {...register("question_number")}
+                  disabled={isSubmitting}
+                  placeholder="e.g. Q4(b) or Question 3"
+                  aria-invalid={!!fieldErrorMap.question_number}
+                  className="text-base sm:text-sm"
+                />
+              </div>
+            </div>
 
             {/* Non-interruptive inline deduplication callout */}
             {dedupData?.exists && dedupData.problem && (
@@ -1341,29 +1388,46 @@ export function CreateProblemForm({
               </div>
             )}
 
-            <Field
-              label="Custom Title (Optional)"
-              htmlFor={titleIdB}
-              error={fieldErrorMap.title?.message}
-            >
-              <Input
-                id={titleIdB}
-                {...register("title")}
-                disabled={isSubmitting}
-                placeholder={
-                  selectedResource
-                    ? `${selectedResource.title || selectedResource.file_name} — ${watchedQuestionNumber || "Question"}`
-                    : "Auto-derived canonical title"
-                }
-                aria-invalid={!!fieldErrorMap.title}
-              />
-            </Field>
+            <Controller
+              control={control}
+              name="tags"
+              render={({ field }) => (
+                <TagInput
+                  value={field.value || []}
+                  onChange={(nextTags) => {
+                    field.onChange(nextTags);
+                    persistCurrentDraft({ tags: nextTags });
+                  }}
+                  maxTags={3}
+                  disabled={isSubmitting}
+                  error={fieldErrorMap.tags?.message}
+                />
+              )}
+            />
 
-            <Field
-              label="Question / Working Notes (Optional)"
-              htmlFor={bodyIdB}
-              error={fieldErrorMap.body?.message}
-            >
+            <Controller
+              control={control}
+              name="title"
+              render={({ field }) => (
+                <ArchivalTitleInput
+                  id={titleIdB}
+                  value={field.value || ""}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  maxLength={150}
+                  disabled={isSubmitting}
+                  placeholder={
+                    selectedResource
+                      ? `${selectedResource.title || selectedResource.file_name} — ${watchedQuestionNumber || "Question"}`
+                      : "Optional custom title (auto-derived if left blank)"
+                  }
+                  error={fieldErrorMap.title?.message}
+                  aria-invalid={!!fieldErrorMap.title}
+                />
+              )}
+            />
+
+            <div className="space-y-1.5">
               <Controller
                 control={control}
                 name="body"
@@ -1371,42 +1435,25 @@ export function CreateProblemForm({
                   <MarkdownMathEditor
                     id={bodyIdB}
                     name={field.name}
-                    ref={field.ref}
                     value={field.value || ""}
                     onChange={field.onChange}
                     onBlur={field.onBlur}
+                    mode={mode}
+                    variant="borderless"
                     maxLength={3000}
-                    rows={4}
+                    rows={5}
                     disabled={isSubmitting}
                     aria-invalid={!!fieldErrorMap.body}
-                    placeholder="Add any specific context or question about this past-paper problem..."
+                    placeholder="Add any specific context or question about this past-paper problem (optional)..."
                   />
                 )}
               />
-            </Field>
-
-            <Field
-              label="Topic Tags"
-              asGroup
-              error={fieldErrorMap.tags?.message}
-            >
-              <Controller
-                control={control}
-                name="tags"
-                render={({ field }) => (
-                  <TagInput
-                    value={field.value || []}
-                    onChange={(nextTags) => {
-                      field.onChange(nextTags);
-                      persistCurrentDraft({ tags: nextTags });
-                    }}
-                    maxTags={3}
-                    disabled={isSubmitting}
-                    error={fieldErrorMap.tags?.message}
-                  />
-                )}
-              />
-            </Field>
+              {fieldErrorMap.body?.message && (
+                <p role="alert" className="text-xs font-medium text-destructive">
+                  {fieldErrorMap.body.message}
+                </p>
+              )}
+            </div>
 
             {/* Informational Banner replacing Image Dropzone */}
             <div className="rounded-xl border border-dashed border-border bg-muted/30 p-4 text-center text-xs text-muted-foreground flex items-center justify-center gap-2">
@@ -1417,50 +1464,7 @@ export function CreateProblemForm({
             </div>
           </>
         )}
-
-        {isSubmitting && elapsedSeconds >= 6 && (
-          <p
-            role="status"
-            aria-live="polite"
-            className="text-xs text-muted-foreground text-right"
-          >
-            Server is waking up or finishing transfer — please keep this tab open.
-          </p>
-        )}
-
-        <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-border">
-          {isUploading && (
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => cancelUpload()}
-              className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-            >
-              Cancel Upload
-            </Button>
-          )}
-          <Link
-            href="/problems"
-            aria-disabled={isSubmitting}
-            className={buttonVariants({
-              variant: "outline",
-              className: isSubmitting ? "pointer-events-none opacity-50" : "",
-            })}
-          >
-            Cancel
-          </Link>
-          <Button
-            type="submit"
-            disabled={isSubmitting || isOptimizing}
-            className="gap-2"
-          >
-            {isSubmitting && (
-              <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-            )}
-            <span>{submitLabel}</span>
-          </Button>
-        </div>
-      </form>
+      </ArchivalComposerShell>
 
       {/* In-Place Past Paper Selector Modal for Path B */}
       <PastPaperSelectorModal
@@ -1492,6 +1496,6 @@ export function CreateProblemForm({
           }}
         />
       )}
-    </div>
+    </>
   );
 }
